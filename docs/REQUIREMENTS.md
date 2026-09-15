@@ -46,10 +46,26 @@ public function calculateTax(float $grossAmount, float $rate, bool $priceInclude
 
 ---
 
-## 2. Dynamic Feature & Menu Registry (`DynamicMenuRegistry.php`)
+## 2. Composable Capability, Terminologi, Workflow & Menu Registry (D-31)
+
+### 2.0 Prinsip
+`Company` tidak "berjenis" agency/apotek di kode. Ia memuat **preset** (data) yang
+mengkomposisi **kapabilitas** (kode). Empat resolver membaca urutan
+`module_settings` (override company) → `business_presets.definition` → default:
+
+| Resolver | Membaca | Dipakai oleh |
+|---|---|---|
+| `FeatureResolver` → `Company::feature()` | `capabilities` | registry menu, middleware, widget |
+| `TerminologyResolver` → `term()` | `terminology` | semua label Blade |
+| `WorkflowEngine` | `workflows` (dimaterialisasi ke `workflow_definitions`) | transisi `stage` entitas |
+| `DashboardComposer` | `dashboard` | susunan widget |
+
+Kunci kapabilitas hanya dari katalog `INDUSTRY_PRESETS.md` §1 (D-32). Kunci
+seperti `ops.contractor_spk` atau `pos.prescription_flow` **tidak ada lagi**;
+padanannya `projects.progress_billing` dan Tier B `pharmacy.prescription`.
 
 ### 2.1 Aturan Hard Runtime Gate
-1. `Company` memiliki method helper:
+1. `Company` memiliki method helper (didelegasikan ke `FeatureResolver`):
    ```php
    public function feature(string $key): bool;
    public function hasAnyFeature(array $keys): bool;
@@ -57,21 +73,36 @@ public function calculateTax(float $grossAmount, float $rate, bool $priceInclude
 2. Resolusi status fitur:
    - Baca baris `module_settings` dengan `company_id` aktif dan `module_name = 'features'` (bentuk D-19/D-25: satu baris per modul, flag disimpan di `settings_json`).
    - Jika `settings_json` memuat key `$key`, kembalikan nilai boolean-nya (override).
-   - Jika tidak ada override, ambil default dari preset yang terpasang di `company->business_preset`.
+   - Jika tidak ada override, ambil dari `business_presets.definition.capabilities[$key]` sesuai `company->business_preset`; jika tidak ada juga → `false`.
 3. **App Switcher Architecture (Odoo/Zoho Style):**
    - Aplikasi web tidak menggunakan tradisi navigasi *sidebar* konvensional.
    - Halaman pertama setelah login adalah **Lobby Dashboard (App Switcher)**. Layar ini menampilkan:
      - **Widget Wealth Management:** Merangkum total kekayaan/Laba-Rugi Bos dari *seluruh* cabang perusahaannya.
-     - **App Grid:** Daftar ikon aplikasi ("Kasir", "CRM", dll) khusus untuk perusahaan yang sedang aktif, berdasarkan `DynamicMenuRegistry`.
+     - **App Grid:** Daftar ikon modul (label via `term()`, mis. "Kasir", "Penyewa", "Pasien") untuk perusahaan aktif, hanya modul yang `visible` di `DynamicMenuRegistry`.
    - Modul yang *Feature Flags*-nya mati tidak akan di-*render* sama sekali ke HTML (Zero-Clutter).
    - Saat bos mengeklik "Kasir", layar akan berubah 100% menjadi *Single Page Application* khusus POS.
    - Untuk berpindah aplikasi dengan cepat, ada ikon **Global App Launcher (9-Dots Grid)** di pojok kiri atas aplikasi.
 4. **UI Masking untuk Modul Keuangan (Simple vs Pro):**
    - *Backend* secara kaku diwajibkan menggunakan struktur *Double-Entry Accounting* (`accounting_journals` & `accounting_journal_lines`) untuk *semua* perusahaan, kecil maupun besar. Hal ini menjamin integritas data seumur hidup.
-   - **Simple Mode (`features.finance.cashbook_only = true`):** UI Web menyembunyikan kata "Jurnal", "Debit", "Kredit", dan "Buku Besar". Layar hanya menampilkan antarmuka "Buku Kas" dengan tombol **[+ Pemasukan]** dan **[- Pengeluaran]**. Saat formulir disubmit, *Backend* yang bertugas menerjemahkannya menjadi Jurnal (misal: Debit Beban Listrik, Kredit Kas).
-   - **Pro Mode (`features.finance.accounting = true`):** UI Web menampilkan menu Akuntansi Lengkap: *Chart of Accounts*, Jurnal Manual, Buku Besar, Neraca, dan Laba-Rugi. Jika sebuah Warung (*Simple Mode*) berkembang dan menyalakan *Pro Mode*, seluruh data lamanya otomatis tersaji dalam format neraca tanpa perlu migrasi data sama sekali.
+   - **Simple Mode (`finance.cashbook = true`, `finance.accounting = false`):** UI Web menyembunyikan kata "Jurnal", "Debit", "Kredit", dan "Buku Besar". Layar hanya menampilkan antarmuka "Buku Kas" dengan tombol **[+ Pemasukan]** dan **[- Pengeluaran]**. Saat formulir disubmit, *Backend* yang bertugas menerjemahkannya menjadi Jurnal (misal: Debit Beban Listrik, Kredit Kas).
+   - **Pro Mode (`finance.accounting = true`):** UI Web menampilkan menu Akuntansi Lengkap: *Chart of Accounts*, Jurnal Manual, Buku Besar, Neraca, dan Laba-Rugi. Jika sebuah Warung (*Simple Mode*) berkembang dan menyalakan *Pro Mode*, seluruh data lamanya otomatis tersaji dalam format neraca tanpa perlu migrasi data sama sekali.
 5. **Route Protection:**
-   - Middleware `EnsureFeatureEnabled:feature_key` harus memblokir akses direct URL dengan HTTP 403 Forbidden jika fitur terkait dimatikan untuk company tersebut.
+   - Middleware `EnsureFeatureEnabled:{capability}` memblokir akses direct URL dengan HTTP 403 jika kapabilitas terkait mati untuk company tersebut. Modul yang tidak dikenal registry → 404.
+
+### 2.2 Alur Bisnis sebagai Data (`WorkflowEngine`)
+- Setiap entitas ber-`stage` (`deals`, `projects`, `bookings`, `orders`, `prescriptions`) **tidak** memakai `ENUM`; nilai `stage` adalah kode netral dari `workflow_definitions` company.
+- `WorkflowEngine::transition($model, $toStage, $actor)`:
+  1. Menolak transisi yang tidak terdefinisi (`InvalidTransition`).
+  2. Menolak actor yang role-nya tidak diizinkan (403).
+  3. Bila `requires_approval: true` → membuat tiket approval (`YA <kode>`, D-27) dan **menahan** transisi sampai disetujui.
+  4. Menjalankan `effects` (katalog `INDUSTRY_PRESETS.md` §5) dalam satu `DB::transaction`; efek gagal → seluruh transisi rollback.
+  5. Menulis `workflow_transitions_log`.
+- Owner dapat mengubah stage/label/transisi via Pengaturan > Fitur Bisnis (tersimpan di `module_settings[workflows]`) **tanpa** kode.
+
+### 2.3 Terminologi (`term()`)
+- Blade **dilarang** menulis literal istilah bisnis (`Klien`, `Pasien`, `Karyawan`, `Meja`). Wajib `{{ term('contact') }}` / `@term('contacts')`.
+- Kunci hanya dari kamus `INDUSTRY_PRESETS.md` §3. Key tak dikenal → exception di `APP_ENV=local|testing`, fallback ke key di produksi.
+- T-22 menjalankan grep literal istilah = 0 sebagai gate white-label sekaligus gate D-31.
 
 ---
 
@@ -85,7 +116,7 @@ Sistem harus memvalidasi setiap payload API yang datang dari Asisten AI secara k
 - **Validasi Hak Akses:** Endpoint ini **mutlak** hanya menerima mutasi jika parameter *caller* (pengirim pesan WA awal) adalah `wa_number` yang *role*-nya Owner/Bos. Apabila bot memanggil API ini atas hasutan Staf Kasir, API mengembalikan `403 Forbidden`.
 ### 3.2 Universal Business Customization (AI Onboarding)
 - **Endpoint API:** `PUT /api/bot/features`
-- **Fungsi:** Mengizinkan bot (selama proses orientasi/wawancara awal) untuk menyalakan/mematikan fitur di `module_settings` (contoh: `pos.quick_counter = ON`) sehingga membentuk *Custom Preset* secara dinamis.
+- **Fungsi:** Mengizinkan bot (selama proses orientasi/wawancara awal) untuk menyalakan/mematikan fitur di `module_settings` (contoh: `{"capabilities": {"pos": true, "inventory": true}, "terminology": {"contact": "Pelanggan"}}` — kunci hanya dari katalog `INDUSTRY_PRESETS.md` §1/§3) sehingga membentuk *Custom Preset* secara dinamis.
 - **Validasi Hak Akses:** Sama seperti pengaturan konfigurasi, endpoint ini mutlak hanya dapat dipanggil atas inisiasi dari *wa_number* yang berstatus Bos.
 
 ### 3.3 Aturan Hard-Limit Eksekusi (Mengekang Bawahan)
@@ -103,7 +134,7 @@ Sistem harus memvalidasi setiap payload API yang datang dari Asisten AI secara k
 ## 4. Spesifikasi 6 Modul Industri Spesifik
 
 ### 4.1 Industri 1: Agency (Jasa Kreatif & IT)
-- **CRM:** Menggunakan pipeline deals. Kode stage disimpan netral (`new / qualified / proposal / negotiation / won / lost`, Q-05) dan ditampilkan dengan label Indonesia: `Lead Baru → Pitch / SPH → Negosiasi → Won / Lost`. Data PIC (`pic_name`, `pic_wa`) disimpan di `crm_contacts` (`name`, `wa_number`) yang direlasikan ke deal — **bukan** kolom baru di `crm_deals`. `deal_value` wajib.
+- **CRM:** Menggunakan pipeline deals. Kode stage disimpan netral (`new / qualified / proposal / negotiation / won / lost`, Q-05) dan ditampilkan dengan label Indonesia: `Lead Baru → Pitch / SPH → Negosiasi → Won / Lost`. Data PIC (`pic_name`, `pic_wa`) disimpan di `contacts` (`name`, `wa_number`) yang direlasikan ke `deals` — **bukan** kolom baru di `deals`. `deals.value` wajib.
 - **Operasional:** Timesheet per staf untuk menghitung biaya per jam pengerjaan proyek klien.
 - **Invoicing:** Termin bertahap (contoh: DP 50%, Pelunasan 50% setelah serah terima).
 

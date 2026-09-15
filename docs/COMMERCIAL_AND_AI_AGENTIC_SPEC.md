@@ -151,11 +151,11 @@ Untuk memastikan agen WA tidak liar dan tidak dapat di-*jailbreak* oleh staf ata
    - **Alur Penyambungan:** Klien HANYA boleh mengakses Web BOS (Laravel). Saat Klien membuka halaman "Hubungkan WA", *Backend* Laravel akan memanggil API rahasia ke mesin Hermes untuk "meminta" gambar QR Code.
    - Hermes memproduksi QR, lalu Laravel menampilkannya di Web BOS. Begitu Klien men-scan QR tersebut dari Web BOS, WA-nya langsung tersambung kuat dengan mesin Hermes di *backend*. (Menjaga ilusi *White-Label* tetap utuh di mata klien).
 
-## 5. Orkestrasi Modul CRM Pintar (Contacts & Deals)
-Dalam konteks CRM B2B/Jasa, agen memiliki kecerdasan hierarkis untuk membedakan "Orang" (Kontak) dan "Proyek" (Deals):
-- **Pencatatan Orang:** *"Bos, ada prospek baru nama Budi WA 0812"* → Agen memanggil `mcp_create_crm_contact`.
-- **Pencatatan Proyek/Peluang Uang:** *"Tadi si Budi deal bikin website harga 10 juta"* → Agen memanggil `mcp_create_crm_deal(contact_id: X, title: 'Website', deal_value: 10000000)`.
-- **Pencatatan Log Histori Ganda:** *"Saya barusan nekat telpon Budi bahas diskon website"* → Agen memanggil `mcp_log_crm_activity(contact_id: X, deal_id: Y, type: 'call')`. Log ini akan menempel di profil Pak Budi sekaligus di profil Proyek Website.
+## 5. Orkestrasi Kapabilitas `contacts` & `deals`
+Agen membedakan "Orang" (`contacts`) dan "Peluang" (`deals`). Istilah yang dipakai agen ke Bos mengikuti `term()` preset — di klinik ia berkata "pasien", di rental "penyewa":
+- **Pencatatan Orang:** *"Bos, ada prospek baru nama Budi WA 0812"* → Agen memanggil `mcp_create_contact`.
+- **Pencatatan Proyek/Peluang Uang:** *"Tadi si Budi deal bikin website harga 10 juta"* → Agen memanggil `mcp_create_deal(contact_id: X, title: 'Website', value: 10000000)`.
+- **Pencatatan Log Histori Ganda:** *"Saya barusan nekat telpon Budi bahas diskon website"* → Agen memanggil `mcp_log_activity(subject: 'deal', subject_id: Y, type: 'call')`. Log ini akan menempel di profil Pak Budi sekaligus di profil Proyek Website.
 
 ---
 
@@ -170,7 +170,7 @@ Sistem *backend* menuntut pencatatan *Double-Entry* (Jurnal Debit/Kredit) yang k
 
 ## 7. Orkestrasi Modul HRD & Asisten (Penggajian & Task)
 Menjawab kebutuhan klien *Mid-Market* (Agensi Kreatif & Kontraktor):
-- **Perhitungan Gaji (Payroll):** Agen memiliki kapabilitas membaca tabel `hr_employees` dan memicu kalkulasi `hr_payrolls` untuk pembuatan slip gaji.
+- **Perhitungan Gaji (Payroll):** Bila kapabilitas `hr.payroll` aktif, agen membaca `employees` dan memicu kalkulasi `payrolls` untuk pembuatan slip gaji.
 - **Drafting Kontrak Hukum:** Otak LLM (Hermes) difungsikan murni sebagai *Think-Tank*. Bos dapat memerintahkan *"Buat kontrak PKWT 1 tahun untuk Budi, gaji 5 juta"*, dan agen akan memproduksi teks kontrak formal.
 - **Manajemen Task (Reminders):** Bos dapat menugaskan *"Ingatkan saya tagih invoice besok jam 9 pagi"*. Agen memanggil `mcp_create_reminder(task: 'tagih invoice', datetime: 'besok 9 pagi')`. Server akan menyimpannya ke tabel `ai_reminders` dan menggunakan *Cron Job* untuk membangunkan agen agar menge-chat Bos pada waktu yang ditentukan.
 

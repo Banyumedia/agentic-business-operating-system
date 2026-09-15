@@ -106,9 +106,9 @@ dipakai untuk regresi.
 
 | ID | Task | Depends On | Decisions | Gate | File Target | Acceptance (dapat diuji) | State |
 |---|---|---|---|---|---|---|---|
-| T-07 | Design token `--erp-*` + Settings tab + theme toggle | T-03 | Q-03 (**dijawab default**: turunkan dari palet Tailwind v4, buktikan AA dengan test) | — | `resources/css/app.css`, `app/Livewire/Settings.php`, `resources/views/livewire/settings.blade.php`, `app/Services/ThemeRegistry.php` | (a) `app.css` `@theme` mendeklarasikan **36 token** sesuai `UX_UI_SPEC.md` §7; (b) `tests/Unit/ThemeContrastTest` membuktikan 11 pasangan kontras ≥ 4.5:1 untuk tema default; (c) `/app/settings` merender `role="tablist"`, 6 `role="tab"` dengan `aria-selected`/`aria-controls`/`tabindex` sesuai §4.0; (d) tab aktif dari `?tab=` query; (e) toggle tema menyimpan pilihan `auto/light/dark` di `localStorage` **dan** `<html data-theme>`; (f) Pint + build hijau. | `READY` |
-| T-05 | Dashboard *Midnight Command* | T-07 | — | — | `app/Livewire/Dashboard.php`, `resources/views/livewire/dashboard.blade.php`, `routes/web.php` (tambah `/app/dashboard`) | (a) route `/app/dashboard` → 200 dan menjadi tujuan default setelah login nanti; (b) memakai **hanya** token `--erp-*`, tidak ada `bg-gray-*` hardcoded (grep = 0); (c) zona universal: 3 kartu KPI dummy + 1 kartu "Laporan AI"; (d) zona industri: merender kartu sesuai `UX_UI_SPEC.md` §5.1 berdasarkan `business_preset` (dummy `agency` untuk sekarang); (e) `main#main-content` + skip-link ada; (f) test feature `assertSee` untuk setiap kartu. | `BLOCKED` (T-07) |
-| T-06 | Komponen tabel responsif → card di mobile | T-07 | — | — | `resources/views/components/data-table.blade.php`, ganti tabel dummy di `dummy-module.blade.php` | (a) komponen Blade `<x-data-table :rows :columns>`; (b) `<table class="hidden md:table">` + `<div class="md:hidden">` card list dengan data sama; (c) `data-table` memakai token `--erp-*`; (d) semua `href="#"` di `dummy-module.blade.php` dihapus (grep = 0); (e) test feature mengecek kedua varian dirender. | `BLOCKED` (T-07) |
+| T-07 | Design token `--erp-*` + Settings tab + theme toggle | T-03 | Q-03 (**dijawab default**: turunkan dari palet Tailwind v4, buktikan AA dengan test) | — | `resources/css/app.css`, `app/Livewire/Settings.php`, `resources/views/livewire/settings.blade.php`, `app/Services/ThemeRegistry.php` | (a) `app.css` `@theme` mendeklarasikan **36 token** sesuai `UX_UI_SPEC.md` §7; (b) `tests/Unit/ThemeContrastTest` membuktikan 11 pasangan kontras ≥ 4.5:1 untuk tema default; (c) `/app/settings` merender `role="tablist"`, 6 `role="tab"` dengan `aria-selected`/`aria-controls`/`tabindex` sesuai §4.0, tab dibaca dari **array registry** (bukan hardcode 6 `<button>`) agar U-02 "tab dinamis" terpenuhi saat role/flag hadir; (d) tab aktif dari `?tab=` query; (e) toggle tema menyimpan pilihan `auto/light/dark` di `localStorage` **dan** `<html data-theme>`; (f) Pint + build hijau. | `READY` |
+| T-05 | Dashboard *Midnight Command* | T-07 | — | — | `app/Livewire/Dashboard.php`, `resources/views/livewire/dashboard.blade.php`, `routes/web.php` (tambah `/app/dashboard`) | (a) route `/app/dashboard` → 200 dan menjadi tujuan default setelah login nanti; (b) memakai **hanya** token `--erp-*`, tidak ada `bg-gray-*` hardcoded (grep = 0); (c) zona universal: 3 kartu KPI dummy + 1 kartu "Laporan AI"; (d) zona industri: **dirender oleh `DashboardComposer` stub** (T-08e nanti menggantinya) yang membaca susunan widget dari array preset dummy — **bukan** `@if($preset==='agency')` hardcode; widget dummy dibuat sebagai komponen terpisah per nama katalog (`INDUSTRY_PRESETS.md` §4) agar T-08e cukup mengganti sumber data; (e) `main#main-content` + skip-link ada; (f) test feature `assertSee` untuk setiap kartu; (g) **tidak ada literal istilah bisnis** di Blade — pakai placeholder `term()` stub yang mengembalikan default global (T-08c menggantinya). | `BLOCKED` (T-07) |
+| T-06 | Komponen tabel responsif → card di mobile | T-07 | — | — | `resources/views/components/data-table.blade.php`, ganti tabel dummy di `dummy-module.blade.php` | (a) komponen Blade `<x-data-table :rows :columns>`; (b) `<table class="hidden md:table">` + `<div class="md:hidden">` card list dengan data sama; (c) `data-table` memakai token `--erp-*`; (d) semua `href="#"` di `dummy-module.blade.php` dihapus (grep = 0); (e) test feature mengecek kedua varian dirender; (f) header kolom menerima label dari caller, komponen **tidak** menyimpan istilah bisnis. | `BLOCKED` (T-07) |
 
 **Urutan wajib Fase 2: T-07 → T-05 → T-06.** T-07 dulu karena T-05 dan T-06
 bergantung pada token. Ketiganya menyentuh `app.css`/layout, jadi **serial**.
@@ -137,37 +137,65 @@ autopilot tiba di sini, laporkan ringkasan Fase 2 dan **berhenti menunggu**.
 
 ---
 
-## Fase 3b: Migrasi Domain
+## Fase 3b: Mesin Komposisi (D-31 — WAJIB sebelum tabel domain apa pun)
+
+> Inilah yang membuat industri ke-7..50 menjadi data, bukan kode. Tanpa fase
+> ini, setiap tabel domain akan mengunci pola "1 industri = N tabel".
 
 | ID | Task | Depends On | Decisions | File Target | Acceptance | State |
 |---|---|---|---|---|---|---|
-| T-08 | Migration + model `business_presets` + seeder **7 preset** | T-00a | — | `database/migrations/`, `app/Models/BusinessPreset.php`, `database/seeders/BusinessPresetSeeder.php` | 7 baris; `default_features` = map dari `INDUSTRY_PRESETS.md` §1 termasuk `finance.*`/`hr.*`; `custom` = semua `false` kecuali `system.ai_agent`, `finance.cashbook`; test hitung 7 dan spot-check 3 flag. | `BLOCKED` |
-| T-09 | ~~Tambah kolom `business_preset`~~ → **digabung ke T-00a** (kolom dibuat langsung di `CREATE companies`). | — | — | — | Tidak ada pekerjaan terpisah. | `DONE (merged)` |
-| T-10 | Migration `membership_plans`, `company_memberships` | T-00a | — | migration + model | Sesuai §11.1–11.2; `slug VARCHAR(64)`; test isolasi tenant. | `BLOCKED` |
-| T-10a | Migration `token_ledger_entries` | T-10 | — | migration + model + `TokenLedgerService` | §11.3; `idempotency_key` unik; service `credit()/debit()` transaksional yang memperbarui `current_token_balance` **dan** menulis ledger dalam satu `DB::transaction`; test: dua panggilan dengan key sama → saldo berubah **sekali**. | `BLOCKED` |
-| T-10b | Migration `hermes_nodes`, `hermes_profiles` | T-00a | Q-04 (**default**: satu per company) | migration + model | §12; `*_secret_reference` bukan plaintext; test `UNIQUE(company_id)`. | `BLOCKED` |
-| T-13 | Migration CRM `crm_contacts`, `crm_deals`, `crm_activity_logs` | T-00a | Q-05 (**default**: kode netral + label ID) | migration + model | §3.1–3.3. **Tidak ada `crm_leads` untuk di-drop** — tabel itu tidak ada. Stage default `new/qualified/proposal/negotiation/won/lost`. Test tenant A/B. | `BLOCKED` |
-| T-11 | Migration akuntansi `chart_of_accounts`, `accounting_journals`, `accounting_journal_lines` | T-13 (FK `deal_id`) | — | migration + model + `JournalService` | §4.1–4.3 **dengan `company_id` di lines** (D-26); service `post()` menolak jurnal tidak balance (Σdebit ≠ Σkredit → exception); test balance + tenant A/B. | `BLOCKED` |
-| T-12 | Migration `invoices` (topup + subscription) | T-10 | — | migration + model | §2.3 dengan kolom `type`, `period_*`, `company_membership_id`; test transisi status: `pending→paid` ok, `paid→paid` no-op. | `BLOCKED` |
-| T-14 | Migration `attachments` polimorfik | T-00a | — | migration + model + trait `HasAttachments` | §13.1; test morph ke `Company` dan tenant A/B. | `BLOCKED` |
-| T-14b | Migration domain industri: `pharmacy_*`, `pos_*`, `rental_*`, `eo_*`, `contractor_retentions`, `hr_*`, `ai_reminders`, `support_tickets`, `ai_model_pricings` | T-13, T-14 | — | migration + model | §2.2, 2.4, 5, 6, 7, 8, 9, 10. Boleh dipecah per modul bila terlalu besar. Semua punya `company_id` + test A/B. | `BLOCKED` |
+| T-08 | `business_presets` + `PresetDefinitionValidator` + seeder 7 preset dari JSON | T-00a | — | migration, `app/Models/BusinessPreset.php`, `app/Services/Preset/PresetDefinitionValidator.php`, `database/seeders/BusinessPresetSeeder.php`, `database/seeders/presets/{agency,fnb,pharmacy,eo,contractor,rental,custom}.json` | Skema `definition` sesuai `INDUSTRY_PRESETS.md` §2; validator menolak capability/term/effect/widget asing (test negatif per katalog); 7 baris terseed; `tier` benar; test bahwa `pharmacy.json` menyatakan dependensi Tier B lengkap. | `BLOCKED` (gate) |
+| T-08b | `FeatureResolver` + `Company::feature()/hasAnyFeature()` | T-00b, T-08 | — | `app/Services/FeatureResolver.php`, `app/Models/Company.php` | Resolusi: `module_settings[features]` → `preset.definition.capabilities` → `false`. Test: A override tidak bocor ke B; key asing → `false`; cache per request; ganti `business_preset` company → resolusi berubah tanpa migration. | `BLOCKED` |
+| T-08c | `TerminologyResolver` + helper `term()` | T-08b | — | `app/Services/TerminologyResolver.php`, `app/Support/helpers.php` (`term()`), Blade directive `@term` | Resolusi company → preset → default global (`INDUSTRY_PRESETS.md` §3); key tak dikenal → exception di dev, fallback key di prod; test: `rental` → `term('contact')='Penyewa'`, `pharmacy` → `'Pasien'`; override company menang. | `BLOCKED` |
+| T-08d | `workflow_definitions` + `workflow_transitions_log` + `WorkflowEngine` + katalog efek | T-08b | — | migration ×2, `app/Services/Workflow/WorkflowEngine.php`, `app/Services/Workflow/Effects/*.php`, `app/Contracts/HasWorkflow.php` | `transition($model,$to,$actor)`: tolak transisi tak terdefinisi (exception), tolak role salah (403), `requires_approval` → buat tiket & tahan, jalankan `effects` dalam `DB::transaction`, tulis log. Materialisasi dari preset saat company dibuat. Test: 6 kasus + rollback bila efek gagal. Efek awal yang diimplementasi: `approval.request`, `notify.owner_wa` (via `HermesNodeClient` fake) — efek lain menyusul bersama kapabilitasnya. | `BLOCKED` |
+| T-08e | `WidgetRegistry` + `DashboardComposer` | T-08b | — | `app/Services/Dashboard/WidgetRegistry.php`, `app/Services/Dashboard/DashboardComposer.php`, `app/Livewire/Widgets/*.php` (kerangka) | Registry memetakan nama widget → kapabilitas yang dibutuhkan (katalog §4); `compose(Company)` mengembalikan hanya widget yang kapabilitasnya `true`, urut sesuai `preset.definition.dashboard`; test: preset `rental` → `resources_status` ada, `expiring_batches` tidak. Widget nyata dibangun bertahap; T-05 memakai composer ini dengan widget dummy. | `BLOCKED` |
+| T-03b | Refactor `DynamicMenuRegistry` ke bentuk flag-aware + `term()` (`INDUSTRY_PRESETS.md` §9) | T-08b, T-08c | — | `app/Services/DynamicMenuRegistry.php`, `app/Livewire/Sidebar.php`, `app/Livewire/Lobby.php`, test terkait | Registry per **kapabilitas** (bukan industri); `visible` closure per modul & item; label via `term()`; Lobby hanya menampilkan modul `visible`; test lama diperbarui; test baru: preset `fnb` **tidak** menampilkan HRD>Payroll, preset `klinik` (bukan 6 awal, di-seed hanya untuk test) menampilkan `Pasien`/`Janji Temu` **tanpa kode baru** → bukti D-31. Emoji → nama ikon Lucide. | `BLOCKED` |
+| T-09 | ~~kolom `business_preset`~~ → digabung ke T-00a. | — | — | — | — | `DONE (merged)` |
 
-**Urutan FK wajib:** T-00a → T-00b → T-08 → T-10 → T-10a → T-13 → T-11 → T-12 →
-T-14 → T-14b. T-10b dan T-00c bebas setelah T-00a. Semua migration **serial**.
+**Urutan wajib Fase 3b: T-08 → T-08b → (T-08c ∥ T-08d ∥ T-08e read-only design boleh paralel, implementasi serial) → T-03b.**
 
 ---
 
-## Fase 4: Model, Middleware, dan Arsitektur AI
+## Fase 3c: Tabel Kapabilitas (generik — bukan per industri)
+
+| ID | Task | Depends On | Decisions | File Target | Acceptance | State |
+|---|---|---|---|---|---|---|
+| T-13 | `contacts`, `deals`, `activity_logs` (§3) | T-08d | Q-05 (**default**: kode netral) | migration ×3 + model + `HasWorkflow` di `Deal` | `stage VARCHAR`, transisi via `WorkflowEngine`; `type` + `attributes`; test A/B; test bahwa preset `agency` dan `pharmacy` memakai tabel **yang sama** dengan `term()` berbeda. | `BLOCKED` |
+| T-13b | `projects`, `project_milestones`, `project_assignments`, `project_vendors`, `timesheet_entries` (§5) | T-13 | — | migration ×5 + model | `Project` ber-workflow; milestone `trigger_type` valid; test: milestone `progress_pct` mencapai `trigger_value` → status `invoiced` via efek `invoice.create_*` (efek diimplementasi di task ini). | `BLOCKED` |
+| T-13c | `resources`, `bookings`, `booking_incidents` (§6) + `BookingService` | T-13 | — | migration ×3 + model + service | **Invarian anti-double-booking** ditegakkan service + test (2 booking overlap → exception); `Booking` ber-workflow; efek `deposit.collect/settle`, `late_fee.compute` diimplementasi; test rundown EO = booking ber-`project_id`. | `BLOCKED` |
+| T-13d | `items`, `item_batches`, `stock_movements`, `bom_lines` (§7) + `StockService` | T-00a | — | migration ×4 + model + service | Efek `stock.reserve/deduct`; FEFO: deduct mengambil batch `expires_on` terdekat (test dengan 3 batch); BOM: produce 1 produk → consume komponen sesuai `bom_lines`; test A/B. | `BLOCKED` |
+| T-13e | `pos_shifts`, `orders`, `order_lines` (§8) + `OrderService` | T-13, T-13c, T-13d, T-11 | — | migration ×3 + model + service | `Order` ber-workflow; `dpp/tax/grand_total` dihitung `TaxRateService` dari `business_identity` (D-03, REQUIREMENTS §1); `external_ref` idempoten untuk webhook NalarPesan (D-04); `pos.tables`: `resource_id` meja + `fired_at` re-fire; efek `journal.post` dari order `paid`; test: tax inclusive vs exclusive, replay webhook no-op. | `BLOCKED` |
+| T-13f | `employees`, `payrolls`, `ai_reminders` (§9) | T-00a | — | migration ×3 + model | `UNIQUE(company, employee, period)`; test A/B. | `BLOCKED` |
+| T-11 | Akuntansi `chart_of_accounts`, `accounting_journals`, `accounting_journal_lines` (§4) + `JournalService` + `TaxRateService` | T-13b (FK `project_id`) | — | migration ×3 + model + 2 service | `company_id` di lines (D-26); `post()` menolak unbalance; `TaxRateService::calculateTax()` sesuai REQUIREMENTS §1.3 (test 4 skenario); template jurnal untuk cashbook (Debit beban / Kredit kas); test A/B. | `BLOCKED` |
+| T-10 | `membership_plans`, `company_memberships` (§11.1–11.2) | T-00a | — | migration + model | Test A/B. | `BLOCKED` |
+| T-10a | `token_ledger_entries` + `TokenLedgerService` (§11.3) | T-10 | — | migration + model + service | Idempoten via `idempotency_key`; saldo cache + ledger dalam 1 transaksi; test dua panggilan key sama → saldo berubah sekali. | `BLOCKED` |
+| T-10b | `hermes_nodes`, `hermes_profiles` (§12) | T-00a | Q-04 (**default**: 1 per company) | migration + model | `*_secret_reference` bukan plaintext; `UNIQUE(company_id)`. | `BLOCKED` |
+| T-12 | `invoices` (§2.3) | T-10, T-13b | — | migration + model | `type` topup/subscription; transisi status valid; `paid→paid` no-op. | `BLOCKED` |
+| T-14 | `attachments` + trait `HasAttachments` (§13) | T-00a | — | migration + model + trait | Test morph ke `Contact`, `Prescription`; A/B. | `BLOCKED` |
+| T-14b | **Tier B**: `prescriptions` + `retentions` (§10) + aturan domain | T-13, T-13b, T-13d, T-13e, T-14 | — | migration ×2 + model + `PrescriptionGuard`, `RetentionService` | Obat `drug_class ∈ {keras, psikotropika}` **ditolak** masuk `order_lines` tanpa `prescription_id` `verified` (test negatif); retensi dipotong otomatis dari invoice milestone bila `retention_pct>0`, `status=held`, tidak bisa `invoiced` sebelum `release_on` (test). | `BLOCKED` |
+
+**Urutan FK wajib Fase 3c:** T-13 → T-13b → T-11 → T-13c → T-13d → T-13e →
+T-13f → T-10 → T-10a → T-12 → T-14 → T-14b. T-10b bebas setelah T-00a. Semua
+migration **serial**.
+
+> **Catatan mengapa T-11 ada di tengah:** `orders` (T-13e) butuh `journal.post`
+> dan `TaxRateService`; `journal_lines` butuh `projects`. Karena itu T-11 setelah
+> T-13b, sebelum T-13e.
+
+---
+
+## Fase 4: Middleware, API, dan Integrasi AI
 
 | ID | Task | Depends On | Decisions | Gate | File Target | Acceptance | State |
 |---|---|---|---|---|---|---|---|
-| T-15 | `Company::feature()` + `hasAnyFeature()` | T-00b, T-08 | — | — | `app/Models/Company.php`, `app/Services/FeatureResolver.php` | Resolusi: override `module_settings[features]` → default preset. Test: A override `crm.leads=false` tidak mempengaruhi B; key tak dikenal → `false`; cache per-request. | `BLOCKED` |
-| T-03b | Refactor `DynamicMenuRegistry` ke bentuk flag-aware `INDUSTRY_PRESETS.md` §2.1 | T-15 | — | — | `app/Services/DynamicMenuRegistry.php`, `app/Livewire/Sidebar.php`, `app/Livewire/Lobby.php`, test terkait | Registry menerima `Company`; modul/item dengan `visible=false` → nol DOM; Lobby hanya menampilkan modul `visible`; test lama diperbarui, test baru: preset `fnb` **tidak** menampilkan `hrd.payroll`. Ikon emoji → nama Lucide. | `BLOCKED` |
-| T-16 | Middleware `EnsureFeatureEnabled:{flag}` + `EnsureCompanyAccess` | T-15, T-00c | — | — | `app/Http/Middleware/`, `bootstrap/app.php`, `routes/web.php` | Flag off → 403; on → 200; user tanpa akses company → 403; modul tak dikenal → 404 (mengganti perilaku 200 saat ini). Test 4 kasus. | `BLOCKED` |
-| T-19 | Webhook payment gateway | T-10a, T-12 | Q-01 (**default**: Midtrans) | `HUMAN:SECRET` → **fake diizinkan** | `routes/api.php` (buat via `php artisan install:api`), `app/Http/Controllers/Api/PaymentWebhookController.php`, `app/Services/Payment/MidtransSignatureVerifier.php` | Signature `SHA512(order_id+status_code+gross_amount+server_key)`; salah → 403; `order_id` tak dikenal → 404; `settlement` → invoice `paid` + ledger credit dalam 1 transaksi; replay → 200 no-op tanpa ledger baru; test 5 kasus dengan `MIDTRANS_SERVER_KEY=test`. | `BLOCKED` |
-| T-17 | API Master Bot (BOS Care) | T-14b (`support_tickets`), T-10a, T-19 | Q-01 | `HUMAN:SECRET` → fake | `routes/api.php`, `app/Http/Controllers/Api/MasterBot/*`, `app/Http/Middleware/AuthenticateMasterBot.php` | Auth: header `X-Master-Bot-Key` dicocokkan `hash_equals` dengan `config('services.master_bot.key')`; endpoint `POST /api/master/tickets`, `GET /api/master/companies/{id}/token-balance`, `POST /api/master/companies/{id}/topup-invoice`; semua wajib `company_id` dan ditolak 403 bila user WA tidak memiliki company itu; test 6 kasus. | `BLOCKED` |
-| T-18 | `billing:check-expiring` | T-12, T-17 | — | `HUMAN:SECRET` → fake | `app/Console/Commands/BillingCheckExpiring.php`, `app/Contracts/HermesNodeClient.php`, `app/Services/Hermes/FakeHermesNodeClient.php`, `routes/console.php` | Membership `expires_at` = hari+3 → buat invoice `subscription` `pending` + panggil `HermesNodeClient::sendWhatsApp()`; idempoten per hari (tidak buat invoice ganda); dijadwalkan harian; test dengan `Carbon::setTestNow` + fake client merekam panggilan. | `BLOCKED` |
-| T-20 | Scout + Universal Search nyata | T-13, T-12, T-15 | Q-02 (**default**: driver `database`) | — | `composer require laravel/scout`, `config/scout.php`, `Searchable` di `CrmContact`, `Invoice`; `app/Livewire/CommandPalette.php` | Hasil dari DB nyata, **scoped `company_id`**; hasil dummy dan semua `href="#"` dihapus; test: user company A tidak melihat kontak company B. | `BLOCKED` |
+| T-15 | ~~`Company::feature()`~~ → **digabung ke T-08b**. | — | — | — | — | — | `DONE (merged)` |
+| T-16 | Middleware `EnsureFeatureEnabled:{capability}` + `EnsureCompanyAccess` | T-08b, T-00c, T-03b | — | — | `app/Http/Middleware/`, `bootstrap/app.php`, `routes/web.php` | Kapabilitas off → 403; on → 200; user tanpa akses company → 403; modul tak dikenal → 404 (mengganti 200 saat ini). Route `/app/{module}` di-resolve ke kapabilitas via registry. Test 4 kasus. | `BLOCKED` |
+| T-19 | Webhook payment gateway | T-10a, T-12 | Q-01 (**default**: Midtrans) | `HUMAN:SECRET` → fake | `routes/api.php` (`php artisan install:api`), `app/Http/Controllers/Api/PaymentWebhookController.php`, `app/Services/Payment/MidtransSignatureVerifier.php` | Signature `SHA512(order_id+status_code+gross_amount+server_key)`; salah → 403; `order_id` tak dikenal → 404; `settlement` → invoice `paid` + ledger credit 1 transaksi; replay → 200 no-op; test 5 kasus dengan `MIDTRANS_SERVER_KEY=test`. | `BLOCKED` |
+| T-19b | Webhook NalarPesan → `orders` (D-04) | T-13e | — | `HUMAN:SECRET` → fake | `app/Http/Controllers/Api/NalarPesanWebhookController.php` | HMAC fail-closed; `external_ref` idempoten (replay → no-op); order masuk `stage='open'` dengan `resource_id` meja bila `pos.tables`; test 4 kasus. | `BLOCKED` |
+| T-17 | API Master Bot (BOS Care) | T-10a, T-19, `support_tickets` (dipindah ke T-17 sendiri) | Q-01 | `HUMAN:SECRET` → fake | migration `support_tickets`, `routes/api.php`, `app/Http/Controllers/Api/MasterBot/*`, `app/Http/Middleware/AuthenticateMasterBot.php` | Header `X-Master-Bot-Key` via `hash_equals`; endpoint tiket, saldo, topup-invoice; semua wajib `company_id` & 403 bila WA user tidak memiliki company; test 6 kasus. | `BLOCKED` |
+| T-17b | API Tenant Bot (MCP ERP) — `mcp_configure_modules`, `mcp_update_company_settings`, `mcp_create_contact`, `mcp_create_deal`, `mcp_record_expense`, `mcp_create_reminder` | T-08b, T-08c, T-13, T-11, T-13f | — | `HUMAN:SECRET` → fake | `routes/api.php`, `app/Http/Controllers/Api/TenantBot/*`, `app/Http/Middleware/AuthenticateTenantBot.php` | Auth per `hermes_profiles.webhook_secret_reference`; **setiap** tool wajib `company_id` & ditolak 403 bila caller `wa_number` bukan anggota company (COMMERCIAL §4 Lapis 3); `PUT /api/bot/settings|features` hanya untuk `wa_number` role owner (REQUIREMENTS §3.1–3.2); `mcp_configure_modules` menulis `module_settings[features|terminology]` → menu berubah tanpa kode (test dengan preset `custom`); aksi destruktif → `approval_flow` tiket `YA <kode>` (D-27). Test 8 kasus. | `BLOCKED` |
+| T-18 | `billing:check-expiring` | T-12, T-17 | — | `HUMAN:SECRET` → fake | `app/Console/Commands/BillingCheckExpiring.php`, `app/Contracts/HermesNodeClient.php`, `app/Services/Hermes/FakeHermesNodeClient.php`, `routes/console.php` | H-3 → invoice `subscription` `pending` + `sendWhatsApp()`; idempoten per hari; dijadwalkan harian; test dengan `Carbon::setTestNow`. | `BLOCKED` |
+| T-20 | Scout + Universal Search nyata | T-13, T-12, T-08b, T-08c | Q-02 (**default**: `database`) | — | `composer require laravel/scout`, `Searchable` di `Contact`, `Deal`, `Project`, `Invoice`, `Item`; `app/Livewire/CommandPalette.php` | Hasil dari DB, scoped `company_id`, label via `term()`; dummy & `href="#"` dihapus; test: A tidak melihat B; hasil menampilkan `Pasien` untuk preset `pharmacy`. | `BLOCKED` |
 
 ---
 
@@ -176,9 +204,10 @@ T-14 → T-14b. T-10b dan T-00c bebas setelah T-00a. Semua migration **serial**.
 | ID | Task | Depends On | Gate | Acceptance | State |
 |---|---|---|---|---|---|
 | T-21 | Full regression hijau | semua Fase 4 | — | `php artisan test` exit 0; `vendor/bin/pint --test` bersih. | `BLOCKED` |
-| T-21b | **Paritas MySQL** (baru, dari B-01) | T-21 | `HUMAN:SECRET` (koneksi MySQL lokal) | `migrate:fresh --seed` + `php artisan test` hijau pada `DB_CONNECTION=mysql`; catat perbedaan perilaku `enum`/`json`/`decimal` bila ada. | `BLOCKED` |
-| T-22 | Audit white-label & tenant isolation | T-21 | — | Q-06 daftar string: grep `Hermes|Nous|Nous Research|laravel/laravel` pada `resources/views`, `public/`, `composer.json name` = 0 hasil di UI tenant; semua test tenant A/B hijau. | `BLOCKED` |
-| T-23 | Build + smoke 6 tenant dogfood | T-22 | `HUMAN:DEPLOY` | Seeder `DogfoodTenantSeeder` (6 company, 1 per preset); `npm run build`; login-as tiap owner → `/app/dashboard` 200 dan hanya modul preset yang tampil. **Bagian "live" butuh gate deploy.** | `BLOCKED` |
+| T-21b | **Paritas MySQL** (dari B-01) | T-21 | `HUMAN:SECRET` (koneksi MySQL lokal) | `migrate:fresh --seed` + `php artisan test` hijau pada `DB_CONNECTION=mysql`; catat perbedaan `json`/`decimal` bila ada. | `BLOCKED` |
+| T-21c | **Bukti D-31: industri ke-7 tanpa kode** | T-21 | — | Tambah **hanya** `database/seeders/presets/klinik.json` + `salon.json` (`INDUSTRY_PRESETS.md` §7). Jalankan seeder. Buat company tiap preset. Assert: Lobby/sidebar menampilkan modul & `term()` yang benar, dashboard menampilkan widget yang benar, workflow `booking` klinik berjalan, `EnsureFeatureEnabled` memblokir modul yang off. **`git diff --stat` di luar `database/seeders/presets/` dan test harus kosong.** Bila ada perubahan kode lain → D-31 belum terpenuhi → `BLOCKED` dengan daftar hardcode yang ditemukan. | `BLOCKED` |
+| T-22 | Audit white-label & tenant isolation | T-21 | — | Q-06: grep `Hermes|Nous|Nous Research|laravel/laravel` di `resources/views`, `public/`, `composer.json name` = 0 di UI tenant; **grep literal istilah** (`Klien`, `Pasien`, `Penyewa`, `Karyawan`) di Blade = 0 — semua via `term()`; semua test A/B hijau. | `BLOCKED` |
+| T-23 | Build + smoke tenant dogfood | T-22, T-21c | `HUMAN:DEPLOY` | `DogfoodTenantSeeder` (8 company: 6 preset awal + klinik + salon); `npm run build`; login-as tiap owner → `/app/dashboard` 200 dan hanya modul preset yang tampil. **Bagian "live" butuh gate deploy.** | `BLOCKED` |
 
 ---
 
@@ -186,22 +215,36 @@ T-14 → T-14b. T-10b dan T-00c bebas setelah T-00a. Semua migration **serial**.
 
 ```
 T-01 ─┬─ T-02
-      ├─ T-03 ──────────────────────────────────────── T-03b
-      ├─ T-04 ──────────────────────────────── T-20     │
-      └─ T-07 ─┬─ T-05                          │        │
-               └─ T-06                          │        │
-                    │                           │        │
-              [HUMAN:UI-LOCK]                   │        │
-                    │                           │        │
-T-00a ─┬─ T-00b ─── T-08 ─── T-15 ──────────────┴────────┘
-       ├─ T-00c ─────────────── T-16
-       ├─ T-10 ─┬─ T-10a ─┬─ T-19 ─── T-17 ─── T-18
-       │        └─ T-12 ──┘
-       ├─ T-10b
-       ├─ T-13 ─── T-11
-       └─ T-14 ─── T-14b
-                                          T-21 ─ T-21b ─ T-22 ─ T-23
+      ├─ T-03 ─────────────────────────────────────────────── T-03b ─ T-16
+      ├─ T-04 ──────────────────────────────────────── T-20     │
+      └─ T-07 ─┬─ T-05                                  │       │
+               └─ T-06                                  │       │
+                    │                                   │       │
+              [HUMAN:UI-LOCK]                           │       │
+                    │                                   │       │
+T-00a ─┬─ T-00b ─── T-08 ─── T-08b ─┬─ T-08c ───────────┼───────┘
+       │                            ├─ T-08d ─┐         │
+       │                            └─ T-08e  │         │
+       ├─ T-00c                               │         │
+       ├─ T-13d                               │         │
+       ├─ T-13f                               │         │
+       ├─ T-10 ─┬─ T-10a ─┬─ T-19 ─── T-17 ─── T-18      │
+       │        └─ T-12 ──┘  (T-12 juga ← T-13b)        │
+       ├─ T-10b                               │         │
+       ├─ T-14 ─────────────────────────┐     │         │
+       └─────────────── T-13 ◄──────────┼─────┘         │
+                          └─ T-13b ─ T-11 ─ T-13c ─ T-13e ─ T-19b
+                                                  └─ T-14b (Tier B)
+                                                          T-17b
+                                    T-21 ─┬─ T-21b
+                                          ├─ T-21c ─┐
+                                          └─ T-22 ──┴─ T-23
 ```
+
+**Prinsip urutan:** fondasi tenant → **mesin komposisi** → tabel kapabilitas
+generik → Tier B → API → bukti komposisi. Tabel domain **tidak boleh** dibuat
+sebelum `WorkflowEngine`, `FeatureResolver`, `TerminologyResolver` ada, karena
+tabel itu bergantung pada ketiganya.
 
 ---
 

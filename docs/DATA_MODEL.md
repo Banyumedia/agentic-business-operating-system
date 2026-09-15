@@ -53,12 +53,12 @@ CREATE TABLE companies (
     name VARCHAR(191) NOT NULL,
     slug VARCHAR(64) NOT NULL UNIQUE,      -- dipakai untuk tenant routing & Hermes profile
     owner_user_id BIGINT UNSIGNED NOT NULL,
-    business_preset ENUM('agency','fnb','pharmacy','eo','contractor','rental','custom')
-        NOT NULL DEFAULT 'custom',
+    business_preset VARCHAR(32) NOT NULL DEFAULT 'custom', -- FK logis ke business_presets.key; VARCHAR (bukan ENUM) agar preset ke-N tidak butuh migration (D-31)
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    CONSTRAINT fk_companies_owner FOREIGN KEY (owner_user_id) REFERENCES users(id)
+    CONSTRAINT fk_companies_owner FOREIGN KEY (owner_user_id) REFERENCES users(id),
+    CONSTRAINT fk_companies_preset FOREIGN KEY (business_preset) REFERENCES business_presets(`key`)
 );
 ```
 
@@ -83,20 +83,23 @@ CREATE TABLE business_identities (
 ```
 
 ### 1.3 `module_settings` (bentuk mengikuti D-19 / D-25)
-Satu baris per `(company_id, module_name)`. Feature flag disimpan di modul bernama `features`.
+Satu baris per `(company_id, module_name)`. Override company di atas preset (D-31).
 ```sql
 CREATE TABLE module_settings (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
-    module_name VARCHAR(64) NOT NULL,      -- 'features' | 'crm' | 'pos' | 'ai_agent' | ...
-    settings_json JSON NOT NULL,           -- untuk module_name='features': {"crm.leads": true, "pos.quick_counter": false}
+    module_name VARCHAR(64) NOT NULL,      -- 'features' | 'terminology' | 'workflows' | 'dashboard' | 'ai_agent' | ...
+    settings_json JSON NOT NULL,           -- features: {"bookings": true}; terminology: {"contact":"Jemaah"}; workflows: {"deal": {...}}
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
     UNIQUE KEY uq_module_settings_company_module (company_id, module_name),
     CONSTRAINT fk_module_settings_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
 );
 ```
-Resolusi `Company::feature($key)`: baca `module_settings` baris `features` → jika key ada di `settings_json`, kembalikan nilainya; jika tidak, ambil default dari `business_presets.default_features` sesuai `companies.business_preset`.
+Resolusi `Company::feature($key)`: `module_settings[features].settings_json[$key]`
+→ jika tidak ada, `business_presets.definition.capabilities[$key]` → default `false`.
+Resolusi `term($key)`, workflow, dan dashboard mengikuti urutan yang sama
+(company → preset → default global).
 
 ### 1.4 `users` (Otorisasi WhatsApp + konteks tenant aktif)
 ```sql
@@ -107,24 +110,81 @@ ALTER TABLE users
 ```
 Ini satu-satunya `ALTER` nyata di dokumen ini karena `users` memang sudah ada.
 
+### 1.5 `workflow_definitions` (D-31c — alur bisnis sebagai data)
+Definisi stage/transisi per entity per company. Baris ini adalah **materialisasi**
+dari `preset.definition.workflows` + override `module_settings[workflows]`,
+dibuat saat company memilih preset agar query runtime cepat dan dapat diaudit.
+```sql
+CREATE TABLE workflow_definitions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    entity VARCHAR(64) NOT NULL,           -- 'deal' | 'project' | 'booking' | 'order' | 'prescription' | ...
+    version INT UNSIGNED NOT NULL DEFAULT 1,
+    definition JSON NOT NULL,              -- {stages:[{code,label}], transitions:[{from,to,roles,effects,requires_approval}]}
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY uq_workflow_company_entity_version (company_id, entity, version),
+    CONSTRAINT fk_workflow_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+```
+`WorkflowEngine::transition($model, $toStage, $actor)` memvalidasi transisi
+terhadap definisi aktif, memeriksa role, membuat tiket approval bila
+`requires_approval`, lalu menjalankan `effects` (katalog di `INDUSTRY_PRESETS.md` §5)
+dalam satu `DB::transaction`. Entity yang memakai workflow menyimpan `stage`
+sebagai `VARCHAR(32)` kode netral, **bukan** `ENUM`, agar preset bebas
+menentukan stage.
+
+### 1.6 `workflow_transitions_log` (audit alur)
+```sql
+CREATE TABLE workflow_transitions_log (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    entity VARCHAR(64) NOT NULL,
+    entity_id BIGINT UNSIGNED NOT NULL,
+    from_stage VARCHAR(32) NULL,
+    to_stage VARCHAR(32) NOT NULL,
+    actor_user_id BIGINT UNSIGNED NULL,   -- NULL = system/AI
+    approval_ticket_id BIGINT UNSIGNED NULL,
+    effects_run JSON NULL,
+    created_at TIMESTAMP NULL,
+    INDEX idx_wf_log_company_entity (company_id, entity, entity_id),
+    CONSTRAINT fk_wf_log_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+```
+
+### 1.7 Konvensi `attributes JSON` (D-31e)
+Entitas generik (`contacts`, `resources`, `projects`, `items`) membawa kolom
+`type VARCHAR(32)` + `attributes JSON` untuk data spesifik industri yang tidak
+punya aturan bisnis sendiri. Contoh: `contacts.attributes = {"allergies": [...],
+"chronic_conditions": [...]}` untuk pasien; `resources.attributes = {"plate_no":
+"B 1234 XY", "seats": 7}` untuk mobil sewa. Kolom nyata **hanya** dibuat bila
+di-query/di-index/di-hitung oleh aturan bisnis.
+
 ---
 
 ## 2. Tabel Baru — Kernel
 
-### 2.1 `business_presets`
+### 2.1 `business_presets` (D-31b — preset adalah data)
 ```sql
 CREATE TABLE business_presets (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    key VARCHAR(32) NOT NULL UNIQUE,     -- agency | fnb | pharmacy | eo | contractor | rental | custom
+    `key` VARCHAR(32) NOT NULL UNIQUE,   -- agency | fnb | pharmacy | eo | contractor | rental | custom | klinik | salon | ...
     name VARCHAR(64) NOT NULL,
     description TEXT NULL,
-    default_features JSON NOT NULL,      -- map {"crm.leads": true, ...} — bukan array
+    tier CHAR(1) NOT NULL DEFAULT 'A',   -- A = komposisi murni | B = memakai modul Tier B (D-33)
+    definition JSON NOT NULL,            -- {capabilities, terminology, workflows, dashboard, menus} — skema di INDUSTRY_PRESETS.md §2
+    definition_version INT UNSIGNED NOT NULL DEFAULT 1,
     is_system BOOLEAN NOT NULL DEFAULT TRUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL
 );
 ```
-Seeder mengisi **7 baris**: 6 industri (flag dari matriks `INDUSTRY_PRESETS.md` §1) + `custom` (semua flag `false` kecuali `system.ai_agent = true`).
+Seeder membaca `database/seeders/presets/*.json` (satu file per preset) dan
+**memvalidasi** setiap `definition` terhadap katalog kapabilitas, kamus istilah,
+katalog efek, dan katalog widget sebelum menyimpan. Menambah industri baru =
+menambah satu file JSON. Seeder awal: 7 preset (6 industri + `custom`).
 
 ### 2.2 `support_tickets` (Master Bot CS)
 Tabel untuk mencatat keluhan Bos yang diterima oleh Agen Pusat (BOS Care). Data ini diakses di level platform (bukan per-tenant).
@@ -185,59 +245,68 @@ CREATE TABLE ai_model_pricings (
 
 ---
 
-## 3. Tabel CRM (Pemisahan Kontak & Transaksi)
+## 3. Kapabilitas `contacts` & `deals` (generik lintas industri — D-31)
 
-### 3.1 `crm_contacts` (Data Orang/Biodata)
-Menggantikan rancangan `crm_leads` lama. Berfungsi murni sebagai buku alamat pintar.
+Menggantikan `crm_*`. Tabel ini melayani Klien (agency), Pasien (klinik), Penyewa
+(rental), Tamu (resto), Siswa (kursus) — hanya `type`, `attributes`, dan `term()`
+yang berbeda.
+
+### 3.1 `contacts`
 ```sql
-CREATE TABLE crm_contacts (
+CREATE TABLE contacts (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
-    identity_id BIGINT UNSIGNED NULL,
+    business_identity_id BIGINT UNSIGNED NULL,
+    type VARCHAR(32) NOT NULL DEFAULT 'customer', -- customer | patient | tenant | student | vendor | lead ...
     name VARCHAR(191) NOT NULL,
     wa_number VARCHAR(32) NULL,
     email VARCHAR(191) NULL,
-    source VARCHAR(32) NULL,             -- wa | referral | event | manual
-    metadata JSON NULL,                  -- catatan hobi, jabatan, dll
+    source VARCHAR(32) NULL,             -- wa | referral | event | manual | nalarpesan
+    tags JSON NULL,
+    attributes JSON NULL,                -- industri-spesifik tanpa aturan: allergies, plate_no, id_card_no, dll (§1.7)
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    INDEX idx_crm_contacts_company (company_id)
+    INDEX idx_contacts_company_type (company_id, type),
+    INDEX idx_contacts_company_wa (company_id, wa_number),
+    CONSTRAINT fk_contacts_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
 );
 ```
 
-### 3.2 `crm_deals` (Peluang Uang/Proyek)
-Satu entitas `crm_contacts` bisa memiliki banyak *Deals* (Proyek).
+### 3.2 `deals` (kapabilitas `deals`)
+Peluang/pendaftaran/kunjungan yang melewati stage. `stage` adalah kode netral dari
+`workflow_definitions[entity='deal']`, **bukan** ENUM (Q-05).
 ```sql
-CREATE TABLE crm_deals (
+CREATE TABLE deals (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
     contact_id BIGINT UNSIGNED NOT NULL,
-    title VARCHAR(191) NOT NULL,         -- cth: Proyek Website e-Commerce
-    stage VARCHAR(32) NOT NULL DEFAULT 'new', -- new | in_progress | won | lost
-    deal_value DECIMAL(18,2) NULL,
+    title VARCHAR(191) NOT NULL,
+    stage VARCHAR(32) NOT NULL DEFAULT 'new',
+    value DECIMAL(18,2) NULL,
     expected_close_date DATE NULL,
-    metadata JSON NULL,
+    owner_user_id BIGINT UNSIGNED NULL,
+    attributes JSON NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    INDEX idx_crm_deals_company (company_id),
-    CONSTRAINT fk_crm_deals_contact FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE CASCADE
+    INDEX idx_deals_company_stage (company_id, stage),
+    CONSTRAINT fk_deals_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_deals_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
 );
 ```
 
-### 3.3 `crm_activity_logs` (Histori Aktivitas Ganda)
+### 3.3 `activity_logs` (polimorfik — histori interaksi)
 ```sql
-CREATE TABLE crm_activity_logs (
+CREATE TABLE activity_logs (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
-    contact_id BIGINT UNSIGNED NULL,     -- Bisa nempel di profil orangnya
-    deal_id BIGINT UNSIGNED NULL,        -- Bisa nempel di profil proyeknya
-    type ENUM('call','wa','meeting','email','note','stage_change') NOT NULL,
+    subject_type VARCHAR(191) NOT NULL,  -- App\Models\Contact | Deal | Project | Booking ...
+    subject_id BIGINT UNSIGNED NOT NULL,
+    type VARCHAR(32) NOT NULL,           -- call | wa | meeting | email | note | stage_change | system
     content TEXT NULL,
-    user_id BIGINT UNSIGNED NULL,
+    user_id BIGINT UNSIGNED NULL,        -- NULL = AI/system
     created_at TIMESTAMP NULL,
-    INDEX idx_crm_activity_company (company_id),
-    CONSTRAINT fk_crm_activity_contact FOREIGN KEY (contact_id) REFERENCES crm_contacts(id) ON DELETE CASCADE,
-    CONSTRAINT fk_crm_activity_deal FOREIGN KEY (deal_id) REFERENCES crm_deals(id) ON DELETE CASCADE
+    INDEX idx_activity_company_subject (company_id, subject_type, subject_id),
+    CONSTRAINT fk_activity_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
 );
 ```
 
@@ -285,284 +354,483 @@ CREATE TABLE accounting_journal_lines (
     company_id BIGINT UNSIGNED NOT NULL,
     journal_id BIGINT UNSIGNED NOT NULL,
     account_id BIGINT UNSIGNED NOT NULL,
-    deal_id BIGINT UNSIGNED NULL, -- Untuk melacak Laba/Rugi per Proyek (Project Costing)
+    project_id BIGINT UNSIGNED NULL, -- Laba/Rugi per proyek (project costing) — generik, bukan hanya deal
     debit DECIMAL(18,2) NOT NULL DEFAULT 0.00,
     credit DECIMAL(18,2) NOT NULL DEFAULT 0.00,
     description TEXT NULL,
     created_at TIMESTAMP NULL,
     INDEX idx_journal_line_company (company_id),
     INDEX idx_journal_line (journal_id),
-    INDEX idx_journal_line_deal (deal_id),
+    INDEX idx_journal_line_project (project_id),
     CONSTRAINT fk_journal_line_company FOREIGN KEY (company_id) REFERENCES companies(id),
     CONSTRAINT fk_journal_line_journal FOREIGN KEY (journal_id) REFERENCES accounting_journals(id) ON DELETE CASCADE,
     CONSTRAINT fk_journal_line_account FOREIGN KEY (account_id) REFERENCES chart_of_accounts(id),
-    CONSTRAINT fk_journal_line_deal FOREIGN KEY (deal_id) REFERENCES crm_deals(id) ON DELETE SET NULL
+    CONSTRAINT fk_journal_line_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
 );
 ```
-Invarian wajib (ditegakkan di service layer + test): untuk setiap `journal_id`, `SUM(debit) = SUM(credit)`. Karena FK ke `crm_deals`, migration tabel ini harus berjalan **setelah** T-13.
+Invarian wajib (ditegakkan di service layer + test): untuk setiap `journal_id`, `SUM(debit) = SUM(credit)`. Karena FK ke `projects`, migration tabel ini berjalan **setelah** tabel `projects` (T-13b).
 
 ---
 
-## 5. Modul HRD (Sumber Daya Manusia)
+## 5. Kapabilitas `projects` (generik: Proyek / Event / Work Order / Kasus)
 
-### 5.1 `hr_employees`
+Menggantikan `eo_events`, `project_center`, dan sebagian `contractor_*`.
+
+### 5.1 `projects`
 ```sql
-CREATE TABLE hr_employees (
+CREATE TABLE projects (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
+    contact_id BIGINT UNSIGNED NULL,     -- pemberi kerja / klien
+    deal_id BIGINT UNSIGNED NULL,        -- asal peluang, bila ada
+    type VARCHAR(32) NOT NULL DEFAULT 'project', -- project | event | work_order | case
+    name VARCHAR(191) NOT NULL,
+    stage VARCHAR(32) NOT NULL DEFAULT 'planned', -- dari workflow_definitions[entity='project']
+    starts_at DATETIME NULL,
+    ends_at DATETIME NULL,
+    venue VARCHAR(191) NULL,
+    budget DECIMAL(18,2) NULL,
+    progress_pct DECIMAL(5,2) NOT NULL DEFAULT 0, -- dipakai projects.progress_billing
+    owner_user_id BIGINT UNSIGNED NULL,
+    attributes JSON NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_projects_company_stage (company_id, stage),
+    CONSTRAINT fk_projects_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_projects_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL,
+    CONSTRAINT fk_projects_deal FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE SET NULL
+);
+```
+
+### 5.2 `project_milestones` (kapabilitas `milestone_billing` / `projects.progress_billing`)
+Termin DP/pelunasan (agency, EO) **dan** opname progres (kontraktor) — struktur sama.
+```sql
+CREATE TABLE project_milestones (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    project_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(191) NOT NULL,          -- "DP 50%", "Opname 35%", "Serah Terima"
+    sequence INT UNSIGNED NOT NULL DEFAULT 1,
+    trigger_type VARCHAR(32) NOT NULL,   -- fixed_pct | progress_pct | date | manual
+    trigger_value DECIMAL(8,2) NULL,     -- 50.00 (persen) atau NULL
+    amount DECIMAL(18,2) NOT NULL,
+    retention_pct DECIMAL(5,2) NOT NULL DEFAULT 0, -- >0 hanya bila construction.retention
+    invoice_id BIGINT UNSIGNED NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'pending', -- pending | invoiced | paid
+    achieved_at TIMESTAMP NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_milestones_company_project (company_id, project_id),
+    CONSTRAINT fk_milestones_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_milestones_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+```
+
+### 5.3 `project_assignments` (crew / staf / PIC per proyek)
+Menggantikan `eo_crew_assignments`; dipakai juga `timesheet`.
+```sql
+CREATE TABLE project_assignments (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    project_id BIGINT UNSIGNED NOT NULL,
+    employee_id BIGINT UNSIGNED NULL,    -- FK ke employees bila hr.employees
+    assignee_name VARCHAR(191) NULL,     -- freelancer tanpa record employee
+    role VARCHAR(64) NULL,
+    scheduled_at DATETIME NULL,
+    hourly_cost DECIMAL(18,2) NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_assign_company_project (company_id, project_id),
+    CONSTRAINT fk_assign_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_assign_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+```
+
+### 5.4 `project_vendors` (vendor / subkon per proyek)
+Menggantikan `eo_vendors` dan SPK subkon.
+```sql
+CREATE TABLE project_vendors (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    project_id BIGINT UNSIGNED NOT NULL,
+    vendor_contact_id BIGINT UNSIGNED NULL, -- contacts.type='vendor'
+    vendor_name VARCHAR(191) NOT NULL,
+    service_type VARCHAR(64) NULL,       -- sound | catering | subkon_sipil | ...
+    fee DECIMAL(18,2) NULL,
+    payment_status VARCHAR(32) NOT NULL DEFAULT 'unpaid', -- unpaid | partial | paid
+    attributes JSON NULL,                -- nomor SPK, lingkup, dll
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_pvendors_company_project (company_id, project_id),
+    CONSTRAINT fk_pvendors_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_pvendors_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+```
+
+### 5.5 `timesheet_entries` (kapabilitas `timesheet`)
+```sql
+CREATE TABLE timesheet_entries (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    project_id BIGINT UNSIGNED NULL,
+    employee_id BIGINT UNSIGNED NOT NULL,
+    work_date DATE NOT NULL,
+    hours DECIMAL(5,2) NOT NULL,
+    note TEXT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_ts_company_employee_date (company_id, employee_id, work_date),
+    CONSTRAINT fk_ts_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+```
+
+---
+
+## 6. Kapabilitas `bookings` & `scheduling` (generik: Sewa / Reservasi / Janji Temu / Jadwal)
+
+Menggantikan `rental_*` dan rundown EO. Satu mesin anti-double-booking untuk
+mobil sewa, kamar kos, meja resto, kursi salon, lapangan futsal, ruang meeting.
+
+### 6.1 `resources` (unit yang bisa di-booking)
+```sql
+CREATE TABLE resources (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    type VARCHAR(32) NOT NULL,           -- vehicle | room | table | seat | equipment | court | staff_slot
+    name VARCHAR(191) NOT NULL,
+    category VARCHAR(64) NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'available', -- available | in_use | maintenance | retired
+    capacity INT UNSIGNED NULL,
+    rate_amount DECIMAL(18,2) NULL,
+    rate_unit VARCHAR(16) NULL,          -- hour | day | month | session
+    condition_notes TEXT NULL,
+    attributes JSON NULL,                -- plate_no, floor, seats, purchase_cost, acquired_date ...
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_resources_company_type (company_id, type),
+    CONSTRAINT fk_resources_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+```
+
+### 6.2 `bookings`
+```sql
+CREATE TABLE bookings (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    resource_id BIGINT UNSIGNED NOT NULL,
+    contact_id BIGINT UNSIGNED NULL,
+    project_id BIGINT UNSIGNED NULL,     -- rundown event: booking ber-parent ke project
+    type VARCHAR(32) NOT NULL DEFAULT 'booking', -- booking | appointment | rundown_item | shift
+    stage VARCHAR(32) NOT NULL DEFAULT 'draft', -- dari workflow_definitions[entity='booking']
+    starts_at DATETIME NOT NULL,
+    ends_at DATETIME NOT NULL,
+    actual_ends_at DATETIME NULL,
+    rate_amount DECIMAL(18,2) NULL,
+    deposit_amount DECIMAL(18,2) NOT NULL DEFAULT 0,      -- bookings.deposit
+    late_fee_per_unit DECIMAL(18,2) NOT NULL DEFAULT 0,   -- bookings.deposit
+    late_fee_total DECIMAL(18,2) NOT NULL DEFAULT 0,      -- dihitung efek late_fee.compute
+    pic_user_id BIGINT UNSIGNED NULL,
+    attributes JSON NULL,                -- renter_identity, notes, dll
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_bookings_company_resource_time (company_id, resource_id, starts_at, ends_at),
+    INDEX idx_bookings_company_stage (company_id, stage),
+    CONSTRAINT fk_bookings_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_bookings_resource FOREIGN KEY (resource_id) REFERENCES resources(id),
+    CONSTRAINT fk_bookings_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL,
+    CONSTRAINT fk_bookings_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+```
+Invarian (service + test): untuk `resource_id` yang sama, tidak boleh ada dua
+`bookings` dengan `stage NOT IN ('cancelled','returned')` yang rentang waktunya
+tumpang tindih.
+
+### 6.3 `booking_incidents` (kerusakan / kehilangan / denda tambahan)
+```sql
+CREATE TABLE booking_incidents (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    booking_id BIGINT UNSIGNED NOT NULL,
+    type VARCHAR(32) NOT NULL,           -- damage | loss | late | other
+    description TEXT NULL,
+    charge_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NULL,
+    INDEX idx_incidents_company_booking (company_id, booking_id),
+    CONSTRAINT fk_incidents_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_incidents_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
+);
+```
+
+---
+
+## 7. Kapabilitas `inventory` (generik: Barang / Obat / Bahan / Sparepart)
+
+### 7.1 `items`
+```sql
+CREATE TABLE items (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    sku VARCHAR(64) NULL,
+    name VARCHAR(191) NOT NULL,
+    type VARCHAR(32) NOT NULL DEFAULT 'goods', -- goods | raw_material | finished_good | service
+    unit VARCHAR(16) NOT NULL DEFAULT 'pcs',
+    price DECIMAL(18,2) NULL,
+    cost DECIMAL(18,2) NULL,
+    min_stock DECIMAL(14,3) NOT NULL DEFAULT 0,
+    track_batches BOOLEAN NOT NULL DEFAULT FALSE, -- true bila inventory.batch_expiry
+    attributes JSON NULL,                -- golongan obat (Tier B baca ini), merek, dll
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY uq_items_company_sku (company_id, sku),
+    CONSTRAINT fk_items_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+```
+
+### 7.2 `item_batches` (kapabilitas `inventory.batch_expiry`)
+```sql
+CREATE TABLE item_batches (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    item_id BIGINT UNSIGNED NOT NULL,
+    batch_no VARCHAR(64) NOT NULL,
+    expires_on DATE NULL,
+    qty_on_hand DECIMAL(14,3) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_batches_company_item_exp (company_id, item_id, expires_on),
+    CONSTRAINT fk_batches_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_batches_item FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
+);
+```
+FEFO: efek `stock.deduct` mengambil dari batch dengan `expires_on` terdekat dulu.
+
+### 7.3 `stock_movements`
+```sql
+CREATE TABLE stock_movements (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    item_id BIGINT UNSIGNED NOT NULL,
+    batch_id BIGINT UNSIGNED NULL,
+    direction VARCHAR(8) NOT NULL,       -- in | out
+    qty DECIMAL(14,3) NOT NULL,
+    reason VARCHAR(32) NOT NULL,         -- purchase | sale | adjustment | bom_consume | bom_produce | return
+    reference_type VARCHAR(191) NULL,
+    reference_id BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    INDEX idx_moves_company_item (company_id, item_id),
+    CONSTRAINT fk_moves_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_moves_item FOREIGN KEY (item_id) REFERENCES items(id)
+);
+```
+
+### 7.4 `bom_lines` (kapabilitas `inventory.bom`)
+```sql
+CREATE TABLE bom_lines (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    product_item_id BIGINT UNSIGNED NOT NULL,   -- produk jadi / menu
+    component_item_id BIGINT UNSIGNED NOT NULL, -- bahan
+    qty DECIMAL(14,3) NOT NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY uq_bom (company_id, product_item_id, component_item_id),
+    CONSTRAINT fk_bom_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_bom_product FOREIGN KEY (product_item_id) REFERENCES items(id) ON DELETE CASCADE,
+    CONSTRAINT fk_bom_component FOREIGN KEY (component_item_id) REFERENCES items(id)
+);
+```
+
+---
+
+## 8. Kapabilitas `pos` (generik: Kasir / Bill / Nota)
+
+### 8.1 `pos_shifts`
+```sql
+CREATE TABLE pos_shifts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    outlet_name VARCHAR(191) NULL,
+    cashier_user_id BIGINT UNSIGNED NOT NULL,
+    opening_float DECIMAL(18,2) NOT NULL DEFAULT 0,
+    expected_cash DECIMAL(18,2) NOT NULL DEFAULT 0,
+    actual_cash DECIMAL(18,2) NULL,
+    variance DECIMAL(18,2) NULL,
+    opened_at TIMESTAMP NOT NULL,
+    closed_at TIMESTAMP NULL,
+    INDEX idx_shifts_company (company_id),
+    CONSTRAINT fk_shifts_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+```
+
+### 8.2 `orders` (bill / nota / work order kasir)
+```sql
+CREATE TABLE orders (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    business_identity_id BIGINT UNSIGNED NOT NULL, -- menentukan mode pajak (D-03)
+    shift_id BIGINT UNSIGNED NULL,
+    contact_id BIGINT UNSIGNED NULL,
+    resource_id BIGINT UNSIGNED NULL,    -- meja (pos.tables) — FK ke resources.type='table'
+    prescription_id BIGINT UNSIGNED NULL, -- Tier B pharmacy
+    order_no VARCHAR(64) NOT NULL,
+    stage VARCHAR(32) NOT NULL DEFAULT 'open', -- dari workflow_definitions[entity='order']: open | sent_to_kitchen | paid | void
+    subtotal DECIMAL(18,2) NOT NULL DEFAULT 0,
+    discount_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+    dpp DECIMAL(18,2) NOT NULL DEFAULT 0,
+    tax_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+    grand_total DECIMAL(18,2) NOT NULL DEFAULT 0,
+    payment_method VARCHAR(32) NULL,     -- cash | qris | transfer
+    paid_at TIMESTAMP NULL,
+    source VARCHAR(32) NOT NULL DEFAULT 'pos', -- pos | nalarpesan | wa_bot
+    external_ref VARCHAR(128) NULL,      -- idempotency untuk webhook NalarPesan (D-04)
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY uq_orders_company_no (company_id, order_no),
+    UNIQUE KEY uq_orders_company_ext (company_id, external_ref),
+    INDEX idx_orders_company_stage (company_id, stage),
+    CONSTRAINT fk_orders_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_orders_identity FOREIGN KEY (business_identity_id) REFERENCES business_identities(id),
+    CONSTRAINT fk_orders_shift FOREIGN KEY (shift_id) REFERENCES pos_shifts(id) ON DELETE SET NULL,
+    CONSTRAINT fk_orders_resource FOREIGN KEY (resource_id) REFERENCES resources(id) ON DELETE SET NULL
+);
+```
+
+### 8.3 `order_lines`
+```sql
+CREATE TABLE order_lines (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    order_id BIGINT UNSIGNED NOT NULL,
+    item_id BIGINT UNSIGNED NULL,
+    description VARCHAR(191) NOT NULL,
+    qty DECIMAL(14,3) NOT NULL,
+    unit_price DECIMAL(18,2) NOT NULL,
+    discount_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+    line_total DECIMAL(18,2) NOT NULL,
+    fired_at TIMESTAMP NULL,             -- pos.tables: waktu kirim ke dapur (re-fire = baris baru)
+    created_at TIMESTAMP NULL,
+    INDEX idx_olines_company_order (company_id, order_id),
+    CONSTRAINT fk_olines_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_olines_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+);
+```
+
+---
+
+## 9. Kapabilitas `hr.*`
+
+### 9.1 `employees`
+```sql
+CREATE TABLE employees (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NULL,        -- bila punya akun login
     name VARCHAR(191) NOT NULL,
     position VARCHAR(191) NULL,
-    base_salary DECIMAL(18,2) NOT NULL DEFAULT 0.00,
+    base_salary DECIMAL(18,2) NOT NULL DEFAULT 0,
+    hourly_cost DECIMAL(18,2) NULL,      -- untuk timesheet costing
+    joined_on DATE NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    attributes JSON NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    INDEX idx_hr_employees_company (company_id)
+    INDEX idx_employees_company (company_id),
+    CONSTRAINT fk_employees_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
 );
 ```
 
-### 5.2 `hr_payrolls`
+### 9.2 `payrolls` (kapabilitas `hr.payroll`)
 ```sql
-CREATE TABLE hr_payrolls (
+CREATE TABLE payrolls (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
     employee_id BIGINT UNSIGNED NOT NULL,
-    period_month VARCHAR(7) NOT NULL, -- format: YYYY-MM
+    period_month CHAR(7) NOT NULL,       -- YYYY-MM
     gross_salary DECIMAL(18,2) NOT NULL,
-    deductions DECIMAL(18,2) NOT NULL DEFAULT 0.00,
+    deductions DECIMAL(18,2) NOT NULL DEFAULT 0,
     net_salary DECIMAL(18,2) NOT NULL,
-    status ENUM('draft', 'paid') NOT NULL DEFAULT 'draft',
+    status VARCHAR(16) NOT NULL DEFAULT 'draft', -- draft | paid
+    paid_at TIMESTAMP NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    INDEX idx_hr_payrolls_employee (employee_id),
-    CONSTRAINT fk_hr_payrolls_employee FOREIGN KEY (employee_id) REFERENCES hr_employees(id) ON DELETE CASCADE
+    UNIQUE KEY uq_payroll_employee_period (company_id, employee_id, period_month),
+    CONSTRAINT fk_payrolls_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_payrolls_employee FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
 );
 ```
 
-### 5.3 `ai_reminders`
+### 9.3 `ai_reminders`
 ```sql
 CREATE TABLE ai_reminders (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
-    user_id BIGINT UNSIGNED NULL, -- Siapa yang harus diingatkan (Bos / Staf)
+    user_id BIGINT UNSIGNED NULL,
     task_description TEXT NOT NULL,
     remind_at DATETIME NOT NULL,
     is_completed BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    INDEX idx_ai_reminders_company (company_id)
+    INDEX idx_reminders_company_due (company_id, remind_at, is_completed),
+    CONSTRAINT fk_reminders_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
 );
 ```
 
 ---
 
-## 6. Tabel Baru — Apotek
+## 10. Modul Tier B (D-33 — aturan domain yang tidak bisa jadi data)
 
-### 6.1 `pharmacy_patients`
+Hanya dua untuk 6 preset awal. Tabel ini **melengkapi** tabel generik, tidak
+menggantikannya.
+
+### 10.1 `prescriptions` (Tier B `pharmacy.prescription`)
+Pasien = `contacts.type='patient'` (alergi/riwayat di `attributes`). Foto resep =
+`attachments` (D-29). Obat = `items` dengan `attributes.drug_class` (`bebas |
+bebas_terbatas | keras | psikotropika`). Aturan yang butuh kode: obat `keras`/
+`psikotropika` **tidak boleh** masuk `order_lines` tanpa `prescription_id` yang
+`stage='verified'`.
 ```sql
-CREATE TABLE pharmacy_patients (
+CREATE TABLE prescriptions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
-    crm_contact_id BIGINT UNSIGNED NULL,
-    name VARCHAR(191) NOT NULL,
-    wa_number VARCHAR(32) NULL,
-    allergies JSON NULL,
-    chronic_conditions JSON NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    INDEX idx_pharmacy_patients_company (company_id),
-    CONSTRAINT fk_pharmacy_patients_contact FOREIGN KEY (crm_contact_id) REFERENCES crm_contacts(id) ON DELETE SET NULL
-);
-```
-
-### 6.2 `pharmacy_prescriptions`
-Foto resep **tidak** disimpan di kolom lokal (D-29 / BYOS). Gunakan baris `attachments` dengan `attachable_type = App\Models\PharmacyPrescription`.
-```sql
-CREATE TABLE pharmacy_prescriptions (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    patient_id BIGINT UNSIGNED NULL,
+    patient_contact_id BIGINT UNSIGNED NULL,
     doctor_name VARCHAR(191) NULL,
     doctor_sip VARCHAR(64) NULL,
-    extracted_data JSON NULL,            -- [{drug, qty, dosage, signa}]
-    status ENUM('draft','pharmacist_verify','verified','served','cancelled') NOT NULL DEFAULT 'draft',
-    verified_by BIGINT UNSIGNED NULL,    -- apoteker
+    extracted_lines JSON NULL,           -- [{item_id?, drug, qty, dosage, signa}]
+    stage VARCHAR(32) NOT NULL DEFAULT 'draft', -- draft | pharmacist_verify | verified | served | cancelled
+    verified_by_user_id BIGINT UNSIGNED NULL,
+    verified_at TIMESTAMP NULL,
     served_at TIMESTAMP NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    INDEX idx_pharmacy_prescriptions_company (company_id),
-    CONSTRAINT fk_pharmacy_prescriptions_patient FOREIGN KEY (patient_id) REFERENCES pharmacy_patients(id) ON DELETE SET NULL
+    INDEX idx_rx_company_stage (company_id, stage),
+    CONSTRAINT fk_rx_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_rx_patient FOREIGN KEY (patient_contact_id) REFERENCES contacts(id) ON DELETE SET NULL
 );
 ```
 
----
-
-## 7. Tabel Baru — POS
-
-### 7.1 `pos_shifts`
+### 10.2 `retentions` (Tier B `construction.retention`)
+Proyek = `projects`, opname = `project_milestones` dengan `retention_pct > 0`.
+Aturan yang butuh kode: retensi dipotong otomatis dari setiap invoice milestone,
+ditahan, dan hanya bisa ditagih setelah `release_on` (FHO + 3–6 bulan).
 ```sql
-CREATE TABLE pos_shifts (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    outlet_id BIGINT UNSIGNED NULL,
-    cashier_id BIGINT UNSIGNED NOT NULL,
-    opening_float DECIMAL(18,2) NOT NULL DEFAULT 0,
-    actual_cash DECIMAL(18,2) NOT NULL DEFAULT 0,
-    variance DECIMAL(14,2) NOT NULL DEFAULT 0,
-    opened_at TIMESTAMP NOT NULL,
-    closed_at TIMESTAMP NULL,
-    INDEX idx_pos_shifts_company (company_id)
-);
-```
-
-### 7.2 `pos_bills`
-```sql
-CREATE TABLE pos_bills (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    shift_id BIGINT UNSIGNED NOT NULL,
-    table_id BIGINT UNSIGNED NULL,
-    status ENUM('open','paid','cancelled') NOT NULL DEFAULT 'open',
-    opened_at TIMESTAMP NOT NULL,
-    closed_at TIMESTAMP NULL,
-    INDEX idx_pos_bills_company (company_id),
-    CONSTRAINT fk_pos_bills_shift FOREIGN KEY (shift_id) REFERENCES pos_shifts(id) ON DELETE CASCADE
-);
-```
-
----
-
-## 8. Tabel Baru — Rental (Persewaan)
-
-### 8.1 `rental_units`
-```sql
-CREATE TABLE rental_units (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    name VARCHAR(191) NOT NULL,
-    category VARCHAR(64) NOT NULL,
-    status ENUM('available','rented','maintenance','retired') NOT NULL DEFAULT 'available',
-    condition_notes TEXT NULL,
-    purchase_cost DECIMAL(18,2) NULL,
-    acquired_date DATE NULL,
-    metadata JSON NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    INDEX idx_rental_units_company (company_id)
-);
-```
-
-### 8.2 `rental_bookings`
-```sql
-CREATE TABLE rental_bookings (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    unit_id BIGINT UNSIGNED NOT NULL,
-    crm_contact_id BIGINT UNSIGNED NOT NULL,
-    renter_identity JSON NULL,           -- {ktp, address}
-    pickup_datetime DATETIME NOT NULL,
-    return_datetime DATETIME NOT NULL,
-    actual_return DATETIME NULL,
-    daily_rate DECIMAL(18,2) NOT NULL,
-    deposit_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
-    late_fee_per_hour DECIMAL(18,2) NOT NULL DEFAULT 0,
-    late_fee_total DECIMAL(18,2) NOT NULL DEFAULT 0,
-    status ENUM('draft','confirmed','out','returned','overdue','cancelled') NOT NULL DEFAULT 'draft',
-    metadata JSON NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    INDEX idx_rental_bookings_company (company_id),
-    CONSTRAINT fk_rental_bookings_unit FOREIGN KEY (unit_id) REFERENCES rental_units(id),
-    CONSTRAINT fk_rental_bookings_contact FOREIGN KEY (crm_contact_id) REFERENCES crm_contacts(id)
-);
-```
-
-### 8.3 `rental_incidents`
-```sql
-CREATE TABLE rental_incidents (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    booking_id BIGINT UNSIGNED NOT NULL,
-    type ENUM('damage','loss','late','other') NOT NULL,
-    description TEXT NULL,
-    charge_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
-    created_at TIMESTAMP NULL,
-    INDEX idx_rental_incidents_company (company_id),
-    CONSTRAINT fk_rental_incidents_booking FOREIGN KEY (booking_id) REFERENCES rental_bookings(id)
-);
-```
-
----
-
-## 9. Tabel Baru — Event Organizer
-
-### 9.1 `eo_events`
-```sql
-CREATE TABLE eo_events (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    name VARCHAR(191) NOT NULL,
-    event_date DATE NOT NULL,
-    venue VARCHAR(191) NULL,
-    status ENUM('draft','planned','running','done','cancelled') NOT NULL DEFAULT 'draft',
-    budget DECIMAL(18,2) NULL,
-    metadata JSON NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    INDEX idx_eo_events_company (company_id)
-);
-```
-
-### 9.2 `eo_vendors`
-```sql
-CREATE TABLE eo_vendors (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    event_id BIGINT UNSIGNED NOT NULL,
-    vendor_name VARCHAR(191) NOT NULL,
-    service_type VARCHAR(64) NULL,       -- sound | lighting | stage | catering | talent
-    fee DECIMAL(18,2) NULL,
-    payment_status ENUM('unpaid','partial','paid') NOT NULL DEFAULT 'unpaid',
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    INDEX idx_eo_vendors_company (company_id),
-    CONSTRAINT fk_eo_vendors_event FOREIGN KEY (event_id) REFERENCES eo_events(id) ON DELETE CASCADE
-);
-```
-
-### 9.3 `eo_crew_assignments`
-```sql
-CREATE TABLE eo_crew_assignments (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    event_id BIGINT UNSIGNED NOT NULL,
-    crew_name VARCHAR(191) NOT NULL,
-    role VARCHAR(64) NULL,
-    assignment_time DATETIME NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    INDEX idx_eo_crew_company (company_id),
-    CONSTRAINT fk_eo_crew_event FOREIGN KEY (event_id) REFERENCES eo_events(id) ON DELETE CASCADE
-);
-```
-
----
-
-## 10. Tabel Baru — Kontraktor (Retensi)
-
-### 10.1 `contractor_retentions`
-```sql
-CREATE TABLE contractor_retentions (
+CREATE TABLE retentions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
     project_id BIGINT UNSIGNED NOT NULL,
+    milestone_id BIGINT UNSIGNED NULL,
     invoice_id BIGINT UNSIGNED NULL,
-    retention_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
-    release_date DATE NULL,
-    status ENUM('held','released') NOT NULL DEFAULT 'held',
+    amount DECIMAL(18,2) NOT NULL,
+    release_on DATE NULL,
+    status VARCHAR(16) NOT NULL DEFAULT 'held', -- held | released | invoiced
+    released_at TIMESTAMP NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    INDEX idx_contractor_retentions_company (company_id)
+    INDEX idx_retentions_company_project (company_id, project_id),
+    CONSTRAINT fk_retentions_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_retentions_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 );
 ```
-> Kontraktor memakai ulang `project_center` + `subcontractor_spk` yang sudah ada di codebase; tabel retensi ini hanya untuk mencatat dana retensi tertahan dan jadwal rilisnya.
 
 ---
 
@@ -695,4 +963,18 @@ CREATE TABLE attachments (
 ---
 
 ## 14. Uji Kebenaran Data
-Setiap tabel baru WAJIB punya `company_id` (FK ke `companies`) untuk scoping tenant. Test isolasi tenant A vs B wajib ditulis untuk setiap modul.
+
+1. Setiap tabel bisnis WAJIB punya `company_id` (FK ke `companies`) untuk scoping
+   tenant, termasuk tabel anak (D-26). Test isolasi tenant A vs B wajib untuk
+   setiap tabel.
+2. Kolom `stage` pada entitas ber-workflow (`deals`, `projects`, `bookings`,
+   `orders`, `prescriptions`) adalah `VARCHAR(32)`, **bukan** `ENUM`, dan
+   nilainya divalidasi oleh `WorkflowEngine` terhadap `workflow_definitions`
+   — bukan oleh database (D-31c).
+3. `attributes JSON` tidak boleh menyimpan data yang di-query/di-index/di-hitung
+   oleh aturan bisnis; data seperti itu wajib kolom nyata (§1.7).
+4. **Uji komposisi preset**: test wajib membuktikan bahwa memilih preset
+   `klinik` (Tier A, bukan 6 awal) menghasilkan menu, terminologi, dan widget
+   yang benar **tanpa** migration atau kode baru — ini bukti D-31 terpenuhi.
+5. `business_presets.definition` divalidasi seeder terhadap katalog
+   `INDUSTRY_PRESETS.md` §1, §3, §4, §5; key asing → seeder gagal.

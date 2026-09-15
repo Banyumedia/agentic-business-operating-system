@@ -31,9 +31,11 @@
 - Proses login/scan QR WA dilakukan dengan aman di dalam Dashboard Web BOS.
 - Setiap aktivitas/percakapan Agentic WA akan memotong saldo **Token** perusahaan yang dimanage secara tersentralisasi oleh sistem BOS.
 
-### Pilar 3: Data-Driven Preset & Zero-Bloat UI
-- Antarmuka web minimalis; menu yang muncul dan hak akses staf disesuaikan dengan `business_preset` industri dan peran/jabatan masing-masing.
-- Item menu Level 1 (Modul) dan Level 2 (Sub-fitur) diuji terhadap `company->feature($key)`. Jika fitur mati, menu **hilang total dari DOM**.
+### Pilar 3: Composable Capability & Zero-Bloat UI (D-31)
+- Produk menargetkan **puluhan jenis bisnis**, bukan 6. Karena itu **industri adalah data, kapabilitas adalah kode**: ~20 modul kapabilitas generik (`contacts`, `projects`, `bookings`, `inventory`, `pos`, `finance.*`, `hr.*`, …) dikomposisi oleh **preset industri** yang berupa satu dokumen JSON (kapabilitas aktif + terminologi + alur/workflow + susunan dashboard).
+- Menambah jenis bisnis baru = menambah satu file preset, **tanpa migration dan tanpa komponen UI baru**. Hanya ~20% industri dengan aturan domain unik (farmasi, konstruksi) memerlukan modul Tier B yang dibangun sekali untuk industri serumpun (D-33).
+- Antarmuka web minimalis; menu, istilah UI (`term()`), alur (`WorkflowEngine`), dan widget dashboard semuanya mengikuti preset + override per company (`module_settings`).
+- Item menu diuji terhadap `company->feature($capability)`. Jika kapabilitas mati, menu **hilang total dari DOM**.
 
 ### Pilar 4: Dual-Mode Tax & Financial Book
 - Pemisahan dimensi: `Company` (Workspace) → `BusinessIdentity` (Brand/Kop/NPWP/**konfigurasi pajak dasar**).
@@ -57,8 +59,8 @@ Untuk menjaga eksekusi agent tetap fokus dan selesai, fitur berikut **DILARANG /
 Agent pelaksana wajib membaca dokumen pendukung di folder `docs/` ini. Urutan prioritas bila terjadi konflik: **`00-DECISIONS.md` > `DATA_MODEL.md` (untuk bentuk data) > dokumen lain**.
 
 1. `00-DECISIONS.md` — **tie-breaker.** Semua keputusan LOCKED dan OPEN.
-2. `INDUSTRY_PRESETS.md` — Matriks konfigurasi 6 industri & pemetaan menu.
-3. `DATA_MODEL.md` — Skema database canonical + kontrak migration portabel.
+2. `INDUSTRY_PRESETS.md` — Katalog kapabilitas (D-32), skema preset-sebagai-data, kamus terminologi, katalog widget & efek workflow, 6 preset awal + contoh industri ke-7..12.
+3. `DATA_MODEL.md` — Skema database canonical: fondasi tenant, mesin komposisi (`workflow_definitions`), tabel kapabilitas generik, modul Tier B, kontrak migration portabel.
 4. `REQUIREMENTS.md` — Spesifikasi fungsional mendalam per modul.
 5. `UX_UI_SPEC.md` — Kontrak antarmuka, aksesibilitas, dan design token.
 6. `COMMERCIAL_AND_AI_AGENTIC_SPEC.md` — Membership, token economics, white-label AI.

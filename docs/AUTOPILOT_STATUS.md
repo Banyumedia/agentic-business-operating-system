@@ -1,7 +1,8 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-16 (review paralel ke-3)  
+**Updated:** 2026-09-16 (D-31 Composable Capability Architecture)  
 **Mode:** FASE 1 DONE — FASE 2 READY (T-07 first)  
+**Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)  
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`  
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
 
@@ -48,6 +49,14 @@ default atau memilih alternatif. **Agent tidak menebak.**
 | T-04 | DONE (dummy) | Alpine modal + `wire:model.live` |
 | T-09 | DONE (merged ke T-00a) | — |
 
+## Arsitektur D-31 (dibaca sebelum menulis kode apa pun setelah UI-LOCK)
+
+- Tidak ada kode/tabel/flag/komponen yang menyebut nama industri.
+- Kapabilitas hanya dari katalog `INDUSTRY_PRESETS.md` §1 (D-32).
+- Istilah via `term()`, alur via `WorkflowEngine`, dashboard via `DashboardComposer`.
+- Fase 3b (mesin komposisi) **wajib selesai** sebelum tabel domain (Fase 3c).
+- T-21c membuktikan D-31: tambah `klinik.json` + `salon.json` → produk berjalan **tanpa diff kode**.
+
 ## Next READY
 
 **T-07** — token `--erp-*` (36, `UX_UI_SPEC.md` §7), `ThemeRegistry::passesAa()`,
@@ -56,6 +65,24 @@ theme toggle. Ini membuka T-05 dan T-06. Q-03 memakai default (turunkan dari
 palet Tailwind v4, buktikan AA dengan test).
 
 Setelah T-07 → T-05 → T-06 → laporkan → **berhenti di `HUMAN:UI-LOCK`**.
+
+T-05/T-06 wajib memakai stub `DashboardComposer`/`term()` (bukan hardcode
+industri) agar T-08c/T-08e cukup mengganti sumber data, bukan menulis ulang view.
+
+## Perubahan D-31 (2026-09-16, setelah review ke-3)
+
+Pertanyaan Bos: "memungkinkan 50 jenis bisnis dengan UI/UX & alur sesuai?"
+Jawaban: **bisa, tetapi desain lama akan mengunci pola 1 industri = N tabel + N flag
++ N komponen.** Dokumen diubah agar tujuan itu tercapai:
+
+- `00-DECISIONS.md`: +D-31 (prinsip), D-32 (katalog kapabilitas v1 dikunci), D-33 (Tier A/B); D-01/D-02 diperluas.
+- `INDUSTRY_PRESETS.md`: **ditulis ulang** — katalog ~20 kapabilitas generik (ganti flag ber-nama industri), skema `definition` JSON, kamus terminologi, katalog widget & efek workflow, 6 preset awal sebagai data, **6 contoh industri ke-7..12 tanpa kode**, registry menu per kapabilitas.
+- `DATA_MODEL.md`: `business_presets.definition` JSON + `tier`; `companies.business_preset` VARCHAR (bukan ENUM); +`workflow_definitions`, `workflow_transitions_log`, konvensi `attributes JSON`; **tabel per industri (`crm_*`, `rental_*`, `eo_*`, `pharmacy_*`, `contractor_*`, `hr_*`) diganti tabel kapabilitas generik** (`contacts`, `deals`, `projects`, `project_milestones`, `resources`, `bookings`, `items`, `item_batches`, `orders`, `employees`…) + 2 modul Tier B (`prescriptions`, `retentions`); `stage` VARCHAR bukan ENUM.
+- `EXECUTION_PLAN.md`: +**Fase 3b Mesin Komposisi** (T-08 validator+seeder JSON, T-08b `FeatureResolver`, T-08c `TerminologyResolver`, T-08d `WorkflowEngine`, T-08e `DashboardComposer`) **sebelum** Fase 3c tabel kapabilitas; T-15 digabung ke T-08b; +T-13b..f, T-17b (MCP tenant bot), T-19b (NalarPesan webhook), **T-21c bukti D-31**; T-05/T-06/T-07 dilarang hardcode industri.
+- `REQUIREMENTS.md` §2: prinsip 4 resolver, §2.2 WorkflowEngine, §2.3 `term()`.
+- `UX_UI_SPEC.md` §5: kartu per industri → widget per kapabilitas; §4.3 preset dinamis + sub-tab Istilah/Alur; empty-state via `term()`.
+- `PRD.md` Pilar 3 → Composable Capability.
+- `HERMES.md`: guard D-31 untuk autopilot.
 
 ## Perbaikan Review ke-3 (2026-09-16)
 

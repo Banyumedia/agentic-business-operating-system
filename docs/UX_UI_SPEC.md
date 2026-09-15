@@ -112,8 +112,10 @@ Semua pengaturan disatukan dalam satu halaman terpusat: **`/app/settings`** (D-2
   - Tersimpan di level akun / session pengguna, tidak mengganggu pengguna lain.
 
 ### 4.3 Tab 3: Fitur Bisnis (1B Preset + Override)
-- Dropdown preset utama: `Agency | F&B / Resto | Apotek | Event Organizer | Kontraktor | Persewaan | Kustom`.
-- Di bawah dropdown: Daftar kartu toggle per kategori (CRM, POS, Operasional, Inventori, Sales).
+- Dropdown preset utama diisi **dinamis** dari `business_presets` yang `is_active` (6 awal + yang ditambahkan kemudian), bukan hardcode.
+- Di bawah dropdown: daftar kartu toggle **per kapabilitas** dari katalog `INDUSTRY_PRESETS.md` §1, dikelompokkan (Kontak & Peluang, Proyek, Booking & Jadwal, Stok, Kasir, Keuangan, HRD). Kapabilitas Tier B hanya tampil bila dependensinya aktif.
+- Sub-tab **Istilah**: owner dapat mengubah label (`contact` → "Jemaah") — tersimpan di `module_settings[terminology]`, UI berubah seketika.
+- Sub-tab **Alur**: owner dapat menambah/mengubah stage & label untuk `deal`/`project`/`booking`/`order` — tersimpan di `module_settings[workflows]`; transisi dengan `effects` keuangan tetap `requires_approval`.
 - Tiap toggle memiliki switch on/off ramah mata (`peer-checked:bg-emerald-600`) dengan touch target min 44x44px.
 - **Transisi Bebas Disorientasi (Tanpa Flash Reload):**
   - Saat switch toggle diubah → kirim AJAX/Fetch ke `module_settings` → tampilkan feedback inline tersimpan (`erp-success-text`) → perbarui status state navigasi Alpine secara mulus tanpa memicu full page reload mendadak.
@@ -170,29 +172,39 @@ Semua pengaturan disatukan dalam satu halaman terpusat: **`/app/settings`** (D-2
 
 ---
 
-## 5. Dashboard Adaptif & Card Khusus per Industri
+## 5. Dashboard Adaptif Berbasis Widget Kapabilitas (D-31)
 
-Dashboard utama (**`/app/dashboard`**, D-24; menjadi tujuan default setelah login) terdiri dari 2 zona:
-1. **Zona Universal (Atas):** Action Cards (Perlu Aksi Hari Ini) + Metrik Keuangan Ringkas (Omzet, Arus Kas Masuk, Piutang Jatuh Tempo).
-2. **Zona Industri (Tengah):** Card khusus yang dirender kondisional berdasarkan preset bisnis aktif.
+Dashboard utama (**`/app/dashboard`**, D-24; tujuan default setelah login) terdiri dari 2 zona:
+1. **Zona Universal (Atas):** widget yang hampir semua bisnis punya — `kpi_revenue`, `kpi_cashflow`, `kpi_receivables_due`, `pending_approvals`, `ai_report_card`.
+2. **Zona Industri (Tengah):** widget yang **disusun oleh preset** (`definition.dashboard.industry_zone`) dan **di-bind ke kapabilitas**, bukan ke nama industri. Widget yang kapabilitasnya `false` tidak dirender.
 
-### 5.1 Card Khusus Industri
+Tidak ada komponen bernama `AgencyDealsCard` atau `RentalFleetStatusCard`. Yang
+ada adalah widget generik dari katalog `INDUSTRY_PRESETS.md` §4; preset hanya
+memilih susunannya. Mengganti preset company → dashboard berubah **tanpa kode**.
 
-| Industri | Card Khusus yang Dirender | Data & Aksi Cepat |
+### 5.1 Contoh Susunan Widget per Preset Awal
+
+| Preset | `industry_zone` (dari katalog §4) | Yang dilihat Bos |
 |---|---|---|
-| **1. Agency** | `AgencyDealsCard` + `TimesheetSummaryCard` | 3 Deal tahap negosiasi, Total jam kerja tim minggu ini, 2 Invoice termin jatuh tempo. |
-| **2. F&B** | `FnBTablesLiveCard` + `KitchenPendingCard` | Visual denah meja (Meja terisi vs kosong), 4 pesanan belum bayar (Open Bill), shortcut *Buka Kasir Cepat*. |
-| **3. Apotek** | `PharmacyPrescriptionQueueCard` + `ExpiringDrugsAlertCard` | 5 e-Resep menunggu verifikasi Apoteker, 3 obat mendekati expired <30 hari (FEFO warning). |
-| **4. Event Org** | `UpcomingEventsCard` + `VendorSettlementCard` | 2 Event berjalan minggu ini, countdown rundown, 4 vendor menunggu pelunasan. |
-| **5. Kontraktor** | `ProjectProgressCard` + `RetentionReceivableCard` | Bar progres fisik proyek (%) vs target waktu, nominal dana retensi tertahan yang siap diklaim. |
-| **6. Persewaan** | `RentalFleetStatusCard` + `RentalDueReturnCard` | Unit tersedia vs tersewa, 3 unit jatuh tempo kembali hari ini, shortcut *Check-in Unit*. |
+| Agency | `deals_pipeline`, `timesheet_summary`, `kpi_receivables_due` | Deal per stage, jam kerja tim minggu ini, termin jatuh tempo |
+| F&B | `open_bills`, `resources_status{type:table}`, `low_stock` | Meja terisi & bill terbuka, denah meja, bahan menipis |
+| Apotek | `prescription_queue`, `expiring_batches{days:30}`, `low_stock` | Resep menunggu apoteker, obat kedaluwarsa <30 hari (FEFO) |
+| EO | `upcoming_schedule`, `projects_progress`, `vendor_settlement` | Event minggu ini + countdown, progres, vendor belum lunas |
+| Kontraktor | `projects_progress`, `retention_held`, `kpi_receivables_due` | Progres fisik vs target, retensi tertahan siap klaim, termin |
+| Persewaan | `resources_status{group_by:status}`, `bookings_due_today`, `overdue_returns` | Unit tersedia vs tersewa, jatuh tempo hari ini, terlambat + denda |
+| **Klinik (ke-7, tanpa kode)** | `upcoming_schedule`, `expiring_batches`, `low_stock` | Janji temu hari ini, obat kedaluwarsa, stok menipis |
+
+Setiap widget menerima `props` dari preset (mis. `{days: 30}`) dan membaca
+istilah via `term()` — widget `resources_status` menampilkan "Meja" di resto,
+"Unit" di rental, "Kamar" di kos, dari komponen Livewire **yang sama**.
 
 ### 5.2 Standar Layar Kosong (Empty State) Friendly
 Semua kartu dan tabel wajib menyertakan fallback state ramah jika data bernilai 0:
-- **Tabel Grup WA Kosong:** Icon ilustrasi pesan + teks *"Belum ada grup WhatsApp yang terhubung. Hubungkan nomor kantor Anda di atas untuk mulai menambahkan grup kasir atau gudang."* + tombol aksi primer *"Pindai Kode QR"*.
+- **Tabel Grup WA Kosong:** Icon ilustrasi pesan + teks *"Belum ada grup WhatsApp yang terhubung. Hubungkan nomor kantor Anda di atas untuk mulai menambahkan grup."* + tombol aksi primer *"Pindai Kode QR"*.
 - **Tim & Akses Kosong:** Teks *"Belum ada staf tambahan. Sistem saat ini hanya dikelola oleh akun Anda."* + tombol *"Undang Anggota Tim"*.
-- **Kartu Resep Apotek Kosong:** Centang hijau tenang + teks *"Semua resep dokter hari ini telah selesai diproses."*
-- **Kartu Jatuh Tempo Persewaan Kosong:** Teks tenang *"Tidak ada pengembalian unit sewa yang jatuh tempo hari ini."*
+- **Widget `prescription_queue` Kosong:** Centang hijau tenang + teks *"Semua resep dokter hari ini telah selesai diproses."*
+- **Widget `overdue_returns` / `bookings_due_today` Kosong:** Teks tenang *"Tidak ada {{ term('booking') }} yang jatuh tempo hari ini."* — istilah mengikuti preset (Sewa / Reservasi / Janji Temu).
+- **Aturan umum:** teks empty-state **tidak boleh** menyebut industri; gunakan `term()`.
 
 ---
 

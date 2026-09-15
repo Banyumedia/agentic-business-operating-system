@@ -52,6 +52,16 @@ For each implementation wave, first produce an evidence-backed task list:
   + Vite. Alpine ships inside Livewire; never add a standalone `alpinejs`
   package, and never replace working Livewire components with another runtime
   without an explicit owner decision.
+- **Composable Capability rule (D-31): industry is data, capability is code.**
+  Never introduce a feature flag, table, model, Blade component, widget, or
+  conditional that names an industry (`agency`, `pharmacy`, `rental`, …).
+  Use capability keys from `docs/INDUSTRY_PRESETS.md` §1 only; render business
+  terms via `term()`, never literals; drive stage transitions through
+  `WorkflowEngine`, never `ENUM` or `if ($stage === …)` chains. Adding an
+  industry must be achievable by adding one preset JSON. Adding a capability is
+  an owner decision (D-32). If a task seems to require industry-specific code,
+  stop and check whether it is really a missing generic capability or a Tier B
+  domain rule (D-33) — record which, do not guess.
 - Reconcile every parallel result against the current worktree before the next
   writer starts. A delegated task is evidence only after its commands, findings,
   and scope have been inspected.
