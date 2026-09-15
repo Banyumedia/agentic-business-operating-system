@@ -69,82 +69,92 @@ memasang `tailwindcss: ^4.3.3` dengan `@tailwindcss/vite`. Tailwind v4 memakai
 konfigurasi CSS-first (`@import 'tailwindcss'` + `@theme`) dan tidak memakai
 `tailwind.config.js`. Spesifikasi sudah dikoreksi ke v4.
 
-## G-06: Kontrak Database Bertentangan (BLOCKER Fase 3)
+## G-06: Kontrak Database Bertentangan — RESOLVED (B-01)
 
-| Sumber | Nilai |
-|---|---|
-| `.env` | `DB_CONNECTION=sqlite` |
-| `phpunit.xml` | `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:` |
-| `docs/DATA_MODEL.md` | DDL MySQL: `ENUM(...)`, `BIGINT UNSIGNED AUTO_INCREMENT`, `ALTER TABLE ... ADD COLUMN` |
-| `database/database.sqlite` | belum ada |
+`.env`/`phpunit.xml` memakai SQLite, `DATA_MODEL.md` awalnya berisi DDL MySQL
+mentah. **Resolusi:** semua migration wajib Laravel Schema Builder portabel
+(`DATA_MODEL.md` §0). Dev/test tetap SQLite; paritas MySQL diverifikasi di
+**T-21b** sebelum release. `database/database.sqlite` kini ada.
 
-SQLite tidak mendukung `ENUM` dan memiliki keterbatasan `ALTER TABLE`. Menulis
-migration mengikuti DDL MySQL mentah akan gagal pada environment saat ini.
+## G-07: Workspace Bukan Git Repository — RESOLVED (B-02)
 
-**Keputusan yang dibutuhkan Bos (salah satu):**
-1. Pakai MySQL/MariaDB untuk dev dan test, samakan dengan produksi.
-2. Tetap SQLite untuk dev, dan tulis semua migration memakai Laravel Schema
-   Builder portabel (`string` + validasi/`check` alih-alih `ENUM` mentah).
+`git init` dijalankan 2026-09-16 setelah memverifikasi `.gitignore` mengecualikan
+`.env`, `vendor`, `node_modules`, `auth.json`, `storage/*.key`. Baseline commit
+`7151104`. **Remote belum dikonfigurasi** — push tetap butuh remote + approval.
 
-Sampai ini diputuskan, seluruh task migration Fase 3 berstatus BLOCKED.
+## G-08: Fondasi Tenant Diasumsikan Ada Padahal Tidak (ditemukan audit paralel 2026-09-16)
 
-## G-07: Workspace Bukan Git Repository (BLOCKER Proses)
+`DATA_MODEL.md` §1 semula berjudul "Perubahan Tabel Eksis" dan menyebut
+`companies`, `module_settings`, `business_identities`, `project_center`,
+`subcontractor_spk`, `crm_leads` "sudah ada". Semua ditulis untuk codebase ERP
+Prime warisan. Repo canonical hanya punya `users/cache/jobs`.
 
-`D:\PROJECTS\agentic-bos\.git` tidak ada, meskipun `.gitignore` dan
-`.gitattributes` tersedia. Konsekuensi nyata:
+**Resolusi:** §1 ditulis ulang menjadi `CREATE`; ditambah **Fase 3a** (T-00a/b/c)
+di `EXECUTION_PLAN.md`. T-13 tidak lagi "drop `crm_leads`". Klaim D-08 "webhook
+sudah live" dikoreksi.
 
-- Tidak ada `git diff` untuk review independen.
-- Tidak ada baseline SHA, sehingga strategi *isolated worktree* untuk writer
-  paralel tidak dapat dipakai.
-- Gate commit/push tidak dapat dijalankan.
+## G-09: Dua Skema Routing Bertentangan — RESOLVED (D-24)
 
-Sebelum diperbaiki, review harus berbasis snapshot file dan hasil test, dan
-paralelisme writer dibatasi menjadi satu writer saja.
+`INDUSTRY_PRESETS.md` §2 memakai nama route Laravel (`crm.leads.index`,
+`settings.ai-agent.index`) yang **tidak ada**; `UX_UI_SPEC.md` memakai `/settings`
+dan `/dashboard`; D-20 memakai `/operations/*`. Kode nyata hanya punya
+`/` dan `/app/{module}/{path?}`.
 
-## Baseline Terverifikasi (2026-09-16)
+**Resolusi:** D-24 mengunci skema `/app/{module}/...`. §2 INDUSTRY_PRESETS ditulis
+ulang ke bentuk flag-aware dengan URL path; UX_UI_SPEC dan D-20 dikoreksi.
 
-| Item | Status |
-|---|---|
-| Laravel | 13.32.0 |
-| PHP | 8.3.30 |
-| Livewire | v4.4 terpasang, Fase 1 sudah berjalan |
-| Tailwind | v4.3.3 (CSS-first `@theme`) |
-| Test suite | `php artisan test` → **2 passed, 2 assertions** (hanya stub `ExampleTest`) |
-| Migration bisnis | belum ada; hanya `users`, `cache`, `jobs` bawaan |
-| Model bisnis | belum ada; hanya `App\Models\User` |
-| Build Vite | `public/build/` tersedia |
-| Git | tidak terinisialisasi |
+## G-10: `module_settings` Dua Bentuk — RESOLVED (D-25)
 
-## Status Task Fase 1 Berdasarkan Kode Nyata
+D-19 (LOCKED) = satu baris per modul dengan `settings_json`; DATA_MODEL/REQUIREMENTS
+lama = baris key-value per flag. **Resolusi:** D-19 menang; flag disimpan di
+`module_settings[module_name='features'].settings_json`. Kedua dokumen dikoreksi.
 
-| ID | Klaim PRD | Status Aktual |
+## G-11: Keputusan yang Belum Pernah Dicatat — DICATAT sebagai Q-01..Q-08
+
+Autopilot sebelumnya akan menebak: payment gateway, driver Scout, palet 36 token,
+kardinalitas `hermes_profiles`, nama stage CRM, daftar vendor string, mekanisme
+onboarding, konteks tenant. Semua kini tercatat di `00-DECISIONS.md` §OPEN
+**dengan rekomendasi default** agar Bos cukup menyetujui.
+
+## Baseline Terverifikasi
+
+Lihat `AUTOPILOT_STATUS.md` §Verified Baseline (sumber tunggal, selalu terbaru).
+Baseline **awal** repo (2 test, tanpa Git) adalah historis.
+
+## Status Task Fase 1 (final)
+
+| ID | Status | Bukti |
 |---|---|---|
-| T-01 | Setup Laravel + Livewire + Tailwind | **SELESAI** (Livewire v4.4, Tailwind v4.3) |
-| T-02 | Lobby & App Switcher | **PARSIAL** — grid aplikasi dirender, tetapi setiap kartu memakai `href="#"` sehingga tidak berpindah modul; acceptance criteria belum terpenuhi |
-| T-03 | Dynamic Sidebar terisolasi | **PARSIAL** — menu per modul ada, tetapi masih array hardcoded di `Sidebar::getMenusProperty()`, belum lewat `DynamicMenuRegistry` maupun feature flag |
-| T-04 | Universal Search `Ctrl+K` | **SELESAI (dummy)** — modal Alpine + `wire:model.live` berfungsi dengan data dummy sesuai acceptance criteria |
+| T-01 | DONE | `composer.json`, `package.json`, build hijau |
+| T-02 | DONE | `LobbyNavigationTest` (4). Kartu → `route('app.module')`, tombol search punya handler + `aria-label` |
+| T-03 | DONE (statis) | `DynamicMenuRegistryTest` (7) + `ModuleSidebarTest` (4). Modul tak dikenal → **nol DOM**. Flag-aware di T-03b |
+| T-04 | DONE (dummy) | Modal Alpine + `wire:model.live`. Dummy `href="#"` diselesaikan T-20 |
 
-## Temuan Tambahan
+## Temuan yang Sudah Diperbaiki (2026-09-16, review paralel ke-3)
 
-- `AGENTS.md` di root masih berisi bootstrap Laravel Boost yang menyuruh agent
-  menjalankan `composer require laravel/boost`. Ini instruksi yang bersaing
-  dengan `HERMES.md`; `HERMES.md` berprioritas lebih tinggi pada Hermes.
-- `resources/views/welcome.blade.php` bawaan Laravel masih ada dan tidak dipakai
-  route mana pun.
-- Token `--erp-*` pada `UX_UI_SPEC.md` belum ada sama sekali di `app.css`.
-- Karena test memakai SQLite `:memory:` (terisolasi per proses), shard test
-  paralel **aman** dan tidak berbagi database yang sama.
+- `AGENTS.md`/`CLAUDE.md` memerintahkan `composer require laravel/boost` — **diganti**
+  dengan pointer ke `HERMES.md`.
+- Sidebar merender `<p>` placeholder untuk modul tak dikenal — **dihapus**; test
+  kini memverifikasi `<nav>` benar-benar kosong.
+- Tombol search di Lobby inert tanpa `aria-label` — **diberi handler + label**.
+- `<main>` tanpa `id="main-content"` — **ditambah**.
+- Pint gagal di `routes/web.php`, `CommandPalette.php`, `DummyModule.php` — **diperbaiki**;
+  seluruh repo kini lolos `pint --test`.
+- `accounting_journal_lines` tanpa `company_id` — **ditambah** (D-26).
+- `pharmacy_prescriptions.image_path` melanggar BYOS — **dihapus** (D-29).
+- `invoices` hanya top-up padahal D-23 butuh subscription — **ditambah `type`, `period_*`**.
+- `operations.visible` melupakan `ops.rental_checkin` — **diperbaiki**.
+- Flag `finance.*`/`hr.*` tidak ada di matriks — **ditambah**.
+- Penomoran section DATA_MODEL duplikat — **dirapikan** 0..14.
+- 36 token `--erp-*` tidak pernah didefinisikan — **ditambah** `UX_UI_SPEC.md` §7.
 
-## Non-Blocking Review Notes
+## Temuan Terbuka (tidak diperbaiki, dicatat)
 
-- The six initial industry presets, dynamic feature flags, zero-DOM rendering,
-  server-side feature guards, role-scoped bot tools, and two-step approval for
-  high-risk actions are consistent across the reviewed documents.
-- UI task acceptance criteria must include the WAI-ARIA tab model, keyboard
-  behavior, 44px mobile touch targets, modal focus trapping, and zero-bloat DOM
-  checks from `UX_UI_SPEC.md`; visual completion alone is insufficient.
-- Payment-webhook, token-balance, WhatsApp role, and financial mutation tasks
-  require tenant-isolation, authorization, idempotency, and negative tests
-  before any implementation is considered ready.
-- Node API dan webhook secret disimpan sebagai referensi ke secret manager atau
-  encrypted secret store; migration tidak boleh menyimpan nilai secret plaintext.
+- `README.md` masih stock Laravel + promosi Boost. Diperbaiki saat T-22.
+- `composer.json` `name: laravel/laravel`. Diperbaiki saat T-22.
+- `resources/views/welcome.blade.php` tidak dipakai. Dihapus saat T-05.
+- `CommandPalette` dummy `href="#"` (5 item). Diselesaikan T-20.
+- `DummyModule` `href="#"` di baris tabel. Diselesaikan T-06.
+- `/app/{module-tak-dikenal}` masih 200. Menjadi 404 di T-16.
+- Dua layout (`layouts/app.blade.php`, `components/layouts/module.blade.php`) tanpa
+  skip-link. Disatukan/ditambah skip-link di T-05.

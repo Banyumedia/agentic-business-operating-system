@@ -18,9 +18,9 @@
         </a>
     </div>
 
-    <!-- Menus -->
+    <!-- Menus (zero-bloat: modul tanpa menu tidak merender item apa pun) -->
     <nav class="flex-1 overflow-y-auto p-4 space-y-2" aria-label="Menu modul {{ $module }}">
-        @forelse($this->menus as $menu)
+        @foreach($this->menus as $menu)
             @php($isActive = request()->is(ltrim($menu['route'], '/')))
             <a href="{{ $menu['route'] }}"
                wire:navigate
@@ -29,11 +29,7 @@
                 <span class="text-xl" aria-hidden="true">{{ $menu['icon'] }}</span>
                 <span>{{ $menu['label'] }}</span>
             </a>
-        @empty
-            <p class="px-4 py-3 text-sm text-gray-500">
-                Modul ini belum memiliki menu aktif.
-            </p>
-        @endforelse
+        @endforeach
     </nav>
 
     <!-- User Profile / Footer -->

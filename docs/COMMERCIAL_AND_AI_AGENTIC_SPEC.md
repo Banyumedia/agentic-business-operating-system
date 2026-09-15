@@ -2,7 +2,7 @@
 ## Arsitektur Jasa Karyawan AI, Membership SaaS & Integrasi Ekosistem
 
 **Versi:** 1.0.0-PROD  
-**Konteks Bisnis:** ERP Prime dirombak menjadi fondasi **Agentic Business Operating System (BOS)** — penjualan jasa **Karyawan AI (Hermes Engine)** yang dibungkus dengan UI ERP modern dan membership bertingkat.
+**Konteks Bisnis:** Fondasi **Agentic Business Operating System (BOS)** (nama warisan "ERP Prime" tidak dipakai lagi, D-30) — penjualan jasa **Karyawan AI (Hermes Engine)** yang dibungkus dengan UI ERP modern dan membership bertingkat.
 
 ---
 
@@ -17,7 +17,7 @@
                            │ Webhook Bridge (Idempotent)
                            ▼
 ┌────────────────────────────────────────────────────────┐
-│               AGENTIC BOS (ERP Prime + AI Karyawan)    │
+│               AGENTIC BOS (Back-office + AI Karyawan)  │
 │  Tujuan: Back-office, Akuntansi, Kontrol AI Multi-Grup │
 │  Fokus : SOP Otomatis, Laporan Keuangan, Approval Bos  │
 └────────────────────────────────────────────────────────┘
@@ -26,7 +26,7 @@
 1. **NalarPesan:**
    - Aplikasi Mini POS & CRM interaksi pelanggan depan (*front-facing*).
    - Nilai lebih utama: Pesan langsung via WhatsApp tanpa install aplikasi, kumpul nomor WA otomatis untuk database CRM.
-2. **Agentic BOS (ERP Prime):**
+2. **Agentic BOS:**
    - Sistem operasi internal bisnis (*back-office & intelligence*).
    - Nilai lebih utama: **Karyawan AI (Hermes)** yang membaca data ERP, menjalankan SOP, dan melapor ke Bos di WhatsApp.
 
@@ -42,7 +42,7 @@ Sistem membership **TIDAK DI-HARDCODE** di kode program. Tabel `company_membersh
 |---|---|---|
 | `id` | BIGINT PK | Auto increment |
 | `name` | VARCHAR(64) | Contoh: Starter, Growth, Pro, Enterprise |
-| `slug` | VARCHAR(32) UNIQUE | `starter`, `growth`, `pro`, `enterprise` |
+| `slug` | VARCHAR(64) UNIQUE | `starter`, `growth`, `pro`, `enterprise` (panjang mengikuti `DATA_MODEL.md` §11.1) |
 | `monthly_price` | DECIMAL(18,2) | Biaya langganan per bulan (dinamis) |
 | `annual_price` | DECIMAL(18,2) | Biaya langganan per tahun (diskon) |
 | `max_wa_groups` | INT | Batas grup WhatsApp yang boleh di-invite bot |
@@ -55,7 +55,7 @@ Sistem membership **TIDAK DI-HARDCODE** di kode program. Tabel `company_membersh
 
 Karena harga modal setiap otak AI (misal: Llama 3 vs GPT-4o) berbeda-beda, sistem BOS menggunakan mekanisme **Base Token Multiplier** agar Bos (Klien) tidak pusing dengan konversi dolar.
 1. **Mata Uang BOS Token:** 1 Token BOS setara dengan 1 Token Input dari model AI termurah di pasaran (misal: Llama-3-8b). Ini disebut *Multiplier 1x*.
-2. **Pemotongan Otomatis:** Jika paket langganan Bos mengizinkan penggunaan model pintar (misal GPT-4o) yang harga modalnya 10x lipat lebih mahal, maka setiap pemakaian akan mencatat debit idempoten pada `token_ledger_entries` lalu memperbarui cache saldo perusahaan (`current_token_balance`) dalam transaksi yang sama. Token Output (jawaban AI) yang secara struktur biaya lebih mahal dari Input juga memiliki *multiplier* tersendiri (misal 3x lipat dari Input).
+2. **Pemotongan Otomatis:** Semua paket bebas memilih model apa pun (D-15/D-28). Jika Bos memilih model pintar (misal GPT-4o) yang harga modalnya 10x lipat lebih mahal, maka setiap pemakaian akan mencatat debit idempoten pada `token_ledger_entries` lalu memperbarui cache saldo perusahaan (`current_token_balance`) dalam transaksi yang sama. Token Output (jawaban AI) yang secara struktur biaya lebih mahal dari Input juga memiliki *multiplier* tersendiri (misal 3x lipat dari Input).
 3. Tabel rahasia `ai_model_pricings` di *Backend* menyimpan rasio perkalian ini sehingga harga *SaaS Provider* terlindung dari kerugian akibat lonjakan harga AI.
 
 ### 2.3 Simulasi Paket (Dapat Diedit Manual di Super Admin)
@@ -106,10 +106,10 @@ Ketika klien membeli paket membership:
 4. **Hermes Profile (Node Load Balancing & Provisioning):**
    - Laravel akan mencari `hermes_nodes` yang masih aktif dan jumlah profilnya < `max_capacity`.
    - Jalankan `php artisan tenant:provision-ai-profile {slug} --owner-id={user_id} --node-id={node_id}`
-   - Sistem mengirim perintah API ke Node terpilih untuk membuat folder `~/.hermes/profiles/{slug}/`.
+   - Sistem mengirim perintah API ke Node terpilih untuk membuat folder `~/.hermes/profiles/{slug}/` di host node tersebut.
    - Mengisi `SOUL.md` baku yang berisi identitas Bos dan *daftar dinamis seluruh ID perusahaan* yang dimilikinya.
    - Mengunci `config.yaml` dengan whitelist tool MCP tingkat *User* (`mcp_erp_user_{user_id}`) yang mana setiap *tool*-nya mewajibkan parameter `company_id`.
-   - Menyimpan kredensial instance beserta referensi `node_id` ke tabel `hermes_profiles`.
+   - Menyimpan referensi secret (bukan plaintext) beserta `node_id` ke tabel `hermes_profiles`. Satu profile per **company** (Q-04 default); owner dengan banyak company memiliki beberapa profile.
 5. **WhatsApp QR:** Tampilkan QR pairing (diambil dari API Hermes) di menu `/settings/ai-agent` untuk ditautkan oleh owner.
 6. **AI Onboarding Interview (Universal Business Adaptation):**
    - Segera setelah Bos melakukan *scan* QR, Asisten AI mengirim pesan sapaan otomatis ke WA Bos: *"Halo Bos! Bisnis Bapak/Ibu bergerak di bidang apa? Apakah butuh struk kasir, atau sekadar pencatatan utang-piutang?"*
@@ -120,7 +120,7 @@ Ketika klien membeli paket membership:
 
 ## 4. Keamanan, Guardrail & White-Label Karyawan AI
 
-Untuk memastikan agen WA tidak liar dan tidak dapat di-*jailbreak* oleh staf atau pelanggan, BOS menerapkan 4 Lapis Guardrail:
+Untuk memastikan agen WA tidak liar dan tidak dapat di-*jailbreak* oleh staf atau pelanggan, BOS menerapkan 6 lapis pengaman:
 
 1. **Lapis 1: Chat-Driven Management (Two-Way Sync)**
    - Bos memiliki kuasa penuh mengatur operasional (contoh: mengubah batas diskon, jam buka, hingga gaya bahasa) murni lewat *chat* WA, layaknya memberikan instruksi kepada asisten manusia.
@@ -132,21 +132,21 @@ Untuk memastikan agen WA tidak liar dan tidak dapat di-*jailbreak* oleh staf ata
    - Autentikasi ketat: Bot mencocokkan nomor pengirim pesan dengan kolom `wa_number` di tabel `users`. Jika belum terdaftar, bot mengabaikan.
    - Agen hanya diberikan akses ke tool API (MCP) yang sesuai dengan peran staf yang memanggilnya. Di grup Kasir, bot tidak memiliki tool untuk mengakses laporan laba rugi.
 
-4. **Lapis 3: Server-Side Validation & Cross-Company Security (Hard-Limit)**
+3. **Lapis 3: Server-Side Validation & Cross-Company Security (Hard-Limit)**
    - Karena 1 bot melayani banyak perusahaan, setiap *Tool API* mewajibkan parameter `company_id`.
    - Jika bot diretas dan mencoba mengirim `company_id` milik orang lain, **API Backend BOS akan menolaknya** dengan `403 Forbidden` (Backend mengecek relasi kepemilikan `user_id` dengan `company_id`).
    - API juga secara ketat memvalidasi payload request agen terhadap pengaturan `max_discount` atau limit operasional milik perusahaan terkait.
 
-5. **Lapis 4: Human-in-the-Loop (Persetujuan Bos)**
+4. **Lapis 4: Human-in-the-Loop (Persetujuan Bos)**
    - Untuk tindakan destruktif atau berisiko tinggi (seperti pengeluaran kas besar atau void transaksi), bot diwajibkan melakukan *2-step confirmation*.
-   - Bot tidak mengeksekusi secara mandiri, melainkan mengirimkan "Kartu Persetujuan" ke DM WhatsApp Bos: *"Staf meminta eksekusi berisiko (Void). Apakah Anda setuju? Balas YA atau TIDAK."*
-   - Tindakan baru tereksekusi jika Bos merespons YA.
+   - Bot tidak mengeksekusi secara mandiri, melainkan mengirimkan "Kartu Persetujuan" berisi **kode tiket** ke DM WhatsApp Bos: *"Staf meminta eksekusi berisiko (Void). Balas `YA 4821` untuk menyetujui atau `TIDAK 4821` untuk menolak."*
+   - Tindakan tereksekusi hanya jika Bos membalas `YA <kode>` yang cocok dan belum dipakai (D-11/D-27). `YA` polos ditolak.
 
-5. **Pembersihan Jejak Engine (White-Label 100%):**
+5. **Lapis 5: Pembersihan Jejak Engine (White-Label 100%):**
    - Menghilangkan nama Hermes, Nous Research, atau framework open-source di respons teks, pesan error, dan metadata API.
    - Respon bot murni memposisikan diri sebagai *"Asisten Digital [Nama Bisnis Tenant]"*.
 
-6. **Arsitektur Jembatan Barcode (QR Code Bridge):**
+6. **Lapis 6: Arsitektur Jembatan Barcode (QR Code Bridge):**
    - Karena mesin *Hermes* sudah terintegrasi secara *native* dengan *WhatsApp Client* (bisa memproduksi QR Code mandiri), BOS tidak lagi membutuhkan *software* WA Gateway terpisah.
    - **Alur Penyambungan:** Klien HANYA boleh mengakses Web BOS (Laravel). Saat Klien membuka halaman "Hubungkan WA", *Backend* Laravel akan memanggil API rahasia ke mesin Hermes untuk "meminta" gambar QR Code.
    - Hermes memproduksi QR, lalu Laravel menampilkannya di Web BOS. Begitu Klien men-scan QR tersebut dari Web BOS, WA-nya langsung tersambung kuat dengan mesin Hermes di *backend*. (Menjaga ilusi *White-Label* tetap utuh di mata klien).

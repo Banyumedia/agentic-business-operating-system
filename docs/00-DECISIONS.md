@@ -1,8 +1,9 @@
 # DECISIONS LOG — KONSOLIDASI DISKUSI PRD AGENTIC BOS
 ## Single Source of Truth Seluruh Keputusan Diskusi
 
-**Tanggal konsolidasi:** 2026-09-12
-**Sumber:** Diskusi PRD session ini + `_docs/modules/bos-*.md` (pricing, WA tiering, infra, modul 14, modul 15)
+**Tanggal konsolidasi:** 2026-09-12 (revisi 2026-09-16)
+**Sumber:** Diskusi PRD + dokumen modul warisan ERP Prime (tidak ada di repo ini; hanya keputusannya yang dibawa)
+**Lokasi dokumen:** `D:\PROJECTS\agentic-bos\docs\`
 
 Status: `LOCKED` = keputusan final Bos. `OPEN` = menunggu diskusi lanjutan.
 
@@ -19,7 +20,7 @@ Status: `LOCKED` = keputusan final Bos. `OPEN` = menunggu diskusi lanjutan.
 | D-05 | **Membership & pricing DINAMIS, tidak hardcode** | Harga, jumlah paket, kuota ditentukan belakangan via riset pasar. Simulasi 3 tier di `COMMERCIAL_AND_AI_AGENTIC_SPEC.md` hanya placeholder, edit manual via Super Admin. Struktur canonical: `membership_plans`, `company_memberships`, dan `token_ledger_entries`. |
 | D-06 | **Arsitektur Multi-Node dan Tenant Hybrid untuk 500+ klien** | SaaS reguler memakai database bersama dengan isolasi `company_id` yang fail-closed; Enterprise dapat memakai database/VPS dedicated melalui `TenantProvisioner`. 1 Node Hermes (Process Manager) maksimal memegang ~100 sesi Klien. Laravel menyimpan *Node Registry* dan melakukan *Load Balancing* ke Node yang masih kosong. (Mencegah Single Point of Failure akibat *Memory Leak*). |
 | D-07 | **Model AI per-tenant, masing-masing pilih sendiri** | Tenant dapat memilih model/provider sendiri dari katalog yang disediakan platform. |
-| D-08 | **Topup token otomatis via QRIS** | Pembayaran QRIS → webhook callback (gateway payment) → kuota token ter-update otomatis tanpa konfirmasi admin. Align Modul 15 (webhook HMAC fail-closed sudah live; production perlu set `PAYMENT_WEBHOOK_SECRET`). |
+| D-08 | **Topup token otomatis via QRIS** | Pembayaran QRIS → webhook callback payment gateway → kuota token ter-update otomatis tanpa konfirmasi admin. Webhook wajib fail-closed (validasi signature, idempotency, transaksi atomik). **Belum ada implementasi di repo ini** — dibangun pada T-19. |
 | D-09 | **White-label 100% + anti-jailbreak** | Klien tidak bisa edit raw SOUL.md/tools. SOP via form terstruktur (max ~300 char) → service rakit jadi SOUL.md baku. Toolset tenant whitelist: hanya MCP ERP; terminal/file/code-exec OFF. Hilangkan semua jejak Hermes/Nous dari respons. |
 | D-10 | **Role grup WA + kuota per paket** | Grup dikunci role: Kasir (dilarang lihat laba-rugi/gaji), Gudang (dilarang kasir/keuangan), Keuangan. Kuota `max_wa_groups` dari membership plan. Bind `group_jid` permanen. Onboarding `/role` command di grup. |
 | D-11 | **DM Bos = Personal Assistant** | Nomor owner verified → akses full read data keuangan tenant (omzet, cashflow, margin), analisis bebas konteks, aksi finansial wajib 2-step confirmation ("YA 1234"). |
@@ -46,26 +47,51 @@ Status: `LOCKED` = keputusan final Bos. `OPEN` = menunggu diskusi lanjutan.
 | D-17 | **Mode Pajak Campuran / Add-on Berbayar / Enterprise** | Konfigurasi dasar adalah satu mode pada `BusinessIdentity`: Non-PKP atau PKP dengan harga inklusif/eksklusif. Override inklusif/eksklusif per item/transaksi atau multi-tax rate hanya dijadikan add-on berbayar/paket Enterprise setelah kontraknya ditetapkan. |
 | D-18 | **Data Model Decoupled Modular (Opsi A) — Warisan Paving Dipertahankan** | Tabel alur rantai pasok kompleks peninggalan pabrik (SPH, PO bertingkat, DO, Jurnal Manufaktur) tetap dipertahankan untuk klien pengusaha besar/korporat, namun dibungkus fitur flags sehingga sama sekali tidak muncul pada tenant UMKM/ritel. |
 | D-19 | **Granular Config Per-Module Per-Company** | Setiap modul memiliki skema konfigurasi JSON independen per tenant (tabel `module_settings` dengan field `module_name`, `company_id`, `settings_json`). Contoh CRM: Company A bisa aktifkan pipeline + deal stage custom, Company B hanya aktifkan phonebook kontak + auto-sync WhatsApp tanpa form rumit. |
-| D-20 | **UX Visual Redesign: Midnight Command + Operator Grid Hybrid** | Varian prototype terpilih: **A (Midnight Command)** untuk `/dashboard` & shell eksekutif (dark-first, rail sidebar ikon, command palette `Ctrl K`, omzet hero, KPI sparkline, feed agentic); **C (Operator Grid)** untuk halaman operasional `/operations/*` (telemetri kas/kuota/sync di topbar, tabel padat, log live, monospace angka). Sprint terisolasi di `project-control/sprint-ux-visual-overhaul/`. |
+| D-20 | **UX Visual Redesign: Midnight Command + Operator Grid Hybrid** | Varian prototype terpilih: **A (Midnight Command)** untuk dashboard & shell eksekutif (dark-first, rail sidebar ikon, command palette `Ctrl K`, omzet hero, KPI sparkline, feed agentic); **C (Operator Grid)** untuk halaman operasional (telemetri kas/kuota/sync di topbar, tabel padat, log live, monospace angka). Semua path mengikuti skema `/app/{module}/...` (lihat D-24). |
 | D-21 | **Autentikasi Tradisional (Web Login)** | Menggunakan Email dan Password standar untuk akses masuk ke aplikasi Web (SaaS). WhatsApp secara eksklusif hanya digunakan sebagai saluran komunikasi asisten AI (Hermes), bukan sebagai gerbang otorisasi Web. |
 | D-22 | **Bring Your Own Storage (BYOS) via Google Drive** | Semua lampiran fisik (*file* foto, nota, kontrak) di-upload dan disimpan di Google Drive milik Klien melalui integrasi API. Sistem SaaS hanya menyimpan *URL link* ke dalam satu tabel *Polymorphic* bernama `attachments`. Menghemat biaya *server storage* secara drastis. |
 | D-23 | **SaaS Billing via Proactive WA Invoice** | Penagihan biaya langganan aplikasi tidak memotong kartu kredit otomatis. Sebaliknya, Asisten AI (Hermes) secara proaktif membuat tagihan (*Invoice*) dan mengirimkan *Link* Pembayaran (QRIS/VA) ke WA Bos pada H-3 sebelum masa tenggang. Begitu dibayar, masa aktif *Membership* otomatis bertambah. |
+| D-24 | **Skema Routing Tunggal `/app/{module}/{path?}`** (terverifikasi dari kode 2026-09-16) | Seluruh halaman aplikasi berada di bawah route bernama `app.module` dengan URL `/app/{module}/{path?}`. Lobby App Switcher di `/`. Contoh: `/app/settings`, `/app/accounting/reports`. Tidak ada `/dashboard`, `/settings`, atau `/operations/*` di level root. Registry menu menyimpan **URL path**, bukan nama route Laravel per fitur. Dokumen lama yang memakai skema lain (INDUSTRY_PRESETS §2 versi awal, UX_UI_SPEC) telah dikoreksi. |
+| D-25 | **Bentuk `module_settings` mengikuti D-19** | Satu baris per `(company_id, module_name)` dengan kolom `settings_json`. Feature flag disimpan di modul `features` sebagai `settings_json = {"crm.leads": true, ...}`. Tidak ada baris key-value per flag. |
+| D-26 | **Kolom `company_id` wajib di SEMUA tabel bisnis** | Termasuk tabel anak seperti `accounting_journal_lines`, `crm_activity_logs`, `eo_vendors`. Tidak boleh mengandalkan join ke parent untuk isolasi tenant. |
+| D-27 | **Konfirmasi 2-langkah memakai kode tiket** | Format balasan Bos adalah `YA <kode-tiket>`, bukan `YA` polos, agar tidak dapat diputar ulang (replay). Kode tiket = 4-6 digit yang dikirim sistem bersama Kartu Persetujuan. Menyelaraskan REQUIREMENTS §3.4 dan COMMERCIAL §4 dengan D-11. |
+| D-28 | **Model AI tidak dibatasi paket** | Menegaskan D-15. Semua paket dapat memilih model apa pun dari katalog. Perbedaan hanya pada kecepatan habisnya token via `ai_model_pricings`. COMMERCIAL §2.2 tidak boleh dibaca sebagai pembatasan per paket. |
+| D-29 | **Foto/lampiran mengikuti BYOS (D-22) tanpa kecuali** | `pharmacy_prescriptions.image_path` dihapus; foto resep disimpan sebagai baris `attachments` polimorfik. |
+| D-30 | **Product naming canonical** | Produk front-facing: **NalarPesan**. Produk back-office: **Agentic BOS**. Istilah "ERP Prime" dan "ERP Nalarin" adalah nama warisan dan tidak dipakai di kode/UI baru. |
 
 ---
 
 ## Keputusan OPEN
 
-*Semua keputusan arsitektur utama telah disahkan (LOCKED) oleh Bos.*
+Keputusan berikut **belum diputuskan Bos** dan memblokir task tertentu. Agent
+autopilot **tidak boleh menebak** item ini. Bila task bergantung pada item OPEN,
+tandai task `BLOCKED` dan lanjutkan task lain yang independen. Setiap item
+menyertakan **rekomendasi default** agar Bos cukup menjawab "setuju" atau memilih.
+
+| ID | Pertanyaan | Memblokir | Rekomendasi default |
+|---|---|---|---|
+| Q-01 | Payment gateway: **Midtrans** atau **Xendit**? Menentukan algoritma signature webhook, format `order_id`, dan vocabulary status. | T-17, T-18, T-19 | **Midtrans.** Signature = `SHA512(order_id + status_code + gross_amount + ServerKey)`, header/body standar Midtrans notification. Env: `MIDTRANS_SERVER_KEY`, `MIDTRANS_IS_PRODUCTION`. |
+| Q-02 | Driver Laravel Scout: **`database`** (nol infra, cukup untuk 500 tenant awal) atau **Meilisearch** (butuh service tambahan)? | T-20 | **`database`** untuk fase ini. Migrasi ke Meilisearch bila terbukti lambat. |
+| Q-03 | Palet warna & nilai hex untuk 5 tema (`Prime Default`, `Clean Ledger`, `Ocean Blue`, `Brass Amber`, `Rose`) dan daftar lengkap 36 token `--erp-*`. | T-07, semua UI setelahnya | Agent boleh menurunkan palet dari Tailwind v4 default (slate/emerald/sky/amber/rose) **asal** setiap pasangan teks/latar lolos WCAG AA ≥ 4.5:1 dan dibuktikan dengan test unit penghitung kontras. Daftar 36 token didefinisikan di UX_UI_SPEC §7 (ditambahkan 2026-09-16). |
+| Q-04 | `hermes_profiles`: **satu per company** (PRD/DATA_MODEL) atau **satu per owner yang memiliki banyak company** (COMMERCIAL §3.2)? Menentukan `UNIQUE(company_id)`. | T-10b, provisioning | **Satu per company.** Owner multi-company mendapat beberapa profile; lebih sederhana untuk isolasi dan kuota. COMMERCIAL §3.2 akan dikoreksi setelah Bos setuju. |
+| Q-05 | Nama tahap CRM default untuk preset Agency: `Lead Baru → Pitch/SPH → Negosiasi → Won/Lost` (REQUIREMENTS) vs `new → in_progress → won → lost` (DATA_MODEL). | T-13 | Simpan **kode** `new/qualified/proposal/negotiation/won/lost` di kolom `stage` (bahasa netral), tampilkan **label** Indonesia di UI. Stage custom per company via `module_settings`. |
+| Q-06 | Daftar vendor string yang harus nol di UI untuk audit white-label T-22. | T-22 | `Hermes`, `Nous`, `Nous Research`, `Laravel` (di UI tenant, bukan di source), `Midtrans` (di UI tenant), `laravel/laravel` (di `composer.json name`). |
+| Q-07 | Mekanisme wawancara onboarding (U-01): form web, AI WA, atau human call sebagai default fase ini? | Onboarding flow | **Form web sederhana** dulu; AI WA interview menyusul setelah Hermes node API tersedia. |
+| Q-08 | Konteks tenant aktif: `users.current_company_id` (kolom) vs session vs subdomain? | T-15, T-16, T-20 | **Kolom `users.current_company_id`** + middleware yang membacanya, karena D-21 memakai login tradisional dan user bisa punya banyak company. |
+
+Semua keputusan arsitektur utama selain Q-01..Q-08 telah LOCKED.
 
 ---
 
-## Peta Dokumen PRD (`project-control/operating-system-prd/`)
+## Peta Dokumen PRD (`D:\PROJECTS\agentic-bos\docs\`)
 
-1. `00-DECISIONS.md` — dokumen ini (konsolidasi semua keputusan)
+1. `00-DECISIONS.md` — dokumen ini (konsolidasi semua keputusan; tie-breaker)
 2. `PRD.md` — ringkasan eksekutif, visi, pilar
 3. `INDUSTRY_PRESETS.md` — matriks 6 preset + feature flags + menu dinamis
-4. `DATA_MODEL.md` — skema tabel (clean canonical)
+4. `DATA_MODEL.md` — skema tabel canonical + kontrak migration portabel
 5. `REQUIREMENTS.md` — spesifikasi fungsional per modul (termasuk formula pajak)
 6. `COMMERCIAL_AND_AI_AGENTIC_SPEC.md` — membership dinamis, arsitektur 500 klien, white-label AI
-7. `UX_UI_SPEC.md` — filosofi UI, onboarding pasca-wawancara, tab-based settings, dashboard adaptif per industri
-8. `EXECUTION_PLAN.md` — task queue fase 1–6 untuk autonomous agent
+7. `UX_UI_SPEC.md` — filosofi UI, onboarding, tab-based settings, dashboard adaptif, design token
+8. `EXECUTION_PLAN.md` — task queue Fase 0–5, dependency graph, definisi READY
+9. `PRD_RECONCILIATION.md` — log audit konflik dan resolusinya
+10. `AUTOPILOT_STATUS.md` — state pekerjaan aktual untuk resume agent

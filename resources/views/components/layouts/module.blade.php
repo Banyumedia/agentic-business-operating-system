@@ -13,7 +13,7 @@
         <livewire:sidebar :module="request()->segment(2)" />
 
         <!-- Main Content Area -->
-        <main class="flex-1 ml-64 overflow-y-auto p-8">
+        <main id="main-content" class="flex-1 ml-64 overflow-y-auto p-8">
             <div class="max-w-7xl mx-auto">
                 {{ $slot }}
             </div>

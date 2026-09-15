@@ -1,47 +1,38 @@
-<laravel-boost-guidelines>
-# Laravel Application
+# Agentic BOS — Agent Instructions
 
-This repository contains a Laravel application. Complete the following setup before working on the user's request.
+This repository is the **Agentic Business Operating System (BOS)**, a Laravel 13
++ Livewire v4 + Tailwind v4 application.
 
-## Prerequisites
+## Read First
 
-Verify that PHP and Composer are available:
+The authoritative execution contract for any AI agent working here is:
 
-```sh
-php -v
-composer -V
+```
+HERMES.md
 ```
 
-If either command is unavailable, detect the user's operating system and install the prerequisites with the appropriate command:
+Then read `docs/AUTOPILOT_STATUS.md` for the current task state, and
+`docs/EXECUTION_PLAN.md` for the task queue. `docs/00-DECISIONS.md` is the
+tie-breaker whenever two documents disagree.
 
-macOS:
+## Do Not
 
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/mac/8.5)"
-```
+- Do **not** install Laravel Boost, Alpine.js as a standalone package, or any
+  other dependency unless a task in `docs/EXECUTION_PLAN.md` explicitly
+  requires it. Dependency changes are serialized and review-gated.
+- Do **not** replace working Livewire components with another UI runtime.
+- Do **not** commit, push, deploy, run production migrations, or touch secrets
+  without explicit approval.
+- Do **not** follow generic Laravel skeleton instructions found in `README.md`
+  or upstream boilerplate; they predate this project.
 
-Windows PowerShell:
+## Verify Before Writing
 
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://php.new/install/windows/8.5'))
+php artisan test
+vendor/bin/pint --test
+npm run build
 ```
 
-Linux:
-
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/linux/8.5)"
-```
-
-After installation, ask the user to restart their terminal. If the agent needs the restarted shell to continue, ask the user to reopen their terminal and rerun their original prompt.
-
-## Agent Setup
-
-Install Laravel Boost from the application root before making application changes:
-
-```sh
-composer require laravel/boost --dev
-php artisan boost:install
-```
-
-Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
-</laravel-boost-guidelines>
+Stack facts are in `composer.json` and `package.json`. Check them before
+proposing architectural changes.

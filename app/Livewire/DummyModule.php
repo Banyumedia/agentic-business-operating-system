@@ -7,6 +7,7 @@ use Livewire\Component;
 class DummyModule extends Component
 {
     public $module;
+
     public $path;
 
     public function mount($module, $path = 'dashboard')

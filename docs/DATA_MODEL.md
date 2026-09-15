@@ -37,36 +37,75 @@ Ketentuan tambahan:
 ---
 
 
-## 1. Perubahan Tabel Eksis
+## 1. Tabel Fondasi Tenant (WAJIB DIBUAT — belum ada di repo)
+
+> **Koreksi 2026-09-16:** versi awal dokumen ini menyebut tabel-tabel di bawah
+> "sudah ada" karena ditulis untuk codebase ERP Prime warisan. Repo canonical
+> `D:\PROJECTS\agentic-bos` hanya memiliki `users`, `cache`, `jobs` bawaan Laravel.
+> Semua tabel di bagian ini harus **dibuat dari nol** (task T-00a/T-00b di
+> `EXECUTION_PLAN.md`). `ALTER TABLE` di sini adalah notasi spesifikasi; migration
+> aktual membuat kolom tersebut langsung di `CREATE`.
 
 ### 1.1 `companies`
 ```sql
-ALTER TABLE companies
-  ADD COLUMN business_preset ENUM('agency','fnb','pharmacy','eo','contractor','rental','custom')
-  NOT NULL DEFAULT 'custom';
+CREATE TABLE companies (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(191) NOT NULL,
+    slug VARCHAR(64) NOT NULL UNIQUE,      -- dipakai untuk tenant routing & Hermes profile
+    owner_user_id BIGINT UNSIGNED NOT NULL,
+    business_preset ENUM('agency','fnb','pharmacy','eo','contractor','rental','custom')
+        NOT NULL DEFAULT 'custom',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    CONSTRAINT fk_companies_owner FOREIGN KEY (owner_user_id) REFERENCES users(id)
+);
 ```
 
 ### 1.2 `business_identities` (Base Tax Mode)
-Konfigurasi pajak dasar berada pada `BusinessIdentity`, bukan pada `Company` atau shadow company. Semua transaksi fase dasar mengikuti mode identity yang dipilih. Override per dokumen/item dan multi-tax rate ditunda untuk add-on Enterprise agar tidak menciptakan kontrak pajak ganda sebelum disahkan.
+Konfigurasi pajak dasar berada pada `BusinessIdentity`, bukan pada `Company` atau shadow company. Semua transaksi fase dasar mengikuti mode identity yang dipilih. Override per dokumen/item dan multi-tax rate ditunda untuk add-on Enterprise (D-17).
 ```sql
-ALTER TABLE business_identities
-  ADD COLUMN price_includes_tax BOOLEAN NOT NULL DEFAULT FALSE,
-  ADD COLUMN tax_mode ENUM('taxable','non_taxable') NOT NULL DEFAULT 'non_taxable',
-  ADD COLUMN tax_rate DECIMAL(5,2) NULL DEFAULT 0.00; -- Contoh: 11.00 untuk PPN
+CREATE TABLE business_identities (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    legal_name VARCHAR(191) NOT NULL,      -- nama di kop/NPWP
+    npwp VARCHAR(32) NULL,
+    address TEXT NULL,
+    price_includes_tax BOOLEAN NOT NULL DEFAULT FALSE,
+    tax_mode ENUM('taxable','non_taxable') NOT NULL DEFAULT 'non_taxable',
+    tax_rate DECIMAL(5,2) NULL DEFAULT 0.00, -- Contoh: 11.00 untuk PPN
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_business_identities_company (company_id),
+    CONSTRAINT fk_business_identities_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
 ```
-> Sebelum migrate, cek dulu apakah kolom pajak sudah ada di `business_identities` atau `financial_books`. Jangan duplikat kolom.
 
-### 1.3 `module_settings`
-- Sudah ada (key-value JSON per company). Dipakai untuk override feature flags.
-- Konvensi key: `features.<flag>` (contoh `features.crm.leads`), value `"true"` / `"false"`.
-- Scope: `company_id`.
+### 1.3 `module_settings` (bentuk mengikuti D-19 / D-25)
+Satu baris per `(company_id, module_name)`. Feature flag disimpan di modul bernama `features`.
+```sql
+CREATE TABLE module_settings (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    module_name VARCHAR(64) NOT NULL,      -- 'features' | 'crm' | 'pos' | 'ai_agent' | ...
+    settings_json JSON NOT NULL,           -- untuk module_name='features': {"crm.leads": true, "pos.quick_counter": false}
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE KEY uq_module_settings_company_module (company_id, module_name),
+    CONSTRAINT fk_module_settings_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+```
+Resolusi `Company::feature($key)`: baca `module_settings` baris `features` → jika key ada di `settings_json`, kembalikan nilainya; jika tidak, ambil default dari `business_presets.default_features` sesuai `companies.business_preset`.
 
-### 1.4 `users` (Otorisasi WhatsApp)
+### 1.4 `users` (Otorisasi WhatsApp + konteks tenant aktif)
 ```sql
 ALTER TABLE users
   ADD COLUMN wa_number VARCHAR(32) NULL,
-  ADD COLUMN wa_is_verified BOOLEAN NOT NULL DEFAULT FALSE;
+  ADD COLUMN wa_is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN current_company_id BIGINT UNSIGNED NULL; -- Q-08: konteks tenant aktif
 ```
+Ini satu-satunya `ALTER` nyata di dokumen ini karena `users` memang sudah ada.
 
 ---
 
@@ -76,15 +115,16 @@ ALTER TABLE users
 ```sql
 CREATE TABLE business_presets (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    key VARCHAR(32) NOT NULL UNIQUE,     -- agency | fnb | pharmacy | eo | contractor | rental
+    key VARCHAR(32) NOT NULL UNIQUE,     -- agency | fnb | pharmacy | eo | contractor | rental | custom
     name VARCHAR(64) NOT NULL,
     description TEXT NULL,
-    default_features JSON NOT NULL,      -- array feature-flag default
+    default_features JSON NOT NULL,      -- map {"crm.leads": true, ...} — bukan array
     is_system BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL
 );
 ```
+Seeder mengisi **7 baris**: 6 industri (flag dari matriks `INDUSTRY_PRESETS.md` §1) + `custom` (semua flag `false` kecuali `system.ai_agent = true`).
 
 ### 2.2 `support_tickets` (Master Bot CS)
 Tabel untuk mencatat keluhan Bos yang diterima oleh Agen Pusat (BOS Care). Data ini diakses di level platform (bukan per-tenant).
@@ -104,23 +144,30 @@ CREATE TABLE support_tickets (
 );
 ```
 
-### 2.3 `invoices` (Auto-Billing Midtrans)
-Tabel untuk mencatat tagihan *top-up* token. Diperbarui otomatis oleh Webhook Payment Gateway.
+### 2.3 `invoices` (Top-up Token DAN Subscription — D-23)
+Satu tabel untuk dua jenis tagihan. `token_amount_granted` hanya terisi untuk `type = 'topup'`. Diperbarui otomatis oleh webhook payment gateway (T-19).
 ```sql
 CREATE TABLE invoices (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
-    order_id VARCHAR(64) NOT NULL UNIQUE, -- ID referensi ke Midtrans
+    company_membership_id BIGINT UNSIGNED NULL, -- wajib untuk type='subscription'
+    type ENUM('topup','subscription') NOT NULL,
+    order_id VARCHAR(64) NOT NULL UNIQUE, -- ID referensi ke payment gateway
     amount DECIMAL(18,2) NOT NULL,
-    token_amount_granted BIGINT NOT NULL,
+    token_amount_granted BIGINT NULL,     -- hanya untuk topup
+    period_start DATE NULL,               -- hanya untuk subscription
+    period_end DATE NULL,                 -- hanya untuk subscription
     payment_status ENUM('pending', 'paid', 'expired', 'failed') NOT NULL DEFAULT 'pending',
-    payment_url VARCHAR(255) NULL,       -- Link Snap Midtrans / QRIS
+    payment_url VARCHAR(255) NULL,       -- Link Snap / QRIS
     paid_at TIMESTAMP NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    FOREIGN KEY (company_id) REFERENCES companies(id)
+    INDEX idx_invoices_company (company_id),
+    CONSTRAINT fk_invoices_company FOREIGN KEY (company_id) REFERENCES companies(id),
+    CONSTRAINT fk_invoices_membership FOREIGN KEY (company_membership_id) REFERENCES company_memberships(id)
 );
 ```
+Transisi status yang sah: `pending → paid`, `pending → expired`, `pending → failed`. Tidak ada transisi keluar dari `paid`. Webhook yang datang untuk invoice `paid` harus dianggap replay dan diabaikan tanpa efek samping.
 
 ### 2.4 `ai_model_pricings` (Sistem Base Token Multiplier)
 Tabel rahasia internal platform untuk memetakan harga modal model AI (seperti GPT-4o, Claude) terhadap mata uang *BOS Token*.
@@ -231,9 +278,11 @@ CREATE TABLE accounting_journals (
 ```
 
 ### 4.3 `accounting_journal_lines` (Baris Jurnal Debit/Kredit)
+`company_id` didenormalisasi dari parent sesuai D-26 agar isolasi tenant tidak bergantung pada join.
 ```sql
 CREATE TABLE accounting_journal_lines (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
     journal_id BIGINT UNSIGNED NOT NULL,
     account_id BIGINT UNSIGNED NOT NULL,
     deal_id BIGINT UNSIGNED NULL, -- Untuk melacak Laba/Rugi per Proyek (Project Costing)
@@ -241,13 +290,16 @@ CREATE TABLE accounting_journal_lines (
     credit DECIMAL(18,2) NOT NULL DEFAULT 0.00,
     description TEXT NULL,
     created_at TIMESTAMP NULL,
+    INDEX idx_journal_line_company (company_id),
     INDEX idx_journal_line (journal_id),
     INDEX idx_journal_line_deal (deal_id),
+    CONSTRAINT fk_journal_line_company FOREIGN KEY (company_id) REFERENCES companies(id),
     CONSTRAINT fk_journal_line_journal FOREIGN KEY (journal_id) REFERENCES accounting_journals(id) ON DELETE CASCADE,
     CONSTRAINT fk_journal_line_account FOREIGN KEY (account_id) REFERENCES chart_of_accounts(id),
     CONSTRAINT fk_journal_line_deal FOREIGN KEY (deal_id) REFERENCES crm_deals(id) ON DELETE SET NULL
 );
 ```
+Invarian wajib (ditegakkan di service layer + test): untuk setiap `journal_id`, `SUM(debit) = SUM(credit)`. Karena FK ke `crm_deals`, migration tabel ini harus berjalan **setelah** T-13.
 
 ---
 
@@ -303,7 +355,7 @@ CREATE TABLE ai_reminders (
 
 ## 6. Tabel Baru — Apotek
 
-### 4.1 `pharmacy_patients`
+### 6.1 `pharmacy_patients`
 ```sql
 CREATE TABLE pharmacy_patients (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -320,7 +372,8 @@ CREATE TABLE pharmacy_patients (
 );
 ```
 
-### 4.2 `pharmacy_prescriptions`
+### 6.2 `pharmacy_prescriptions`
+Foto resep **tidak** disimpan di kolom lokal (D-29 / BYOS). Gunakan baris `attachments` dengan `attachable_type = App\Models\PharmacyPrescription`.
 ```sql
 CREATE TABLE pharmacy_prescriptions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -328,22 +381,22 @@ CREATE TABLE pharmacy_prescriptions (
     patient_id BIGINT UNSIGNED NULL,
     doctor_name VARCHAR(191) NULL,
     doctor_sip VARCHAR(64) NULL,
-    image_path VARCHAR(255) NULL,        -- foto resep (WA/OCR intake)
     extracted_data JSON NULL,            -- [{drug, qty, dosage, signa}]
     status ENUM('draft','pharmacist_verify','verified','served','cancelled') NOT NULL DEFAULT 'draft',
     verified_by BIGINT UNSIGNED NULL,    -- apoteker
     served_at TIMESTAMP NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    INDEX idx_pharmacy_prescriptions_company (company_id)
+    INDEX idx_pharmacy_prescriptions_company (company_id),
+    CONSTRAINT fk_pharmacy_prescriptions_patient FOREIGN KEY (patient_id) REFERENCES pharmacy_patients(id) ON DELETE SET NULL
 );
 ```
 
 ---
 
-## 5. Tabel Baru — POS
+## 7. Tabel Baru — POS
 
-### 5.1 `pos_shifts`
+### 7.1 `pos_shifts`
 ```sql
 CREATE TABLE pos_shifts (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -359,7 +412,7 @@ CREATE TABLE pos_shifts (
 );
 ```
 
-### 5.2 `pos_bills`
+### 7.2 `pos_bills`
 ```sql
 CREATE TABLE pos_bills (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -376,9 +429,9 @@ CREATE TABLE pos_bills (
 
 ---
 
-## 6. Tabel Baru — Rental (Persewaan)
+## 8. Tabel Baru — Rental (Persewaan)
 
-### 6.1 `rental_units`
+### 8.1 `rental_units`
 ```sql
 CREATE TABLE rental_units (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -396,7 +449,7 @@ CREATE TABLE rental_units (
 );
 ```
 
-### 6.2 `rental_bookings`
+### 8.2 `rental_bookings`
 ```sql
 CREATE TABLE rental_bookings (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -421,7 +474,139 @@ CREATE TABLE rental_bookings (
 );
 ```
 
-### Token Ledger Contract
+### 8.3 `rental_incidents`
+```sql
+CREATE TABLE rental_incidents (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    booking_id BIGINT UNSIGNED NOT NULL,
+    type ENUM('damage','loss','late','other') NOT NULL,
+    description TEXT NULL,
+    charge_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NULL,
+    INDEX idx_rental_incidents_company (company_id),
+    CONSTRAINT fk_rental_incidents_booking FOREIGN KEY (booking_id) REFERENCES rental_bookings(id)
+);
+```
+
+---
+
+## 9. Tabel Baru — Event Organizer
+
+### 9.1 `eo_events`
+```sql
+CREATE TABLE eo_events (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(191) NOT NULL,
+    event_date DATE NOT NULL,
+    venue VARCHAR(191) NULL,
+    status ENUM('draft','planned','running','done','cancelled') NOT NULL DEFAULT 'draft',
+    budget DECIMAL(18,2) NULL,
+    metadata JSON NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_eo_events_company (company_id)
+);
+```
+
+### 9.2 `eo_vendors`
+```sql
+CREATE TABLE eo_vendors (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    event_id BIGINT UNSIGNED NOT NULL,
+    vendor_name VARCHAR(191) NOT NULL,
+    service_type VARCHAR(64) NULL,       -- sound | lighting | stage | catering | talent
+    fee DECIMAL(18,2) NULL,
+    payment_status ENUM('unpaid','partial','paid') NOT NULL DEFAULT 'unpaid',
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_eo_vendors_company (company_id),
+    CONSTRAINT fk_eo_vendors_event FOREIGN KEY (event_id) REFERENCES eo_events(id) ON DELETE CASCADE
+);
+```
+
+### 9.3 `eo_crew_assignments`
+```sql
+CREATE TABLE eo_crew_assignments (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    event_id BIGINT UNSIGNED NOT NULL,
+    crew_name VARCHAR(191) NOT NULL,
+    role VARCHAR(64) NULL,
+    assignment_time DATETIME NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_eo_crew_company (company_id),
+    CONSTRAINT fk_eo_crew_event FOREIGN KEY (event_id) REFERENCES eo_events(id) ON DELETE CASCADE
+);
+```
+
+---
+
+## 10. Tabel Baru — Kontraktor (Retensi)
+
+### 10.1 `contractor_retentions`
+```sql
+CREATE TABLE contractor_retentions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    project_id BIGINT UNSIGNED NOT NULL,
+    invoice_id BIGINT UNSIGNED NULL,
+    retention_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+    release_date DATE NULL,
+    status ENUM('held','released') NOT NULL DEFAULT 'held',
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_contractor_retentions_company (company_id)
+);
+```
+> Kontraktor memakai ulang `project_center` + `subcontractor_spk` yang sudah ada di codebase; tabel retensi ini hanya untuk mencatat dana retensi tertahan dan jadwal rilisnya.
+
+---
+
+## 11. Tabel Baru — Komersial SaaS & Membership (Align D-05)
+
+### 11.1 `membership_plans`
+```sql
+CREATE TABLE membership_plans (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(64) NOT NULL,            -- Starter, Pro, Enterprise
+    slug VARCHAR(64) NOT NULL UNIQUE,
+    monthly_price DECIMAL(18,2) NOT NULL DEFAULT 0,
+    annual_price DECIMAL(18,2) NOT NULL DEFAULT 0,
+    max_wa_groups INT NOT NULL DEFAULT 1,
+    monthly_token_quota BIGINT NOT NULL DEFAULT 500000,
+    allowed_presets JSON NULL,
+    features JSON NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+```
+
+### 11.2 `company_memberships`
+```sql
+CREATE TABLE company_memberships (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    plan_id BIGINT UNSIGNED NOT NULL,
+    status ENUM('trial','active','past_due','cancelled') NOT NULL DEFAULT 'trial',
+    starts_at TIMESTAMP NOT NULL,
+    expires_at TIMESTAMP NULL,
+    max_wa_groups INT NOT NULL DEFAULT 1,
+    monthly_token_quota BIGINT NOT NULL DEFAULT 500000,
+    current_token_balance BIGINT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_memberships_company (company_id),
+    CONSTRAINT fk_memberships_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_memberships_plan FOREIGN KEY (plan_id) REFERENCES membership_plans(id)
+);
+```
+
+### 11.3 `token_ledger_entries` (Audit Saldo Token)
 Saldo pada `company_memberships.current_token_balance` adalah cache operasional;
 setiap kredit/debit wajib mempunyai baris ledger yang dapat direkonsiliasi. Webhook
 payment dan pemakaian model harus memakai `idempotency_key` unik agar event yang
@@ -449,145 +634,12 @@ CREATE TABLE token_ledger_entries (
 );
 ```
 
-### 6.4 `rental_incidents`
-```sql
-CREATE TABLE rental_incidents (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    booking_id BIGINT UNSIGNED NOT NULL,
-    type ENUM('damage','loss','late','other') NOT NULL,
-    description TEXT NULL,
-    charge_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
-    created_at TIMESTAMP NULL,
-    INDEX idx_rental_incidents_company (company_id),
-    CONSTRAINT fk_rental_incidents_booking FOREIGN KEY (booking_id) REFERENCES rental_bookings(id)
-);
-```
 
 ---
 
-## 7. Tabel Baru — Event Organizer
+## 12. Tabel Baru — Integrasi Hermes White-label
 
-### 7.1 `eo_events`
-```sql
-CREATE TABLE eo_events (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    name VARCHAR(191) NOT NULL,
-    event_date DATE NOT NULL,
-    venue VARCHAR(191) NULL,
-    status ENUM('draft','planned','running','done','cancelled') NOT NULL DEFAULT 'draft',
-    budget DECIMAL(18,2) NULL,
-    metadata JSON NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    INDEX idx_eo_events_company (company_id)
-);
-```
-
-### 7.2 `eo_vendors`
-```sql
-CREATE TABLE eo_vendors (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    event_id BIGINT UNSIGNED NOT NULL,
-    vendor_name VARCHAR(191) NOT NULL,
-    service_type VARCHAR(64) NULL,       -- sound | lighting | stage | catering | talent
-    fee DECIMAL(18,2) NULL,
-    payment_status ENUM('unpaid','partial','paid') NOT NULL DEFAULT 'unpaid',
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    INDEX idx_eo_vendors_company (company_id),
-    CONSTRAINT fk_eo_vendors_event FOREIGN KEY (event_id) REFERENCES eo_events(id) ON DELETE CASCADE
-);
-```
-
-### 7.3 `eo_crew_assignments`
-```sql
-CREATE TABLE eo_crew_assignments (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    event_id BIGINT UNSIGNED NOT NULL,
-    crew_name VARCHAR(191) NOT NULL,
-    role VARCHAR(64) NULL,
-    assignment_time DATETIME NULL,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    INDEX idx_eo_crew_company (company_id),
-    CONSTRAINT fk_eo_crew_event FOREIGN KEY (event_id) REFERENCES eo_events(id) ON DELETE CASCADE
-);
-```
-
----
-
-## 8. Tabel Baru — Kontraktor (Retensi)
-
-### 8.1 `contractor_retentions`
-```sql
-CREATE TABLE contractor_retentions (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    project_id BIGINT UNSIGNED NOT NULL,
-    invoice_id BIGINT UNSIGNED NULL,
-    retention_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
-    release_date DATE NULL,
-    status ENUM('held','released') NOT NULL DEFAULT 'held',
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    INDEX idx_contractor_retentions_company (company_id)
-);
-```
-> Kontraktor memakai ulang `project_center` + `subcontractor_spk` yang sudah ada di codebase; tabel retensi ini hanya untuk mencatat dana retensi tertahan dan jadwal rilisnya.
-
----
-
-## 9. Tabel Baru — Komersial SaaS & Membership (Align D-05)
-
-### 9.1 `membership_plans`
-```sql
-CREATE TABLE membership_plans (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(64) NOT NULL,            -- Starter, Pro, Enterprise
-    slug VARCHAR(64) NOT NULL UNIQUE,
-    monthly_price DECIMAL(18,2) NOT NULL DEFAULT 0,
-    annual_price DECIMAL(18,2) NOT NULL DEFAULT 0,
-    max_wa_groups INT NOT NULL DEFAULT 1,
-    monthly_token_quota BIGINT NOT NULL DEFAULT 500000,
-    allowed_presets JSON NULL,
-    features JSON NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL
-);
-```
-
-### 9.2 `company_memberships`
-```sql
-CREATE TABLE company_memberships (
-    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL,
-    plan_id BIGINT UNSIGNED NOT NULL,
-    status ENUM('trial','active','past_due','cancelled') NOT NULL DEFAULT 'trial',
-    starts_at TIMESTAMP NOT NULL,
-    expires_at TIMESTAMP NULL,
-    max_wa_groups INT NOT NULL DEFAULT 1,
-    monthly_token_quota BIGINT NOT NULL DEFAULT 500000,
-    current_token_balance BIGINT NOT NULL DEFAULT 0,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    INDEX idx_memberships_company (company_id),
-    CONSTRAINT fk_memberships_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
-    CONSTRAINT fk_memberships_plan FOREIGN KEY (plan_id) REFERENCES membership_plans(id)
-);
-```
-
----
-
----
-
-## 10. Tabel Baru — Integrasi Hermes White-label
-
-### 10.1 `hermes_nodes` (Node Registry / Load Balancer)
+### 12.1 `hermes_nodes` (Node Registry / Load Balancer)
 ```sql
 CREATE TABLE hermes_nodes (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -602,7 +654,7 @@ CREATE TABLE hermes_nodes (
 );
 ```
 
-### 10.2 `hermes_profiles`
+### 12.2 `hermes_profiles`
 ```sql
 CREATE TABLE hermes_profiles (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -619,9 +671,9 @@ CREATE TABLE hermes_profiles (
 );
 ```
 
-## 11. Manajemen Penyimpanan File (Google Drive BYOS)
+## 13. Manajemen Penyimpanan File (Google Drive BYOS)
 
-### 11.1 `attachments` (Tabel Polimorfik Sapu Jagat)
+### 13.1 `attachments` (Tabel Polimorfik Sapu Jagat)
 ```sql
 CREATE TABLE attachments (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -642,5 +694,5 @@ CREATE TABLE attachments (
 
 ---
 
-## 12. Uji Kebenaran Data
+## 14. Uji Kebenaran Data
 Setiap tabel baru WAJIB punya `company_id` (FK ke `companies`) untuk scoping tenant. Test isolasi tenant A vs B wajib ditulis untuk setiap modul.

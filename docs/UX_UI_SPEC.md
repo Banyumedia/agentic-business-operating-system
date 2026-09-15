@@ -48,10 +48,10 @@
 
 ## 3. Sidebar Kiri Dinamis (Zero-Bloat)
 
-Sidebar dirender di `resources/views/layouts/navigation.blade.php` via `DynamicMenuRegistry`.
+Sidebar adalah komponen Livewire `app/Livewire/Sidebar.php` + `resources/views/livewire/sidebar.blade.php`, dimount oleh layout `resources/views/components/layouts/module.blade.php`, dan membaca `app/Services/DynamicMenuRegistry.php`.
 
 ### 3.1 Aturan Rendering
-- Item menu level-1 hanya muncul jika minimal satu sub-menunya lolos `visible_when`.
+- Item menu level-1 hanya muncul jika `visible($company)` bernilai `true` **dan** minimal satu item level-2 juga `visible` (lihat `INDUSTRY_PRESETS.md` §2.2).
 - Item menu level-2 hanya muncul jika `company->feature($key) === true`.
 - Menu yang gagal evaluasi: `null` (tidak menghasilkan DOM).
 
@@ -64,13 +64,13 @@ Sidebar dirender di `resources/views/layouts/navigation.blade.php` via `DynamicM
 
 ## 4. Halaman Pengaturan Friendly (Tab-Based)
 
-Semua pengaturan disatukan dalam satu halaman terpusat: `/settings` dengan navigasi **Tab Horizontal**:
+Semua pengaturan disatukan dalam satu halaman terpusat: **`/app/settings`** (D-24) dengan navigasi **Tab Horizontal**. Tab aktif dipilih dari query `?tab=profile|theme|features|ai-agent|usage|team` sehingga dapat di-deep-link dari sidebar:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
 │ PENGATURAN BISNIS & SISTEM                                                                  │
 │                                                                                             │
-│ [ Profil Bisnis ] [ Tampilan & Tema ] [ Fitur & Modul ] [ Karyawan AI ] [ Paket & Kuota ] [ Tim & Akses ] │
+│ [ Profil Bisnis & Pajak ] [ Tampilan & Tema ] [ Fitur Bisnis ] [ Karyawan AI ] [ Penggunaan & Paket ] [ Tim & Akses ] │
 │ ─────────────────────────────────────────────────────────────────────────────────────────── │
 │ (Konten tab aktif dirender via Alpine.js x-show atau server-side tab query)                 │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -111,7 +111,7 @@ Semua pengaturan disatukan dalam satu halaman terpusat: `/settings` dengan navig
   - Opsi: `Ikuti Sistem OS (Auto)` | `Terang (Light)` | `Gelap (Dark)`.
   - Tersimpan di level akun / session pengguna, tidak mengganggu pengguna lain.
 
-### 4.3 Tab 3: Fitur & Modul Bisnis (1B Preset + Override)
+### 4.3 Tab 3: Fitur Bisnis (1B Preset + Override)
 - Dropdown preset utama: `Agency | F&B / Resto | Apotek | Event Organizer | Kontraktor | Persewaan | Kustom`.
 - Di bawah dropdown: Daftar kartu toggle per kategori (CRM, POS, Operasional, Inventori, Sales).
 - Tiap toggle memiliki switch on/off ramah mata (`peer-checked:bg-emerald-600`) dengan touch target min 44x44px.
@@ -166,13 +166,13 @@ Semua pengaturan disatukan dalam satu halaman terpusat: `/settings` dengan navig
 - Manajemen staf pengguna per-company (`users` link ke `current_company_id`).
 - Daftar pengguna aktif, email, role (Owner, Finance, Sales, Cashier, Warehouse).
 - Form undang/tambah anggota tim baru + assign cabang (`branch_id`).
-- Hak akses granular: Staf hanya melihat modul yang diizinkan oleh role mereka sesuai Spatie Permission.
+- Hak akses granular: Staf hanya melihat modul yang diizinkan oleh role mereka. **Implementasi RBAC belum dipilih** (Spatie Permission tidak terpasang); untuk fase awal cukup kolom `role` di pivot `company_user` + Laravel Gate/Policy. Menambah paket RBAC adalah dependency change yang butuh task eksplisit.
 
 ---
 
 ## 5. Dashboard Adaptif & Card Khusus per Industri
 
-Dashboard utama (`/dashboard`) terdiri dari 2 zona:
+Dashboard utama (**`/app/dashboard`**, D-24; menjadi tujuan default setelah login) terdiri dari 2 zona:
 1. **Zona Universal (Atas):** Action Cards (Perlu Aksi Hari Ini) + Metrik Keuangan Ringkas (Omzet, Arus Kas Masuk, Piutang Jatuh Tempo).
 2. **Zona Industri (Tengah):** Card khusus yang dirender kondisional berdasarkan preset bisnis aktif.
 
@@ -203,7 +203,7 @@ Semua kartu dan tabel wajib menyertakan fallback state ramah jika data bernilai 
    - Focus outline memakai token `focus:ring-2 focus:ring-[var(--erp-focus)]`.
    - Skip-link di paling atas `app.blade.php` menuju `#main-content` (raw CSS).
 2. **Kepatuhan Kontras Warna:**
-   - Setiap teks baru wajib mematuhi 11 contrast pairs yang diuji oleh `ThemeRegistryService::passesAa()`.
+   - Setiap teks baru wajib mematuhi 11 contrast pairs (§7.2) yang diuji oleh `App\Services\ThemeRegistry::passesAa()` — **kelas ini belum ada, dibuat pada T-07** beserta `tests/Unit/ThemeContrastTest.php`.
    - Teks muted wajib menggunakan `#5a6779` (rasio ≥ 5.0:1) di light mode.
 3. **Target Sentuh Minimum (Touch Targets) Kasir & Mobile:**
    - Semua elemen sentuh (tombol aksi, toggle, tab navigasi, item list meja/resep) wajib berukuran minimal 44x44px (`min-h-[44px] min-w-[44px] sm:min-h-[38px]` di desktop).
@@ -216,3 +216,135 @@ Semua kartu dan tabel wajib menyertakan fallback state ramah jika data bernilai 
 5. **Responsive Breakpoints:**
    - Mobile (<640px): Sidebar beralih menjadi drawer slide-over dengan penahan scroll latar (`body { overflow: hidden }`).
    - Desktop (≥1024px): Sidebar tetap statis di sisi kiri (lebar 64 atau 72).
+
+---
+
+## 7. Design Token `--erp-*` (Kontrak Lengkap — ditambahkan 2026-09-16)
+
+Ini adalah daftar **36 token** yang selama ini hanya dirujuk namanya. Tanpa
+daftar ini T-07 tidak dapat dieksekusi. Semua token dideklarasikan dalam blok
+`@theme` Tailwind v4 di `resources/css/app.css`, lalu di-override per tema
+melalui `[data-theme="..."]` pada `<html>`.
+
+### 7.1 Daftar Token (36)
+
+| # | Token | Kelompok | Fungsi |
+|---|---|---|---|
+| 1 | `--erp-bg-base` | Latar | Latar halaman utama |
+| 2 | `--erp-bg-secondary` | Latar | Sidebar, panel, kartu sekunder |
+| 3 | `--erp-bg-elevated` | Latar | Kartu/modal yang "terangkat" |
+| 4 | `--erp-bg-inset` | Latar | Input, area cekung |
+| 5 | `--erp-bg-hover` | Latar | Hover pada item interaktif |
+| 6 | `--erp-bg-active` | Latar | Item aktif/terpilih |
+| 7 | `--erp-text-primary` | Teks | Teks utama |
+| 8 | `--erp-text-secondary` | Teks | Teks pendukung |
+| 9 | `--erp-text-muted` | Teks | Teks redup (≥ 5.0:1 di light) |
+| 10 | `--erp-text-inverse` | Teks | Teks di atas warna aksen |
+| 11 | `--erp-text-link` | Teks | Tautan |
+| 12 | `--erp-border` | Garis | Border default |
+| 13 | `--erp-border-strong` | Garis | Border penekanan/divider |
+| 14 | `--erp-border-focus` | Garis | Border saat fokus |
+| 15 | `--erp-accent` | Aksen | Warna brand tenant (dapat di-override owner) |
+| 16 | `--erp-accent-hover` | Aksen | Aksen saat hover |
+| 17 | `--erp-accent-soft` | Aksen | Latar lembut berbasis aksen (badge, highlight) |
+| 18 | `--erp-focus` | Aksen | Ring fokus keyboard |
+| 19 | `--erp-success` | Status | Sukses |
+| 20 | `--erp-success-soft` | Status | Latar sukses lembut |
+| 21 | `--erp-warning` | Status | Peringatan |
+| 22 | `--erp-warning-soft` | Status | Latar peringatan lembut |
+| 23 | `--erp-danger` | Status | Bahaya/destruktif |
+| 24 | `--erp-danger-soft` | Status | Latar bahaya lembut |
+| 25 | `--erp-info` | Status | Informasi |
+| 26 | `--erp-info-soft` | Status | Latar info lembut |
+| 27 | `--erp-sidebar-bg` | Komponen | Latar sidebar (boleh = bg-secondary) |
+| 28 | `--erp-sidebar-text` | Komponen | Teks sidebar |
+| 29 | `--erp-sidebar-active` | Komponen | Item sidebar aktif |
+| 30 | `--erp-topbar-bg` | Komponen | Latar topbar/telemetri |
+| 31 | `--erp-card-shadow` | Komponen | Bayangan kartu (nilai `box-shadow`) |
+| 32 | `--erp-radius-sm` | Bentuk | Radius kecil (input, badge) |
+| 33 | `--erp-radius-md` | Bentuk | Radius sedang (kartu) |
+| 34 | `--erp-radius-lg` | Bentuk | Radius besar (modal) |
+| 35 | `--erp-font-sans` | Tipografi | Font UI |
+| 36 | `--erp-font-mono` | Tipografi | Font angka/telemetri (Operator Grid, D-20) |
+
+### 7.2 Sebelas Pasangan Kontras yang Wajib Lolos WCAG AA (≥ 4.5:1)
+
+Diuji oleh `tests/Unit/ThemeContrastTest.php` untuk **setiap** tema di §4.2:
+
+| # | Foreground | Background |
+|---|---|---|
+| 1 | `--erp-text-primary` | `--erp-bg-base` |
+| 2 | `--erp-text-primary` | `--erp-bg-secondary` |
+| 3 | `--erp-text-primary` | `--erp-bg-elevated` |
+| 4 | `--erp-text-secondary` | `--erp-bg-base` |
+| 5 | `--erp-text-muted` | `--erp-bg-base` |
+| 6 | `--erp-text-inverse` | `--erp-accent` |
+| 7 | `--erp-text-link` | `--erp-bg-base` |
+| 8 | `--erp-sidebar-text` | `--erp-sidebar-bg` |
+| 9 | `--erp-text-inverse` | `--erp-success` |
+| 10 | `--erp-text-inverse` | `--erp-warning` |
+| 11 | `--erp-text-inverse` | `--erp-danger` |
+
+Ring fokus (`--erp-focus`) wajib ≥ 3:1 terhadap `--erp-bg-base` (non-teks, WCAG 1.4.11).
+
+### 7.3 Nilai Default (tema `Prime Default / Midnight`, dark-first)
+
+Agent **boleh** menurunkan nilai hex dari palet Tailwind v4 (slate/emerald/sky/
+amber/rose) selama §7.2 terbukti lolos. Nilai di bawah adalah titik awal yang
+sudah dipilih agar lolos AA; agent boleh menyesuaikan asal test tetap hijau.
+
+```css
+@theme {
+  --erp-bg-base:        #0f172a; /* slate-900 */
+  --erp-bg-secondary:   #1e293b; /* slate-800 */
+  --erp-bg-elevated:    #334155; /* slate-700 */
+  --erp-bg-inset:       #020617; /* slate-950 */
+  --erp-bg-hover:       #334155;
+  --erp-bg-active:      #475569; /* slate-600 */
+  --erp-text-primary:   #f8fafc; /* slate-50 */
+  --erp-text-secondary: #cbd5e1; /* slate-300 */
+  --erp-text-muted:     #94a3b8; /* slate-400 */
+  --erp-text-inverse:   #0f172a;
+  --erp-text-link:      #7dd3fc; /* sky-300 */
+  --erp-border:         #334155;
+  --erp-border-strong:  #475569;
+  --erp-border-focus:   #a78bfa; /* violet-400 */
+  --erp-accent:         #a78bfa;
+  --erp-accent-hover:   #c4b5fd; /* violet-300 */
+  --erp-accent-soft:    #2e1065; /* violet-950 */
+  --erp-focus:          #a78bfa;
+  --erp-success:        #34d399; /* emerald-400 */
+  --erp-success-soft:   #022c22;
+  --erp-warning:        #fbbf24; /* amber-400 */
+  --erp-warning-soft:   #451a03;
+  --erp-danger:         #fb7185; /* rose-400 */
+  --erp-danger-soft:    #4c0519;
+  --erp-info:           #38bdf8; /* sky-400 */
+  --erp-info-soft:      #082f49;
+  --erp-sidebar-bg:     #020617;
+  --erp-sidebar-text:   #cbd5e1;
+  --erp-sidebar-active: #1e293b;
+  --erp-topbar-bg:      #0f172a;
+  --erp-card-shadow:    0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --erp-radius-sm:      0.375rem;
+  --erp-radius-md:      0.75rem;
+  --erp-radius-lg:      1rem;
+  --erp-font-sans:      'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  --erp-font-mono:      ui-monospace, 'JetBrains Mono', 'Cascadia Code', monospace;
+}
+```
+
+Tema lain (`Clean Ledger`, `Ocean Blue`, `Brass Amber`, `Rose`) dan mode
+terang didefinisikan sebagai blok `[data-theme="clean-ledger"] { ... }` dst.
+pada T-07, masing-masing wajib lolos §7.2. Custom accent picker (§4.2) hanya
+mengubah `--erp-accent*` dan `--erp-focus`, lalu menjalankan `passesAa()` di
+server sebelum disimpan.
+
+### 7.4 Larangan
+
+- Dilarang memakai `bg-gray-*`, `text-gray-*`, `bg-slate-*` dst. **langsung** pada
+  komponen baru setelah T-07. Gunakan `bg-[var(--erp-bg-base)]` atau utility
+  yang dipetakan ke token.
+- Dilarang hardcode hex di Blade.
+- Komponen Fase 1 (`lobby`, `sidebar`, `command-palette`) **dimigrasikan ke token
+  pada T-07** sebagai bagian dari acceptance, bukan dibiarkan.

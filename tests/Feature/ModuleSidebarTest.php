@@ -32,9 +32,21 @@ class ModuleSidebarTest extends TestCase
 
     public function test_unknown_module_renders_no_menu_items(): void
     {
-        $this->get(route('app.module', ['module' => 'modul-hantu']))
+        $html = $this->get(route('app.module', ['module' => 'modul-hantu']))
             ->assertOk()
-            ->assertDontSee('Menu 1')
-            ->assertDontSee('Menu 2');
+            ->getContent();
+
+        // Zero-bloat (UX_UI_SPEC §3.1): modul tanpa menu tidak boleh menghasilkan
+        // DOM item apa pun — bukan placeholder, bukan pesan kosong.
+        $this->assertStringNotContainsString('Modul ini belum memiliki menu aktif', $html);
+        $this->assertStringNotContainsString('Menu 1', $html);
+
+        preg_match('/<nav[^>]*aria-label="Menu modul[^"]*"[^>]*>(.*?)<\/nav>/s', $html, $nav);
+        $this->assertNotEmpty($nav, 'Sidebar <nav> harus tetap ada sebagai landmark.');
+        $this->assertSame(
+            '',
+            trim(strip_tags($nav[1])),
+            'Isi <nav> untuk modul tak dikenal harus benar-benar kosong.'
+        );
     }
 }

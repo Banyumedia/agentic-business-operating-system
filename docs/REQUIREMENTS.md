@@ -55,8 +55,8 @@ public function calculateTax(float $grossAmount, float $rate, bool $priceInclude
    public function hasAnyFeature(array $keys): bool;
    ```
 2. Resolusi status fitur:
-   - Cek apakah ada record override di `module_settings` untuk `company_id` aktif dengan key `features.{$key}`.
-   - Jika ada, kembalikan nilai boolean dari override tersebut.
+   - Baca baris `module_settings` dengan `company_id` aktif dan `module_name = 'features'` (bentuk D-19/D-25: satu baris per modul, flag disimpan di `settings_json`).
+   - Jika `settings_json` memuat key `$key`, kembalikan nilai boolean-nya (override).
    - Jika tidak ada override, ambil default dari preset yang terpasang di `company->business_preset`.
 3. **App Switcher Architecture (Odoo/Zoho Style):**
    - Aplikasi web tidak menggunakan tradisi navigasi *sidebar* konvensional.
@@ -96,14 +96,14 @@ Sistem harus memvalidasi setiap payload API yang datang dari Asisten AI secara k
 - **Tindakan Destruktif (Void/Pengeluaran):** Endpoint tindakan berisiko tidak boleh langsung mengeksekusi data.
   1. API mengembalikan status `202 Accepted` beserta ID tiket persetujuan.
   2. Sistem mengirimkan pesan "Kartu Persetujuan" ke nomor WhatsApp Bos/Owner.
-  3. Transaksi baru tereksekusi jika Bos membalas "YA".
+  3. Kartu Persetujuan memuat **kode tiket** 4–6 digit. Transaksi tereksekusi **hanya** jika Bos membalas `YA <kode-tiket>` yang cocok dan belum dipakai (D-11/D-27). Balasan `YA` polos ditolak untuk mencegah replay.
 
 ---
 
 ## 4. Spesifikasi 6 Modul Industri Spesifik
 
 ### 4.1 Industri 1: Agency (Jasa Kreatif & IT)
-- **CRM:** Menggunakan pipeline deals dengan tahapan: `Lead Baru → Pitch / SPH → Negosiasi → Won / Lost`. Field `pic_name`, `pic_wa`, dan `deal_value` wajib ada.
+- **CRM:** Menggunakan pipeline deals. Kode stage disimpan netral (`new / qualified / proposal / negotiation / won / lost`, Q-05) dan ditampilkan dengan label Indonesia: `Lead Baru → Pitch / SPH → Negosiasi → Won / Lost`. Data PIC (`pic_name`, `pic_wa`) disimpan di `crm_contacts` (`name`, `wa_number`) yang direlasikan ke deal — **bukan** kolom baru di `crm_deals`. `deal_value` wajib.
 - **Operasional:** Timesheet per staf untuk menghitung biaya per jam pengerjaan proyek klien.
 - **Invoicing:** Termin bertahap (contoh: DP 50%, Pelunasan 50% setelah serah terima).
 
@@ -112,7 +112,7 @@ Sistem harus memvalidasi setiap payload API yang datang dari Asisten AI secara k
   - Kasir dapat membuka meja (contoh: Meja 04), mencatat pesanan awal, lalu mengirim pesanan ke dapur tanpa langsung meminta pembayaran.
   - Tambahan pesanan (re-fire) dapat digabungkan ke tagihan meja yang sama tanpa menduplikasi pesanan sebelumnya.
   - Checkout / Pembayaran dapat dilakukan tunai atau QRIS. Saat shift ditutup, sistem mencetak ringkasan kas masuk & selisih (*variance*).
-- **Integrasi NalarinPesan:**
+- **Integrasi NalarPesan (D-30):**
   - Tamu scan QR di meja → memesan via browser mobile → data masuk ke ERP via webhook.
   - Webhook controller memetakan pesanan tamu ke tagihan meja yang bersangkutan di ERP.
 

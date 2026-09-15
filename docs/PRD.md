@@ -1,10 +1,10 @@
 # PRD: Agentic Business Operating System (BOS)
 ## ERP Nalarin Multi-Business Multi-Tenant Platform
 
-**Versi:** 1.0.0-PROD  
+**Versi:** 1.0.1-PROD  
 **Status:** APPROVED FOR AUTONOMOUS EXECUTION  
-**Target Codebase:** `D:\PROJECTS\agentic-bos` (Laravel 13 / PHP 8.3 / MySQL / Tailwind v3 / Alpine.js)  
-**Tujuan Dokumen:** Acuan mutlak bagi Autonomous AI Agents untuk membangun fitur tanpa perlu klarifikasi manual berulang.
+**Target Codebase:** `D:\PROJECTS\agentic-bos` (Laravel 13 / PHP 8.3 / Livewire v4 / Tailwind v4 / Vite; dev & test SQLite, produksi MySQL/MariaDB)  
+**Tujuan Dokumen:** Ringkasan visi dan pilar produk untuk Autonomous AI Agents. Bila dokumen ini bertentangan dengan `00-DECISIONS.md`, **`00-DECISIONS.md` yang berlaku**.
 
 ---
 
@@ -36,8 +36,8 @@
 - Item menu Level 1 (Modul) dan Level 2 (Sub-fitur) diuji terhadap `company->feature($key)`. Jika fitur mati, menu **hilang total dari DOM**.
 
 ### Pilar 4: Dual-Mode Tax & Financial Book
-- Pemisahan dimensi: `Company` (Workspace) → `BusinessIdentity` (Brand/Kop/NPWP) → `FinancialBook` (Buku Pajak).
-- Fleksibilitas konfigurasi *taxable/non-taxable* dan *tax-inclusive/exclusive*.
+- Pemisahan dimensi: `Company` (Workspace) → `BusinessIdentity` (Brand/Kop/NPWP/**konfigurasi pajak dasar**).
+- Sesuai D-03 dan D-17: satu mode pajak dasar per `BusinessIdentity` (`taxable`/`non_taxable`, `price_includes_tax`). Override per item/transaksi dan multi-rate hanya sebagai add-on Enterprise.
 
 ---
 
@@ -54,8 +54,14 @@ Untuk menjaga eksekusi agent tetap fokus dan selesai, fitur berikut **DILARANG /
 
 ## 4. Struktur Dokumen PRD Pendukung
 
-Agent pelaksana wajib membaca dokumen pendukung di folder ini:
-1. `INDUSTRY_PRESETS.md` — Matriks konfigurasi 6 industri & pemetaan menu.
-2. `DATA_MODEL.md` — Perubahan skema migration & database contracts.
-3. `REQUIREMENTS.md` — Spesifikasi fungsional mendalam per modul.
-4. `EXECUTION_PLAN.md` — Daftar task terurut yang siap dieksekusi autopilot.
+Agent pelaksana wajib membaca dokumen pendukung di folder `docs/` ini. Urutan prioritas bila terjadi konflik: **`00-DECISIONS.md` > `DATA_MODEL.md` (untuk bentuk data) > dokumen lain**.
+
+1. `00-DECISIONS.md` — **tie-breaker.** Semua keputusan LOCKED dan OPEN.
+2. `INDUSTRY_PRESETS.md` — Matriks konfigurasi 6 industri & pemetaan menu.
+3. `DATA_MODEL.md` — Skema database canonical + kontrak migration portabel.
+4. `REQUIREMENTS.md` — Spesifikasi fungsional mendalam per modul.
+5. `UX_UI_SPEC.md` — Kontrak antarmuka, aksesibilitas, dan design token.
+6. `COMMERCIAL_AND_AI_AGENTIC_SPEC.md` — Membership, token economics, white-label AI.
+7. `EXECUTION_PLAN.md` — Task queue bertahap, dependency graph, dan definisi READY.
+8. `PRD_RECONCILIATION.md` — Log audit konflik dan resolusinya.
+9. `AUTOPILOT_STATUS.md` — State pekerjaan aktual yang dibaca agent saat resume.

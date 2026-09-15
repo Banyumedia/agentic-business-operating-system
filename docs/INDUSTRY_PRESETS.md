@@ -29,118 +29,153 @@ Dokumen ini mendefinisikan matriks konfigurasi default untuk 6 industri awal. Se
 | **Sales: SPH / Quotation Formal** | `sales.sph_quotation` | ✅ ON | ❌ OFF | ❌ OFF | ✅ ON | ✅ ON | ❌ OFF |
 | **Sales: Retensi Pembayaran Proyek** | `sales.project_retention` | ❌ OFF | ❌ OFF | ❌ OFF | ❌ OFF | ✅ ON | ❌ OFF |
 | **Sales: Rental Deposit & Denda Telat** | `sales.rental_deposit` | ❌ OFF | ❌ OFF | ❌ OFF | ❌ OFF | ❌ OFF | ✅ ON |
+| **Keuangan: Buku Kas Sederhana** | `finance.cashbook` | ✅ ON | ✅ ON | ✅ ON | ✅ ON | ✅ ON | ✅ ON |
+| **Keuangan: Akuntansi Pro (Jurnal, Neraca, L/R)** | `finance.accounting` | ❌ OFF | ❌ OFF | ❌ OFF | ❌ OFF | ✅ ON | ❌ OFF |
+| **HRD: Data Karyawan & Presensi** | `hr.employees` | ✅ ON | ✅ ON | ✅ ON | ✅ ON | ✅ ON | ❌ OFF |
+| **HRD: Payroll** | `hr.payroll` | ✅ ON | ❌ OFF | ❌ OFF | ❌ OFF | ✅ ON | ❌ OFF |
 | **Sistem: Manajemen Asisten AI & Token** | `system.ai_agent` | ✅ ON | ✅ ON | ✅ ON | ✅ ON | ✅ ON | ✅ ON |
+
+> **Aturan tampil modul (D-12/U-04):** modul level-1 dirender di App Switcher & sidebar
+> **hanya jika** minimal satu flag anggotanya `true`. `finance.cashbook` sengaja ON di semua
+> preset karena setiap bisnis butuh pencatatan kas; `finance.accounting` (Pro Mode) hanya
+> untuk Kontraktor secara default. Backend **selalu** double-entry (REQUIREMENTS §2.1.4);
+> flag ini hanya mengatur UI yang ditampilkan.
+
+> **Preset `custom` (ke-7):** semua flag `false` kecuali `system.ai_agent = true` dan
+> `finance.cashbook = true`. AI Onboarding menyalakan flag lain via `mcp_configure_modules`
+> (lihat §4).
 
 ---
 
 ## 2. Struktur Menu & Dampak Visibilitas Sidebar
 
-Registry menu terpusat di `app/Services/DynamicMenuRegistry.php`. Visibilitas dikendalikan secara deklaratif:
+Registry menu terpusat di `app/Services/DynamicMenuRegistry.php`. Skema URL mengikuti
+**D-24**: `/app/{module}/{path?}` dengan route bernama `app.module`. Registry menyimpan
+**URL path**, bukan nama route Laravel per fitur.
+
+> **Status implementasi (2026-09-16):** registry saat ini berbentuk katalog statis
+> (`slug => [accent, items[]]`) tanpa `visible` dan tanpa `Company`. Bentuk target di bawah
+> ini diwujudkan pada **T-15** (`Company::feature()`) dan **T-03b** (refactor registry ke
+> bentuk flag-aware). Sampai saat itu, semua item dianggap `visible = true`.
+
+### 2.1 Bentuk Target Registry (flag-aware)
 
 ```php
+// Kunci = slug modul (dipakai di URL /app/{slug}). Urutan = urutan di App Switcher.
 return [
-    [
-        'id' => 'crm',
-        'title' => 'CRM & Pelanggan',
-        'icon' => 'users',
-        'visible' => fn($company) => $company->hasAnyFeature(['crm.leads', 'crm.simple_phone', 'crm.patient_history']),
-        'children' => [
-            [
-                'title' => 'Pipeline Leads',
-                'route' => 'crm.leads.index',
-                'visible' => fn($company) => $company->feature('crm.leads'),
-            ],
-            [
-                'title' => 'Database Pelanggan',
-                'route' => 'master-data.customers.index',
-                'visible' => fn($company) => true, // Selalu ada
-            ],
-            [
-                'title' => 'Riwayat Pasien & Resep',
-                'route' => 'pharmacy.patients.index',
-                'visible' => fn($company) => $company->feature('crm.patient_history'),
-            ],
-        ]
+    'crm' => [
+        'title'   => 'CRM & Pelanggan',
+        'icon'    => 'users',
+        'accent'  => 'bg-emerald-600',
+        'visible' => fn (Company $c) => $c->hasAnyFeature(['crm.leads', 'crm.simple_phone', 'crm.patient_history']),
+        'items'   => [
+            ['label' => 'Dashboard CRM',         'icon' => 'home',       'path' => '/app/crm',           'visible' => fn ($c) => true],
+            ['label' => 'Pipeline Leads',        'icon' => 'funnel',     'path' => '/app/crm/leads',     'visible' => fn ($c) => $c->feature('crm.leads')],
+            ['label' => 'Kontak & Pelanggan',    'icon' => 'book-user',  'path' => '/app/crm/contacts',  'visible' => fn ($c) => true],
+            ['label' => 'Riwayat Pasien & Resep','icon' => 'stethoscope','path' => '/app/crm/patients',  'visible' => fn ($c) => $c->feature('crm.patient_history')],
+        ],
     ],
-    [
-        'id' => 'pos',
-        'title' => 'Kasir & POS',
-        'icon' => 'shopping-cart',
-        'visible' => fn($company) => $company->hasAnyFeature(['pos.quick_counter', 'pos.open_bill_tables', 'pos.prescription_flow']),
-        'children' => [
-            [
-                'title' => 'Layar Kasir',
-                'route' => 'pos.index',
-                'visible' => fn($company) => $company->feature('pos.quick_counter'),
-            ],
-            [
-                'title' => 'Manajemen Meja / Bill',
-                'route' => 'pos.tables.index',
-                'visible' => fn($company) => $company->feature('pos.open_bill_tables'),
-            ],
-            [
-                'title' => 'Antrean e-Resep',
-                'route' => 'pharmacy.prescriptions.index',
-                'visible' => fn($company) => $company->feature('pos.prescription_flow'),
-            ],
-        ]
+    'pos' => [
+        'title'   => 'Kasir & POS',
+        'icon'    => 'shopping-cart',
+        'accent'  => 'bg-purple-600',
+        'visible' => fn (Company $c) => $c->hasAnyFeature(['pos.quick_counter', 'pos.open_bill_tables', 'pos.prescription_flow']),
+        'items'   => [
+            ['label' => 'Layar Kasir',           'icon' => 'cash-register','path' => '/app/pos',              'visible' => fn ($c) => $c->feature('pos.quick_counter')],
+            ['label' => 'Manajemen Meja / Bill', 'icon' => 'table',        'path' => '/app/pos/tables',       'visible' => fn ($c) => $c->feature('pos.open_bill_tables')],
+            ['label' => 'Antrean e-Resep',       'icon' => 'pill',         'path' => '/app/pos/prescriptions','visible' => fn ($c) => $c->feature('pos.prescription_flow')],
+            ['label' => 'Riwayat Transaksi',     'icon' => 'receipt',      'path' => '/app/pos/history',      'visible' => fn ($c) => true],
+        ],
     ],
-    [
-        'id' => 'operations',
-        'title' => 'Operasional',
-        'icon' => 'briefcase',
-        'visible' => fn($company) => $company->hasAnyFeature(['ops.timesheet', 'ops.event_rundown', 'ops.contractor_spk', 'ops.rental_calendar']),
-        'children' => [
-            [
-                'title' => 'Timesheet & Project Task',
-                'route' => 'agency.timesheet.index',
-                'visible' => fn($company) => $company->feature('ops.timesheet'),
-            ],
-            [
-                'title' => 'Rundown & Event Matrix',
-                'route' => 'eo.rundown.index',
-                'visible' => fn($company) => $company->feature('ops.event_rundown'),
-            ],
-            [
-                'title' => 'SPK & Opname Progres',
-                'route' => 'contractor.spk.index',
-                'visible' => fn($company) => $company->feature('ops.contractor_spk'),
-            ],
-            [
-                'title' => 'Kalender Sewa & Booking',
-                'route' => 'rental.calendar.index',
-                'visible' => fn($company) => $company->feature('ops.rental_calendar'),
-            ],
-            [
-                'title' => 'Check-in / Check-out Unit',
-                'route' => 'rental.checkin.index',
-                'visible' => fn($company) => $company->feature('ops.rental_checkin'),
-            ],
-        ]
+    'operations' => [
+        'title'   => 'Operasional',
+        'icon'    => 'briefcase',
+        'accent'  => 'bg-sky-600',
+        // BUG FIX 2026-09-16: versi awal melupakan ops.rental_checkin sehingga tenant
+        // rental yang hanya menyalakan check-in tidak melihat modul ini.
+        'visible' => fn (Company $c) => $c->hasAnyFeature(['ops.timesheet', 'ops.event_rundown', 'ops.contractor_spk', 'ops.rental_calendar', 'ops.rental_checkin']),
+        'items'   => [
+            ['label' => 'Timesheet & Project Task', 'icon' => 'clock',      'path' => '/app/operations/timesheet', 'visible' => fn ($c) => $c->feature('ops.timesheet')],
+            ['label' => 'Rundown & Event Matrix',   'icon' => 'calendar',   'path' => '/app/operations/rundown',   'visible' => fn ($c) => $c->feature('ops.event_rundown')],
+            ['label' => 'SPK & Opname Progres',     'icon' => 'hard-hat',   'path' => '/app/operations/spk',       'visible' => fn ($c) => $c->feature('ops.contractor_spk')],
+            ['label' => 'Kalender Sewa & Booking',  'icon' => 'calendar-days','path' => '/app/operations/rental-calendar','visible' => fn ($c) => $c->feature('ops.rental_calendar')],
+            ['label' => 'Check-in / Check-out Unit','icon' => 'arrow-left-right','path' => '/app/operations/rental-checkin','visible' => fn ($c) => $c->feature('ops.rental_checkin')],
+        ],
     ],
-    [
-        'id' => 'settings',
-        'title' => 'Pengaturan',
-        'icon' => 'settings',
-        'visible' => fn($company) => true,
-        'children' => [
-            [
-                'title' => 'Scan Agen & Saldo Token',
-                'route' => 'settings.ai-agent.index',
-                'visible' => fn($company) => $company->feature('system.ai_agent'),
-            ],
-            [
-                'title' => 'Otorisasi Staf WA',
-                'route' => 'settings.staff-wa.index',
-                'visible' => fn($company) => $company->feature('system.ai_agent'),
-            ],
-        ]
+    'inventory' => [
+        'title'   => 'Inventory',
+        'icon'    => 'package',
+        'accent'  => 'bg-indigo-600',
+        'visible' => fn (Company $c) => $c->feature('inventory.tracking'),
+        'items'   => [
+            ['label' => 'Daftar Barang',        'icon' => 'boxes',    'path' => '/app/inventory/items',     'visible' => fn ($c) => true],
+            ['label' => 'Stok Masuk & Keluar',  'icon' => 'arrows',   'path' => '/app/inventory/movements', 'visible' => fn ($c) => true],
+            ['label' => 'Batch & Expiry (FEFO)','icon' => 'calendar-x','path' => '/app/inventory/batches',  'visible' => fn ($c) => $c->feature('inventory.fefo_expiry')],
+            ['label' => 'Resep / BOM',          'icon' => 'list-tree','path' => '/app/inventory/bom',       'visible' => fn ($c) => $c->feature('inventory.bom_recipe')],
+        ],
+    ],
+    'accounting' => [
+        'title'   => 'Keuangan',
+        'icon'    => 'landmark',
+        'accent'  => 'bg-amber-600',
+        'visible' => fn (Company $c) => $c->hasAnyFeature(['finance.cashbook', 'finance.accounting']),
+        'items'   => [
+            // Simple Mode (REQUIREMENTS §2.1.4): hanya Buku Kas.
+            ['label' => 'Buku Kas',             'icon' => 'wallet',   'path' => '/app/accounting',            'visible' => fn ($c) => $c->feature('finance.cashbook')],
+            // Pro Mode: menu akuntansi lengkap.
+            ['label' => 'Bagan Akun',           'icon' => 'list',     'path' => '/app/accounting/coa',        'visible' => fn ($c) => $c->feature('finance.accounting')],
+            ['label' => 'Jurnal Umum',          'icon' => 'book',     'path' => '/app/accounting/journals',   'visible' => fn ($c) => $c->feature('finance.accounting')],
+            ['label' => 'Buku Besar',           'icon' => 'book-open','path' => '/app/accounting/ledger',     'visible' => fn ($c) => $c->feature('finance.accounting')],
+            ['label' => 'Neraca & Laba-Rugi',   'icon' => 'scale',    'path' => '/app/accounting/reports',    'visible' => fn ($c) => $c->feature('finance.accounting')],
+        ],
+    ],
+    'hrd' => [
+        'title'   => 'HRD',
+        'icon'    => 'users-round',
+        'accent'  => 'bg-blue-600',
+        'visible' => fn (Company $c) => $c->hasAnyFeature(['hr.employees', 'hr.payroll']),
+        'items'   => [
+            ['label' => 'Data Karyawan',    'icon' => 'id-card',  'path' => '/app/hrd/employees',  'visible' => fn ($c) => $c->feature('hr.employees')],
+            ['label' => 'Presensi & Cuti',  'icon' => 'clock',    'path' => '/app/hrd/attendance', 'visible' => fn ($c) => $c->feature('hr.employees')],
+            ['label' => 'Payroll',          'icon' => 'banknote', 'path' => '/app/hrd/payroll',    'visible' => fn ($c) => $c->feature('hr.payroll')],
+        ],
+    ],
+    'settings' => [
+        'title'   => 'Pengaturan',
+        'icon'    => 'settings',
+        'accent'  => 'bg-slate-600',
+        'visible' => fn (Company $c) => true,
+        // Sesuai U-02: Pengaturan adalah SATU halaman /app/settings dengan tab dinamis,
+        // bukan sub-halaman terpisah. Item di bawah adalah deep-link ke tab.
+        'items'   => [
+            ['label' => 'Profil Bisnis & Pajak', 'icon' => 'building',  'path' => '/app/settings?tab=profile',   'visible' => fn ($c) => true],
+            ['label' => 'Tampilan & Tema',       'icon' => 'palette',   'path' => '/app/settings?tab=theme',     'visible' => fn ($c) => true],
+            ['label' => 'Fitur Bisnis',          'icon' => 'toggle',    'path' => '/app/settings?tab=features',  'visible' => fn ($c) => true],
+            ['label' => 'Karyawan AI',           'icon' => 'bot',       'path' => '/app/settings?tab=ai-agent',  'visible' => fn ($c) => $c->feature('system.ai_agent')],
+            ['label' => 'Penggunaan & Paket',    'icon' => 'gauge',     'path' => '/app/settings?tab=usage',     'visible' => fn ($c) => $c->feature('system.ai_agent')],
+            ['label' => 'Tim & Akses',           'icon' => 'users',     'path' => '/app/settings?tab=team',      'visible' => fn ($c) => true],
+        ],
     ],
 ];
 ```
 
----
+### 2.2 Aturan Render (D-12 / U-04 — Zero-Bloat)
 
+1. Modul level-1 dirender **hanya jika** `visible($company)` bernilai `true`.
+2. Item level-2 dirender **hanya jika** `visible($company)` bernilai `true`.
+3. Modul yang `visible` tetapi seluruh `items`-nya tidak `visible` **tidak dirender**.
+4. Yang gagal evaluasi menghasilkan **tidak ada DOM sama sekali** — bukan `disabled`, bukan
+   greyed-out, bukan placeholder teks. (Sudah ditegakkan oleh
+   `tests/Feature/ModuleSidebarTest::test_unknown_module_renders_no_menu_items`.)
+5. Akses langsung ke `/app/{module}/...` yang modulnya tidak `visible` → HTTP 403 via
+   middleware `EnsureFeatureEnabled` (T-16). Modul yang tidak dikenal sama sekali → 404.
+
+### 2.3 Ikon
+
+Kolom `icon` adalah **nama ikon** (kompatibel Lucide), bukan emoji. Implementasi saat ini
+masih memakai emoji sebagai placeholder dan akan diganti pada T-03b.
+
+---
 ## 3. Override Dinamis & Fallback (Kustomisasi Mandiri)
 
 - Jika tenant adalah bisnis hibrida (contoh: **Kafe F&B yang juga menyewakan ruang acara/venue**):

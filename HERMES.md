@@ -81,7 +81,17 @@ For each implementation wave, first produce an evidence-backed task list:
 - Run focused tests first, then the relevant integration/build checks. Do not
   call a task complete from static inspection or an agent report alone.
 - Do not commit, push, deploy, run production migrations, alter production data,
-  or use secrets unless the user explicitly authorizes that action.
+  or use secrets unless the user explicitly authorizes that action. **Local
+  commits are pre-authorized** for this repository (gate `HUMAN:COMMIT` open,
+  2026-09-16); before each commit run `git status --short` and confirm no
+  `.env`/secret is staged. Push still requires a configured remote plus
+  explicit approval.
+- Task states (`READY`, `BLOCKED`, `PARTIAL`, `DONE`), human gates, per-task-type
+  verification commands, and the failure policy are defined mechanically in
+  `docs/EXECUTION_PLAN.md` §0. Evaluate `READY` against that checklist; never
+  promote a `BLOCKED` task by guessing an open decision (`Q-xx` in
+  `docs/00-DECISIONS.md`). Each `Q-xx` carries a recommended default — apply it
+  only after the owner confirms.
 - Local source/test/doc edits, local builds, linting, disposable/local database
   migrations, and local browser verification are within the standing autopilot
   mandate once their task passes pre-execution review.

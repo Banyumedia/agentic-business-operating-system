@@ -25,12 +25,17 @@
 
         <!-- Search Bar (Command Palette Hint) -->
         <div class="mt-16 text-center">
-            <button class="px-6 py-3 bg-gray-800 border border-gray-700 rounded-full text-gray-400 hover:text-white hover:border-gray-500 transition-colors flex items-center mx-auto space-x-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <button type="button"
+                    x-data
+                    @click="$dispatch('keydown', new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))"
+                    aria-label="Buka pencarian universal (Ctrl + K)"
+                    aria-keyshortcuts="Control+K Meta+K"
+                    class="px-6 py-3 bg-gray-800 border border-gray-700 rounded-full text-gray-400 hover:text-white hover:border-gray-500 transition-colors flex items-center mx-auto space-x-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                   <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
                 </svg>
                 <span>Cari kontak, menu, atau tagihan...</span>
-                <kbd class="ml-2 px-2 py-1 bg-gray-900 rounded text-xs text-gray-500 font-mono">Ctrl + K</kbd>
+                <kbd class="ml-2 px-2 py-1 bg-gray-900 rounded text-xs text-gray-500 font-mono" aria-hidden="true">Ctrl + K</kbd>
             </button>
         </div>
     </div>
