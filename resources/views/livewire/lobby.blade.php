@@ -7,9 +7,12 @@
 
         <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
             @foreach($apps as $app)
-                <a href="#" class="group block p-6 rounded-2xl bg-gray-800 border border-gray-700 hover:border-gray-500 hover:bg-gray-750 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl">
+                <a href="{{ route('app.module', ['module' => $app['slug']]) }}"
+                   wire:navigate
+                   aria-label="Buka aplikasi {{ $app['name'] }}"
+                   class="group block p-6 rounded-2xl bg-gray-800 border border-gray-700 hover:border-gray-500 hover:bg-gray-750 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
                     <div class="flex flex-col items-center text-center space-y-4">
-                        <div class="w-16 h-16 rounded-full {{ $app['color'] }} flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <div class="w-16 h-16 rounded-full {{ $app['color'] }} flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300" aria-hidden="true">
                             {{ $app['icon'] }}
                         </div>
                         <div>

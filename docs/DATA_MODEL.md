@@ -3,7 +3,39 @@
 
 **Codebase:** Laravel, `D:\PROJECTS\agentic-bos`.
 
+## 0. Kontrak Implementasi Migration (WAJIB)
+
+Seluruh DDL di dokumen ini adalah **spesifikasi bentuk data**, bukan SQL yang
+boleh disalin mentah ke migration.
+
+**Keputusan B-01 (2026-09-16):** semua migration WAJIB ditulis memakai Laravel
+Schema Builder yang portabel, bukan `DB::statement` dengan DDL MySQL mentah.
+
+Alasan terverifikasi: `.env` dan `phpunit.xml` memakai SQLite, sedangkan
+produksi memakai MySQL/MariaDB. SQLite tidak mendukung `ENUM` mentah dan
+memiliki keterbatasan `ALTER TABLE`, sehingga DDL MySQL mentah akan gagal.
+
+Aturan penerjemahan:
+
+| Spesifikasi di dokumen | Implementasi migration |
+|---|---|
+| `BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY` | `$table->id()` |
+| `BIGINT UNSIGNED` + FK | `$table->foreignId('x')->constrained()` |
+| `ENUM('a','b')` | `$table->enum('kolom', ['a','b'])` |
+| `DECIMAL(18,2)` | `$table->decimal('kolom', 18, 2)` |
+| `JSON` | `$table->json('kolom')` |
+| `TIMESTAMP NULL` | `$table->timestamps()` atau `$table->timestamp('x')->nullable()` |
+| `ALTER TABLE ... ADD COLUMN` | migration `Schema::table()` dengan pengecekan `Schema::hasColumn()` |
+
+Ketentuan tambahan:
+
+- Setiap tabel bisnis wajib punya `company_id` dengan foreign key dan index.
+- Dev dan test memakai SQLite agar cepat dan tanpa setup tambahan.
+- Sebelum release, jalankan verifikasi paritas pada MySQL/MariaDB karena
+  SQLite tidak menangkap seluruh perilaku MySQL.
+
 ---
+
 
 ## 1. Perubahan Tabel Eksis
 

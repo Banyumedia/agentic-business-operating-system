@@ -30,8 +30,8 @@ ada di `PRD_RECONCILIATION.md`.
 
 | ID | Blocker | Dampak | Butuh |
 |---|---|---|---|
-| B-01 | `.env` memakai SQLite, sedangkan `DATA_MODEL.md` memakai DDL MySQL (`ENUM`, `AUTO_INCREMENT`) | Semua migration Fase 3 akan gagal bila ditulis sebagai DDL MySQL mentah | Keputusan Bos: pakai MySQL untuk dev, atau tulis migration portabel via Laravel Schema Builder |
-| B-02 | Workspace bukan Git repository (`.git` tidak ada) | Tidak ada `git diff`, tidak ada baseline SHA, tidak ada gate commit, writer paralel via worktree tidak mungkin | `git init` + remote, atau konfirmasi bahwa review berbasis snapshot file saja |
+| B-01 | `.env` memakai SQLite, sedangkan `DATA_MODEL.md` memakai DDL MySQL (`ENUM`, `AUTO_INCREMENT`) | Semua migration Fase 3 akan gagal bila ditulis sebagai DDL MySQL mentah | **TERSELESAIKAN 2026-09-16.** Semua migration wajib memakai Laravel Schema Builder portabel; lihat `DATA_MODEL.md` §0. Dev/test SQLite, paritas MySQL diverifikasi sebelum release |
+| B-02 | Workspace bukan Git repository (`.git` tidak ada) | Tidak ada `git diff`, tidak ada baseline SHA, tidak ada gate commit, writer paralel via worktree tidak mungkin | **TERSELESAIKAN 2026-09-16.** `git init` dijalankan, baseline commit `7151104` dibuat, `.gitignore` diverifikasi mengecualikan `.env`/`vendor`/`node_modules`/`auth.json` |
 
 Fase 1 dan 2 (UI) **tidak** diblokir oleh B-01 dan boleh dilanjutkan.
 
@@ -54,8 +54,8 @@ duplikasi.
 | ID | Task | File Target | Status Aktual & Acceptance Criteria |
 |---|---|---|---|
 | T-01 | Setup Laravel, Livewire v4, dan TailwindCSS v4 | `package.json`, `composer.json` | **SELESAI.** Laravel 13.32, Livewire 4.4, Tailwind 4.3, Vite 8. Build tersedia. |
-| T-02 | Komponen UI: *Lobby* & *App Switcher* | `app/Livewire/Lobby.php`, `resources/views/livewire/lobby.blade.php` | **PARSIAL.** Grid 6 aplikasi sudah dirender, tetapi semua kartu memakai `href="#"`. Selesaikan dengan menautkan tiap kartu ke `route('app.module', ...)` dan tambahkan feature test yang menegaskan navigasi ke modul. |
-| T-03 | Komponen UI: *Dynamic Sidebar* (Terisolasi) | `app/Livewire/Sidebar.php`, `resources/views/livewire/sidebar.blade.php` | **PARSIAL.** Menu per modul masih array hardcoded. Selesaikan dengan memindahkan sumber menu ke `DynamicMenuRegistry` dan menyembunyikan item yang feature flag-nya mati (zero-DOM). |
+| T-02 | Komponen UI: *Lobby* & *App Switcher* | `app/Livewire/Lobby.php`, `resources/views/livewire/lobby.blade.php` | **SELESAI 2026-09-16.** Setiap kartu menautkan `route('app.module', slug)` dengan `wire:navigate`, key `route` yang dead payload diganti `slug`, ditambah `aria-label` dan focus ring. Bukti: `tests/Feature/LobbyNavigationTest.php` (4 test, termasuk larangan `href="#"`). |
+| T-03 | Komponen UI: *Dynamic Sidebar* (Terisolasi) | `app/Services/DynamicMenuRegistry.php`, `app/Livewire/Sidebar.php`, `resources/views/livewire/sidebar.blade.php` | **SELESAI 2026-09-16.** Menu dipindahkan ke `DynamicMenuRegistry` untuk 6 modul, aksen warna per modul, dan modul tak dikenal kini merender nol item menu (zero-bloat) alih-alih placeholder. Bukti: `tests/Unit/DynamicMenuRegistryTest.php` (7 test) + `tests/Feature/ModuleSidebarTest.php` (4 test). |
 | T-04 | Komponen UI: *Universal Search (Ctrl+K)* | `app/Livewire/CommandPalette.php`, `resources/views/livewire/command-palette.blade.php` | **SELESAI (dummy).** Modal Alpine + `wire:model.live.debounce` merender hasil dummy. Integrasi Scout ditangani T-20. |
 
 > Catatan runtime: Alpine.js **tidak** dipasang terpisah; ia dibundel Livewire v4.
