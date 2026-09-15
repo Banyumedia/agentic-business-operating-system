@@ -109,7 +109,7 @@ Ketika klien membeli paket membership:
    - Sistem mengirim perintah API ke Node terpilih untuk membuat folder `~/.hermes/profiles/{slug}/` di host node tersebut.
    - Mengisi `SOUL.md` baku yang berisi identitas Bos dan *daftar dinamis seluruh ID perusahaan* yang dimilikinya.
    - Mengunci `config.yaml` dengan whitelist tool MCP tingkat *User* (`mcp_erp_user_{user_id}`) yang mana setiap *tool*-nya mewajibkan parameter `company_id`.
-   - Menyimpan referensi secret (bukan plaintext) beserta `node_id` ke tabel `hermes_profiles`. Satu profile per **company** (Q-04 default); owner dengan banyak company memiliki beberapa profile.
+   - Menyimpan referensi secret (bukan plaintext) beserta `node_id` ke tabel `hermes_profiles`. **Satu profile `primary` per OWNER (D-37)**, lintas semua company miliknya lewat pivot `hermes_profile_companies`. Owner hanya punya satu nomor asisten; bot menyimpan `active_company_id` per percakapan dan **bertanya** bila konteks company ambigu. **Bot tambahan** (`type=addon`, mis. untuk manajer cabang dengan scope 1 company + `role=manager`, atau bot pribadi kedua untuk Bos) adalah **add-on berbayar** per bot, diprovisi dengan perintah yang sama plus `--type=addon --company-ids=... --role=...`.
 5. **WhatsApp QR:** Tampilkan QR pairing (diambil dari API Hermes) di menu `/settings/ai-agent` untuk ditautkan oleh owner.
 6. **AI Onboarding Interview (Universal Business Adaptation):**
    - Segera setelah Bos melakukan *scan* QR, Asisten AI mengirim pesan sapaan otomatis ke WA Bos: *"Halo Bos! Bisnis Bapak/Ibu bergerak di bidang apa? Apakah butuh struk kasir, atau sekadar pencatatan utang-piutang?"*

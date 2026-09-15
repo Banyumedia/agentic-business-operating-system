@@ -106,7 +106,7 @@ Resolusi `term($key)`, workflow, dan dashboard mengikuti urutan yang sama
 ALTER TABLE users
   ADD COLUMN wa_number VARCHAR(32) NULL,
   ADD COLUMN wa_is_verified BOOLEAN NOT NULL DEFAULT FALSE,
-  ADD COLUMN current_company_id BIGINT UNSIGNED NULL; -- Q-08: konteks tenant aktif
+  ADD COLUMN current_company_id BIGINT UNSIGNED NULL; -- D-41: konteks tenant aktif
 ```
 Ini satu-satunya `ALTER` nyata di dokumen ini karena `users` memang sudah ada.
 
@@ -274,7 +274,7 @@ CREATE TABLE contacts (
 
 ### 3.2 `deals` (kapabilitas `deals`)
 Peluang/pendaftaran/kunjungan yang melewati stage. `stage` adalah kode netral dari
-`workflow_definitions[entity='deal']`, **bukan** ENUM (Q-05).
+`workflow_definitions[entity='deal']`, **bukan** ENUM (D-38).
 ```sql
 CREATE TABLE deals (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -922,22 +922,68 @@ CREATE TABLE hermes_nodes (
 );
 ```
 
-### 12.2 `hermes_profiles`
+### 12.2 `hermes_profiles` (D-37: satu bot per OWNER, multi-bisnis)
+
+Bot **tidak** terikat satu company. Profile milik seorang owner dan diberi scope
+ke satu atau banyak company lewat pivot `hermes_profile_companies`. Bot pertama
+owner bertipe `primary`; bot berikutnya (mis. untuk manajer cabang) bertipe
+`addon` dan terikat item billing.
+
 ```sql
 CREATE TABLE hermes_profiles (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT UNSIGNED NOT NULL UNIQUE,
-    node_id BIGINT UNSIGNED NULL, -- Referensi ke Node tempat instance ini berjalan
+    owner_user_id BIGINT UNSIGNED NOT NULL,                 -- pemilik/penanggung jawab bot
+    node_id BIGINT UNSIGNED NULL,                           -- node tempat instance berjalan
+    type VARCHAR(16) NOT NULL DEFAULT 'primary',           -- primary | addon (divalidasi model)
+    label VARCHAR(64) NULL,                                 -- "Asisten Bos", "Bot Manajer Cabang A"
+    billing_addon_id BIGINT UNSIGNED NULL,                  -- wajib bila type=addon (item add-on aktif)
     instance_id VARCHAR(128) NOT NULL UNIQUE,
-    webhook_secret_reference VARCHAR(191) NOT NULL, -- Referensi secret manager, bukan secret plaintext
-    status ENUM('unpaired','connected','disconnected') NOT NULL DEFAULT 'unpaired',
+    webhook_secret_reference VARCHAR(191) NOT NULL,         -- referensi secret manager, bukan plaintext
+    status VARCHAR(16) NOT NULL DEFAULT 'unpaired',        -- unpaired | connected | disconnected
     last_ping_at TIMESTAMP NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    CONSTRAINT fk_hermes_profiles_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_hermes_profiles_owner FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_hermes_profiles_node FOREIGN KEY (node_id) REFERENCES hermes_nodes(id) ON DELETE RESTRICT
 );
+-- Tepat satu primary per owner: unique index parsial disimulasikan di aplikasi
+-- (SQLite/MySQL portabel): validasi di model + test.
+
+CREATE TABLE hermes_profile_companies (
+    hermes_profile_id BIGINT UNSIGNED NOT NULL,
+    company_id BIGINT UNSIGNED NOT NULL,
+    role VARCHAR(32) NOT NULL DEFAULT 'owner',              -- owner | manager | viewer: batas kemampuan bot di company itu
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,              -- company yang dipakai bila percakapan belum menyebut konteks
+    created_at TIMESTAMP NULL,
+    PRIMARY KEY (hermes_profile_id, company_id),
+    CONSTRAINT fk_hpc_profile FOREIGN KEY (hermes_profile_id) REFERENCES hermes_profiles(id) ON DELETE CASCADE,
+    CONSTRAINT fk_hpc_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+
+CREATE TABLE hermes_conversation_contexts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    hermes_profile_id BIGINT UNSIGNED NOT NULL,
+    channel VARCHAR(16) NOT NULL,                           -- whatsapp | telegram
+    chat_id VARCHAR(128) NOT NULL,
+    active_company_id BIGINT UNSIGNED NULL,                 -- company yang sedang dibicarakan
+    updated_at TIMESTAMP NULL,
+    UNIQUE (hermes_profile_id, channel, chat_id),
+    CONSTRAINT fk_hcc_profile FOREIGN KEY (hermes_profile_id) REFERENCES hermes_profiles(id) ON DELETE CASCADE,
+    CONSTRAINT fk_hcc_company FOREIGN KEY (active_company_id) REFERENCES companies(id) ON DELETE SET NULL
+);
 ```
+
+**Aturan bot multi-bisnis (D-37):**
+- Setiap perintah tenant MCP (T-17b) wajib membawa `company_id` yang berasal dari
+  `hermes_conversation_contexts.active_company_id`; bila NULL dan owner punya >1
+  company, bot **bertanya** ("Untuk Kopi Senja atau Rental Arka?") - tidak menebak.
+- Owner dengan 1 company: konteks otomatis, tidak pernah ditanya.
+- Bot `addon` hanya boleh mengakses company di pivot-nya dengan `role` tersebut;
+  `EnsureFeatureEnabled` + policy memakai `role` ini.
+- Kuota AI: `primary` dihitung per owner (gabungan semua company); `addon` punya
+  kuota sendiri sesuai item billing.
+- Pengecualian D-26: `hermes_profiles` tidak punya `company_id` karena memang
+  lintas company; isolasi dijamin lewat pivot.
 
 ## 13. Manajemen Penyimpanan File (Google Drive BYOS)
 

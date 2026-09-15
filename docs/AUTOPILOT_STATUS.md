@@ -61,7 +61,7 @@ default atau memilih alternatif. **Agent tidak menebak.**
 
 **T-07** — token `--erp-*` (36, `UX_UI_SPEC.md` §7), `ThemeRegistry::passesAa()`,
 `ThemeContrastTest` (11 pasangan), Settings tab WAI-ARIA di `/app/settings`,
-theme toggle. Ini membuka T-05 dan T-06. Q-03 memakai default (turunkan dari
+theme toggle. Ini membuka T-05 dan T-06. D-36 (ex-Q-03) locked (turunkan dari
 palet Tailwind v4, buktikan AA dengan test).
 
 Setelah T-07 → T-05 → T-06 → laporkan → **berhenti di `HUMAN:UI-LOCK`**.

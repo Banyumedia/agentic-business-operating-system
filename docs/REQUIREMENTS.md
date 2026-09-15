@@ -134,7 +134,7 @@ Sistem harus memvalidasi setiap payload API yang datang dari Asisten AI secara k
 ## 4. Spesifikasi 6 Modul Industri Spesifik
 
 ### 4.1 Industri 1: Agency (Jasa Kreatif & IT)
-- **CRM:** Menggunakan pipeline deals. Kode stage disimpan netral (`new / qualified / proposal / negotiation / won / lost`, Q-05) dan ditampilkan dengan label Indonesia: `Lead Baru → Pitch / SPH → Negosiasi → Won / Lost`. Data PIC (`pic_name`, `pic_wa`) disimpan di `contacts` (`name`, `wa_number`) yang direlasikan ke `deals` — **bukan** kolom baru di `deals`. `deals.value` wajib.
+- **CRM:** Menggunakan pipeline deals. Kode stage disimpan netral (`new / qualified / proposal / negotiation / won / lost`, D-38) dan ditampilkan dengan label Indonesia: `Lead Baru → Pitch / SPH → Negosiasi → Won / Lost`. Data PIC (`pic_name`, `pic_wa`) disimpan di `contacts` (`name`, `wa_number`) yang direlasikan ke `deals` — **bukan** kolom baru di `deals`. `deals.value` wajib.
 - **Operasional:** Timesheet per staf untuk menghitung biaya per jam pengerjaan proyek klien.
 - **Invoicing:** Termin bertahap (contoh: DP 50%, Pelunasan 50% setelah serah terima).
 

@@ -61,28 +61,25 @@ Status: `LOCKED` = keputusan final Bos. `OPEN` = menunggu diskusi lanjutan.
 | D-31 | **Composable Capability Architecture — "industri = data, kapabilitas = kode"** (2026-09-16) | Target produk adalah **puluhan jenis bisnis** (≥50), bukan 6. Karena itu: (a) feature flag menyatakan **kapabilitas generik** lintas industri (`projects`, `bookings`, `inventory.batch_expiry`), **bukan** nama industri (`ops.contractor_spk`); (b) sebuah **preset industri adalah data** — satu baris `business_presets.definition` berisi kapabilitas aktif, terminologi, workflow default, dan susunan widget dashboard — bukan kode; (c) **alur bisnis** didefinisikan sebagai data di `workflow_definitions` dan dieksekusi satu `WorkflowEngine`; (d) **terminologi UI** diambil dari `terminology_map` preset/company via helper `term()`, tidak di-hardcode di Blade; (e) entitas yang variatif memakai kolom `attributes JSON` + `type`, dan tabel domain khusus **hanya** dibuat bila ada aturan bisnis yang tidak bisa direpresentasikan sebagai data (FEFO, retensi, double-entry, regulasi). Menambah industri baru **tidak boleh** memerlukan migration atau komponen Blade baru. Detail: `INDUSTRY_PRESETS.md` §0–§3, `DATA_MODEL.md` §1.5–1.7. |
 | D-32 | **Katalog kapabilitas v1 dikunci (18 modul)** | `contacts`, `deals`, `projects`, `projects.progress_billing`, `scheduling`, `bookings`, `bookings.deposit`, `inventory`, `inventory.batch_expiry`, `inventory.bom`, `pos`, `pos.tables`, `quotations`, `milestone_billing`, `approval_flow`, `timesheet`, `finance.cashbook`, `finance.accounting`, `hr.employees`, `hr.payroll`, `system.ai_agent`. Menambah kapabilitas baru = keputusan arsitektur (butuh Bos), menambah preset baru = data (tidak butuh Bos). |
 | D-33 | **Dua tier cakupan industri** | **Tier A (komposisi murni, target ≥80% jenis bisnis):** preset dibentuk hanya dari kapabilitas D-32 + terminologi + workflow + widget — nol kode. **Tier B (modul domain khusus):** industri dengan aturan yang tidak bisa jadi data (farmasi/obat keras, konstruksi/retensi-opname, manufaktur/BOM bertingkat) mendapat modul kode yang dibangun **sekali** dan dipakai industri serumpun. 6 preset awal: Agency, F&B, EO, Persewaan = Tier A; Apotek, Kontraktor = Tier A + 1 modul Tier B masing-masing. |
+| D-34 | **Payment gateway: Midtrans** (2026-09-16, ex-Q-01) | Signature `SHA512(order_id + status_code + gross_amount + ServerKey)`; env `MIDTRANS_SERVER_KEY`, `MIDTRANS_IS_PRODUCTION`. Vocabulary status mengikuti notifikasi Midtrans. Abstraksi `PaymentGateway` interface agar Xendit bisa ditambah tanpa mengubah T-19. |
+| D-35 | **Scout driver `database`** (ex-Q-02) | Nol infra untuk 500 tenant awal. Migrasi ke Meilisearch hanya bila p95 pencarian > 500 ms terukur. |
+| D-36 | **Palet tema diturunkan agent dari Tailwind v4** (ex-Q-03) | 5 tema (`Prime Default`, `Clean Ledger`, `Ocean Blue`, `Brass Amber`, `Rose`) dari slate/emerald/sky/amber/rose. Setiap pasangan teks/latar WCAG AA >= 4.5:1, dibuktikan test unit penghitung kontras. 36 token di UX_UI_SPEC 7. |
+| D-37 | **Bot Hermes: SATU per OWNER, multi-bisnis; bot tambahan = add-on berbayar** (ex-Q-04, **menolak default**) | Owner dengan N company memakai **satu** bot WA yang sadar konteks: bot tahu semua company milik owner, menanyakan/menyimpulkan company yang dimaksud, dan menyimpan `active_company_id` per percakapan. Tujuan: owner cukup punya satu nomor asisten. **Bot tambahan** (mis. bot khusus manajer cabang dengan scope 1 company + role terbatas, atau bot pribadi kedua untuk Bos) adalah **add-on** dengan biaya tambahan per bot. Skema: `hermes_profiles.owner_user_id` (bukan `company_id UNIQUE`), tabel pivot `hermes_profile_companies` (scope company + role), `type ENUM('primary','addon')`, `billing_addon_id`. Kuota AI dihitung per owner (primary) dan per add-on. COMMERCIAL 3.2 menjadi sumber kebenaran; PRD/DATA_MODEL disesuaikan. |
+| D-38 | **Stage CRM: kode netral, label lokal** (ex-Q-05) | `stage` VARCHAR berisi `new/qualified/proposal/negotiation/won/lost`, divalidasi `WorkflowEngine`; label Indonesia via `term()`/preset; custom per company via `workflow_definitions`. |
+| D-39 | **Vendor string terlarang di UI tenant** (ex-Q-06) | `Hermes`, `Nous`, `Nous Research`, `Laravel`, `Midtrans`, dan `laravel/laravel` di `composer.json name`. Diaudit T-22. |
+| D-40 | **Onboarding: form web dulu** (ex-Q-07) | Wawancara AI via WA menyusul setelah node API Hermes tersedia (T-17b). Human call opsional untuk Enterprise. |
+| D-41 | **Konteks tenant aktif: `users.current_company_id`** (ex-Q-08) | Kolom + middleware; bukan subdomain/session. Selaras D-21 dan D-37 (bot juga menyimpan `active_company_id` per percakapan, sinkron dengan kolom ini bila user sama). |
 
 ---
 
 ## Keputusan OPEN
 
-Keputusan berikut **belum diputuskan Bos** dan memblokir task tertentu. Agent
-autopilot **tidak boleh menebak** item ini. Bila task bergantung pada item OPEN,
-tandai task `BLOCKED` dan lanjutkan task lain yang independen. Setiap item
-menyertakan **rekomendasi default** agar Bos cukup menjawab "setuju" atau memilih.
+Tidak ada. Q-01..Q-08 dijawab Bos 2026-09-16 dan dipromosikan menjadi D-34..D-41
+(Q-04 dijawab **berbeda dari default**: lihat D-37). Item OPEN baru berikutnya
+muncul dari T-25 (pilihan modul Tier B). Aturan tetap: autopilot **tidak boleh
+menebak** item OPEN; tandai task `BLOCKED` dan lanjutkan task independen.
 
-| ID | Pertanyaan | Memblokir | Rekomendasi default |
-|---|---|---|---|
-| Q-01 | Payment gateway: **Midtrans** atau **Xendit**? Menentukan algoritma signature webhook, format `order_id`, dan vocabulary status. | T-17, T-18, T-19 | **Midtrans.** Signature = `SHA512(order_id + status_code + gross_amount + ServerKey)`, header/body standar Midtrans notification. Env: `MIDTRANS_SERVER_KEY`, `MIDTRANS_IS_PRODUCTION`. |
-| Q-02 | Driver Laravel Scout: **`database`** (nol infra, cukup untuk 500 tenant awal) atau **Meilisearch** (butuh service tambahan)? | T-20 | **`database`** untuk fase ini. Migrasi ke Meilisearch bila terbukti lambat. |
-| Q-03 | Palet warna & nilai hex untuk 5 tema (`Prime Default`, `Clean Ledger`, `Ocean Blue`, `Brass Amber`, `Rose`) dan daftar lengkap 36 token `--erp-*`. | T-07, semua UI setelahnya | Agent boleh menurunkan palet dari Tailwind v4 default (slate/emerald/sky/amber/rose) **asal** setiap pasangan teks/latar lolos WCAG AA ≥ 4.5:1 dan dibuktikan dengan test unit penghitung kontras. Daftar 36 token didefinisikan di UX_UI_SPEC §7 (ditambahkan 2026-09-16). |
-| Q-04 | `hermes_profiles`: **satu per company** (PRD/DATA_MODEL) atau **satu per owner yang memiliki banyak company** (COMMERCIAL §3.2)? Menentukan `UNIQUE(company_id)`. | T-10b, provisioning | **Satu per company.** Owner multi-company mendapat beberapa profile; lebih sederhana untuk isolasi dan kuota. COMMERCIAL §3.2 akan dikoreksi setelah Bos setuju. |
-| Q-05 | Nama tahap CRM default untuk preset Agency: `Lead Baru → Pitch/SPH → Negosiasi → Won/Lost` (REQUIREMENTS) vs `new → in_progress → won → lost` (DATA_MODEL). | T-13 | Simpan **kode** `new/qualified/proposal/negotiation/won/lost` di kolom `stage` (bahasa netral), tampilkan **label** Indonesia di UI. Stage custom per company via `module_settings`. |
-| Q-06 | Daftar vendor string yang harus nol di UI untuk audit white-label T-22. | T-22 | `Hermes`, `Nous`, `Nous Research`, `Laravel` (di UI tenant, bukan di source), `Midtrans` (di UI tenant), `laravel/laravel` (di `composer.json name`). |
-| Q-07 | Mekanisme wawancara onboarding (U-01): form web, AI WA, atau human call sebagai default fase ini? | Onboarding flow | **Form web sederhana** dulu; AI WA interview menyusul setelah Hermes node API tersedia. |
-| Q-08 | Konteks tenant aktif: `users.current_company_id` (kolom) vs session vs subdomain? | T-15, T-16, T-20 | **Kolom `users.current_company_id`** + middleware yang membacanya, karena D-21 memakai login tradisional dan user bisa punya banyak company. |
-
-Semua keputusan arsitektur utama selain Q-01..Q-08 telah LOCKED.
+Semua keputusan arsitektur utama telah LOCKED.
 
 ---
 
