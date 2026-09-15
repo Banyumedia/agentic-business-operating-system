@@ -211,6 +211,29 @@ migration **serial**.
 
 ---
 
+## Fase 6: Ekspansi Pasar — Preset Data (pasca-T-21c)
+
+Sumber: `INDUSTRY_PRESETS.md` §7 (peta 63 bisnis) dan §7.11 (urutan GTM).
+Setiap task = **hanya** file JSON di `database/seeders/presets/` + satu test
+komposisi. **Jika sebuah task di fase ini memerlukan diff kode di luar folder
+preset, task itu bukan preset — hentikan, laporkan hardcode yang ditemukan,
+dan buka tiket D-32/D-33 ke Bos.**
+
+| ID | Task | Depends On | Gate | Acceptance | State |
+|---|---|---|---|---|---|
+| T-24 | Preset gelombang 1: `klinik`, `salon` **dipromosikan** dari bukti T-21c ke preset resmi | T-21c | — | `klinik.json`, `salon.json` lolos `PresetValidator`; muncul di dropdown onboarding (UX §4.3); `DogfoodTenantSeeder` memuatnya. | `BLOCKED` |
+| T-24b | Preset gelombang 2: `bengkel`, `kursus`, `kos_coworking`, `laundry` | T-24 | — | 4 JSON + `PresetCompositionTest` per preset: kapabilitas, `term()`, workflow default, widget dashboard sesuai §7.3/§7.6/§7.7/§7.9. Workflow `laundry` (`order`: diterima→dicuci→siap_diambil→selesai) memicu `notify.owner_wa`. **Diff kode = 0.** | `BLOCKED` |
+| T-24c | Preset gelombang 3: `katering`, `bakery_preorder`, `travel_umroh`, `gym`, `praktek_dokter`, `cuci_mobil` | T-24b | — | 6 JSON + test; sama seperti T-24b. | `BLOCKED` |
+| T-24d | Preset gelombang 4: sisa Tier A dari §7 (prioritas ditentukan Bos berdasarkan permintaan pasar) | T-24c | `HUMAN:PRIORITY` | Batch ≤6 preset per PR; setiap batch memperbarui tabel §6/§7 dan `PRESET_COVERAGE.md` (dibuat di T-24). | `BLOCKED` |
+| T-25 | **Keputusan Tier B berikutnya** (bukan kode) | T-24b | `HUMAN:DECISION` | Bos memilih 0–2 dari: `manufacturing.production_order` (BOM multi-level + WIP, §7.8) dan `finance.loan_schedule` (angsuran/koperasi, §7.9). Hasil dicatat sebagai D-34/D-35 di `00-DECISIONS.md` dengan spesifikasi tabel di `DATA_MODEL.md`. Tanpa keputusan → tidak ada task kode. | `BLOCKED` |
+| T-25b | Implementasi modul Tier B terpilih | T-25 | — | Mengikuti pola T-14b: tabel + workflow effect + widget; **dibungkus flag** sehingga preset yang tidak memakainya tidak berubah (regression T-24* tetap hijau). | `BLOCKED` |
+| T-26 | Halaman publik "Cocok untuk bisnis apa?" | T-24b, T-22 | `HUMAN:UI-LOCK` (copy) | Route publik `/industri` membaca daftar preset + `description` dari `business_presets` (bukan hardcode); tiap preset punya CTA onboarding 1-klik. Grep nama industri literal di Blade = 0. | `BLOCKED` |
+
+**Metrik keberhasilan fase:** rasio *preset ditambah* : *diff kode* — target
+≥ 20 preset baru dengan 0 baris kode domain baru selain T-25b.
+
+---
+
 ## Dependency Graph (ringkas)
 
 ```
@@ -237,12 +260,14 @@ T-00a ─┬─ T-00b ─── T-08 ─── T-08b ─┬─ T-08c ───�
                                                   └─ T-14b (Tier B)
                                                           T-17b
                                     T-21 ─┬─ T-21b
-                                          ├─ T-21c ─┐
-                                          └─ T-22 ──┴─ T-23
+                                           ├─ T-21c ─┬─ T-24 ─ T-24b ─┬─ T-24c ─ T-24d
+                                           │         │                ├─ T-25 ─ T-25b
+                                           │         │                └─ T-26 (← T-22)
+                                           └─ T-22 ──┴─ T-23
 ```
 
 **Prinsip urutan:** fondasi tenant → **mesin komposisi** → tabel kapabilitas
-generik → Tier B → API → bukti komposisi. Tabel domain **tidak boleh** dibuat
+generik → Tier B → API → bukti komposisi → **ekspansi pasar sebagai data** (Fase 6). Tabel domain **tidak boleh** dibuat
 sebelum `WorkflowEngine`, `FeatureResolver`, `TerminologyResolver` ada, karena
 tabel itu bergantung pada ketiganya.
 
