@@ -260,7 +260,7 @@ AI onboarding menyalakan sisanya (§8).
 
 ---
 
-## 7. Contoh Industri ke-7..12 (Tier A murni — tanpa kode baru)
+## 7. Peta Pasar: 63 Bisnis Potensial Pengguna Agentic BOS
 
 Bukti bahwa arsitektur ini menutup bisnis di luar 6 awal:
 

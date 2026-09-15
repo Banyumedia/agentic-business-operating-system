@@ -1,0 +1,190 @@
+{
+  "terminology": {
+    "settings_title": "Pengaturan Bisnis & Sistem",
+    "settings_subtitle": "Konfigurasi operasional, preferensi tema, kapabilitas AI, dan manajemen akses tim.",
+    "save_button": "Simpan Perubahan",
+    "cancel_button": "Batal",
+    "contact": "Karyawan",
+    "staff": "Karyawan",
+    "preset_label": "Preset Bisnis Utama"
+  },
+  "tabs": [
+    {
+      "id": "profile",
+      "label": "Profil Bisnis & Pajak",
+      "badge": null
+    },
+    {
+      "id": "appearance",
+      "label": "Tampilan & Tema",
+      "badge": "WCAG AA"
+    },
+    {
+      "id": "features",
+      "label": "Fitur Bisnis",
+      "badge": "Dinamis"
+    },
+    {
+      "id": "ai",
+      "label": "Karyawan AI",
+      "badge": "Hermes"
+    },
+    {
+      "id": "billing",
+      "label": "Penggunaan & Paket",
+      "badge": "Pro"
+    },
+    {
+      "id": "team",
+      "label": "Tim & Akses",
+      "badge": "5 Akun"
+    }
+  ],
+  "profile": {
+    "company_name": "PT Nalar Teknologi Nusantara",
+    "business_field": "Teknologi & Konsultansi",
+    "phone": "+62 812-3456-7890",
+    "address": "Gedung Cyber 2 Lantai 18, Jl. HR Rasuna Said, Jakarta Selatan",
+    "tax_status": "pkp",
+    "tax_inclusive": true,
+    "tax_rate": 11
+  },
+  "appearance": {
+    "themes": [
+      {
+        "id": "midnight",
+        "name": "Prime Default / Midnight",
+        "desc": "Slate gelap, aksen violet-emerald",
+        "primary": "#a78bfa",
+        "bg": "#0f172a",
+        "active": true
+      },
+      {
+        "id": "clean-ledger",
+        "name": "Clean Ledger",
+        "desc": "Putih bersih, aksen perbankan modern",
+        "primary": "#0284c7",
+        "bg": "#f8fafc",
+        "active": false
+      },
+      {
+        "id": "ocean-blue",
+        "name": "Ocean Blue",
+        "desc": "Navy korporat, aksen biru laut",
+        "primary": "#38bdf8",
+        "bg": "#0c4a6e",
+        "active": false
+      },
+      {
+        "id": "brass-amber",
+        "name": "Brass Amber",
+        "desc": "Cokelat tembaga hangat, aksen emas",
+        "primary": "#fbbf24",
+        "bg": "#451a03",
+        "active": false
+      },
+      {
+        "id": "rose",
+        "name": "Rose",
+        "desc": "Marun pekat, aksen mawar",
+        "primary": "#fb7185",
+        "bg": "#4c0519",
+        "active": false
+      }
+    ],
+    "user_preference": "dark"
+  },
+  "features": {
+    "current_preset": "agency",
+    "presets": [
+      {"id": "agency", "name": "Digital Agency & Konsultan"},
+      {"id": "fnb", "name": "F&B / Restoran & Kafe"},
+      {"id": "pharmacy", "name": "Apotek & Farmasi"},
+      {"id": "eo", "name": "Event Organizer & MICE"},
+      {"id": "contractor", "name": "Kontraktor & Konstruksi"},
+      {"id": "rental", "name": "Persewaan & Rental Aset"},
+      {"id": "clinic", "name": "Klinik & Layanan Medis"}
+    ],
+    "capabilities": [
+      {
+        "group": "Kontak & Peluang",
+        "items": [
+          {"id": "crm.contacts", "name": "Manajemen Kontak & Organisasi", "desc": "Direktori klien, prospek, dan rekanan", "enabled": true},
+          {"id": "crm.deals", "name": "Pipeline Prospek / Deals", "desc": "Tahapan negosiasi penjualan hingga kesepakatan", "enabled": true}
+        ]
+      },
+      {
+        "group": "Proyek & Penugasan",
+        "items": [
+          {"id": "ops.projects", "name": "Manajemen Proyek & Task", "desc": "Kanban board, milestone termin, dan alokasi tim", "enabled": true},
+          {"id": "ops.timesheets", "name": "Timesheet & Jam Kerja Tim", "desc": "Pelacakan alokasi jam kerja pada task klien", "enabled": true}
+        ]
+      },
+      {
+        "group": "Stok & Inventaris",
+        "items": [
+          {"id": "inventory.batch", "name": "Nomor Batch & Tanggal Kedaluwarsa (FEFO)", "desc": "Pelacakan mutasi obat / bahan baku sensitif waktu", "enabled": false},
+          {"id": "inventory.multi_warehouse", "name": "Multi-Gudang & Cabang", "desc": "Transfer stok antar lokasi dan konsolidasi", "enabled": false}
+        ]
+      },
+      {
+        "group": "Keuangan & Kasir",
+        "items": [
+          {"id": "fin.invoicing", "name": "Faktur & Tagihan Piutang", "desc": "Pembuatan invoice otomatis, reminder, dan rekonsiliasi", "enabled": true},
+          {"id": "fin.pos", "name": "Kasir Cepat (Point of Sale)", "desc": "Terminal transaksi ritel dan cetak nota struk", "enabled": false}
+        ]
+      }
+    ]
+  },
+  "ai": {
+    "assistant_name": "Sari",
+    "assistant_role": "Asisten Eksekutif & Operasional Toko",
+    "tone": "Santun & Ringkas",
+    "tones": ["Santun & Ringkas", "Semi-Formal", "Kasual & Ramah"],
+    "max_discount": 10,
+    "hours_start": "08:00",
+    "hours_end": "21:00",
+    "special_notes": "Selalu konfirmasi ketersediaan stok sebelum menyetujui pemesanan di atas 5 unit.",
+    "wa_status": "Terhubung (Centang Hijau Meta)",
+    "wa_phone": "+62 811-9988-7766",
+    "wa_groups": [
+      {
+        "id": "GRP-01",
+        "name": "Operasional Kasir Utama",
+        "role": "Kasir & Transaksi",
+        "quota_status": "Aktif",
+        "messages_today": 84
+      },
+      {
+        "id": "GRP-02",
+        "name": "Manajemen Gudang & Logistik",
+        "role": "Gudang & Stok",
+        "quota_status": "Aktif",
+        "messages_today": 32
+      }
+    ],
+    "groups_used": 2,
+    "groups_quota": 3
+  },
+  "billing": {
+    "plan_name": "Paket Pro - Bulanan",
+    "plan_status": "Aktif",
+    "renewal_date": "01 Oktober 2026",
+    "token_used": 1250000,
+    "token_total": 3000000,
+    "token_pct": 42,
+    "topup_packages": [
+      {"tokens": "1.000.000 Token", "price": "Rp 100.000", "popular": false},
+      {"tokens": "5.000.000 Token", "price": "Rp 450.000", "popular": true}
+    ]
+  },
+  "team": {
+    "members": [
+      {"name": "Budi Santoso", "email": "budi.s@nalar.army", "role": "Owner", "branch": "Kantor Pusat Jakarta"},
+      {"name": "Siti Aminah", "email": "siti.a@nalar.army", "role": "Finance Lead", "branch": "Kantor Pusat Jakarta"},
+      {"name": "Agus Pratama", "email": "agus.p@nalar.army", "role": "Sales Lead", "branch": "Cabang Bandung"},
+      {"name": "Dewi Lestari", "email": "dewi.l@nalar.army", "role": "Cashier Supervisor", "branch": "Cabang Jakarta Selatan"},
+      {"name": "Hendra Wijaya", "email": "hendra.w@nalar.army", "role": "Warehouse Lead", "branch": "Gudang Utama Cikarang"}
+    ]
+  }
+}

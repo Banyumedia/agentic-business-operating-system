@@ -59,7 +59,7 @@ Untuk menjaga eksekusi agent tetap fokus dan selesai, fitur berikut **DILARANG /
 Agent pelaksana wajib membaca dokumen pendukung di folder `docs/` ini. Urutan prioritas bila terjadi konflik: **`00-DECISIONS.md` > `DATA_MODEL.md` (untuk bentuk data) > dokumen lain**.
 
 1. `00-DECISIONS.md` — **tie-breaker.** Semua keputusan LOCKED dan OPEN.
-2. `INDUSTRY_PRESETS.md` — Katalog kapabilitas (D-32), skema preset-sebagai-data, kamus terminologi, katalog widget & efek workflow, 6 preset awal + contoh industri ke-7..12.
+2. `INDUSTRY_PRESETS.md` — Katalog kapabilitas (D-32), skema preset-sebagai-data, kamus terminologi, katalog widget & efek workflow, 6 preset awal + peta pasar 63 bisnis potensial (§7) dengan prioritas go-to-market.
 3. `DATA_MODEL.md` — Skema database canonical: fondasi tenant, mesin komposisi (`workflow_definitions`), tabel kapabilitas generik, modul Tier B, kontrak migration portabel.
 4. `REQUIREMENTS.md` — Spesifikasi fungsional mendalam per modul.
 5. `UX_UI_SPEC.md` — Kontrak antarmuka, aksesibilitas, dan design token.

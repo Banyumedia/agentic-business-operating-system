@@ -1,0 +1,76 @@
+{
+  "terminology": {
+    "module_title": "Data Karyawan",
+    "module_subtitle": "Kelola data seluruh personel dan hierarki organisasi perusahaan.",
+    "staff": "Karyawan",
+    "department": "Departemen",
+    "position": "Jabatan",
+    "contact": "Kontak",
+    "status": "Status",
+    "actions": "Aksi",
+    "add_button": "Tambah Karyawan",
+    "search_placeholder": "Cari nama, jabatan, atau divisi...",
+    "empty_state": "Tidak ada data karyawan ditemukan.",
+    "showing_text": "Menampilkan",
+    "to_text": "hingga",
+    "of_text": "dari",
+    "results_text": "hasil"
+  },
+  "rows": [
+    {
+      "id": "EMP-001",
+      "name": "Budi Santoso",
+      "position": "Lead Software Engineer",
+      "department": "Teknologi & Produk",
+      "email": "budi.s@nalar.army",
+      "phone": "+62 812-3456-7890",
+      "status": "Active",
+      "join_date": "15 Jan 2023",
+      "avatar": "https://i.pravatar.cc/150?u=EMP-001"
+    },
+    {
+      "id": "EMP-002",
+      "name": "Siti Aminah",
+      "position": "Product Manager",
+      "department": "Teknologi & Produk",
+      "email": "siti.a@nalar.army",
+      "phone": "+62 813-9876-5432",
+      "status": "Active",
+      "join_date": "01 Agu 2022",
+      "avatar": "https://i.pravatar.cc/150?u=EMP-002"
+    },
+    {
+      "id": "EMP-003",
+      "name": "Agus Pratama",
+      "position": "Senior UI/UX Designer",
+      "department": "Desain Kreatif",
+      "email": "agus.p@nalar.army",
+      "phone": "+62 856-1122-3344",
+      "status": "On Leave",
+      "join_date": "10 Mar 2024",
+      "avatar": "https://i.pravatar.cc/150?u=EMP-003"
+    },
+    {
+      "id": "EMP-004",
+      "name": "Dewi Lestari",
+      "position": "People Operations Lead",
+      "department": "Sumber Daya Manusia",
+      "email": "dewi.l@nalar.army",
+      "phone": "+62 811-2233-4455",
+      "status": "Active",
+      "join_date": "20 Nov 2021",
+      "avatar": "https://i.pravatar.cc/150?u=EMP-004"
+    },
+    {
+      "id": "EMP-005",
+      "name": "Hendra Wijaya",
+      "position": "Site Reliability Engineer",
+      "department": "Infrastruktur",
+      "email": "hendra.w@nalar.army",
+      "phone": "+62 812-5566-7788",
+      "status": "Inactive",
+      "join_date": "15 Mei 2022",
+      "avatar": "https://i.pravatar.cc/150?u=EMP-005"
+    }
+  ]
+}

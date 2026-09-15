@@ -1,0 +1,100 @@
+{
+  "terminology": {
+    "dashboard_title": "Ringkasan Eksekutif",
+    "dashboard_subtitle": "Telemetri operasional & analisis kecerdasan bisnis real-time",
+    "universal_zone": "Zona Indikator Utama (Universal)",
+    "industry_zone": "Zona Operasional Industri (Dinamis)",
+    "kpi_revenue": "Total Pendapatan",
+    "kpi_cashflow": "Arus Kas Bersih",
+    "kpi_receivables": "Piutang Jatuh Tempo",
+    "ai_report_title": "Hermes AI Executive Briefing",
+    "resource_label": "Ketersediaan Sumber Daya",
+    "project_label": "Progres Pipeline & Proyek",
+    "schedule_label": "Agenda & Jadwal Mendatang"
+  },
+  "kpis": [
+    {
+      "id": "revenue",
+      "label_key": "kpi_revenue",
+      "default_label": "Total Pendapatan",
+      "value": "Rp 348.500.000",
+      "change": "+14.2%",
+      "trend": "up",
+      "period": "vs bulan lalu"
+    },
+    {
+      "id": "cashflow",
+      "label_key": "kpi_cashflow",
+      "default_label": "Arus Kas Bersih",
+      "value": "Rp 92.400.000",
+      "change": "+6.8%",
+      "trend": "up",
+      "period": "likuiditas stabil"
+    },
+    {
+      "id": "receivables",
+      "label_key": "kpi_receivables",
+      "default_label": "Piutang Jatuh Tempo",
+      "value": "Rp 18.250.000",
+      "change": "3 invoice",
+      "trend": "warning",
+      "period": "jatuh tempo ≤ 7 hari"
+    }
+  ],
+  "ai_report": {
+    "badge": "Analisis AI Terverifikasi",
+    "timestamp": "Hari ini, 05:45 WIB",
+    "confidence": "Tingkat Keyakinan 98.4%",
+    "summary": "Operasional bisnis berjalan optimal. Terpantau 14 transaksi kasir tercatat secara otomatis via WhatsApp bot tanpa ada anomali. Terdeteksi 1 tagihan termin kontraktor siap diverifikasi.",
+    "action_items": [
+      {
+        "title": "Verifikasi Piutang PT Maju Makmur",
+        "desc": "Invoice termin ke-2 sebesar Rp 12.500.000 telah melewati verifikasi dokumen lapangan.",
+        "urgency": "Tinggi"
+      },
+      {
+        "title": "Restock Bahan Baku Utama",
+        "desc": "Sisa 2 batch item gudang mendekati ambang batas minimum pemakaian 7 hari.",
+        "urgency": "Sedang"
+      }
+    ]
+  },
+  "industry_widgets": [
+    {
+      "id": "resources_status",
+      "title_key": "resource_label",
+      "default_title": "Ketersediaan Sumber Daya",
+      "type": "metric_breakdown",
+      "summary_tag": "82% Terpakai",
+      "stats": [
+        {"label": "Tersedia", "count": 24, "tone": "success"},
+        {"label": "Terpakai / Bertugas", "count": 18, "tone": "info"},
+        {"label": "Perawatan / Non-aktif", "count": 2, "tone": "warning"}
+      ]
+    },
+    {
+      "id": "projects_progress",
+      "title_key": "project_label",
+      "default_title": "Progres Pipeline & Proyek",
+      "type": "progress_list",
+      "summary_tag": "3 Aktif",
+      "items": [
+        {"name": "Implementasi Sistem ERP Terpadu", "progress": 85, "due": "22 Sep", "status": "On Track"},
+        {"name": "Pengadaan Aset Q4", "progress": 45, "due": "28 Sep", "status": "Review"},
+        {"name": "Ekspansi Kantor Cabang Baru", "progress": 20, "due": "15 Okt", "status": "Kickoff"}
+      ]
+    },
+    {
+      "id": "upcoming_schedule",
+      "title_key": "schedule_label",
+      "default_title": "Agenda & Jadwal Mendatang",
+      "type": "schedule_list",
+      "summary_tag": "Hari Ini",
+      "events": [
+        {"time": "09:00", "title": "Briefing Pagi Operasional", "owner": "Dewi L."},
+        {"time": "13:30", "title": "Review Kontrak Vendor Logistik", "owner": "Budi S."},
+        {"time": "16:00", "title": "Sinkronisasi AI Hermes & WhatsApp", "owner": "Siti A."}
+      ]
+    }
+  ]
+}
