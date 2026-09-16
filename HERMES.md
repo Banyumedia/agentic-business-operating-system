@@ -46,9 +46,9 @@ Fase 2.
 
 ## Writing Rules
 
-- One source writer per worktree. Other agents may write here: never
-  `git add -A`, never touch/delete/commit foreign files; if a foreign change
-  overlaps your scope, record it and switch task.
+- One source writer per worktree at any given moment. Never `git add -A`,
+  never touch/delete/commit foreign files; if a foreign change overlaps your
+  scope, record it and switch task.
 - Smallest coherent slice; no unrelated refactors. RED test for a proven
   defect; acceptance test for new behavior.
 - For tenant isolation, payment, WhatsApp authorization, token balances,
@@ -57,6 +57,51 @@ Fase 2.
 - Retry a failed approach at most twice; then record error + cause in STATUS
   and switch task.
 
+## Parallel Writer Policy
+
+Parallel writing across worktrees (`agentic-bos-worker-a/b/c` + `main`) is
+**conditionally permitted**, not banned and not free-for-all. A task may be
+worked in parallel with others only if **all six** hold; otherwise it is
+serial:
+
+1. Every task in its `Depends On` column is `DONE` (not "in progress").
+2. No open `Q-xx` and no unmet `HUMAN:*` gate blocks it.
+3. It creates or edits **no migration**. Migrations are always serial.
+4. It changes **no dependency** (`composer.json`/`package.json`). Dependency
+   changes are always serial.
+5. Its file targets are **disjoint** from every task currently in flight in
+   any worktree. If two soon-to-be-parallel tasks would edit the same file,
+   that shared edit must land first as its own serial prep commit - only
+   then may the group run in parallel.
+6. It runs in its **own worktree** on its **own branch** (see Claim
+   Mechanism), never directly on `main` while other parallel tasks are live.
+
+**Claim mechanism:** claiming a task means creating branch `task/{TASK-ID}`
+in your own worktree. `git worktree list` is the live claim registry - Git
+itself refuses to let two worktrees check out the same branch, so claim
+collisions are prevented mechanically, not by convention. Do not claim a
+task by writing your name into a status file.
+
+**Shared-file discipline while parallel:** workers must **not** write
+`docs/AUTOPILOT_STATUS.md` while other parallel workers are active - that
+file is a merge-conflict magnet. Instead write evidence to
+`docs/worker-reports/{TASK-ID}.md`. Only the writer merging into `main`
+folds those reports into `AUTOPILOT_STATUS.md`.
+
+**Merge protocol:** merges into `main` are always serial, one branch at a
+time, full `php artisan test` + `vendor/bin/pint --test` after each merge
+before starting the next. A failing merge is fixed on the worker's own
+branch, never patched directly on `main`.
+
+**Always serial regardless of the six-point test:** migrations, dependency
+changes, commits/merges into `main`, and any task marked as a convergence
+point in `docs/EXECUTION_PLAN.md` (e.g. an anti-hardcode/regression sweep
+that depends on several prior tasks, or a full-regression gate).
+
+See `docs/EXECUTION_PLAN.md` §Matriks Grup Paralel for the current phase's
+precomputed parallel groups and barriers - do not re-derive the dependency
+graph from memory each session.
+
 ## Verification And Evidence
 
 Always: `php artisan test`, `vendor/bin/pint --test`; `npm run build` when
@@ -64,8 +109,7 @@ Blade/CSS/JS changed. Run them yourself - a delegate report is not a PASS
 without real output. Parallel read-only review lanes (diff, tenant/security,
 a11y) only for tasks touching schema, authorization, money, public API, or
 more than ~8 files. Tests may run in parallel only with isolated SQLite
-`:memory:` per process and distinct output paths. Writers, migrations,
-dependency changes, commits: serial.
+`:memory:` per process and distinct output paths.
 
 ## Authorization
 

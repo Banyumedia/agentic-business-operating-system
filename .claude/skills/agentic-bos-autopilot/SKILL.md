@@ -49,6 +49,29 @@ fails, do **not** guess or promote it — mark/report `BLOCKED` with the exact
 failing condition and pick a different READY task that shares no target
 files with the blocked one.
 
+## Step 2b: Decide serial vs parallel, then claim
+
+Check `docs/EXECUTION_PLAN.md` §Matriks Grup Paralel for the task's group.
+Only work in a separate worktree/branch if the group has width > 1 **and**
+all six conditions in `HERMES.md` §Parallel Writer Policy hold right now (not
+just in general): deps `DONE`, no open gate, not a migration, no dependency
+change, file targets disjoint from every task currently in flight, and a
+dedicated worktree+branch. If any condition fails — including a "Syarat
+khusus" cell not yet satisfied (e.g. a required prep commit hasn't landed)
+— treat it as serial on `main` regardless of what the matrix's width column
+says.
+
+To claim a parallel-eligible task: create branch `task/{TASK-ID}` in the
+worktree you're using. Do not reuse a fixed worker-a/b/c branch name across
+different tasks. `git worktree list` is the live claim registry; Git itself
+refuses a second worktree on the same branch, so check it before assuming a
+task is unclaimed.
+
+While working as one of several parallel workers: do **not** write
+`docs/AUTOPILOT_STATUS.md` (merge-conflict magnet across worktrees) — write
+`docs/worker-reports/{TASK-ID}.md` instead. Only the worker performing the
+serial merge into `main` folds reports into `AUTOPILOT_STATUS.md`.
+
 ## Step 3: Enforce the standing invariants while writing
 
 Check every change against `HERMES.md` §Stack And Architecture Invariants
@@ -83,15 +106,21 @@ independent READY task.
 ## Step 5: Report and hand off state for the next worker
 
 Before ending the turn:
-1. Update `docs/AUTOPILOT_STATUS.md` — task state, changed files, one
+1. If you worked serially on `main` (or just merged a parallel branch in):
+   update `docs/AUTOPILOT_STATUS.md` — task state, changed files, one
    evidence line (real command output), risk/blocker, next READY task. This
-   file is the only handoff mechanism between Hermes, Kiro CLI, and
+   file is the primary handoff mechanism between Hermes, Kiro CLI, and
    opencode — an accurate STATUS is what makes the *next* invocation (by any
    of the three, on any machine) able to resume correctly.
+   If you worked as one of several parallel workers on a task branch: write
+   `docs/worker-reports/{TASK-ID}.md` instead, per Step 2b — do not touch
+   STATUS until your branch is merged into `main`.
 2. Commit locally if `HERMES:COMMIT` work (it is, per
    `docs/AUTOPILOT_STATUS.md` Gate Status): `git status --short` first, stage
    only your own paths, never `.env`/secrets, message format
-   `type(scope): message`.
+   `type(scope): message`. Merging a task branch into `main` is always
+   serial — run full `php artisan test` + `vendor/bin/pint --test` after
+   the merge before starting or merging anything else.
 3. Do not push, deploy, run production migrations, or touch secrets —
    those require explicit owner approval regardless of how the task was
    delegated.

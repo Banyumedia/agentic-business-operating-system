@@ -375,15 +375,50 @@ tabel itu bergantung pada ketiganya.
 
 ---
 
+## Matriks Grup Paralel (dihitung sekali — jangan diturunkan ulang tiap sesi)
+
+Dihitung dari Dependency Graph di atas + syarat `HERMES.md` §Parallel Writer
+Policy. Kolom **Lebar** = jumlah worktree yang bisa dipakai bersamaan; kolom
+**Syarat** = pengecualian dari 6 syarat umum yang perlu dicek ulang sebelum
+klaim.
+
+| Grup | Fase | Task | Lebar | Syarat khusus |
+|---|---|---|---|---|
+| **PG-1** | 2 | T-F10, T-F11, T-F12, T-F13 | 4 | ⚠️ **Prep wajib dulu**: `resources/views/livewire/dummy-module.blade.php` baris dispatch pola layar (saat ini `@if ($screen === 'list')`) harus diubah jadi dispatch berbasis konvensi (`screen` → komponen `screens.{screen}-screen` + fallback aman) **sebelum** grup ini boleh paralel — tanpa prep, keempat task menabrak baris yang sama. Prep itu sendiri satu commit serial. |
+| 🔒 barrier | 2 | T-F14 → T-F15 | 1 | T-F14 depends T-F7..T-F13 (konvergensi); T-F15 depends T-F14. Selalu serial. |
+| ⛔ gate | 2→3 | `HUMAN:UI-LOCK` | 0 | Tunggu keputusan Bos, bukan soal teknis. |
+| **PG-2** | 3a | T-00b, T-00c | 2 | Keduanya depends T-00a saja; jalankan setelah T-00a (migration, serial) merge. |
+| **PG-3** | 3b | T-08c, T-08e, T-03b | 3 | Semua depends T-08b saja. T-08d **dikecualikan** dari grup ini (buat migration `workflow_definitions`/`workflow_transitions_log` → serial). |
+| ❌ serial penuh | 3c | T-13, T-13b, T-11, T-13c, T-13d, T-13e, T-13f, T-10, T-10a, T-12, T-14, T-14b | 1 | Urutan FK dikunci eksplisit di §Fase 3c ("**Urutan FK wajib** ... Semua migration serial"). Fase terbesar proyek, tidak bisa dipercepat lewat paralelisme worktree. |
+| **PG-4** | 4 | T-16, T-20, T-10c, T-10d, T-12b | ≤5 | Semua non-migration setelah dependency masing-masing `DONE`. T-19, T-19b, T-17, T-17b, T-18, T-17c tetap dicek satu-satu (webhook/API sensitif, §HUMAN:SECRET). |
+| ⚠️ mayoritas serial | 4b | T-27, T-27b, T-27c, T-27d, T-27e | 1-2 | T-27b (migration/enkripsi kolom) dan T-27c (migration `access_logs`) serial. T-27d/T-27e bisa paralel satu sama lain setelah T-27c `DONE`. |
+| 🔒 barrier | 5 | T-21 | 1 | Depends **seluruh** Fase 4. Regression gate, selalu serial. |
+| **PG-5** | 5 | T-21b, T-21c, T-22 | 3 | Semua depends T-21 saja; verifikasi/audit, risiko konflik file rendah. |
+| **PG-6** | 6 | T-24, T-24b, T-24c, T-24d, T-25, T-25b, T-26 (preset baru per §7.11) | N (praktis tak terbatas) | Murni data — satu preset = satu file `database/presets/{slug}.json` baru. Konflik hanya bila dua worker menulis file preset yang sama; hindari dengan penamaan preset unik per klaim. |
+
+**Cara pakai:** sebelum mengklaim task apa pun, cek grup mana ia berada di
+tabel ini. Grup dengan lebar > 1 dan tanpa syarat terbuka = boleh langsung
+klaim branch `task/{TASK-ID}` di worktree bebas. Grup dengan ❌/🔒/⛔ = kerjakan
+serial di `main`, tunggu barrier, atau tunggu gate — jangan menebak jalan
+pintas.
+
+---
+
 ## Aturan Eksekusi Autopilot Wajib
 
-1. **Satu writer per worktree.** Tidak ada writer paralel sampai ada remote dan
-   kebutuhan nyata.
+1. **Satu writer per worktree pada satu waktu.** Paralel-write lintas worktree
+   (`worker-a/b/c` + `main`) diizinkan **bersyarat** — lihat `HERMES.md`
+   §Parallel Writer Policy (6 syarat: deps `DONE`, tanpa gate terbuka, bukan
+   migration, bukan perubahan dependency, file target lepas dari task
+   berjalan, dikerjakan di worktree+branch sendiri). Klaim task = buat branch
+   `task/{TASK-ID}`; `git worktree list` adalah registry klaim yang hidup.
 2. **Review sebelum tulis.** Baca requirement + keputusan terkait task, audit kode
    existing, tetapkan invariant dan negative case, lalu review diff sendiri.
-3. **Paralel hanya untuk lane read-only dan terisolasi.** Audit, pencarian, review
-   UX/a11y, dan shard test (SQLite `:memory:` terisolasi per proses) boleh
-   paralel. Writer, migration, dependency, deploy wajib serial.
+3. **Paralel untuk lane read-only selalu boleh; paralel-write hanya bila lolos
+   6 syarat §1.** Audit, pencarian, review UX/a11y, dan shard test (SQLite
+   `:memory:` terisolasi per proses) selalu boleh paralel. Migration,
+   perubahan dependency, merge ke `main`, dan task konvergensi (§Matriks Grup
+   Paralel) **selalu serial** tanpa kecuali.
 4. **Rekonsiliasi setelah paralel.** Hasil subagent bukan verdict final.
 5. **TDD sesuai kondisi nyata.** Bug terbukti → RED lalu GREEN. Perilaku sudah
    benar → characterization test, catat no-change.

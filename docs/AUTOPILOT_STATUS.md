@@ -59,23 +59,34 @@ Kiro CLI dikonfigurasi sebagai delegate untuk eksekusi task coding dari Hermes b
 
 **Auto-commit:** ✅ diizinkan (gate `HUMAN:COMMIT` sudah terbuka). Kiro commit tanpa tanya untuk pekerjaan lokal.
 **Push:** ⛔ tetap butuh approval eksplisit.
-**Paralel write:** ✅ diizinkan via worker worktrees (lihat tabel di bawah). Merge ke main tetap serial.
+**Paralel write:** ✅ diizinkan **bersyarat** — lihat `HERMES.md` §Parallel Writer Policy (6 syarat) dan `docs/EXECUTION_PLAN.md` §Matriks Grup Paralel untuk grup mana yang sedang boleh paralel. Merge ke main tetap serial.
 
 ## Worker Registry (Multi-Worktree Paralel)
 
-| Worker | Path | Branch | Assigned Cluster | DB |
-|---|---|---|---|---|
-| **main** | `D:\PROJECTS\agentic-bos` | `main` | T-07, T-F1, T-F2, T-F5, T-F9, T-F14, T-F15 | `database\database.sqlite` |
-| **worker-a** | `D:\PROJECTS\agentic-bos-worker-a` | `worker-a` | T-F4 | `database\database.sqlite` (copy) |
-| **worker-b** | `D:\PROJECTS\agentic-bos-worker-b` | `worker-b` | T-F6, T-F7, atau T-F8 | `database\database.sqlite` (copy) |
-| **worker-c** | `D:\PROJECTS\agentic-bos-worker-c` | `worker-c` | T-F10, T-F11, T-F12, atau T-F13 | `database\database.sqlite` (copy) |
+| Worker | Path | DB |
+|---|---|---|
+| **main** | `D:\PROJECTS\agentic-bos` | `database\database.sqlite` |
+| **worker-a** | `D:\PROJECTS\agentic-bos-worker-a` | `database\database.sqlite` (copy) |
+| **worker-b** | `D:\PROJECTS\agentic-bos-worker-b` | `database\database.sqlite` (copy) |
+| **worker-c** | `D:\PROJECTS\agentic-bos-worker-c` | `database\database.sqlite` (copy) |
+
+**Assignment task tidak statis per worker** — cek `docs/EXECUTION_PLAN.md`
+§Matriks Grup Paralel untuk grup mana yang sedang boleh paralel di fase
+berjalan. **Klaim task = buat branch `task/{TASK-ID}`** di worktree yang
+dipakai (bukan branch tetap `worker-a`/`worker-b`/`worker-c`); `git worktree
+list` adalah registry klaim yang hidup — Git menolak dua worktree memakai
+branch sama.
 
 `vendor/` dan `node_modules/` = junction ke `main`. Jangan `composer install/update` dari worker.
+Jangan tulis `docs/AUTOPILOT_STATUS.md` ini dari worker paralel — tulis
+`docs/worker-reports/{TASK-ID}.md`; writer `main` yang merangkum ke sini
+saat merge.
 
 **Merge workflow setelah worker selesai:**
 ```bash
 cd D:\PROJECTS\agentic-bos
-git merge --no-ff worker-x -m "feat(scope): deskripsi"
+php artisan test && vendor/bin/pint --test
+git merge --no-ff task/{TASK-ID} -m "feat(scope): deskripsi"
 ```
 Merge tetap serial — satu per satu. Cek `docs/KIRO_SKILL.md` §Worker Registry untuk detail lengkap.
 

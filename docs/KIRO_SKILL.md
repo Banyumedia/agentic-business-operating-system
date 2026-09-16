@@ -37,8 +37,9 @@ RULES:
 - Format commit: type(scope): message
 - Jangan commit .env atau file asing
 - Test + pint + build wajib lulus sebelum commit
-- Parallel hanya untuk read-only (review, audit, search)
-- Writer tetap serial
+- Paralel-write lintas worktree diizinkan **bersyarat** — lihat HERMES.md
+  §Parallel Writer Policy sebelum klaim task apa pun
+- Writer tetap serial kecuali 6 syarat paralel terpenuhi
 - Stop setelah Fase 2 (T-F15) — jangan mulai Fase 3
 
 STOP CONDITION:
@@ -105,12 +106,18 @@ Lapor ke Hermes dengan format:
 
 ## Aturan Paralel
 
-| Boleh paralel | Harus serial |
-|---|---|
-| Search, read, audit | Edit file source |
-| Review lane (diff, a11y, tenant) | Migration, config |
-| Build dengan output terpisah | Commit |
-| Test dengan SQLite :memory: per proses | Push |
+Otoritas: `HERMES.md` §Parallel Writer Policy. Ringkasan cepat:
+
+| Boleh paralel selalu | Boleh paralel bila lolos 6 syarat | Harus serial selalu |
+|---|---|---|
+| Search, read, audit | Edit file source (deps DONE, bukan migration, bukan dependency, file lepas, worktree+branch sendiri) | Migration, config dependency |
+| Review lane (diff, a11y, tenant) | | Merge ke `main`, commit ke `main` |
+| Build dengan output terpisah | | Push |
+| Test dengan SQLite `:memory:` per proses | | Task konvergensi (lihat EXECUTION_PLAN §Matriks Grup Paralel) |
+
+Jangan menulis `docs/AUTOPILOT_STATUS.md` saat sedang jadi salah satu dari
+beberapa worker paralel — tulis ke `docs/worker-reports/{TASK-ID}.md`, biarkan
+writer yang merge ke `main` yang merangkum ke STATUS.
 
 ---
 
@@ -183,44 +190,57 @@ Format laporan hard stop:
 ## Worker Registry (Multi-Worktree Paralel)
 
 Tiga worktree tambahan tersedia untuk paralel execution. Setiap worker punya
-branch, folder, dan SQLite sendiri. `vendor/` dan `node_modules/` adalah
-junction ke `main` (shared, read-only dari sisi worker).
+folder dan SQLite sendiri. `vendor/` dan `node_modules/` adalah junction ke
+`main` (shared, read-only dari sisi worker).
 
-| Worker | Path | Branch | Assigned Cluster |
-|---|---|---|---|
-| **main** | `D:\PROJECTS\agentic-bos` | `main` | T-07, T-F1, T-F2, T-F5, T-F9, T-F14, T-F15 (serial backbone) |
-| **worker-a** | `D:\PROJECTS\agentic-bos-worker-a` | `worker-a` | T-F3 atau T-F4 (paralel setelah T-F2) |
-| **worker-b** | `D:\PROJECTS\agentic-bos-worker-b` | `worker-b` | T-F6 atau T-F7 atau T-F8 (paralel setelah T-F5) |
-| **worker-c** | `D:\PROJECTS\agentic-bos-worker-c` | `worker-c` | T-F10 atau T-F11 atau T-F12 atau T-F13 (paralel setelah T-F9) |
+| Worker | Path |
+|---|---|
+| **main** | `D:\PROJECTS\agentic-bos` |
+| **worker-a** | `D:\PROJECTS\agentic-bos-worker-a` |
+| **worker-b** | `D:\PROJECTS\agentic-bos-worker-b` |
+| **worker-c** | `D:\PROJECTS\agentic-bos-worker-c` |
+
+**Assignment task tidak lagi statis per worker.** Task mana yang boleh
+paralel dan kapan ditentukan oleh `docs/EXECUTION_PLAN.md` §Matriks Grup
+Paralel, bukan tabel tetap di sini — grup paralel berubah tiap fase. Cek
+matriks itu dulu sebelum dispatch.
+
+**Klaim task = buat branch `task/{TASK-ID}`** di worktree yang dipakai (bukan
+memakai nama branch `worker-a`/`worker-b`/`worker-c` tetap untuk task apa
+pun). `git worktree list` adalah registry klaim yang hidup — Git menolak dua
+worktree memakai branch sama, jadi tabrakan klaim dicegah mekanis, bukan
+dengan disiplin manual.
 
 ### Aturan Penggunaan Worker
 
-1. **Cek file scope sebelum dispatch.** Dua worker tidak boleh menyentuh file yang sama.
-   Periksa kolom `File Target` di EXECUTION_PLAN sebelum assign.
-
-2. **Worker hanya menulis di branch-nya sendiri.** Setelah task selesai, Hermes
-   merge branch worker ke `main` dengan `git merge --no-ff worker-x`.
-
-3. **Merge ke main = serial.** Satu merge selesai dulu, baru merge berikutnya.
-   Pastikan tidak ada konflik sebelum merge.
-
-4. **SQLite per worker = terisolasi.** Test boleh jalan paralel antar worker
+1. **Cek Matriks Grup Paralel dulu.** Task hanya boleh diklaim paralel bila
+   berada di grup dengan lebar > 1 dan tanpa syarat khusus yang belum
+   dipenuhi (lihat kolom "Syarat khusus").
+2. **Cek file scope sebelum dispatch.** Dua worker tidak boleh menyentuh file
+   yang sama. Periksa kolom `File Target` di EXECUTION_PLAN sebelum assign.
+3. **Worker hanya menulis di branch klaimnya sendiri**
+   (`task/{TASK-ID}`). Setelah task selesai, writer `main` merge branch itu:
+   `git merge --no-ff task/{TASK-ID}`.
+4. **Merge ke main = serial.** Satu merge selesai dulu (test+pint hijau),
+   baru merge berikutnya.
+5. **SQLite per worker = terisolasi.** Test boleh jalan paralel antar worker
    karena database tidak berbagi. Tapi jangan jalankan test yang menulis file
    di `storage/app/` yang sama.
-
-5. **vendor/ adalah shared junction — jangan `composer install/update` dari worker.**
+6. **vendor/ adalah shared junction — jangan `composer install/update` dari worker.**
    Dependency changes harus dari `main`.
+7. **Jangan tulis `docs/AUTOPILOT_STATUS.md` dari worker paralel.** Tulis
+   `docs/worker-reports/{TASK-ID}.md`; writer `main` yang merangkum ke STATUS
+   saat merge.
 
 ### Merge Workflow
 
-Setelah worker-a selesai task T-F3:
+Setelah worker menyelesaikan task T-F10 di branch `task/T-F10`:
 ```bash
 cd D:\PROJECTS\agentic-bos        # main
-git merge --no-ff worker-a -m "feat(f3): JsonEntityRepository + JsonCompanyContext"
+git merge --no-ff task/T-F10 -m "feat(f10): PipelineScreen + CalendarScreen"
+php artisan test && vendor/bin/pint --test
 git worktree remove D:\PROJECTS\agentic-bos-worker-a  # kalau sudah tidak dipakai
-git branch -d worker-a
-# atau reset branch untuk task berikutnya:
-git checkout worker-a && git reset --hard main
+git branch -d task/T-F10
 ```
 
 ### Kapan Paralel Tidak Worth It
