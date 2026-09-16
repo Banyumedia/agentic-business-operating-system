@@ -70,7 +70,8 @@ Karena harga modal setiap otak AI (misal: Llama 3 vs GPT-4o) berbeda-beda, siste
 | **DM Bos (Personal CFO)**| Ringkasan Mingguan | Full Analisis Finansial Realtime + Approval | Kustom Model & Fine-tuning |
 | **Kuota Base Token** | 500.000 token / bln | 3.000.000 token / bln | 15.000.000+ token / bln |
 | **Topup Add-on Token** | QRIS Mandiri via Dashboard | QRIS Mandiri via Dashboard | Invoicing Korporat |
-| **WhatsApp Engine** | Hermes Terpusat (White-label) | Hermes Terpusat (White-label) | Dedicated Hermes Terpusat (White-label) |
+| **Mesin WhatsApp** (nomor tetap milik klien — D-55) | Engine terpusat (white-label) | Engine terpusat (white-label) | Node engine dedicated (white-label) |
+| **Nomor WA asisten** | **Nomor milik klien** (scan QR) | **Nomor milik klien** (scan QR) | **Nomor milik klien**; platform menyediakan nomor hanya sebagai **add-on** (D-55/D-56) |
 | **Infrastruktur** | Shared Multi-Tenant DB | Shared Multi-Tenant DB | Dedicated VPS **dikelola platform** (D-54 — on-premise sejati bukan opsi katalog) |
 
 ---
