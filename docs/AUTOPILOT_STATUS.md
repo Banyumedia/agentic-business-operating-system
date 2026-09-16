@@ -14,13 +14,13 @@
 | URL | Sumber | Port |
 |---|---|---|
 | `https://agentic-bos.nalar.army/` | worktree `main` (aplikasi nyata) | 8000 |
-| `https://mockup.agentic-bos.nalar.army/mockup/dashboard` | worktree `mockup/ux-dummy` (referensi visual) | 8001 |
+| `https://bos-mockup.nalar.army/mockup` | worktree `mockup/ux-dummy` (referensi visual) | 8001 |
 
 Keduanya di balik basic auth Caddy (user `bos`) dan `noindex`. Dev server
 dijalankan otomatis saat login Windows oleh
 `Startup\AgenticBOS_DevServers.vbs`. Aplikasi **belum punya auth sendiri**
 (T-00c Fase 3) - basic auth adalah satu-satunya pelindung; jangan hapus
-sebelum login aplikasi ada. Checkpoint rollback: tag `pre-fase-2`.
+sebelum login aplikasi ada. Checkpoint rollback: tag `pre-fase-2`. **Catatan DNS:** Cloudflare Universal SSL hanya menutup satu tingkat subdomain (`*.nalar.army`); hostname dua tingkat seperti `mockup.agentic-bos.nalar.army` gagal TLS - karena itu dipakai `bos-mockup.nalar.army`.
 ## Verified Baseline (sumber tunggal)
 
 | Item | Value | Cara verifikasi ulang |
