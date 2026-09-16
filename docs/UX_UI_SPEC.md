@@ -147,7 +147,7 @@ Semua pengaturan disatukan dalam satu halaman terpusat: **`/app/settings`** (D-2
 - **Ringkasan Paket:** Nama paket aktif (misal: "Paket Pro - Bulanan"), status aktif, tanggal perpanjangan.
 - **Meter Penggunaan Token AI Semantik:**
   - Progress bar dengan atribut semantik lengkap: `role="progressbar"`, `aria-valuenow="{pct}"`, `aria-valuemin="0"`, `aria-valuemax="100"`, `aria-label="Penggunaan Kuota Token AI"`.
-  - Warna visual proporsional: `bg-emerald-600` (<80%), `bg-amber-500` (80-95%), `bg-rose-600` (>95%).
+  - Warna visual proporsional **via token** (§7.4 melarang kelas warna Tailwind langsung): `--erp-success` (<80%), `--erp-warning` (80–95%), `--erp-danger` (>95%).
   - Teks informatif: *"Terpakai 1.250.000 dari 3.000.000 token bulan ini (Reset 1 Oktober 2026)"*.
 - **Opsi Tambah Kuota (Subtle / Elegan):**
   - Section kecil di bawah progress bar: *"Perlu kuota tambahan sebelum tanggal reset?"*
@@ -298,7 +298,7 @@ Diuji oleh `tests/Unit/ThemeContrastTest.php` untuk **setiap** tema di §4.2:
 
 Ring fokus (`--erp-focus`) wajib ≥ 3:1 terhadap `--erp-bg-base` (non-teks, WCAG 1.4.11).
 
-### 7.3 Nilai Default (tema `Prime Default / Midnight`, dark-first)
+### 7.3 Nilai Default (**Tema A — Slate + Emerald**, dark-first; D-43)
 
 Agent **boleh** menurunkan nilai hex dari palet Tailwind v4 (slate/emerald/sky/
 amber/rose) selama §7.2 terbukti lolos. Nilai di bawah adalah titik awal yang
@@ -345,13 +345,13 @@ sudah dipilih agar lolos AA; agent boleh menyesuaikan asal test tetap hijau.
 }
 ```
 
-Tema lain (`Clean Ledger`, `Ocean Blue`, `Brass Amber`, `Rose`) dan mode
+Tema lain (**B/C/D/E**, nilai lengkap di §7.3a; nama lama `Clean Ledger`/`Ocean Blue`/`Brass Amber`/`Rose` **tidak dipakai lagi** — D-43) dan mode
 terang didefinisikan sebagai blok `[data-theme="clean-ledger"] { ... }` dst.
 pada T-07, masing-masing wajib lolos §7.2. Custom accent picker (§4.2) hanya
 mengubah `--erp-accent*` dan `--erp-focus`, lalu menjalankan `passesAa()` di
 server sebelum disimpan.
 
-### 7.3a Kandidat Palet Tema Default (D-43 - pilih satu)
+### 7.3a Lima Tema Final (D-43 — sudah dipilih Bos: A default)
 
 Struktur token tidak berubah; yang dipilih hanya **nilai** untuk `bg-*`,
 `accent*`, `focus`, `text-link`. Semua kandidat dihitung lolos §7.2 (rasio
@@ -467,6 +467,28 @@ Navigasi bawah (mobile) dan sidebar:
 Ditegakkan sebagai test di T-F14 (`NoLiteralTermsTest` diperluas menjadi
 audit a11y: setiap overlay punya `role=dialog`+`aria-modal`; setiap nav punya
 tepat satu `aria-current`).
+### 6.11 Keadaan Akun: Trial, Menunggak, Hanya-Baca, Beku (D-49/D-51)
+
+Belum pernah dispesifikasi sebelumnya. Wajib ada sebelum T-12b/T-18.
+
+| Status | Yang dilihat pengguna | Aturan UI |
+|---|---|---|
+| `trial` | Pita halus di topbar: *"Masa coba — sisa N hari"* + tautan "Lihat paket" | Tidak mengganggu kerja. Tidak ada modal paksaan. Hitung mundur **hari**, bukan jam (mengurangi tekanan) |
+| `active` | Tidak ada pita sama sekali | Keadaan normal |
+| `ai_suspended` (H+0) | Pita kuning: *"Asisten WhatsApp berhenti sementara — tagihan belum dibayar"* + tombol bayar | **Web tetap berfungsi penuh.** Menu asisten AI menampilkan penjelasan, bukan error |
+| `read_only` (H+7) | Pita oranye permanen: *"Mode hanya-baca. Data Anda aman dan bisa diunduh."* | Semua tombol simpan/tambah/hapus **dinonaktifkan dengan penjelasan** (bukan hilang — pengguna harus paham kenapa). Tombol **Unduh Data** dan **Bayar** tetap menonjol. Percobaan tulis → 423 + pesan ramah |
+| `frozen` (H+30) | Halaman tunggal saat login: ringkasan tagihan + tombol bayar + **tombol unduh data** | Tidak masuk ke aplikasi. **Jangan** tampilkan pesan menakut-nakuti. Sebut tanggal data akan dihapus secara jujur |
+| `cancelled` | Sama seperti `frozen` + konfirmasi bahwa langganan dihentikan atas permintaan | Unduh data tetap tersedia sampai masa retensi habis |
+
+**Prinsip yang tidak boleh dilanggar:**
+- **Ekspor data selalu tersedia** di setiap status (D-51) — termasuk saat
+  menunggak. Jangan pernah menyandera data sebagai alat tekan.
+- Nada pesan: **memberi tahu, bukan mengancam.** Sebut angka dan tanggal
+  konkret, bukan "akun Anda bermasalah".
+- Pita status memakai token warna (`--erp-warning`, `--erp-danger`), bukan
+  kelas Tailwind langsung (§7.4).
+- Pita tidak boleh menutupi navigasi bawah pada mobile.
+
 ### 7.4 Larangan
 
 - Dilarang memakai `bg-gray-*`, `text-gray-*`, `bg-slate-*` dst. **langsung** pada

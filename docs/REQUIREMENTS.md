@@ -10,6 +10,14 @@
 - Sistem wajib mendukung kedua metode ini secara dinamis pada `BusinessIdentity` sebagai konfigurasi dasar untuk seluruh transaksi identity tersebut.
 - Override metode per dokumen/item dan multi-tax rate bukan bagian fase dasar. Fitur itu hanya boleh dibuat sebagai add-on Enterprise setelah kontrak skema, pricing, UI, dan migrasinya disahkan.
 
+#### Skenario 0: `tax_mode = non_taxable` (Non-PKP — **mayoritas klien**)
+- Tidak ada perhitungan pajak: `DPP = Subtotal`, `PPN = 0`, `GrandTotal = Subtotal`.
+- **D-44:** baris `DPP`/`PPN` **tidak dirender** di layar, struk, faktur, maupun
+  laporan — bukan ditampilkan `Rp 0`. Kata "DPP"/"PPN" tidak boleh muncul sama
+  sekali untuk company non-PKP.
+- `TaxRateService::calculateTax()` tetap dipanggil dengan `rate = 0` agar alur
+  kode seragam; yang berbeda hanya **penyajian**.
+
 ### 1.2 Formula Perhitungan Matematis
 Misalkan:
 - `Subtotal` = Jumlah harga item
@@ -74,6 +82,8 @@ padanannya `projects.progress_billing` dan Tier B `pharmacy.prescription`.
    - Baca baris `module_settings` dengan `company_id` aktif dan `module_name = 'features'` (bentuk D-19/D-25: satu baris per modul, flag disimpan di `settings_json`).
    - Jika `settings_json` memuat key `$key`, kembalikan nilai boolean-nya (override).
    - Jika tidak ada override, ambil dari `business_presets.definition.capabilities[$key]` sesuai `company->business_preset`; jika tidak ada juga → `false`.
+   - **Gerbang paket (D-52):** hasil di atas di-AND-kan dengan `membership_plans.features` milik paket aktif company. Kapabilitas yang tidak terbuka di paket → `false`, berapa pun nilai preset/override-nya. Urutan final: `plan.features ∩ (module_settings ?? preset.capabilities)`.
+   - **Dilarang** menjadikan nama preset/industri sebagai syarat gerbang (D-31) — gerbang hanya boleh menyebut **kunci kapabilitas** (D-32).
 3. **App Switcher Architecture (Odoo/Zoho Style):**
    - Aplikasi web tidak menggunakan tradisi navigasi *sidebar* konvensional.
    - Halaman pertama setelah login adalah **Lobby Dashboard (App Switcher)**. Layar ini menampilkan:
@@ -131,7 +141,17 @@ Sistem harus memvalidasi setiap payload API yang datang dari Asisten AI secara k
 
 ---
 
-## 4. Spesifikasi 6 Modul Industri Spesifik
+## 4. Contoh Komposisi Kapabilitas per Industri (BUKAN daftar modul yang harus dibangun)
+
+> **PERINGATAN D-31 — baca sebelum melanjutkan.** Bagian ini adalah **deskripsi
+> kebutuhan bisnis**, bukan daftar modul kode. Judul lama ("6 Modul Industri
+> Spesifik") menyesatkan dan sudah dikoreksi. Tidak boleh ada kelas, tabel,
+> flag, komponen, atau route bernama `Agency*`, `Fnb*`, `Pharmacy*`,
+> `Eo*`, `Contractor*`, `Rental*`. Setiap kebutuhan di bawah **harus**
+> diwujudkan sebagai komposisi kapabilitas generik (D-32) + terminologi +
+> workflow, atau — bila aturannya benar-benar tidak bisa jadi data — sebagai
+> modul **Tier B** yang dibangun sekali untuk industri serumpun (D-33).
+> Pemetaan lengkap ke kapabilitas ada di `INDUSTRY_PRESETS.md` §6–§7.
 
 ### 4.1 Industri 1: Agency (Jasa Kreatif & IT)
 - **CRM:** Menggunakan pipeline deals. Kode stage disimpan netral (`new / qualified / proposal / negotiation / won / lost`, D-38) dan ditampilkan dengan label Indonesia: `Lead Baru → Pitch / SPH → Negosiasi → Won / Lost`. Data PIC (`pic_name`, `pic_wa`) disimpan di `contacts` (`name`, `wa_number`) yang direlasikan ke `deals` — **bukan** kolom baru di `deals`. `deals.value` wajib.
