@@ -845,10 +845,11 @@ CREATE TABLE membership_plans (
     slug VARCHAR(64) NOT NULL UNIQUE,
     monthly_price DECIMAL(18,2) NOT NULL DEFAULT 0,
     annual_price DECIMAL(18,2) NOT NULL DEFAULT 0,
-    max_wa_groups INT NOT NULL DEFAULT 1,
+    max_wa_groups INT NOT NULL DEFAULT 1,          -- D-53: kuota GRUP WA, bukan jumlah bot
     monthly_token_quota BIGINT NOT NULL DEFAULT 500000,
-    allowed_presets JSON NULL,
-    features JSON NULL,
+    emergency_token_quota BIGINT NOT NULL DEFAULT 25000, -- D-48: kuota mode hemat saat saldo habis (default ~5% kuota bulanan)
+    trial_token_quota BIGINT NOT NULL DEFAULT 50000,     -- D-51: kuota selama trial 14 hari (~10% Starter)
+    features JSON NULL,                            -- D-52: daftar kunci kapabilitas (D-32) yang terbuka untuk paket ini
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL
@@ -861,12 +862,16 @@ CREATE TABLE company_memberships (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
     plan_id BIGINT UNSIGNED NOT NULL,
-    status ENUM('trial','active','past_due','cancelled') NOT NULL DEFAULT 'trial',
+    status ENUM('trial','active','past_due','ai_suspended','read_only','frozen','cancelled') NOT NULL DEFAULT 'trial', -- D-49 tahapan telat bayar
     starts_at TIMESTAMP NOT NULL,
     expires_at TIMESTAMP NULL,
+    trial_ends_at TIMESTAMP NULL,                  -- D-51: trial 14 hari
     max_wa_groups INT NOT NULL DEFAULT 1,
     monthly_token_quota BIGINT NOT NULL DEFAULT 500000,
     current_token_balance BIGINT NOT NULL DEFAULT 0,
+    emergency_mode_active BOOLEAN NOT NULL DEFAULT FALSE,  -- D-48: sedang memakai model fallback murah
+    emergency_balance BIGINT NOT NULL DEFAULT 0,           -- D-48: sisa kuota darurat
+    dunning_notified_at JSON NULL,                 -- D-49: jejak 3 peringatan (H+30/H+60/H+83) sebelum hapus data
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
     INDEX idx_memberships_company (company_id),

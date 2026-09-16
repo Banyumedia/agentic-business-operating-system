@@ -45,10 +45,10 @@ Sistem membership **TIDAK DI-HARDCODE** di kode program. Tabel `company_membersh
 | `slug` | VARCHAR(64) UNIQUE | `starter`, `growth`, `pro`, `enterprise` (panjang mengikuti `DATA_MODEL.md` §11.1) |
 | `monthly_price` | DECIMAL(18,2) | Biaya langganan per bulan (dinamis) |
 | `annual_price` | DECIMAL(18,2) | Biaya langganan per tahun (diskon) |
-| `max_wa_groups` | INT | Batas grup WhatsApp yang boleh di-invite bot |
+| `max_wa_groups` | INT | Batas **grup WhatsApp** yang boleh dimasuki bot `primary` (D-53). Ini **bukan** jumlah bot — bot tetap 1 `primary` per owner (D-37); bot tambahan = add-on berbayar. |
 | `monthly_token_quota`| BIGINT | Kuota base token AI per bulan |
-| `allowed_presets` | JSON | Daftar preset bisnis yang boleh dipilih |
-| `features` | JSON | Feature flags yang terbuka untuk paket ini |
+| ~~`allowed_presets`~~ | — | **DIHAPUS (D-52).** Paket membatasi **kapabilitas**, bukan nama preset — sistem tidak boleh mengenal nama industri (D-31). |
+| `features` | JSON | **Daftar kunci kapabilitas (D-32) yang terbuka untuk paket ini** (D-52). Preset yang menuntut kapabilitas di luar paket tampil dengan label "perlu paket lebih tinggi". |
 | `is_active` | BOOLEAN | Status aktif katalog |
 
 ### 2.2 Ekonomi Token & Base Token Multiplier
@@ -66,12 +66,12 @@ Karena harga modal setiap otak AI (misal: Llama 3 vs GPT-4o) berbeda-beda, siste
 |---|---|---|---|
 | **Target Bisnis** | Usaha Rintisan / 1 Cabang | Bisnis Berkembang / 2-5 Cabang | Korporasi / Jaringan Cabang |
 | **Harga Acuan** | Rp 500.000 – Rp 1.000.000 / bln | Rp 2.000.000 – Rp 3.500.000 / bln | Rp 10.000.000+ / bln |
-| **Karyawan AI (Hermes)** | 1 Asisten (Grup Kasir/Admin) | 3 Asisten (Kasir, Gudang, Keuangan) | Unlimited Asisten & Grup Khusus |
+| **Kuota Grup WA** (D-53 — bukan jumlah bot) | 1 grup (Kasir/Admin) | 3 grup (Kasir, Gudang, Keuangan) | Tanpa batas praktis + grup khusus |
 | **DM Bos (Personal CFO)**| Ringkasan Mingguan | Full Analisis Finansial Realtime + Approval | Kustom Model & Fine-tuning |
 | **Kuota Base Token** | 500.000 token / bln | 3.000.000 token / bln | 15.000.000+ token / bln |
 | **Topup Add-on Token** | QRIS Mandiri via Dashboard | QRIS Mandiri via Dashboard | Invoicing Korporat |
 | **WhatsApp Engine** | Hermes Terpusat (White-label) | Hermes Terpusat (White-label) | Dedicated Hermes Terpusat (White-label) |
-| **Infrastruktur** | Shared Multi-Tenant DB | Shared Multi-Tenant DB | Dedicated VPS / On-Premise |
+| **Infrastruktur** | Shared Multi-Tenant DB | Shared Multi-Tenant DB | Dedicated VPS **dikelola platform** (D-54 — on-premise sejati bukan opsi katalog) |
 
 ---
 
@@ -93,7 +93,7 @@ Untuk mencapai skala 500 klien aktif secara stabil, hemat biaya server, dan muda
       ├── config.yaml (Whitelist tools: hanya MCP ERP, terminal/shell OFF)
       └── state.db (Histori chat terisolasi per tenant)
 
-[ Klien Enterprise 1 - 20 (Dedicated Private Cloud) ]
+[ Klien Enterprise 1 - 20 (Dedicated Private Cloud — tetap dikelola platform, D-54) ]
   └── 1 VPS Khusus per Klien (Docker Compose: NalarPesan + Dedicated DB via TenantProvisioner + Hermes Dedicated)
 ```
 
