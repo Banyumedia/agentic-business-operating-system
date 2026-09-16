@@ -401,6 +401,26 @@ kandidat lain menjadi blok `[data-theme="..."]`.
 3. **Perpindahan tahap (D-46).** Tidak boleh ada jalan buntu: setiap tahap non-terminal punya transisi keluar, tahap QC/pemeriksaan wajib punya cabang mundur (rework). Transisi mundur membuka isian **alasan singkat** yang tercatat di log. Tombol "tahap berikutnya" untuk alur normal, plus
    menu pada badge tahap berisi **hanya transisi yang sah** dari stage saat
    ini menurut preset. Tidak ada daftar stage penuh yang bisa diklik bebas.
+### 6.10 Kontrak Overlay & Navigasi (temuan audit mockup 2026-09-16)
+
+Berlaku untuk command palette, drawer mobile, dan semua modal:
+
+- `role="dialog"` + `aria-modal="true"` + `aria-labelledby` menunjuk judulnya.
+- Fokus berpindah ke overlay saat dibuka, **terperangkap** di dalamnya
+  (focus trap), dan kembali ke elemen pemicu saat ditutup.
+- `Esc` selalu menutup. Klik area gelap menutup (kecuali modal konfirmasi
+  tingkat 1 D-45).
+- Elemen latar diberi `inert`/`aria-hidden` selama overlay terbuka.
+
+Navigasi bawah (mobile) dan sidebar:
+
+- Item aktif wajib `aria-current="page"` - bukan sekadar beda warna.
+- Tombol pembuka drawer wajib `aria-expanded` dan `aria-controls`.
+- Konten utama diberi padding bawah agar tidak tertutup bilah navigasi.
+
+Ditegakkan sebagai test di T-F14 (`NoLiteralTermsTest` diperluas menjadi
+audit a11y: setiap overlay punya `role=dialog`+`aria-modal`; setiap nav punya
+tepat satu `aria-current`).
 ### 7.4 Larangan
 
 - Dilarang memakai `bg-gray-*`, `text-gray-*`, `bg-slate-*` dst. **langsung** pada
