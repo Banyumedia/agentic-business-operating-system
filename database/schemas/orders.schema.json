@@ -148,6 +148,7 @@
   "references": {
     "business_identity_id": {
       "entity": "business_identities",
+      "phase2_source": "business_identity.json",
       "on_delete": "restrict"
     },
     "shift_id": {

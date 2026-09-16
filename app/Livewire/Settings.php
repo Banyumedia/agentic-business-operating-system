@@ -53,9 +53,18 @@ class Settings extends Component
         $this->selectedTheme = $this->storedTheme();
     }
 
-    public function selectTheme(string $theme): void
+    public function selectTheme(string $theme, CompanyContext $companyContext): void
     {
-        abort_unless($this->canManageTheme, 403);
+        try {
+            $activeCompany = $companyContext->current();
+        } catch (InvalidArgumentException) {
+            abort(404);
+        } catch (LogicException) {
+            abort(403);
+        }
+
+        abort_unless($activeCompany === $this->companySlug, 403);
+        abort_unless(session('company_role') === 'owner', 403);
         abort_unless(ThemeRegistry::has($theme), 404);
 
         app(CompanySettingsStore::class)->update(

@@ -162,14 +162,14 @@ default atau memilih alternatif. **Agent tidak menebak.**
 
 ## Current Task
 
-### T-F3 — DONE (2026-09-16)
+### T-F3 — DONE (2026-09-16; review follow-up closed)
 
 - **Decision:** D-41 diperjelas: adapter query+session hanya untuk `local`/`testing`, hanya tiga company demo allowlist; environment lain fail-closed dan Fase 3 tetap memakai `users.current_company_id`.
-- **Implemented:** `JsonCompanyContext`; repository JSON tenant-scoped dengan read/find/save/filter/sort/pagination, schema validation, lock + atomic replacement; 45 fixture (15 entitas × 3 company); Settings dan global theme memakai context tervalidasi.
-- **Security:** unknown/traversal company ditolak; context production fail-closed; setiap operasi repository memvalidasi ulang active company; malformed JSON, object-root, row non-object, dan invalid schema row ditolak tanpa overwrite.
-- **Files:** `app/Services/Json/*`, `app/Contracts/EntityRepository.php`, `app/Livewire/Settings.php`, `app/Providers/AppServiceProvider.php`, `config/datasource.php`, `storage/app/.gitignore`, `storage/app/json/*`, `tests/Feature/JsonDataSourceTest.php`, `tests/Feature/SettingsThemeTest.php`, `docs/00-DECISIONS.md`.
-- **Evidence:** RED focused gagal karena kelas belum tersedia; GREEN focused 15/15 (96 assertions); committed fixture test 45/45 valid; full `php artisan test` 135/135 (446 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean; HTTP Settings allowlisted 200 + `context-render-ok`.
-- **Review:** dua lane read-only; stale scoped repository dan JSON root-object overwrite diperbaiki dengan revalidation per terminal operation dan root-array guard + negative tests.
+- **Implemented:** `JsonCompanyContext`; repository JSON tenant-scoped dengan read/find/save/filter/sort/pagination, schema validation, lock + atomic replacement; 45 fixture entitas + 3 fixture identitas usaha; Settings dan global theme memakai context tervalidasi; middleware melindungi seluruh `/app/*`.
+- **Security:** unknown/traversal company ditolak; HTTP tenant route di luar demo environment fail-closed; repository dan mutating Livewire action memvalidasi ulang company aktif; role dibaca ulang server-side; short write, malformed JSON, object-root, row non-object, dan invalid schema row ditolak tanpa overwrite.
+- **Files:** `app/Services/Json/*`, `app/Http/Middleware/EnsureCompanyContext.php`, `app/Contracts/EntityRepository.php`, `app/Livewire/Settings.php`, `app/Providers/AppServiceProvider.php`, `config/datasource.php`, `database/schemas/orders.schema.json`, `routes/web.php`, `storage/app/.gitignore`, `storage/app/json/*`, tests fitur terkait, `docs/00-DECISIONS.md`.
+- **Evidence:** RED review follow-up 14/19 (HTTP production, stale Livewire, short write, identity fixture gagal); GREEN focused 19/19 (113 assertions); committed entity fixture 45/45 schema-valid + 3 identity reference valid; full `php artisan test` 139/139 (463 assertions); `php vendor/bin/pint --test` passed; `npm run build` passed (Vite 938 ms); `git diff --check` clean; HTTP Settings allowlisted 200 + `context-render-ok`.
+- **Review:** dua lane read-only; seluruh HIGH ditutup. MEDIUM stale Livewire, HTTP production, short write, query boundaries, committed corpus, dan unresolved identity reference ditutup dengan negative/acceptance tests.
 - **Remaining risk:** adapter ini sengaja demo-only; production tetap tidak dapat memakai context JSON sampai auth/company persistence Fase 3 tersedia.
 
 ## Next READY

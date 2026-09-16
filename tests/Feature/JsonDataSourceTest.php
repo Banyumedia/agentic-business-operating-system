@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Contracts\CompanyContext;
 use App\Contracts\EntityRepository;
 use App\Services\Json\JsonCompanyContext;
+use App\Services\Json\JsonEntityRepository;
 use App\Services\Schema\SchemaValidator;
 use Illuminate\Filesystem\Filesystem;
 use InvalidArgumentException;
@@ -67,6 +68,14 @@ class JsonDataSourceTest extends TestCase
         app(JsonCompanyContext::class)->current();
     }
 
+    public function test_tenant_http_routes_fail_closed_outside_demo_environments(): void
+    {
+        $this->app->detectEnvironment(fn (): string => 'production');
+
+        $this->get('/app/settings?company=bengkel-arka')->assertForbidden();
+        $this->get('/app/hrd?company=bengkel-arka')->assertForbidden();
+    }
+
     public function test_scoped_repository_is_revoked_when_active_company_changes(): void
     {
         $context = app(CompanyContext::class);
@@ -74,8 +83,17 @@ class JsonDataSourceTest extends TestCase
         $repository = app(EntityRepository::class)->for('bengkel-arka', 'contacts');
         $context->setCurrent('klinik-sehat');
 
-        $this->expectException(LogicException::class);
-        $repository->all();
+        foreach ([
+            fn () => $repository->all(),
+            fn () => $repository->save(['id' => 9, 'name' => 'Ditolak']),
+        ] as $operation) {
+            try {
+                $operation();
+                $this->fail('Repository lama harus ditolak setelah company aktif berubah.');
+            } catch (LogicException) {
+                $this->assertTrue(true);
+            }
+        }
     }
 
     public function test_repository_reads_writes_finds_filters_sorts_and_paginates(): void
@@ -102,6 +120,25 @@ class JsonDataSourceTest extends TestCase
         $this->assertSame(2, $page['total']);
         $this->assertSame(2, $page['last_page']);
         $this->assertSame('Ani', $page['data'][0]['name']);
+
+        $laterPage = $repository->query([
+            'type' => 'customer',
+            '_sort' => 'name',
+            '_direction' => 'desc',
+            '_page' => 2,
+            '_per_page' => 1,
+        ]);
+        $this->assertSame('Ani', $laterPage['data'][0]['name']);
+        $this->assertSame([], $repository->query(['_page' => 99])['data']);
+
+        foreach ([['_direction' => 'sideways'], ['_page' => 0], ['_per_page' => 101], ['unknown' => 'x']] as $invalid) {
+            try {
+                $repository->query($invalid);
+                $this->fail('Kontrol query tidak valid harus ditolak.');
+            } catch (InvalidArgumentException) {
+                $this->assertTrue(true);
+            }
+        }
     }
 
     public function test_repository_denies_cross_context_access_and_path_traversal(): void
@@ -129,10 +166,16 @@ class JsonDataSourceTest extends TestCase
 
     public function test_committed_demo_inventory_has_45_schema_valid_files(): void
     {
-        $files = glob(storage_path('app/json/*/*.json'));
+        $schemaNames = array_map(
+            static fn (string $path): string => str_replace('.schema.json', '', basename($path)),
+            glob(database_path('schemas/*.schema.json')) ?: [],
+        );
+        $files = array_values(array_filter(
+            glob(storage_path('app/json/*/*.json')) ?: [],
+            static fn (string $path): bool => in_array(pathinfo($path, PATHINFO_FILENAME), $schemaNames, true),
+        ));
         $validator = app(SchemaValidator::class);
 
-        $this->assertIsArray($files);
         $this->assertCount(45, $files);
 
         foreach ($files as $file) {
@@ -146,6 +189,16 @@ class JsonDataSourceTest extends TestCase
         }
     }
 
+    public function test_demo_orders_resolve_business_identity_fixture(): void
+    {
+        foreach (['bengkel-arka', 'klinik-sehat', 'salon-ayu'] as $company) {
+            $identity = json_decode((string) file_get_contents(storage_path("app/json/{$company}/business_identity.json")), true, flags: JSON_THROW_ON_ERROR);
+            $orders = json_decode((string) file_get_contents(storage_path("app/json/{$company}/orders.json")), true, flags: JSON_THROW_ON_ERROR);
+
+            $this->assertSame($identity['id'], $orders[0]['business_identity_id']);
+        }
+    }
+
     public function test_object_root_is_not_silently_replaced(): void
     {
         app(CompanyContext::class)->setCurrent('bengkel-arka');
@@ -153,11 +206,38 @@ class JsonDataSourceTest extends TestCase
         (new Filesystem)->ensureDirectoryExists($directory);
         file_put_contents($directory.'/contacts.json', '{}');
 
+        $repository = app(EntityRepository::class)->for('bengkel-arka', 'contacts');
+        foreach ([fn () => $repository->all(), fn () => $repository->save(['id' => 1, 'name' => 'Aman'])] as $operation) {
+            try {
+                $operation();
+                $this->fail('Root object seharusnya ditolak.');
+            } catch (\JsonException) {
+                $this->assertSame('{}', file_get_contents($directory.'/contacts.json'));
+            }
+        }
+    }
+
+    public function test_short_temporary_write_never_replaces_existing_data(): void
+    {
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+        $directory = $this->jsonPath.'/bengkel-arka';
+        (new Filesystem)->ensureDirectoryExists($directory);
+        $path = $directory.'/contacts.json';
+        file_put_contents($path, "[]\n");
+
+        $repository = new class(app(CompanyContext::class), app(SchemaValidator::class)) extends JsonEntityRepository
+        {
+            protected function writeTemporaryFile(string $path, string $contents): int|false
+            {
+                return max(0, strlen($contents) - 1);
+            }
+        };
+
         try {
-            app(EntityRepository::class)->for('bengkel-arka', 'contacts')->save(['id' => 1, 'name' => 'Aman']);
-            $this->fail('Root object seharusnya ditolak.');
-        } catch (\JsonException) {
-            $this->assertSame('{}', file_get_contents($directory.'/contacts.json'));
+            $repository->for('bengkel-arka', 'contacts')->save(['id' => 1, 'name' => 'Aman']);
+            $this->fail('Short write seharusnya ditolak.');
+        } catch (\RuntimeException) {
+            $this->assertSame("[]\n", file_get_contents($path));
         }
     }
 

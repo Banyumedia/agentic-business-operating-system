@@ -196,7 +196,8 @@ class JsonEntityRepository implements EntityRepository
         }
 
         try {
-            if (file_put_contents($temporary, $contents) === false || ! rename($temporary, $path)) {
+            $bytesWritten = $this->writeTemporaryFile($temporary, $contents);
+            if ($bytesWritten !== strlen($contents) || ! rename($temporary, $path)) {
                 throw new RuntimeException('Data repository tidak dapat diganti secara atomik.');
             }
         } finally {
@@ -204,6 +205,11 @@ class JsonEntityRepository implements EntityRepository
                 unlink($temporary);
             }
         }
+    }
+
+    protected function writeTemporaryFile(string $path, string $contents): int|false
+    {
+        return file_put_contents($path, $contents);
     }
 
     private function scopedEntity(): string

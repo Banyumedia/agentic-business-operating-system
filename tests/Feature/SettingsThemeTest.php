@@ -100,6 +100,24 @@ class SettingsThemeTest extends TestCase
         $this->assertSame('salon-ayu', session('active_company'));
     }
 
+    public function test_theme_action_revalidates_company_context_and_role(): void
+    {
+        $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'owner']);
+        $component = Livewire::test(Settings::class);
+
+        session(['active_company' => 'klinik-sehat']);
+        $component->call('selectTheme', 'b')->assertStatus(403);
+        Storage::disk('local')->assertMissing('json/bengkel-arka/settings.json');
+
+        session(['active_company' => 'bengkel-arka', 'company_role' => 'owner']);
+        $roleComponent = Livewire::test(Settings::class);
+        session(['company_role' => 'staff']);
+        $roleComponent
+            ->call('selectTheme', 'b')
+            ->assertStatus(403);
+        Storage::disk('local')->assertMissing('json/bengkel-arka/settings.json');
+    }
+
     public function test_theme_update_preserves_other_settings_and_rejects_corrupt_json(): void
     {
         $path = 'json/salon-ayu/settings.json';

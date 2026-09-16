@@ -7,6 +7,13 @@ use Tests\TestCase;
 
 class LobbyNavigationTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        session(['active_company' => 'bengkel-arka']);
+    }
+
     public function test_lobby_page_renders(): void
     {
         $this->get(route('lobby'))

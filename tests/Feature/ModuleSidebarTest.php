@@ -6,6 +6,13 @@ use Tests\TestCase;
 
 class ModuleSidebarTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        session(['active_company' => 'bengkel-arka']);
+    }
+
     public function test_module_screen_renders_its_own_menu(): void
     {
         $this->get(route('app.module', ['module' => 'hrd']))
