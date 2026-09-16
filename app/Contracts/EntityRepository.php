@@ -13,10 +13,18 @@ interface EntityRepository
     public function find(string|int $id): ?array;
 
     /**
+     * Menyimpan satu row. Bila `id` tidak diisi, repository menetapkan id
+     * berikutnya di dalam lock sehingga pembuatan row baru tidak balapan.
+     *
      * @param  array<string, mixed>  $record
      * @return array<string, mixed>
      */
     public function save(array $record): array;
+
+    /**
+     * Menghapus satu row. Mengembalikan false bila id tidak ditemukan.
+     */
+    public function delete(string|int $id): bool;
 
     /**
      * @param  array<string, mixed>  $filters

@@ -1,7 +1,7 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-17 (Fase 2 berjalan - T-F8 selesai, T-F9 berikutnya)
-**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F8 DONE; next READY T-F9
+**Updated:** 2026-09-17 (Fase 2 berjalan - T-F9 selesai, T-F10 berikutnya)
+**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F9 DONE; next READY T-F10
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
@@ -87,7 +87,7 @@ Merge tetap serial — satu per satu. Cek `docs/KIRO_SKILL.md` §Worker Registry
 | PHP | 8.3.30 | `php -v` |
 | Livewire | 4.4 | `composer.json` |
 | Tailwind | 4.3 (CSS-first `@theme`) | `package.json` |
-| Test suite | **189 passed, 619 assertions** | `php artisan test` |
+| Test suite | **202 passed, 697 assertions** | `php artisan test` |
 | Style | **Pint clean, seluruh repo** | `vendor/bin/pint --test` |
 | Build | Vite OK | `npm run build` |
 | Business migrations | none (hanya `users/cache/jobs`) | `ls database/migrations` |
@@ -127,6 +127,9 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 | T-F4a | DONE (docs) | kontrak workflow + path kanonik `database/presets/{slug}.json` |
 | T-F5 | DONE | `FeatureResolver` + `TerminologyResolver` + helper `term()`/`@term` |
 | T-F6 | DONE | `WorkflowEngineTest` (11); `WorkflowEngine` + efek fake + log JSON |
+| T-F7 | DONE | `DashboardTest`; `DashboardComposer` + `WidgetRegistry` |
+| T-F8 | DONE | `ModuleSidebarTest` + `DynamicMenuRegistryTest` + `LobbyNavigationTest`; registry kapabilitas, 403/404 fail-closed |
+| T-F9 | DONE | `ListScreenTest` (11); `ListScreen` + `<x-data-table>` + `<x-form-field>` dari schema |
 
 ## Arsitektur D-31 (dibaca sebelum menulis kode apa pun setelah UI-LOCK)
 
@@ -186,6 +189,23 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 - **Evidence:** tiga lane review read-only direkonsiliasi; full `php artisan test` 139/139 (463 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean; build N/A (docs-only).
 - **Remaining risk:** enam preset D-01 + `custom` sengaja tetap dibuat pada T-08/Fase 3 di path kanonik; implementasi Fase 2 berikutnya hanya tiga preset demo T-F4.
 
+## Task Aktif
+
+**Tidak ada task berjalan.** Writer berikutnya mengambil T-F10 (lihat Next READY).
+
+## Detail Task Selesai (T-F9)
+
+### T-F9 — DONE (2026-09-17)
+
+- **Implemented:** pola layar daftar generik `ListScreen` + komponen `<x-data-table>` (tabel padat desktop / kartu ponsel) dan `<x-form-field>`; kolom, field form, tipe input, batas panjang, dan nilai awal seluruhnya diturunkan `SchemaPresenter` dari `{entity}.schema.json`, sehingga entitas baru mendapat layar tanpa perubahan kode.
+- **Data layer:** `EntityRepository::delete()` ditambahkan ke kontrak dan implementasi JSON dengan lock + atomic replacement; `save()` tanpa `id` menetapkan id berikutnya **di dalam lock** agar pembuatan row tidak balapan; `query()` menerima `_search` yang dicocokkan sebagai substring pada properti string yang diturunkan dari schema (Fase 3 dapat menerjemahkannya ke `LIKE`).
+- **Terminologi:** `routeDefinition()` kini juga mengembalikan istilah murni (`term`) sehingga judul, tombol tambah, label pencarian, dan empty-state disusun layar sendiri lewat `TerminologyResolver` — bukan literal. Terbukti untuk tiga preset (`Pelanggan`/`Pasien`/`Pelanggan`) dan `employees` salon (`Terapis`).
+- **Fail-closed:** entitas tidak pernah berasal dari input — diturunkan ulang dari `DynamicMenuRegistry` pada setiap render; `module`/`submodule`/`company` locked; kapabilitas yang dicabut menutup layar 403; **company dipaku saat mount** sehingga komponen basi tidak dapat mengedit/menghapus row company lain dengan id yang sama (RED terbukti: sebelum guard, aksi mengembalikan 200).
+- **D-45 tingkat 2:** konfirmasi hapus memakai dua tombol (bukan ketik `YA`, karena belum berdampak fiskal), `role="dialog"`/`aria-modal`/`aria-labelledby`/`aria-describedby`, tombol merah `disabled` saat dialog muncul lalu aktif setelah 400 ms, dan teks menyebut baris yang akan hilang.
+- **Files:** `app/Contracts/EntityRepository.php`, `app/Services/Json/JsonEntityRepository.php`, `app/Services/Schema/SchemaPresenter.php`, `app/Services/DynamicMenuRegistry.php`, `app/Livewire/Screens/ListScreen.php`, `app/Livewire/DummyModule.php`, `resources/views/livewire/screens/list.blade.php`, `resources/views/components/{data-table,form-field}.blade.php`, `resources/views/livewire/dummy-module.blade.php`, `tests/Feature/{ListScreenTest,JsonDataSourceTest}.php`.
+- **Evidence:** focused `ListScreenTest` 11/11 (70 assertions); `JsonDataSourceTest` 15/15 (90 assertions); full `php artisan test` **202/202 (697 assertions)**; `php vendor/bin/pint --test` passed (79 files); `npm run build` passed (Vite 1.07 s); `git diff --check` clean; scan D-31 pada sumber layar → 0 nama industri, 0 istilah kamus literal, 0 `DB::`.
+- **Remaining risk:** (a) fixture demo masih 1 baris per entitas dari T-F3, sehingga layar nyata terlihat kosong saat review UI-LOCK — pengayaan data demo belum dijadwalkan di baris task mana pun; (b) label field memakai humanisasi nama kolom (`Wa Number`, `Base Salary`) karena schema belum punya kunci `label` — `SchemaPresenter` sudah membacanya bila ada, jadi perbaikan cukup menambah data; (c) fokus belum dipindahkan ke form saat mode ubah dibuka; (d) `DynamicMenuRegistry::accentFor()` masih dead code dari catatan T-F8.
+
 ## Detail Task Selesai (T-F8)
 
 ### T-F8 — DONE (2026-09-17)
@@ -244,7 +264,11 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Next READY
 
-**T-F9 — `ListScreen` + `<x-data-table>` responsif + form dari skema entitas.**
+**T-F10 — `PipelineScreen` (kanban dari `WorkflowEngine`) + `CalendarScreen`.**
+
+T-F9 membuka T-F10, T-F11, T-F12, dan T-F13 sekaligus (semuanya `READY` di
+`EXECUTION_PLAN.md`); urutan yang dianjurkan tetap T-F10 lebih dulu karena
+menutup pola layar yang dipakai T-F11/T-F12.
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 

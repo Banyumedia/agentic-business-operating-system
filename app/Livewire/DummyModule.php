@@ -37,7 +37,10 @@ class DummyModule extends Component
         $company = $companyContext->current();
         $theme = (string) ($settings->read($company)['theme'] ?? 'a');
 
-        return view('livewire.dummy-module', $definition)
+        return view('livewire.dummy-module', $definition + [
+            'module' => $this->module,
+            'submodule' => $this->submodule,
+        ])
             ->layout('components.layouts.module', [
                 'title' => $definition['label'],
                 'theme' => $theme,

@@ -60,21 +60,20 @@ class JsonEntityRepository implements EntityRepository
     public function save(array $record): array
     {
         $this->assertScoped();
-        $record = $this->validator->validate($this->entity, $record);
         $path = $this->path();
         (new Filesystem)->ensureDirectoryExists(dirname($path));
 
-        $lock = fopen($path.'.lock', 'c');
-        if ($lock === false) {
-            throw new RuntimeException('Lock repository tidak dapat dibuat.');
-        }
+        $lock = $this->acquireLock($path);
 
         try {
-            if (! flock($lock, LOCK_EX)) {
-                throw new RuntimeException('Lock repository tidak dapat diperoleh.');
+            $rows = $this->readRows();
+
+            if (! array_key_exists('id', $record) || $record['id'] === null) {
+                $record['id'] = $this->nextId($rows);
             }
 
-            $rows = $this->readRows();
+            $record = $this->validator->validate($this->entity, $record);
+
             $updated = false;
             foreach ($rows as $index => $row) {
                 if ((string) $row['id'] === (string) $record['id']) {
@@ -88,14 +87,92 @@ class JsonEntityRepository implements EntityRepository
                 $rows[] = $record;
             }
 
-            $contents = json_encode(array_values($rows), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR).PHP_EOL;
-            $this->writeAtomically($path, $contents);
+            $this->writeRows($path, $rows);
         } finally {
-            flock($lock, LOCK_UN);
-            fclose($lock);
+            $this->releaseLock($lock);
         }
 
         return $record;
+    }
+
+    public function delete(string|int $id): bool
+    {
+        $this->assertScoped();
+        $path = $this->path();
+
+        if (! is_file($path)) {
+            return false;
+        }
+
+        $lock = $this->acquireLock($path);
+
+        try {
+            $rows = $this->readRows();
+            $remaining = array_values(array_filter(
+                $rows,
+                static fn (array $row): bool => (string) ($row['id'] ?? '') !== (string) $id,
+            ));
+
+            if (count($remaining) === count($rows)) {
+                return false;
+            }
+
+            $this->writeRows($path, $remaining);
+        } finally {
+            $this->releaseLock($lock);
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function nextId(array $rows): int
+    {
+        $highest = 0;
+
+        foreach ($rows as $row) {
+            $id = $row['id'] ?? null;
+            if (is_int($id) && $id > $highest) {
+                $highest = $id;
+            }
+        }
+
+        return $highest + 1;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function writeRows(string $path, array $rows): void
+    {
+        $contents = json_encode(array_values($rows), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR).PHP_EOL;
+        $this->writeAtomically($path, $contents);
+    }
+
+    /** @return resource */
+    private function acquireLock(string $path)
+    {
+        $lock = fopen($path.'.lock', 'c');
+        if ($lock === false) {
+            throw new RuntimeException('Lock repository tidak dapat dibuat.');
+        }
+
+        if (! flock($lock, LOCK_EX)) {
+            fclose($lock);
+
+            throw new RuntimeException('Lock repository tidak dapat diperoleh.');
+        }
+
+        return $lock;
+    }
+
+    /** @param resource $lock */
+    private function releaseLock($lock): void
+    {
+        flock($lock, LOCK_UN);
+        fclose($lock);
     }
 
     public function query(array $filters = []): array
@@ -114,7 +191,12 @@ class JsonEntityRepository implements EntityRepository
             throw new InvalidArgumentException('Parameter pagination atau arah sort tidak valid.');
         }
 
-        $criteria = array_diff_key($filters, array_flip(['_sort', '_direction', '_page', '_per_page']));
+        $search = $filters['_search'] ?? null;
+        if ($search !== null && ! is_string($search)) {
+            throw new InvalidArgumentException('Kata pencarian harus string.');
+        }
+
+        $criteria = array_diff_key($filters, array_flip(['_sort', '_direction', '_page', '_per_page', '_search']));
         foreach (array_keys($criteria) as $field) {
             if (! in_array($field, $properties, true)) {
                 throw new InvalidArgumentException("Filter tidak diizinkan: {$field}");
@@ -131,6 +213,8 @@ class JsonEntityRepository implements EntityRepository
             return true;
         }));
 
+        $rows = $this->applySearch($rows, $schema, is_string($search) ? trim($search) : '');
+
         usort($rows, static function (array $left, array $right) use ($sort, $direction): int {
             $comparison = ($left[$sort] ?? null) <=> ($right[$sort] ?? null);
 
@@ -146,6 +230,37 @@ class JsonEntityRepository implements EntityRepository
             'per_page' => $perPage,
             'last_page' => max(1, (int) ceil($total / $perPage)),
         ];
+    }
+
+    /**
+     * Pencarian bebas sebagai substring case-insensitive pada seluruh properti
+     * bertipe string. Field target diturunkan dari schema, bukan dari pemanggil,
+     * sehingga adapter Eloquent Fase 3 dapat menerjemahkannya menjadi `LIKE`.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     * @return list<array<string, mixed>>
+     */
+    private function applySearch(array $rows, EntitySchema $schema, string $term): array
+    {
+        if ($term === '') {
+            return $rows;
+        }
+
+        $textFields = array_keys(array_filter(
+            $schema->properties(),
+            static fn (array $definition): bool => ($definition['type'] ?? null) === 'string',
+        ));
+
+        return array_values(array_filter($rows, static function (array $row) use ($textFields, $term): bool {
+            foreach ($textFields as $field) {
+                $value = $row[$field] ?? null;
+                if (is_string($value) && mb_stripos($value, $term) !== false) {
+                    return true;
+                }
+            }
+
+            return false;
+        }));
     }
 
     /** @return list<array<string, mixed>> */

@@ -255,4 +255,35 @@ class JsonDataSourceTest extends TestCase
             $this->assertSame('{corrupt', file_get_contents($directory.'/contacts.json'));
         }
     }
+
+    public function test_repository_assigns_next_id_and_deletes_rows(): void
+    {
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+        $repository = app(EntityRepository::class)->for('bengkel-arka', 'contacts');
+
+        $first = $repository->save(['name' => 'Tanpa Id']);
+        $second = $repository->save(['name' => 'Berikutnya']);
+
+        $this->assertSame(1, $first['id']);
+        $this->assertSame(2, $second['id']);
+
+        $this->assertTrue($repository->delete(1));
+        $this->assertNull($repository->find(1));
+        $this->assertCount(1, $repository->all());
+
+        $this->assertFalse($repository->delete(404));
+        $this->assertSame(3, $repository->save(['name' => 'Setelah Hapus'])['id']);
+    }
+
+    public function test_delete_is_denied_after_the_active_company_changes(): void
+    {
+        $context = app(CompanyContext::class);
+        $context->setCurrent('bengkel-arka');
+        $repository = app(EntityRepository::class)->for('bengkel-arka', 'contacts');
+        $repository->save(['id' => 5, 'name' => 'Aman']);
+        $context->setCurrent('klinik-sehat');
+
+        $this->expectException(LogicException::class);
+        $repository->delete(5);
+    }
 }

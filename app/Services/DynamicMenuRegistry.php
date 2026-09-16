@@ -95,7 +95,7 @@ class DynamicMenuRegistry
     }
 
     /**
-     * @return array<int, array{label: string, icon: string, route: string, screen: string, entity: string}>
+     * @return array<int, array{label: string, icon: string, route: string, screen: string, entity: string, term: string|null}>
      */
     public function menusFor(?string $module): array
     {
@@ -131,7 +131,7 @@ class DynamicMenuRegistry
         return false;
     }
 
-    /** @return array{label: string, icon: string, route: string, screen: string, entity: string}|null */
+    /** @return array{label: string, icon: string, route: string, screen: string, entity: string, term: string|null}|null */
     public function routeDefinition(?string $module, ?string $submodule = null): ?array
     {
         if (! $this->isModuleVisible($module)) {
@@ -167,7 +167,7 @@ class DynamicMenuRegistry
     }
 
     /** @param array<string, mixed> $item
-     * @return array{label: string, icon: string, route: string, screen: string, entity: string}
+     * @return array{label: string, icon: string, route: string, screen: string, entity: string, term: string|null}
      */
     private function resolveItem(array $item): array
     {
@@ -177,6 +177,9 @@ class DynamicMenuRegistry
             'route' => $item['route'],
             'screen' => $item['screen'],
             'entity' => $item['entity'],
+            // Istilah murni (tanpa awalan) supaya layar dapat menyusun kalimat
+            // sendiri - mis. empty-state - tetap lewat TerminologyResolver.
+            'term' => is_array($item['label']) ? $this->terms->resolve($item['label']['term']) : null,
         ];
     }
 

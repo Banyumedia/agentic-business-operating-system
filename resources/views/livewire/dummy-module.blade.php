@@ -1,3 +1,14 @@
+{{--
+    Router pola layar. Pemetaan modul -> pola layar berasal dari
+    DynamicMenuRegistry (data), sehingga tidak ada cabang per industri di sini.
+--}}
+@if ($screen === 'list')
+    <livewire:screens.list-screen
+        :module="$module"
+        :submodule="$submodule"
+        :key="'list-'.$module.'-'.($submodule ?? 'index')"
+    />
+@else
 <div class="space-y-6">
     <header>
         <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--erp-text-muted)]">Ruang kerja</p>
@@ -24,3 +35,4 @@
         </p>
     </section>
 </div>
+@endif
