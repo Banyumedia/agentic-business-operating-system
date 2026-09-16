@@ -18,7 +18,8 @@
 
 Keduanya di balik basic auth Caddy (user `bos`) dan `noindex`. Dev server
 dijalankan otomatis saat login Windows oleh
-`Startup\AgenticBOS_DevServers.vbs`. Aplikasi **belum punya auth sendiri**
+`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\AgenticBOS_DevServers.vbs`
+(bukan folder di dalam repo ini). Aplikasi **belum punya auth sendiri**
 (T-00c Fase 3) - basic auth adalah satu-satunya pelindung; jangan hapus
 sebelum login aplikasi ada. Checkpoint rollback: tag `pre-fase-2`. **Catatan DNS:** Cloudflare Universal SSL hanya menutup satu tingkat subdomain (`*.nalar.army`); hostname dua tingkat seperti `mockup.agentic-bos.nalar.army` gagal TLS - karena itu dipakai `bos-mockup.nalar.army`.
 ## Verified Baseline (sumber tunggal)
