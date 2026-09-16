@@ -177,11 +177,20 @@ default atau memilih alternatif. **Agent tidak menebak.**
 - **Evidence:** tiga lane review read-only direkonsiliasi; full `php artisan test` 139/139 (463 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean; build N/A (docs-only).
 - **Remaining risk:** enam preset D-01 + `custom` sengaja tetap dibuat pada T-08/Fase 3 di path kanonik; implementasi Fase 2 berikutnya hanya tiga preset demo T-F4.
 
+## Active Task
+
+### T-F4 — DONE (2026-09-16)
+
+- **Implemented:** tiga preset kanonik (`bengkel`, `klinik`, `salon`), validator katalog D-32/D-33 dan integritas workflow D-46, serta `JsonPresetSource` deterministik dari `database/presets`.
+- **Fail-closed:** key katalog asing, bentuk JSON salah, direktori hilang, filename/key mismatch, dependensi kapabilitas, stage tak terjangkau/dead-end/tanpa jalur terminal, terminal tak sah, dan transisi mundur tanpa catatan ditolak.
+- **Files:** `app/Services/Preset/PresetDefinitionValidator.php`, `app/Services/Json/JsonPresetSource.php`, `database/presets/{bengkel,klinik,salon}.json`, dua acceptance test, `docs/EXECUTION_PLAN.md`, `docs/AUTOPILOT_STATUS.md`.
+- **Evidence:** RED 0/15 lalu review RED 15/22; GREEN focused 22/22 (52 assertions); full `php artisan test` 161/161 (515 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean; build N/A (tanpa Blade/CSS/JS).
+- **Review:** tiga lane read-only; seluruh temuan valid ditutup: shape `effects`/`props`, object-vs-list JSON, missing directory, regex stage, dependensi AI→approval, dan siklus non-terminal tanpa jalur ke terminal.
+- **Remaining risk:** katalog berupa konstanta validator mengikuti spesifikasi terkunci; penambahan capability baru tetap wajib keputusan D-32.
+
 ## Next READY
 
-**T-F4 — 3 preset JSON + `PresetDefinitionValidator` + `JsonPresetSource`.**
-
-Acceptance berikutnya: buat `bengkel.json`, `klinik.json`, `salon.json` di path kanonik; validator menolak stage tak terjangkau, dead end non-terminal, terminal tak sah, transisi mundur tanpa catatan, dan key katalog asing; workflow minimum §6.1 wajib lulus. Setelah itu lanjut T-F5 → … → T-F15, lalu berhenti di `HUMAN:UI-LOCK`.
+**T-F5 — `FeatureResolver` + `TerminologyResolver` + `term()` + `@term`.**
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 

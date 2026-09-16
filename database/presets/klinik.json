@@ -1,0 +1,53 @@
+{
+    "key": "klinik",
+    "name": "Klinik",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "deals": true,
+        "scheduling": true,
+        "bookings": true,
+        "approval_flow": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pasien",
+        "contacts": "Pasien",
+        "deal": "Kunjungan",
+        "deals": "Kunjungan",
+        "booking": "Janji Temu",
+        "bookings": "Janji Temu",
+        "staff": "Staf",
+        "staffs": "Staf"
+    },
+    "workflows": {
+        "bookings": {
+            "stages": [
+                {"code": "dijadwalkan", "label": "Dijadwalkan"},
+                {"code": "check_in", "label": "Check-in"},
+                {"code": "diperiksa", "label": "Diperiksa"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "dijadwalkan", "to": "check_in", "roles": ["owner", "staff"]},
+                {"from": "check_in", "to": "diperiksa", "roles": ["owner", "staff"]},
+                {"from": "diperiksa", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner", "staff"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "deals_pipeline"},
+            {"widget": "kpi_cashflow"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "bookings", "contacts", "employees", "accounting", "settings"]
+    }
+}

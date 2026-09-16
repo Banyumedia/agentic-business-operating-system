@@ -1,0 +1,54 @@
+{
+    "key": "salon",
+    "name": "Salon",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "scheduling": true,
+        "bookings": true,
+        "inventory": true,
+        "pos": true,
+        "approval_flow": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "booking": "Jadwal",
+        "bookings": "Jadwal",
+        "item": "Produk",
+        "items": "Produk",
+        "staff": "Terapis",
+        "staffs": "Terapis"
+    },
+    "workflows": {
+        "bookings": {
+            "stages": [
+                {"code": "dijadwalkan", "label": "Dijadwalkan"},
+                {"code": "check_in", "label": "Check-in"},
+                {"code": "dilayani", "label": "Dilayani"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "dijadwalkan", "to": "check_in", "roles": ["owner", "staff"]},
+                {"from": "check_in", "to": "dilayani", "roles": ["owner", "staff"]},
+                {"from": "dilayani", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner", "staff"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "bookings", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
+    }
+}
