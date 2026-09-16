@@ -98,18 +98,17 @@ Semua pengaturan disatukan dalam satu halaman terpusat: **`/app/settings`** (D-2
   - Jika PKP aktif: Toggle `Harga Jual Sudah Termasuk PPN (Inklusif)` vs `PPN Ditambahkan di Luar Harga (Eksklusif)`.
   - Teks edukasi & peringatan: *"Pilih Inklusif jika nota/menu kasir menampilkan harga final yang sudah mencakup pajak. Peringatan: Mengubah mode pajak akan memengaruhi kalkulasi nota transaksi baru."*
 
-### 4.2 Tab 2: Tampilan, Skema Warna & Preferensi Gelap/Terang (U-06)
-- **Kontrol Skema Warna Tenant (Branding Perusahaan - Tanpa Hardcode):**
-  - Dropdown/Grid Pilihan Tema Bawaan (Semua Lolos WCAG 2.1 AA):
-    1. `Prime Default / Midnight` (Slate gelap, aksen ungu-emerald)
-    2. `Clean Ledger` (Putih bersih, aksen perbankan/fintech modern)
-    3. `Ocean Blue` (Navy korporat, aksen biru laut)
-    4. `Brass Amber` (Cokelat tembaga hangat, aksen emas)
-    5. `Rose` (Marun pekat, aksen mawar)
-  - Custom Color Accent Picker: Owner bisa memilih warna primer brand sendiri, sistem otomatis memvalidasi rasio kontras AA sebelum disimpan.
-- **Preferensi Mode Gelap/Terang Personal (Per-User):**
-  - Opsi: `Ikuti Sistem OS (Auto)` | `Terang (Light)` | `Gelap (Dark)`.
-  - Tersimpan di level akun / session pengguna, tidak mengganggu pengguna lain.
+### 4.2 Tab 2: Tampilan & Skema Warna Usaha (D-43 — pengaturan per-USAHA, bukan per-user)
+- **Kontrol Skema Warna Tenant (Branding Perusahaan — Tanpa Hardcode):**
+  - Grid pilihan **5 tema tetap** (nilai lengkap di §7.3a; semua lolos WCAG 2.1 AA):
+    1. `A — Slate + Emerald` (default, netral untuk semua bisnis)
+    2. `B — Zinc + Amber` (hangat, tegas — bengkel/F&B/toko)
+    3. `C — Navy + Sky` (korporat, dingin — klinik/jasa profesional)
+    4. `D — Stone + Terracotta` (organik, ramah — salon/kuliner/kreatif)
+    5. `E — Terang` (mode terang dari palet A)
+  - Custom Color Accent Picker (opsional bila diaktifkan): owner bisa memilih warna primer brand sendiri, sistem otomatis memvalidasi rasio kontras AA sebelum disimpan.
+  - **Klik salah satu kartu tema langsung mengganti tema untuk SELURUH usaha** — tersimpan server-side, berlaku untuk semua staf yang login ke company ini. **Bukan** preferensi per akun/browser.
+  - Tidak ada toggle gelap/terang terpisah per pengguna. Owner yang menentukan satu tema untuk seluruh usaha (konsisten dengan branding yang dilihat pelanggan/staf).
 
 ### 4.3 Tab 3: Fitur Bisnis (1B Preset + Override)
 - Dropdown preset utama diisi **dinamis** dari `business_presets` yang `is_active` (6 awal + yang ditambahkan kemudian), bukan hardcode.
@@ -378,15 +377,62 @@ netral yang sama dengan kandidat tersebut pada skala 50-200.
 | Success / Warning / Danger / Info | emerald-400 / amber-400 / rose-400 / sky-400 (sama untuk semua) | | | |
 | Risiko | Aksen hijau bentrok dengan `success` -> success dipetakan ke emerald-**300** `#6ee7b7` agar berbeda tone | Aksen kuning bentrok dengan `warning` -> warning dipetakan ke amber-**200** `#fde68a` | Aksen biru bentrok dengan `info` -> info dipetakan ke cyan-400 `#22d3ee` | Aksen oranye dekat `warning` -> warning tetap amber-400, cukup berbeda hue |
 
-**Rekomendasi:** **A** sebagai default produk (netral ke semua 63 bisnis di
-`INDUSTRY_PRESETS.md` §7; hijau = "uang/aman" secara kultural untuk owner
-UMKM), dengan **B/C/D** menjadi tiga dari lima tema pilihan owner (menggantikan
-nama `Clean Ledger`/`Ocean Blue`/`Brass Amber`/`Rose` yang belum punya nilai).
-Tema ke-5: mode terang dari A. Accent picker per tenant (§4.2) tetap ada di
-atas tema apa pun.
+**Keputusan final (D-43, Bos 2026-09-16):** **A** adalah default produk.
+**5 tema tetap** — A, B, C, D, E (mode terang dari A) — dipilih **per USAHA**
+oleh owner di §4.2, berlaku untuk seluruh staf company itu. Bukan preferensi
+per akun/browser; tidak ada toggle personal terpisah. Accent picker per
+tenant (§4.2) tetap tersedia di atas tema manapun bila diaktifkan.
 
-Setelah Bos memilih, T-07 menulis nilai terpilih ke §7.3 dan `app.css`;
-kandidat lain menjadi blok `[data-theme="..."]`.
+```css
+/* Tema A - default */
+[data-theme="a"], :root {
+  --erp-bg-base: #0f172a; --erp-bg-secondary: #1e293b; --erp-bg-elevated: #334155;
+  --erp-bg-inset: #020617; --erp-text-primary: #f8fafc; --erp-text-secondary: #cbd5e1;
+  --erp-text-muted: #94a3b8; --erp-accent: #34d399; --erp-accent-hover: #6ee7b7;
+  --erp-accent-soft: #022c22; --erp-text-inverse: #052e16; --erp-text-link: #7dd3fc;
+  --erp-focus: #34d399; --erp-success: #6ee7b7; --erp-warning: #fbbf24; --erp-danger: #fb7185; --erp-info: #38bdf8;
+}
+/* Tema B - Zinc + Amber */
+[data-theme="b"] {
+  --erp-bg-base: #18181b; --erp-bg-secondary: #27272a; --erp-bg-elevated: #3f3f46;
+  --erp-bg-inset: #09090b; --erp-text-primary: #fafafa; --erp-text-secondary: #d4d4d8;
+  --erp-text-muted: #a1a1aa; --erp-accent: #fbbf24; --erp-accent-hover: #fcd34d;
+  --erp-accent-soft: #451a03; --erp-text-inverse: #1c1917; --erp-text-link: #fcd34d;
+  --erp-focus: #fbbf24; --erp-success: #34d399; --erp-warning: #fde68a; --erp-danger: #fb7185; --erp-info: #38bdf8;
+}
+/* Tema C - Navy + Sky */
+[data-theme="c"] {
+  --erp-bg-base: #0b1220; --erp-bg-secondary: #111a2e; --erp-bg-elevated: #1b2740;
+  --erp-bg-inset: #060b16; --erp-text-primary: #f1f5f9; --erp-text-secondary: #cbd5e1;
+  --erp-text-muted: #94a3b8; --erp-accent: #38bdf8; --erp-accent-hover: #7dd3fc;
+  --erp-accent-soft: #082f49; --erp-text-inverse: #082f49; --erp-text-link: #7dd3fc;
+  --erp-focus: #38bdf8; --erp-success: #34d399; --erp-warning: #fbbf24; --erp-danger: #fb7185; --erp-info: #22d3ee;
+}
+/* Tema D - Stone + Terracotta */
+[data-theme="d"] {
+  --erp-bg-base: #1c1917; --erp-bg-secondary: #292524; --erp-bg-elevated: #44403c;
+  --erp-bg-inset: #0c0a09; --erp-text-primary: #fafaf9; --erp-text-secondary: #d6d3d1;
+  --erp-text-muted: #a8a29e; --erp-accent: #fb923c; --erp-accent-hover: #fdba74;
+  --erp-accent-soft: #431407; --erp-text-inverse: #1c1917; --erp-text-link: #fdba74;
+  --erp-focus: #fb923c; --erp-success: #34d399; --erp-warning: #fbbf24; --erp-danger: #fb7185; --erp-info: #38bdf8;
+}
+/* Tema E - mode terang dari A */
+[data-theme="e"] {
+  --erp-bg-base: #f8fafc; --erp-bg-secondary: #ffffff; --erp-bg-elevated: #f1f5f9;
+  --erp-bg-inset: #e2e8f0; --erp-text-primary: #0f172a; --erp-text-secondary: #334155;
+  --erp-text-muted: #5a6779; --erp-accent: #059669; --erp-accent-hover: #047857;
+  --erp-accent-soft: #d1fae5; --erp-text-inverse: #ffffff; --erp-text-link: #0369a1;
+  --erp-focus: #059669; --erp-success: #059669; --erp-warning: #b45309; --erp-danger: #be123c; --erp-info: #0369a1;
+}
+```
+
+Nilai di atas mengikuti pola token yang sama dengan §7.3 (36 token penuh
+per tema didefinisikan sama, hanya 17 yang berbeda antar tema ditampilkan di
+sini untuk ringkas; sisanya mengikuti radius/font/shadow bersama). T-07
+wajib menulis 36 token lengkap × 5 tema dan membuktikan 11 pasangan kontras
+lolos AA untuk **kelima** tema (`ThemeContrastTest`, 55 kasus).
+
+
 ### 6.9 Aturan dari Temuan UX Mockup (2026-09-16)
 
 1. **Pajak (D-44).** `tax_mode=non_taxable` -> tidak ada baris DPP/PPN di
