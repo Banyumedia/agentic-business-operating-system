@@ -43,6 +43,24 @@ class ModuleSidebarTest extends TestCase
             ->assertSee('deals');
     }
 
+    public function test_screen_pattern_is_dispatched_to_a_component_by_convention(): void
+    {
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+
+        // Pola yang sudah punya komponen dirender komponennya.
+        Livewire::test(DummyModule::class, ['module' => 'contacts'])
+            ->assertViewHas('screenComponent', 'screens.list-screen');
+
+        // Pola yang belum punya komponen tidak boleh error: jatuh ke kartu kontrak.
+        $this->get('/app/pos?company=bengkel-arka')
+            ->assertOk()
+            ->assertSee('Kontrak layar aktif')
+            ->assertSee('cashier');
+
+        Livewire::test(DummyModule::class, ['module' => 'pos'])
+            ->assertViewHas('screenComponent', null);
+    }
+
     public function test_unknown_module_and_unknown_subpath_are_not_found(): void
     {
         $this->get('/app/modul-hantu?company=bengkel-arka')->assertNotFound();

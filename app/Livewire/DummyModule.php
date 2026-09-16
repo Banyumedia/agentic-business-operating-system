@@ -40,10 +40,30 @@ class DummyModule extends Component
         return view('livewire.dummy-module', $definition + [
             'module' => $this->module,
             'submodule' => $this->submodule,
+            'screenComponent' => $this->screenComponent($definition['screen']),
         ])
             ->layout('components.layouts.module', [
                 'title' => $definition['label'],
                 'theme' => $theme,
             ]);
+    }
+
+    /**
+     * Memetakan pola layar dari registry ke komponen Livewire secara konvensi:
+     * `list` -> `App\Livewire\Screens\ListScreen` -> `screens.list-screen`.
+     *
+     * Menambah pola layar baru cukup dengan menambah satu kelas komponen; tidak
+     * ada daftar pola di Blade maupun di sini yang perlu disunting. Pola yang
+     * belum punya komponen jatuh ke kartu kontrak, bukan error.
+     */
+    private function screenComponent(string $screen): ?string
+    {
+        if (! preg_match('/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/', $screen)) {
+            return null;
+        }
+
+        $class = 'App\\Livewire\\Screens\\'.str($screen)->studly()->toString().'Screen';
+
+        return class_exists($class) ? 'screens.'.$screen.'-screen' : null;
     }
 }

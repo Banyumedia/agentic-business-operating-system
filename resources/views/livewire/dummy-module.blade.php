@@ -1,13 +1,11 @@
 {{--
-    Router pola layar. Pemetaan modul -> pola layar berasal dari
-    DynamicMenuRegistry (data), sehingga tidak ada cabang per industri di sini.
+    Router pola layar berbasis konvensi. Pemetaan modul -> pola layar berasal
+    dari DynamicMenuRegistry (data); nama komponen diturunkan dari nama pola,
+    jadi tidak ada daftar pola layar di file ini dan tidak ada cabang per
+    industri. Pola yang komponennya belum ada jatuh ke kartu kontrak.
 --}}
-@if ($screen === 'list')
-    <livewire:screens.list-screen
-        :module="$module"
-        :submodule="$submodule"
-        :key="'list-'.$module.'-'.($submodule ?? 'index')"
-    />
+@if ($screenComponent !== null)
+    @livewire($screenComponent, ['module' => $module, 'submodule' => $submodule], key($screenComponent.'-'.$module.'-'.($submodule ?? 'index')))
 @else
 <div class="space-y-6">
     <header>

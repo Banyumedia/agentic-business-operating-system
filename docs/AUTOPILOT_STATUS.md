@@ -142,6 +142,7 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 | T-F8 | DONE | `ModuleSidebarTest` + `DynamicMenuRegistryTest` + `LobbyNavigationTest`; registry kapabilitas, 403/404 fail-closed |
 | T-F9 | DONE | `ListScreenTest` (11); `ListScreen` + `<x-data-table>` + `<x-form-field>` dari schema |
 | T-F9b | DONE | 48 fixture demo terisi + uji jumlah baris & integritas referensi; dua defect widget T-F7 diperbaiki |
+| prep PG-1 | DONE | Dispatcher pola layar berbasis konvensi (`ModuleSidebarTest::test_screen_pattern_is_dispatched_to_a_component_by_convention`); membuka PG-1 (T-F10..T-F13) untuk paralel |
 
 ## Arsitektur D-31 (dibaca sebelum menulis kode apa pun setelah UI-LOCK)
 

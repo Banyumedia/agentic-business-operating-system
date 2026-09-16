@@ -384,7 +384,7 @@ klaim.
 
 | Grup | Fase | Task | Lebar | Syarat khusus |
 |---|---|---|---|---|
-| **PG-1** | 2 | T-F10, T-F11, T-F12, T-F13 | 4 | ⚠️ **Prep wajib dulu**: `resources/views/livewire/dummy-module.blade.php` baris dispatch pola layar (saat ini `@if ($screen === 'list')`) harus diubah jadi dispatch berbasis konvensi (`screen` → komponen `screens.{screen}-screen` + fallback aman) **sebelum** grup ini boleh paralel — tanpa prep, keempat task menabrak baris yang sama. Prep itu sendiri satu commit serial. |
+| **PG-1** | 2 | T-F10, T-F11, T-F12, T-F13 | 4 | ⚠️ **Prep wajib dulu**: `resources/views/livewire/dummy-module.blade.php` baris dispatch pola layar (saat ini `@if ($screen === 'list')`) harus diubah jadi dispatch berbasis konvensi (`screen` → komponen `screens.{screen}-screen` + fallback aman) **sebelum** grup ini boleh paralel — tanpa prep, keempat task menabrak baris yang sama. Prep itu sendiri satu commit serial. **PREP SUDAH LANDED (2026-09-17):** dispatch kini `screen` -> `App\Livewire\Screens\{Studly}Screen` -> `screens.{screen}-screen` via `DummyModule::screenComponent()`, pola tanpa komponen jatuh ke kartu kontrak. Menambah pola layar = menambah satu kelas komponen, **tanpa** menyentuh Blade dispatcher. PG-1 kini boleh paralel. |
 | 🔒 barrier | 2 | T-F14 → T-F15 | 1 | T-F14 depends T-F7..T-F13 (konvergensi); T-F15 depends T-F14. Selalu serial. |
 | ⛔ gate | 2→3 | `HUMAN:UI-LOCK` | 0 | Tunggu keputusan Bos, bukan soal teknis. |
 | **PG-2** | 3a | T-00b, T-00c | 2 | Keduanya depends T-00a saja; jalankan setelah T-00a (migration, serial) merge. |
