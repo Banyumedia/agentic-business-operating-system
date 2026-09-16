@@ -1,5 +1,5 @@
 # PRD: Agentic Business Operating System (BOS)
-## ERP Nalarin Multi-Business Multi-Tenant Platform
+## Platform Multi-Bisnis Multi-Tenant (nama warisan "ERP Nalarin"/"ERP Prime" tidak dipakai — D-30)
 
 **Versi:** 1.0.1-PROD  
 **Status:** APPROVED FOR AUTONOMOUS EXECUTION  
@@ -12,7 +12,7 @@
 
 **Agentic Business Operating System (BOS)** bukan sekadar ERP tradisional. Ini adalah *Sistem Operasional Hybrid (Web & WhatsApp)* dengan model bisnis **SaaS White-label Hermes** yang menyatukan:
 1. **WhatsApp-First AI Agent (Asisten Bos):** Interaksi utama dan eksekusi harian dilakukan via WhatsApp. Bot WA dimasukkan ke dalam grup perusahaan (Keuangan, Produksi, HRD) untuk mengelola operasional secara otomatis berbasis peran (role-based).
-2. **SaaS Hermes White-label & Token Economics:** Setiap perusahaan (tenant) akan mendapatkan 1 profile Hermes yang dikelola terpusat oleh BOS secara otomatis via API. Penggunaan fitur Agentic menggunakan sistem saldo *Token* yang dapat di-*topup* atau berlangganan.
+2. **SaaS Hermes White-label & Token Economics:** Setiap **owner** mendapatkan **satu** profile Hermes `primary` yang sadar-konteks lintas seluruh usaha miliknya (D-37 — bukan satu profile per perusahaan), dikelola terpusat oleh BOS via API. Bot tambahan (mis. untuk manajer cabang) adalah add-on berbayar. Penggunaan fitur Agentic menggunakan sistem saldo *Token* yang dapat di-*topup* atau berlangganan.
 3. **Dashboard Web Pendukung (Zero-Bloat):** Web UI minimalis berfungsi sebagai tempat setup konfigurasi, scan QR WhatsApp, pemantauan saldo token, manajemen *role* staf, dan eksekusi operasional yang terlalu kompleks untuk chat.
 4. **Indonesian Tax & Regulatory Compliance:** Fleksibilitas penuh pembukuan pajak (taxable PKP vs non-taxable, tax-inclusive vs tax-exclusive).
 
@@ -27,7 +27,7 @@
 
 ### Pilar 2: Hermes Integration & Token Economics
 - BOS bertindak sebagai *White-label Wrapper* atas platform Hermes.
-- Platform BOS secara otomatis mem-*provisioning* (via API) 1 profile/instance Hermes untuk setiap perusahaan (tenant).
+- Platform BOS secara otomatis mem-*provisioning* (via API) **1 profile Hermes `primary` per owner** (D-37), di-scope ke seluruh company miliknya lewat pivot `hermes_profile_companies`. Bot `addon` diprovisi terpisah sebagai item berbayar.
 - Proses login/scan QR WA dilakukan dengan aman di dalam Dashboard Web BOS.
 - Setiap aktivitas/percakapan Agentic WA akan memotong saldo **Token** perusahaan yang dimanage secara tersentralisasi oleh sistem BOS.
 

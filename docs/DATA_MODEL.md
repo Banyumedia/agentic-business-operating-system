@@ -54,6 +54,7 @@ CREATE TABLE companies (
     slug VARCHAR(64) NOT NULL UNIQUE,      -- dipakai untuk tenant routing & Hermes profile
     owner_user_id BIGINT UNSIGNED NOT NULL,
     business_preset VARCHAR(32) NOT NULL DEFAULT 'custom', -- FK logis ke business_presets.key; VARCHAR (bukan ENUM) agar preset ke-N tidak butuh migration (D-31)
+    theme VARCHAR(8) NOT NULL DEFAULT 'a',  -- D-43: tema per-USAHA (a|b|c|d|e), di-set owner, berlaku untuk semua staf company ini. Bukan preferensi per user.
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
@@ -984,6 +985,43 @@ CREATE TABLE hermes_conversation_contexts (
   kuota sendiri sesuai item billing.
 - Pengecualian D-26: `hermes_profiles` tidak punya `company_id` karena memang
   lintas company; isolasi dijamin lewat pivot.
+
+### 12.4 `admin_impersonation_sessions` (D-47: Super Admin "Login As" beraudit)
+
+Super Admin platform boleh membantu setup klien yang tidak sempat/kurang paham
+teknologi, **tanpa** mengetahui password klien dan **dengan jejak audit penuh**.
+
+```sql
+CREATE TABLE admin_impersonation_sessions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    admin_user_id BIGINT UNSIGNED NOT NULL,   -- user platform berrole platform_admin
+    company_id BIGINT UNSIGNED NOT NULL,      -- tenant yang dibantu
+    acting_as_user_id BIGINT UNSIGNED NULL,   -- akun owner yang diwakili (untuk konteks)
+    reason VARCHAR(191) NOT NULL,             -- wajib diisi admin sebelum sesi mulai
+    ip_address VARCHAR(45) NULL,
+    user_agent VARCHAR(255) NULL,
+    started_at TIMESTAMP NOT NULL,
+    ended_at TIMESTAMP NULL,                  -- NULL = sesi masih aktif
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_impersonation_company (company_id, started_at),
+    INDEX idx_impersonation_admin (admin_user_id, started_at),
+    CONSTRAINT fk_impersonation_admin FOREIGN KEY (admin_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_impersonation_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+```
+
+**Aturan wajib (D-47):**
+- Sesi aktif (`ended_at IS NULL`) menampilkan banner kuning permanen
+  non-dismissable di seluruh halaman `/app/*`.
+- Semua tulis ke `module_settings`, `companies.business_preset`,
+  `companies.theme` selama sesi aktif dicatat `changed_by_type='admin_impersonation'`
+  beserta `admin_user_id` — **tidak** tercatat seolah owner yang melakukan.
+- Aksi finansial/destruktif **tetap** melewati D-45 (tidak ada bypass approval).
+- Admin **tidak** boleh membaca/expor secret klien (password hash, token,
+  `*_secret_reference`) selama impersonasi — endpoint terkait menjawab 403.
+- Pengecualian D-26 kedua: tabel ini milik platform, `company_id` adalah
+  **target** bantuan, bukan penanda kepemilikan data tenant.
 
 ## 13. Manajemen Penyimpanan File (Google Drive BYOS)
 
