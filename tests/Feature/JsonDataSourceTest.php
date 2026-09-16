@@ -348,6 +348,62 @@ class JsonDataSourceTest extends TestCase
         $this->assertSame(3, $repository->save(['name' => 'Setelah Hapus'])['id']);
     }
 
+    public function test_schema_declared_no_overlap_is_enforced_per_scope(): void
+    {
+        app(CompanyContext::class)->setCurrent('salon-ayu');
+        $repository = app(EntityRepository::class)->for('salon-ayu', 'bookings');
+
+        $repository->save([
+            'id' => 1,
+            'resource_id' => 1,
+            'starts_at' => '2026-09-20T09:00:00+07:00',
+            'ends_at' => '2026-09-20T10:00:00+07:00',
+        ]);
+
+        // Slot berurutan pada sumber daya sama: batas bersentuhan tetap sah.
+        $repository->save([
+            'id' => 2,
+            'resource_id' => 1,
+            'starts_at' => '2026-09-20T10:00:00+07:00',
+            'ends_at' => '2026-09-20T11:00:00+07:00',
+        ]);
+
+        // Sumber daya berbeda pada jam yang sama tetap sah.
+        $repository->save([
+            'id' => 3,
+            'resource_id' => 2,
+            'starts_at' => '2026-09-20T09:30:00+07:00',
+            'ends_at' => '2026-09-20T10:30:00+07:00',
+        ]);
+
+        $this->assertCount(3, $repository->all());
+
+        foreach ([
+            ['id' => 4, 'starts_at' => '2026-09-20T09:30:00+07:00', 'ends_at' => '2026-09-20T10:30:00+07:00'],
+            ['id' => 5, 'starts_at' => '2026-09-20T08:30:00+07:00', 'ends_at' => '2026-09-20T09:30:00+07:00'],
+            ['id' => 6, 'starts_at' => '2026-09-20T08:00:00+07:00', 'ends_at' => '2026-09-20T12:00:00+07:00'],
+        ] as $conflict) {
+            try {
+                $repository->save($conflict + ['resource_id' => 1]);
+                $this->fail('Jadwal bertumpang-tindih seharusnya ditolak.');
+            } catch (InvalidArgumentException $exception) {
+                $this->assertStringContainsString('bertumpang-tindih', $exception->getMessage());
+            }
+        }
+
+        // Penolakan tidak boleh menambah baris.
+        $this->assertCount(3, $repository->all());
+
+        // Menyimpan ulang baris yang sama tidak boleh bentrok dengan dirinya.
+        $repository->save([
+            'id' => 1,
+            'resource_id' => 1,
+            'starts_at' => '2026-09-20T09:00:00+07:00',
+            'ends_at' => '2026-09-20T09:45:00+07:00',
+        ]);
+        $this->assertSame('2026-09-20T09:45:00+07:00', $repository->find(1)['ends_at']);
+    }
+
     public function test_delete_is_denied_after_the_active_company_changes(): void
     {
         $context = app(CompanyContext::class);

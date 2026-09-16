@@ -131,6 +131,13 @@
       "company_scoped": true
     }
   ],
+  "no_overlap": {
+    "scope": [
+      "resource_id"
+    ],
+    "start": "starts_at",
+    "end": "ends_at"
+  },
   "unique": [],
   "references": {
     "resource_id": {

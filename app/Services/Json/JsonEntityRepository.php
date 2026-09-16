@@ -73,6 +73,7 @@ class JsonEntityRepository implements EntityRepository
             }
 
             $record = $this->validator->validate($this->entity, $record);
+            $this->assertNoOverlap($record, $rows);
 
             $updated = false;
             foreach ($rows as $index => $row) {
@@ -123,6 +124,61 @@ class JsonEntityRepository implements EntityRepository
         }
 
         return true;
+    }
+
+    /**
+     * Menolak rentang waktu yang bertumpang-tindih bila schema entitas
+     * mendeklarasikan `no_overlap`. Aturannya data, bukan kode per entitas,
+     * sehingga adapter Fase 3 dapat memasangnya sebagai constraint database.
+     *
+     * Batas yang bersentuhan (`end` sama dengan `start` berikutnya) dianggap sah
+     * supaya slot berurutan tetap bisa dibuat.
+     *
+     * @param  array<string, mixed>  $record
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function assertNoOverlap(array $record, array $rows): void
+    {
+        $rule = EntitySchema::load($this->scopedEntity())->noOverlap();
+        if ($rule === null) {
+            return;
+        }
+
+        $start = $record[$rule['start']] ?? null;
+        $end = $record[$rule['end']] ?? null;
+        if (! is_string($start) || ! is_string($end)) {
+            return;
+        }
+
+        $newStart = strtotime($start);
+        $newEnd = strtotime($end);
+        if ($newStart === false || $newEnd === false) {
+            return;
+        }
+
+        foreach ($rows as $row) {
+            if ((string) ($row['id'] ?? '') === (string) $record['id']) {
+                continue;
+            }
+
+            foreach ($rule['scope'] as $field) {
+                if (($row[$field] ?? null) !== ($record[$field] ?? null)) {
+                    continue 2;
+                }
+            }
+
+            $existingStart = strtotime((string) ($row[$rule['start']] ?? ''));
+            $existingEnd = strtotime((string) ($row[$rule['end']] ?? ''));
+            if ($existingStart === false || $existingEnd === false) {
+                continue;
+            }
+
+            if ($newStart < $existingEnd && $existingStart < $newEnd) {
+                throw new InvalidArgumentException(
+                    "Jadwal bertumpang-tindih dengan baris #{$row['id']} pada sumber daya yang sama."
+                );
+            }
+        }
     }
 
     /**

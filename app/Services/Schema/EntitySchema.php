@@ -160,6 +160,10 @@ class EntitySchema
             }
         }
 
+        if (array_key_exists('no_overlap', $definition)) {
+            self::validateNoOverlap($definition['no_overlap'], $properties);
+        }
+
         if (! isset($definition['references']) || ! is_array($definition['references'])) {
             throw new InvalidArgumentException('Bagian schema tidak valid: references');
         }
@@ -171,6 +175,37 @@ class EntitySchema
 
             if (! preg_match('/^[a-z][a-z0-9_]*$/', $reference['entity'] ?? '') || ! in_array($reference['on_delete'] ?? null, ['cascade', 'restrict', 'set_null'], true)) {
                 throw new InvalidArgumentException("Target reference schema tidak valid: {$field}");
+            }
+        }
+    }
+
+    /**
+     * Kontrak `no_overlap` menyatakan bahwa dua baris pada scope yang sama tidak
+     * boleh memiliki rentang waktu yang bertumpang-tindih. Dideklarasikan sebagai
+     * data supaya aturannya berlaku untuk entitas apa pun tanpa kode khusus.
+     *
+     * @param  array<string, array<string, mixed>>  $properties
+     */
+    private static function validateNoOverlap(mixed $rule, array $properties): void
+    {
+        if (! is_array($rule) || array_is_list($rule)) {
+            throw new InvalidArgumentException('Definisi no_overlap harus object.');
+        }
+
+        $scope = $rule['scope'] ?? null;
+        if (! is_array($scope) || ! array_is_list($scope) || $scope === []) {
+            throw new InvalidArgumentException('Scope no_overlap harus daftar field.');
+        }
+
+        foreach ([...$scope, $rule['start'] ?? null, $rule['end'] ?? null] as $field) {
+            if (! is_string($field) || ! array_key_exists($field, $properties)) {
+                throw new InvalidArgumentException('Field no_overlap tidak dideklarasikan.');
+            }
+        }
+
+        foreach ([$rule['start'], $rule['end']] as $field) {
+            if (($properties[$field]['format'] ?? null) !== 'date-time') {
+                throw new InvalidArgumentException("Batas no_overlap harus date-time: {$field}");
             }
         }
     }
@@ -232,5 +267,11 @@ class EntitySchema
     public function references(): array
     {
         return $this->definition['references'];
+    }
+
+    /** @return array{scope: list<string>, start: string, end: string}|null */
+    public function noOverlap(): ?array
+    {
+        return $this->definition['no_overlap'] ?? null;
     }
 }

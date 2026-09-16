@@ -90,6 +90,32 @@ class SchemaPresenter
     }
 
     /**
+     * Kolom yang paling layak menjadi judul sebuah baris.
+     *
+     * Urutannya konvensi schema, bukan istilah bisnis: `name`, lalu `title`,
+     * lalu kolom string pertama. Tanpa urutan ini entitas seperti `resources`
+     * akan berjudul `type` ("chair") alih-alih namanya.
+     */
+    public function titleField(EntitySchema $schema): ?string
+    {
+        $strings = array_values(array_filter(
+            $this->columns($schema),
+            static fn (array $column): bool => $column['type'] === 'string'
+                && ! in_array($column['field'], ['id', 'stage'], true),
+        ));
+
+        foreach (['name', 'title'] as $preferred) {
+            foreach ($strings as $column) {
+                if ($column['field'] === $preferred) {
+                    return $preferred;
+                }
+            }
+        }
+
+        return $strings[0]['field'] ?? null;
+    }
+
+    /**
      * Field yang boleh dipakai sebagai target pencarian bebas: hanya string,
      * karena pencocokan dilakukan sebagai substring.
      *

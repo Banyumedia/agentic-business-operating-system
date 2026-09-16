@@ -38,6 +38,26 @@
                 {"from": "*", "to": "dibatalkan", "roles": ["owner", "staff"]}
             ],
             "terminal": ["selesai", "dibatalkan"]
+        },
+        "deals": {
+            "stages": [
+                {"code": "new", "label": "Baru"},
+                {"code": "qualified", "label": "Terkualifikasi"},
+                {"code": "proposal", "label": "Penawaran"},
+                {"code": "negotiation", "label": "Negosiasi"},
+                {"code": "won", "label": "Disetujui"},
+                {"code": "lost", "label": "Batal"}
+            ],
+            "transitions": [
+                {"from": "new", "to": "qualified", "roles": ["owner", "staff"]},
+                {"from": "qualified", "to": "proposal", "roles": ["owner", "staff"]},
+                {"from": "proposal", "to": "negotiation", "roles": ["owner", "staff"]},
+                {"from": "proposal", "to": "won", "roles": ["owner"]},
+                {"from": "negotiation", "to": "won", "roles": ["owner"]},
+                {"from": "negotiation", "to": "proposal", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "lost", "roles": ["owner"], "requires_note": true}
+            ],
+            "terminal": ["won", "lost"]
         }
     },
     "dashboard": {

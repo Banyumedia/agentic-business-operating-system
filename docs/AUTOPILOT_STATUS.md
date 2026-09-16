@@ -1,7 +1,7 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-17 (Fase 2 berjalan - T-F9 + T-F9b selesai, T-F10 berikutnya)
-**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F9 DONE; next READY T-F10
+**Updated:** 2026-09-17 (Fase 2 berjalan - T-F10 selesai, T-F11 berikutnya)
+**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F10 DONE; next READY T-F11
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
@@ -98,7 +98,7 @@ Merge tetap serial — satu per satu. Cek `docs/KIRO_SKILL.md` §Worker Registry
 | PHP | 8.3.30 | `php -v` |
 | Livewire | 4.4 | `composer.json` |
 | Tailwind | 4.3 (CSS-first `@theme`) | `package.json` |
-| Test suite | **205 passed, 913 assertions** | `php artisan test` |
+| Test suite | **227 passed, 999 assertions** | `php artisan test` |
 | Style | **Pint clean, seluruh repo** | `vendor/bin/pint --test` |
 | Build | Vite OK | `npm run build` |
 | Business migrations | none (hanya `users/cache/jobs`) | `ls database/migrations` |
@@ -143,6 +143,7 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 | T-F9 | DONE | `ListScreenTest` (11); `ListScreen` + `<x-data-table>` + `<x-form-field>` dari schema |
 | T-F9b | DONE | 48 fixture demo terisi + uji jumlah baris & integritas referensi; dua defect widget T-F7 diperbaiki |
 | prep PG-1 | DONE | Dispatcher pola layar berbasis konvensi (`ModuleSidebarTest::test_screen_pattern_is_dispatched_to_a_component_by_convention`); membuka PG-1 (T-F10..T-F13) untuk paralel |
+| T-F10 | DONE | `PipelineScreenTest` (12) + `CalendarScreenTest` (8); papan tahap dari `WorkflowEngine` + kalender harian/mingguan + `no_overlap` berbasis schema |
 
 ## Arsitektur D-31 (dibaca sebelum menulis kode apa pun setelah UI-LOCK)
 
@@ -204,7 +205,22 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Task Aktif
 
-**Tidak ada task berjalan.** Writer berikutnya mengambil T-F10 (lihat Next READY).
+**Tidak ada task berjalan.** Writer berikutnya mengambil T-F11 (lihat Next READY).
+
+## Detail Task Selesai (T-F10)
+
+### T-F10 — DONE (2026-09-17)
+
+- **Prep serial lebih dulu:** dispatcher pola layar diubah jadi konvensi (`screen` -> `App\Livewire\Screens\{Studly}Screen` -> `screens.{screen}-screen`) sesuai syarat PG-1 di `EXECUTION_PLAN.md` §Matriks Grup Paralel. Menambah pola layar sekarang = menambah satu kelas komponen, tanpa menyentuh Blade dispatcher. Commit terpisah `refactor(screens): dispatch screen patterns by convention`.
+- **`PipelineScreen`:** kolom, transisi yang ditawarkan, kewajiban catatan, dan penahanan approval seluruhnya dari `WorkflowEngine`. Tombol hanya menampilkan transisi sah dari tahap saat ini (`availableTransitions`), sehingga "lompat tahap" adalah data. Penolakan menjadi toast `role="alert"` tanpa perubahan data; transisi ber-approval ditahan dan stage **tidak** disimpan; transisi mundur membuka dialog alasan (D-46) dan alasannya tercatat di `workflow_log`. Baris bertahap di luar alur dilaporkan, bukan disembunyikan.
+- **`CalendarScreen`:** tampilan harian/mingguan dengan navigasi periode, slot diurutkan per hari, dan nama sumber daya diresolusi generik dari `references` schema (bukan id mentah).
+- **Anti-double-booking sebagai data (bukan kode per entitas):** kunci `no_overlap {scope, start, end}` ditambahkan ke `bookings.schema.json`, divalidasi `EntitySchema`, dan ditegakkan `JsonEntityRepository::save()` **di dalam lock**. Batas bersentuhan (`end` == `start` berikutnya) tetap sah agar slot berurutan bisa dibuat; scope berbeda dan penyimpanan ulang baris yang sama tidak dianggap bentrok. Fase 3 dapat memasangnya sebagai constraint database.
+- **Registry `requires_workflow`:** layar berbasis tahap hanya muncul bila preset company mendeklarasikan alur untuk entitas itu. Hasil nyata: bengkel dapat papan work order (`/app/pos/pipeline`), klinik dan salon dapat papan janji/jadwal (`/app/bookings/pipeline`); yang tidak punya alur kehilangan menu **dan** route (zero-bloat U-04), bukan error saat dibuka.
+- **Preset klinik dapat alur `deals`** dengan kode netral D-38 (`new/qualified/proposal/negotiation/won/lost`) supaya pipeline kunjungan yang sudah dijanjikan widget dashboard punya layar; lolos integritas D-46 (reachability, tanpa dead end, mundur wajib beralasan).
+- **Files:** `app/Livewire/Screens/{PipelineScreen,CalendarScreen}.php`, `resources/views/livewire/screens/{pipeline,calendar}.blade.php`, `app/Services/DynamicMenuRegistry.php`, `app/Services/Schema/{EntitySchema,SchemaPresenter}.php`, `app/Services/Json/JsonEntityRepository.php`, `database/schemas/bookings.schema.json`, `database/presets/klinik.json`, `tests/Feature/{PipelineScreenTest,CalendarScreenTest,JsonDataSourceTest}.php`.
+- **Evidence:** focused `PipelineScreenTest` 12/12 (45 assertions), `CalendarScreenTest` 8/8 (24 assertions); full `php artisan test` **227/227 (999 assertions)**; `php vendor/bin/pint --test` passed (83 files); `npm run build` passed (Vite 921 ms); `git diff --check` clean; scan D-31 pada sumber kedua layar → 0 nama industri, 0 kode tahap literal, 0 `DB::`.
+- **Defect yang saya buat sendiri lalu perbaiki:** implementasi pertama `CalendarScreen` menghitung "hari ini" dari `now()` (server UTC) padahal data memakai offset usaha — mengulang kelas bug yang sama dengan T-F9b. Sekarang zona waktu dibaca dari `settings.timezone` dengan fallback `app.timezone`, dan dikunci test yang membekukan waktu pada 06:00 WIB (masih tanggal sebelumnya di UTC).
+- **Remaining risk:** (a) **zona waktu per company belum menjadi keputusan** — `settings.timezone` sekadar opsional dengan default `app.timezone` yang saat ini `UTC`, sehingga highlight "hari ini" pada demo masih memakai UTC sampai Bos memutuskan sumber resmi zona waktu (kandidat keputusan baru, bukan ditebak di sini); (b) perpindahan tahap memakai tombol per transisi, bukan tarik-lepas — dipilih supaya dapat diakses keyboard, tarik-lepas dapat ditambahkan di atasnya tanpa mengubah kontrak; (c) papan membaca seluruh baris entitas (belum berhalaman), cukup untuk data demo tetapi perlu batas sebelum data nyata besar; (d) test yang memanggil `CompanySettingsStore::update` **wajib** `Storage::fake('company-json')` — tanpa itu ia menulis `settings.json` nyata yang gitignored sehingga kerusakannya tidak terlihat di `git status` (terjadi dalam sesi ini dan sudah dibersihkan).
 
 ## Detail Task Selesai (T-F9b)
 
@@ -291,11 +307,12 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Next READY
 
-**T-F10 — `PipelineScreen` (kanban dari `WorkflowEngine`) + `CalendarScreen`.**
+**T-F11 — `CashierScreen` + `LedgerScreen` + `TaxRateService` (D-03, D-44, D-45).**
 
-T-F9 membuka T-F10, T-F11, T-F12, dan T-F13 sekaligus (semuanya `READY` di
-`EXECUTION_PLAN.md`); urutan yang dianjurkan tetap T-F10 lebih dulu karena
-menutup pola layar yang dipakai T-F11/T-F12.
+T-F11, T-F12, dan T-F13 semuanya `READY` dan kini benar-benar dapat berjalan
+paralel: prep dispatcher PG-1 sudah landed, jadi menambah pola layar tidak lagi
+menabrak `dummy-module.blade.php`. Klaim lewat branch `task/{TASK-ID}` sesuai
+`HERMES.md` §Parallel Writer Policy.
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 

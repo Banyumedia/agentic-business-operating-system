@@ -161,9 +161,24 @@ class DynamicMenuRegistry
             }
         }
 
+        // Layar berbasis tahap hanya berarti bila preset company memang
+        // mendeklarasikan alur untuk entitas itu; kalau tidak, menu dan route
+        // hilang sama sekali (zero-bloat U-04) alih-alih error saat dibuka.
+        $workflow = $definition['requires_workflow'] ?? null;
+        if (is_string($workflow) && ! $this->presetDeclaresWorkflow($workflow)) {
+            return false;
+        }
+
         $any = $definition['requires_any'] ?? [];
 
         return $any === [] || collect($any)->contains(fn (string $capability): bool => $this->features->enabled($capability));
+    }
+
+    private function presetDeclaresWorkflow(string $entity): bool
+    {
+        $preset = $this->presets->find($this->companyContext->preset());
+
+        return is_array($preset['workflows'][$entity] ?? null);
     }
 
     /** @param array<string, mixed> $item
@@ -210,7 +225,7 @@ class DynamicMenuRegistry
                 'requires_all' => ['contacts'],
                 'items' => [
                     $this->item(null, ['term' => 'contacts', 'prefix' => 'Daftar '], '/app/contacts', 'list', 'contacts'),
-                    $this->item('deals', ['term' => 'deals', 'prefix' => 'Pipeline '], '/app/contacts/deals', 'pipeline', 'deals', ['deals']),
+                    $this->item('deals', ['term' => 'deals', 'prefix' => 'Pipeline '], '/app/contacts/deals', 'pipeline', 'deals', ['deals'], [], true, 'deals'),
                 ],
             ],
             'projects' => [
@@ -231,6 +246,7 @@ class DynamicMenuRegistry
                 'requires_any' => ['bookings', 'scheduling'],
                 'items' => [
                     $this->item(null, 'Kalender', '/app/bookings', 'calendar', 'bookings'),
+                    $this->item('pipeline', ['term' => 'bookings', 'prefix' => 'Papan '], '/app/bookings/pipeline', 'pipeline', 'bookings', [], [], true, 'bookings'),
                     $this->item('resources', ['term' => 'resources', 'prefix' => 'Daftar '], '/app/bookings/resources', 'list', 'resources', ['bookings']),
                     $this->item('rundown', 'Rundown', '/app/bookings/rundown', 'list', 'bookings', ['scheduling']),
                     $this->item('checkin', 'Check-in & Deposit', '/app/bookings/checkin', 'board', 'bookings', ['bookings.deposit']),
@@ -253,6 +269,7 @@ class DynamicMenuRegistry
                 'requires_all' => ['pos'],
                 'items' => [
                     $this->item(null, 'Layar Kasir', '/app/pos', 'cashier', 'orders'),
+                    $this->item('pipeline', ['term' => 'orders', 'prefix' => 'Papan '], '/app/pos/pipeline', 'pipeline', 'orders', [], [], true, 'orders'),
                     $this->item('history', 'Riwayat Transaksi', '/app/pos/history', 'list', 'orders'),
                     $this->item('tables', ['term' => 'orders', 'prefix' => 'Meja & '], '/app/pos/tables', 'board', 'orders', ['pos.tables']),
                     $this->item('prescriptions', 'Resep', '/app/pos/prescriptions', 'list', 'orders', ['pharmacy.prescription']),
@@ -306,6 +323,7 @@ class DynamicMenuRegistry
         array $requiresAll = [],
         array $requiresAny = [],
         bool $navigation = true,
+        ?string $requiresWorkflow = null,
     ): array {
         return [
             'segment' => $segment,
@@ -316,6 +334,7 @@ class DynamicMenuRegistry
             'entity' => $entity,
             'requires_all' => $requiresAll,
             'requires_any' => $requiresAny,
+            'requires_workflow' => $requiresWorkflow,
             'navigation' => $navigation,
         ];
     }
