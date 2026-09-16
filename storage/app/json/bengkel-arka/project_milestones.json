@@ -1,0 +1,9 @@
+[
+  {
+    "id": 1,
+    "project_id": 1,
+    "name": "Name",
+    "trigger_type": "Trigger Type",
+    "amount": 1
+  }
+]

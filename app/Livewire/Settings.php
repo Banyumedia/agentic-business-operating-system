@@ -2,10 +2,13 @@
 
 namespace App\Livewire;
 
+use App\Contracts\CompanyContext;
 use App\Services\CompanySettingsStore;
 use App\Services\ThemeRegistry;
+use InvalidArgumentException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use LogicException;
 
 class Settings extends Component
 {
@@ -32,24 +35,16 @@ class Settings extends Component
         ['id' => 'team', 'label' => 'Tim & Akses'],
     ];
 
-    public function mount(): void
+    public function mount(CompanyContext $companyContext): void
     {
-        $activeCompany = session('active_company');
-        $requestedCompany = request()->query('company');
-        $company = (string) ($requestedCompany ?? $activeCompany ?? 'usaha-demo');
+        try {
+            $this->companySlug = $companyContext->current();
+        } catch (InvalidArgumentException) {
+            abort(404);
+        } catch (LogicException) {
+            abort(403);
+        }
 
-        abort_unless((bool) preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $company), 404);
-        abort_if(
-            is_string($activeCompany) && $requestedCompany !== null && $company !== $activeCompany,
-            403,
-        );
-        abort_if(
-            $activeCompany === null && $requestedCompany !== null && session('company_role') !== 'owner',
-            403,
-        );
-
-        $this->companySlug = $company;
-        session(['active_company' => $company]);
         $this->canManageTheme = session('company_role') === 'owner';
         $requestedTab = (string) request()->query('tab', 'theme');
         $this->activeTab = in_array($requestedTab, array_column($this->tabs, 'id'), true)

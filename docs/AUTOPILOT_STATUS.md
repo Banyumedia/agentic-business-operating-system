@@ -162,18 +162,21 @@ default atau memilih alternatif. **Agent tidak menebak.**
 
 ## Current Task
 
-### T-F3 — BLOCKED (2026-09-16)
+### T-F3 — DONE (2026-09-16)
 
-- **Conflict:** acceptance T-F3 meminta company aktif dari query dev lalu session, tetapi D-41 yang lebih tinggi eksplisit menetapkan `users.current_company_id` dan **bukan session**. Fase 2 melarang migration/model Eloquent bisnis, sehingga implementasi aman tidak bisa ditebak.
-- **Security review:** prototipe awal membuktikan risiko lintas-tenant bila `EntityRepository::for($company, ...)` mempercayai slug caller; perubahan prototipe tidak di-commit dan sudah dibersihkan.
-- **Exact question:** untuk adapter JSON Fase 2, apakah D-41 mengizinkan konteks sementara berbasis query+session sesuai acceptance T-F3, atau `CompanyContext` harus memperoleh company dari sumber pengguna non-Eloquent lain? Jika query+session diizinkan, siapa yang mengotorisasi pergantian company?
-- **Evidence:** focused prototype 8/8 dan full suite 133/133 sempat hijau, tetapi review tenant menemukan konflik keputusan; tidak dipromosikan DONE.
+- **Decision:** D-41 diperjelas: adapter query+session hanya untuk `local`/`testing`, hanya tiga company demo allowlist; environment lain fail-closed dan Fase 3 tetap memakai `users.current_company_id`.
+- **Implemented:** `JsonCompanyContext`; repository JSON tenant-scoped dengan read/find/save/filter/sort/pagination, schema validation, lock + atomic replacement; 45 fixture (15 entitas × 3 company); Settings dan global theme memakai context tervalidasi.
+- **Security:** unknown/traversal company ditolak; context production fail-closed; setiap operasi repository memvalidasi ulang active company; malformed JSON, object-root, row non-object, dan invalid schema row ditolak tanpa overwrite.
+- **Files:** `app/Services/Json/*`, `app/Contracts/EntityRepository.php`, `app/Livewire/Settings.php`, `app/Providers/AppServiceProvider.php`, `config/datasource.php`, `storage/app/.gitignore`, `storage/app/json/*`, `tests/Feature/JsonDataSourceTest.php`, `tests/Feature/SettingsThemeTest.php`, `docs/00-DECISIONS.md`.
+- **Evidence:** RED focused gagal karena kelas belum tersedia; GREEN focused 15/15 (96 assertions); committed fixture test 45/45 valid; full `php artisan test` 135/135 (446 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean; HTTP Settings allowlisted 200 + `context-render-ok`.
+- **Review:** dua lane read-only; stale scoped repository dan JSON root-object overwrite diperbaiki dengan revalidation per terminal operation dan root-array guard + negative tests.
+- **Remaining risk:** adapter ini sengaja demo-only; production tetap tidak dapat memakai context JSON sampai auth/company persistence Fase 3 tersedia.
 
 ## Next READY
 
-**T-F4 — 3 preset JSON + validator + `JsonPresetSource`** (D-32, D-46). Independen dari T-F3 dan terbuka oleh T-F1.
+**T-F4 — preset JSON + validator + `JsonPresetSource`** (independen dari context production).
 
-Lanjut T-F3 → … → T-F15, lalu berhenti di `HUMAN:UI-LOCK`.
+Lanjut T-F4 → … → T-F15, lalu berhenti di `HUMAN:UI-LOCK`.
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 

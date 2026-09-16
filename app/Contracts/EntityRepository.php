@@ -20,7 +20,7 @@ interface EntityRepository
 
     /**
      * @param  array<string, mixed>  $filters
-     * @return array<int, array<string, mixed>>
+     * @return array{data: array<int, array<string, mixed>>, total: int, page: int, per_page: int, last_page: int}
      */
     public function query(array $filters = []): array;
 }

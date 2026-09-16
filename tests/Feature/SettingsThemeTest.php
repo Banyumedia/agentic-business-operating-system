@@ -20,7 +20,7 @@ class SettingsThemeTest extends TestCase
 
     public function test_settings_theme_tab_uses_wai_aria_contract_and_registry_cards(): void
     {
-        $this->withSession(['active_company' => 'usaha-demo', 'company_role' => 'staff'])
+        $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'staff'])
             ->get('/app/settings')
             ->assertOk()
             ->assertSee('role="tablist"', false)
@@ -32,7 +32,7 @@ class SettingsThemeTest extends TestCase
             ->assertSee('E — Terang')
             ->assertDontSee('localStorage', false);
 
-        $this->withSession(['active_company' => 'usaha-demo', 'company_role' => 'staff'])
+        $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'staff'])
             ->get('/app/settings?tab=profile')
             ->assertOk()
             ->assertSee('id="tab-profile"', false)
@@ -43,19 +43,19 @@ class SettingsThemeTest extends TestCase
     {
         $this->withSession(['company_role' => 'owner']);
 
-        Livewire::withQueryParams(['company' => 'usaha-bersama'])
+        Livewire::withQueryParams(['company' => 'klinik-sehat'])
             ->test(Settings::class)
             ->call('selectTheme', 'c')
             ->assertSet('selectedTheme', 'c');
 
-        Storage::disk('local')->assertExists('json/usaha-bersama/settings.json');
+        Storage::disk('local')->assertExists('json/klinik-sehat/settings.json');
         $this->assertSame(
             'c',
-            json_decode(Storage::disk('local')->get('json/usaha-bersama/settings.json'), true, flags: JSON_THROW_ON_ERROR)['theme'],
+            json_decode(Storage::disk('local')->get('json/klinik-sehat/settings.json'), true, flags: JSON_THROW_ON_ERROR)['theme'],
         );
 
         $this->app['session']->flush();
-        $this->withSession(['active_company' => 'usaha-bersama', 'company_role' => 'staff']);
+        $this->withSession(['active_company' => 'klinik-sehat', 'company_role' => 'staff']);
 
         Livewire::test(Settings::class)
             ->assertSet('selectedTheme', 'c')
@@ -65,7 +65,7 @@ class SettingsThemeTest extends TestCase
 
         $this->assertSame(
             'c',
-            json_decode(Storage::disk('local')->get('json/usaha-bersama/settings.json'), true, flags: JSON_THROW_ON_ERROR)['theme'],
+            json_decode(Storage::disk('local')->get('json/klinik-sehat/settings.json'), true, flags: JSON_THROW_ON_ERROR)['theme'],
         );
 
         $this->get('/app/hrd')
@@ -81,31 +81,31 @@ class SettingsThemeTest extends TestCase
 
         $this->withSession(['company_role' => 'owner']);
 
-        Livewire::withQueryParams(['company' => 'usaha-demo'])
+        Livewire::withQueryParams(['company' => 'bengkel-arka'])
             ->test(Settings::class)
             ->call('selectTheme', 'tema-asing')
             ->assertStatus(404);
 
-        Storage::disk('local')->assertMissing('json/usaha-demo/settings.json');
+        Storage::disk('local')->assertMissing('json/bengkel-arka/settings.json');
     }
 
-    public function test_owner_cannot_switch_company_by_tampering_with_the_query_string(): void
+    public function test_demo_query_can_switch_only_to_an_allowlisted_company(): void
     {
-        $this->withSession(['active_company' => 'usaha-a', 'company_role' => 'owner']);
+        $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'owner']);
 
-        Livewire::withQueryParams(['company' => 'usaha-b'])
+        Livewire::withQueryParams(['company' => 'salon-ayu'])
             ->test(Settings::class)
-            ->assertStatus(403);
+            ->assertSet('companySlug', 'salon-ayu');
 
-        Storage::disk('local')->assertMissing('json/usaha-b/settings.json');
+        $this->assertSame('salon-ayu', session('active_company'));
     }
 
     public function test_theme_update_preserves_other_settings_and_rejects_corrupt_json(): void
     {
-        $path = 'json/usaha-aman/settings.json';
+        $path = 'json/salon-ayu/settings.json';
         Storage::disk('local')->put($path, json_encode(['tax_mode' => 'inclusive'], JSON_THROW_ON_ERROR));
 
-        $this->withSession(['active_company' => 'usaha-aman', 'company_role' => 'owner']);
+        $this->withSession(['active_company' => 'salon-ayu', 'company_role' => 'owner']);
         Livewire::test(Settings::class)->call('selectTheme', 'b')->assertOk();
 
         $settings = json_decode(Storage::disk('local')->get($path), true, flags: JSON_THROW_ON_ERROR);
@@ -115,7 +115,7 @@ class SettingsThemeTest extends TestCase
         Storage::disk('local')->put($path, '{corrupt');
 
         try {
-            app(CompanySettingsStore::class)->update('usaha-aman', fn (array $value): array => $value);
+            app(CompanySettingsStore::class)->update('salon-ayu', fn (array $value): array => $value);
             $this->fail('JSON rusak harus ditolak.');
         } catch (JsonException) {
             $this->assertSame('{corrupt', Storage::disk('local')->get($path));
