@@ -1,7 +1,7 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-16 (Fase 2 berjalan - T-F7 selesai, T-F8 berikutnya)
-**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F7 DONE; next READY T-F8
+**Updated:** 2026-09-17 (Fase 2 berjalan - T-F8 selesai, T-F9 berikutnya)
+**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F8 DONE; next READY T-F9
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
@@ -188,7 +188,15 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Task Aktif
 
-**Tidak ada task berjalan.** Writer berikutnya mengambil T-F8 (lihat Next READY).
+### T-F8 — DONE (2026-09-17)
+
+- **Implemented:** `DynamicMenuRegistry` memakai capability, terminology, `CompanyContext`, dan `PresetSource`; komposisi/urutan modul berasal dari preset, sementara katalog menutup seluruh 28 path kanonik §9 tanpa kondisi nama industri.
+- **Authorization:** unknown module/path 404; capability nonaktif 403; state route `DummyModule` dan `Sidebar` dikunci; metadata layar diturunkan ulang dan capability diperiksa lagi pada setiap render Livewire.
+- **Shell/navigation:** drawer responsif dengan inert/focus trap/scroll lock/focus restore, active navigation tunggal, global Settings/lobby links, Command Palette native dialog yang capability-aware dan tetap terbuka saat morph (`wire:ignore.self`), touch trigger, tema company-scoped, dan `lang="id"`.
+- **Negative tests:** salon tanpa projects tidak menerbitkan route; nested route nonaktif 403; tampering locked property ditolak; capability yang dicabut setelah mount menghasilkan 403; invalid company/preset fail-closed.
+- **Evidence:** focused 27/27 (167 assertions); full `php artisan test` 188/188 (617 assertions); `php vendor/bin/pint --test` passed; `npm run build` passed (Vite 868 ms); `git diff --check` clean; perbandingan otomatis §9 menemukan 28/28 path, 0 missing.
+- **D-31/D-42:** scan source tidak menemukan nama industri di registry/UI atau `DB::`; dua nama domain yang tersisa hanya capability key canonical Tier B dari keputusan.
+- **Remaining risk:** verifikasi interaksi browser nyata dan audit aksesibilitas menyeluruh tetap dijadwalkan pada T-F14/T-F15; dependency browser automation tidak ditambahkan.
 
 ## Detail Task Selesai (T-F7)
 

@@ -35,7 +35,7 @@ class Settings extends Component
         ['id' => 'team', 'label' => 'Tim & Akses'],
     ];
 
-    public function mount(CompanyContext $companyContext): void
+    public function mount(CompanyContext $companyContext, ?string $tab = null): void
     {
         try {
             $this->companySlug = $companyContext->current();
@@ -46,7 +46,7 @@ class Settings extends Component
         }
 
         $this->canManageTheme = session('company_role') === 'owner';
-        $requestedTab = (string) request()->query('tab', 'theme');
+        $requestedTab = $tab ?? (string) request()->query('tab', 'theme');
         $this->activeTab = in_array($requestedTab, array_column($this->tabs, 'id'), true)
             ? $requestedTab
             : 'theme';

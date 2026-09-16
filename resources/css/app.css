@@ -248,3 +248,8 @@ body {
 [x-cloak] {
     display: none !important;
 }
+
+.command-palette-dialog::backdrop {
+    background: color-mix(in srgb, var(--erp-text-primary) 45%, transparent);
+    backdrop-filter: blur(4px);
+}

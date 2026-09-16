@@ -3,33 +3,32 @@
 namespace App\Livewire;
 
 use App\Services\DynamicMenuRegistry;
+use Illuminate\Contracts\View\View;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class Sidebar extends Component
 {
-    public $module;
+    #[Locked]
+    public string $module;
 
-    public function mount($module = null)
+    public function mount(?string $module = null): void
     {
-        $this->module = $module ?? request()->segment(2);
+        $this->module = $module ?? (string) request()->segment(2);
     }
 
-    public function getMenusProperty()
+    /** @return array<int, array<string, string>> */
+    public function getMenusProperty(): array
     {
         return app(DynamicMenuRegistry::class)->menusFor($this->module);
     }
 
-    public function getAccentProperty(): string
+    public function getTitleProperty(): string
     {
-        return app(DynamicMenuRegistry::class)->accentFor($this->module);
+        return app(DynamicMenuRegistry::class)->titleFor($this->module);
     }
 
-    public function getIsKnownModuleProperty(): bool
-    {
-        return app(DynamicMenuRegistry::class)->hasModule($this->module);
-    }
-
-    public function render()
+    public function render(): View
     {
         return view('livewire.sidebar');
     }

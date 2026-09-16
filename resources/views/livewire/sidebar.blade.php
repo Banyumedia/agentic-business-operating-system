@@ -1,47 +1,67 @@
-<div class="w-64 bg-gray-900 text-white flex flex-col h-screen fixed">
-    <!-- Header Sidebar (Module Name & Back to Lobby) -->
-    <div class="p-6 border-b border-gray-800 flex items-center justify-between">
-        <div class="flex items-center space-x-3 min-w-0">
-            <span class="w-3 h-3 rounded-full {{ $this->accent }} shrink-0" aria-hidden="true"></span>
-            <h2 class="text-xl font-extrabold uppercase tracking-widest text-gray-200 truncate">
-                {{ strtoupper($module) }}
-            </h2>
+<aside
+    id="module-sidebar"
+    x-bind:class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+    x-bind:inert="!desktop && !sidebarOpen"
+    x-bind:aria-hidden="(!desktop && !sidebarOpen).toString()"
+    x-bind:role="desktop ? 'complementary' : 'dialog'"
+    x-bind:aria-modal="!desktop && sidebarOpen ? 'true' : null"
+    x-trap.noscroll="!desktop && sidebarOpen"
+    class="fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-[var(--erp-border)] bg-[var(--erp-sidebar-bg)] text-[var(--erp-sidebar-text)] shadow-[var(--erp-card-shadow)] transition-transform duration-200 ease-out lg:translate-x-0"
+    aria-labelledby="module-sidebar-title"
+>
+    <div class="flex items-center justify-between border-b border-[var(--erp-border)] px-5 py-5">
+        <div class="min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--erp-sidebar-text)] opacity-70">Agentic BOS</p>
+            <h2 id="module-sidebar-title" class="mt-1 truncate text-lg font-bold">{{ $this->title }}</h2>
         </div>
-        <a href="{{ route('lobby') }}"
-           wire:navigate
-           class="p-2 bg-gray-800 rounded hover:bg-gray-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
-           title="Kembali ke Lobby"
-           aria-label="Kembali ke Lobby">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 hover:text-white" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+        <button
+            x-ref="sidebarClose"
+            type="button"
+            x-on:click="closeSidebar()"
+            class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--erp-radius-md)] text-[var(--erp-sidebar-text)] hover:bg-[var(--erp-sidebar-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] lg:hidden"
+            aria-label="Tutup navigasi modul"
+        >
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
             </svg>
-        </a>
+        </button>
     </div>
 
-    <!-- Menus (zero-bloat: modul tanpa menu tidak merender item apa pun) -->
-    <nav class="flex-1 overflow-y-auto p-4 space-y-2" aria-label="Menu modul {{ $module }}">
-        @foreach($this->menus as $menu)
-            @php($isActive = request()->is(ltrim($menu['route'], '/')))
-            <a href="{{ $menu['route'] }}"
-               wire:navigate
-               @if($isActive) aria-current="page" @endif
-               class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 {{ $isActive ? 'bg-gray-800 text-white font-semibold' : '' }}">
-                <span class="text-xl" aria-hidden="true">{{ $menu['icon'] }}</span>
+    <nav class="flex-1 space-y-1 overflow-y-auto p-4" aria-label="Menu modul {{ $this->title }}">
+        @foreach ($this->menus as $menu)
+            @php
+                $currentPath = request()->getPathInfo();
+                $menuPath = parse_url($menu['route'], PHP_URL_PATH);
+                $isModuleRoot = $currentPath === '/app/'.$module;
+                $isOnlyMenuDescendant = $loop->count === 1 && str_starts_with($currentPath, rtrim($menuPath, '/').'/');
+                $isActive = $currentPath === $menuPath || ($isModuleRoot && $loop->first) || $isOnlyMenuDescendant;
+            @endphp
+            <a
+                href="{{ $menu['route'] }}"
+                wire:navigate
+                x-on:click="if (!desktop) closeSidebar()"
+                @if ($isActive) aria-current="page" @endif
+                class="flex min-h-11 items-center gap-3 rounded-[var(--erp-radius-md)] px-4 py-3 text-sm font-medium text-[var(--erp-sidebar-text)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] {{ $isActive ? 'bg-[var(--erp-sidebar-active)]' : 'hover:bg-[var(--erp-sidebar-active)]' }}"
+            >
+                <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-current opacity-70" aria-hidden="true"></span>
                 <span>{{ $menu['label'] }}</span>
             </a>
         @endforeach
     </nav>
 
-    <!-- User Profile / Footer -->
-    <div class="p-4 border-t border-gray-800">
-        <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center font-bold" aria-hidden="true">
-                B
-            </div>
-            <div>
-                <p class="text-sm font-semibold">BOS Admin</p>
-                <p class="text-xs text-gray-500">Superuser</p>
-            </div>
-        </div>
+    <div class="border-t border-[var(--erp-border)] p-4">
+        <a href="/app/settings" wire:navigate x-on:click="if (!desktop) closeSidebar()" class="flex min-h-11 items-center gap-3 rounded-[var(--erp-radius-md)] px-4 py-3 text-sm font-medium text-[var(--erp-sidebar-text)] hover:bg-[var(--erp-sidebar-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20.3h-3v-.08a1.7 1.7 0 0 0-1.03-1.56A1.7 1.7 0 0 0 8.8 19l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 15a1.7 1.7 0 0 0-1.56-1.03H5.36v-3h.08A1.7 1.7 0 0 0 7 9.94a1.7 1.7 0 0 0-.34-1.88L6.6 8l2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56V4.64h3v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06L19.8 8l-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.08v3h-.08A1.7 1.7 0 0 0 19.4 15Z" />
+            </svg>
+            Pengaturan
+        </a>
+        <a href="{{ route('lobby') }}" wire:navigate x-on:click="if (!desktop) closeSidebar()" class="flex min-h-11 items-center gap-3 rounded-[var(--erp-radius-md)] px-4 py-3 text-sm font-medium text-[var(--erp-sidebar-text)] hover:bg-[var(--erp-sidebar-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10" />
+            </svg>
+            Pilih modul lain
+        </a>
     </div>
-</div>
+</aside>

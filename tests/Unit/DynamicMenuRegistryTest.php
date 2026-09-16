@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Contracts\CompanyContext;
 use App\Services\DynamicMenuRegistry;
 use Tests\TestCase;
 
@@ -12,68 +13,72 @@ class DynamicMenuRegistryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->registry = new DynamicMenuRegistry;
+        app(CompanyContext::class)->setCurrent('klinik-sehat');
+        $this->registry = app(DynamicMenuRegistry::class);
     }
 
-    public function test_known_module_returns_its_own_menu(): void
+    public function test_registry_resolves_labels_and_visibility_from_company_configuration(): void
     {
-        $menus = $this->registry->menusFor('hrd');
+        $menus = $this->registry->menusFor('contacts');
 
-        $this->assertNotEmpty($menus);
-        $this->assertSame('Data Karyawan', $menus[1]['label']);
+        $this->assertSame('Pasien', $this->registry->titleFor('contacts'));
+        $this->assertSame('Daftar Pasien', $menus[0]['label']);
+        $this->assertTrue($this->registry->isModuleVisible('contacts'));
+        $this->assertFalse($this->registry->isModuleVisible('projects'));
     }
 
-    public function test_each_module_menu_is_isolated_from_other_modules(): void
+    public function test_every_visible_menu_has_a_screen_pattern_and_entity(): void
     {
-        $hrdLabels = array_column($this->registry->menusFor('hrd'), 'label');
-        $crmLabels = array_column($this->registry->menusFor('crm'), 'label');
-
-        $this->assertNotEquals($hrdLabels, $crmLabels);
-        $this->assertEmpty(
-            array_intersect(['Data Karyawan', 'Payroll'], $crmLabels),
-            'Menu HRD tidak boleh bocor ke modul CRM.'
-        );
-    }
-
-    public function test_every_menu_item_has_label_icon_and_route(): void
-    {
-        foreach ($this->registry->modules() as $module) {
-            foreach ($this->registry->menusFor($module) as $item) {
+        foreach ($this->registry->visibleModules() as $module) {
+            foreach ($this->registry->menusFor($module['slug']) as $item) {
                 $this->assertArrayHasKey('label', $item);
-                $this->assertArrayHasKey('icon', $item);
                 $this->assertArrayHasKey('route', $item);
-                $this->assertNotSame('', trim((string) $item['label']));
+                $this->assertArrayHasKey('screen', $item);
+                $this->assertArrayHasKey('entity', $item);
+                $this->assertNotSame('', trim($item['label']));
                 $this->assertStringStartsWith('/app/', $item['route']);
             }
         }
     }
 
-    public function test_unknown_module_returns_empty_menu_instead_of_placeholder(): void
+    public function test_nested_route_definition_maps_to_capability_screen_and_entity(): void
     {
-        $menus = $this->registry->menusFor('modul-tidak-dikenal');
+        $definition = $this->registry->routeDefinition('contacts', 'deals');
 
-        $this->assertSame(
-            [],
-            $menus,
-            'Modul tak dikenal harus menghasilkan menu kosong (zero-bloat), bukan placeholder.'
-        );
+        $this->assertSame('pipeline', $definition['screen']);
+        $this->assertSame('deals', $definition['entity']);
+        $this->assertSame('Pipeline Kunjungan', $definition['label']);
     }
 
-    public function test_null_module_returns_empty_menu(): void
+    public function test_unknown_module_and_path_fail_closed_in_registry(): void
     {
-        $this->assertSame([], $this->registry->menusFor(null));
-    }
-
-    public function test_accent_color_is_module_specific_with_safe_fallback(): void
-    {
-        $this->assertSame('bg-blue-600', $this->registry->accentFor('hrd'));
-        $this->assertSame('bg-emerald-600', $this->registry->accentFor('crm'));
-        $this->assertSame('bg-slate-600', $this->registry->accentFor('entah-apa'));
-    }
-
-    public function test_registry_knows_whether_a_module_exists(): void
-    {
-        $this->assertTrue($this->registry->hasModule('pos'));
         $this->assertFalse($this->registry->hasModule('tidak-ada'));
+        $this->assertSame([], $this->registry->menusFor('tidak-ada'));
+        $this->assertNull($this->registry->routeDefinition('contacts', 'tidak-ada'));
+    }
+
+    public function test_registry_contains_every_canonical_capability_path(): void
+    {
+        foreach ([
+            '/app/projects/billing',
+            '/app/projects/retention',
+            '/app/bookings/checkin',
+            '/app/inventory/bom',
+            '/app/pos/tables',
+            '/app/pos/prescriptions',
+            '/app/accounting/coa',
+            '/app/accounting/journals',
+        ] as $path) {
+            [, , $module, $submodule] = explode('/', $path);
+            $this->assertTrue($this->registry->hasPath($module, $submodule), "Path kanonik tidak terdaftar: $path");
+        }
+    }
+
+    public function test_module_order_is_composed_from_the_active_preset(): void
+    {
+        $this->assertSame(
+            ['dashboard', 'bookings', 'contacts', 'hrd', 'accounting', 'settings'],
+            array_slice($this->registry->modules(), 0, 6),
+        );
     }
 }

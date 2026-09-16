@@ -2,27 +2,39 @@
 
 namespace App\Livewire;
 
+use App\Contracts\CompanyContext;
+use App\Services\CompanySettingsStore;
+use App\Services\DynamicMenuRegistry;
+use Illuminate\Contracts\View\View;
+use InvalidArgumentException;
 use Livewire\Component;
+use LogicException;
 
 class Lobby extends Component
 {
-    /**
-     * Katalog aplikasi pada App Switcher.
-     *
-     * `slug` adalah identitas modul yang dipakai untuk membangun URL melalui
-     * route bernama `app.module`, sehingga path tidak di-hardcode di view.
-     */
-    public $apps = [
-        ['name' => 'HRD', 'slug' => 'hrd', 'icon' => '👥', 'color' => 'bg-blue-600'],
-        ['name' => 'CRM', 'slug' => 'crm', 'icon' => '💼', 'color' => 'bg-emerald-600'],
-        ['name' => 'POS / Kasir', 'slug' => 'pos', 'icon' => '🛒', 'color' => 'bg-purple-600'],
-        ['name' => 'Akuntansi', 'slug' => 'accounting', 'icon' => '📊', 'color' => 'bg-amber-600'],
-        ['name' => 'Inventory', 'slug' => 'inventory', 'icon' => '📦', 'color' => 'bg-indigo-600'],
-        ['name' => 'Settings', 'slug' => 'settings', 'icon' => '⚙️', 'color' => 'bg-slate-600'],
-    ];
-
-    public function render()
+    /** @return array<int, array{slug: string, name: string, icon: string, route: string}> */
+    public function getAppsProperty(): array
     {
-        return view('livewire.lobby');
+        try {
+            return app(DynamicMenuRegistry::class)->visibleModules();
+        } catch (InvalidArgumentException) {
+            abort(404);
+        } catch (LogicException) {
+            return [];
+        }
+    }
+
+    public function render(CompanyContext $companyContext, CompanySettingsStore $settings): View
+    {
+        try {
+            $theme = (string) ($settings->read($companyContext->current())['theme'] ?? 'a');
+        } catch (InvalidArgumentException) {
+            abort(404);
+        } catch (LogicException) {
+            $theme = 'a';
+        }
+
+        return view('livewire.lobby')
+            ->layout('layouts.app', ['theme' => $theme]);
     }
 }

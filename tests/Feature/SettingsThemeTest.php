@@ -41,6 +41,10 @@ class SettingsThemeTest extends TestCase
 
     public function test_theme_selection_is_persisted_per_company_and_seen_by_another_session(): void
     {
+        Storage::disk('company-json')->put(
+            'json/klinik-sehat/business_identity.json',
+            json_encode(['preset' => 'klinik'], JSON_THROW_ON_ERROR),
+        );
         $this->withSession(['company_role' => 'owner']);
 
         Livewire::withQueryParams(['company' => 'klinik-sehat'])
