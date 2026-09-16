@@ -1,0 +1,166 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "orders",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "business_identity_id",
+    "order_no"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "business_identity_id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "shift_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "contact_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "resource_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "order_no": {
+      "type": "string",
+      "length": 64
+    },
+    "stage": {
+      "type": "string",
+      "default": "open",
+      "length": 32
+    },
+    "subtotal": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "discount_amount": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "dpp": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "tax_amount": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "grand_total": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "payment_method": {
+      "type": "string",
+      "nullable": true,
+      "length": 32
+    },
+    "paid_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "source": {
+      "type": "string",
+      "default": "pos",
+      "length": 32
+    },
+    "external_ref": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [
+    {
+      "fields": [
+        "stage"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [
+    {
+      "fields": [
+        "order_no"
+      ],
+      "company_scoped": true
+    },
+    {
+      "fields": [
+        "external_ref"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "references": {
+    "business_identity_id": {
+      "entity": "business_identities",
+      "on_delete": "restrict"
+    },
+    "shift_id": {
+      "entity": "pos_shifts",
+      "on_delete": "set_null"
+    },
+    "contact_id": {
+      "entity": "contacts",
+      "on_delete": "set_null"
+    },
+    "resource_id": {
+      "entity": "resources",
+      "on_delete": "set_null"
+    }
+  }
+}

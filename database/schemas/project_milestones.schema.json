@@ -1,0 +1,109 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "project_milestones",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "project_id",
+    "name",
+    "trigger_type",
+    "amount"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "project_id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "name": {
+      "type": "string",
+      "length": 191
+    },
+    "sequence": {
+      "type": "integer",
+      "default": 1,
+      "unsigned": true
+    },
+    "trigger_type": {
+      "type": "string",
+      "length": 32
+    },
+    "trigger_value": {
+      "type": "number",
+      "nullable": true,
+      "precision": 8,
+      "scale": 2,
+      "minimum": 0
+    },
+    "amount": {
+      "type": "number",
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "invoice_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "status": {
+      "type": "string",
+      "default": "pending",
+      "length": 32
+    },
+    "achieved_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [
+    {
+      "fields": [
+        "project_id"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [],
+  "references": {
+    "project_id": {
+      "entity": "projects",
+      "on_delete": "cascade"
+    },
+    "invoice_id": {
+      "entity": "invoices",
+      "on_delete": "set_null"
+    }
+  }
+}

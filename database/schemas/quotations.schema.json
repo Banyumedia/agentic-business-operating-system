@@ -1,0 +1,143 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "quotations",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "number",
+    "title"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "number": {
+      "type": "string",
+      "length": 64
+    },
+    "contact_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "deal_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "project_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "title": {
+      "type": "string",
+      "length": 191
+    },
+    "stage": {
+      "type": "string",
+      "default": "draft",
+      "length": 32
+    },
+    "valid_until": {
+      "type": "string",
+      "nullable": true,
+      "format": "date"
+    },
+    "subtotal": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "dpp": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "tax": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "grand_total": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 1000
+    },
+    "attributes": {
+      "type": "object",
+      "nullable": true
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [
+    {
+      "fields": [
+        "stage"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [
+    {
+      "fields": [
+        "number"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "references": {
+    "contact_id": {
+      "entity": "contacts",
+      "on_delete": "set_null"
+    },
+    "deal_id": {
+      "entity": "deals",
+      "on_delete": "set_null"
+    },
+    "project_id": {
+      "entity": "projects",
+      "on_delete": "set_null"
+    }
+  }
+}

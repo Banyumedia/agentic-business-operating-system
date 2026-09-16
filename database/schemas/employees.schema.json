@@ -1,0 +1,91 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "employees",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "name"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "user_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "name": {
+      "type": "string",
+      "length": 191
+    },
+    "position": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "base_salary": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "hourly_cost": {
+      "type": "number",
+      "nullable": true,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "joined_on": {
+      "type": "string",
+      "nullable": true,
+      "format": "date"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "attributes": {
+      "type": "object",
+      "nullable": true
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [],
+  "unique": [],
+  "references": {
+    "user_id": {
+      "entity": "users",
+      "on_delete": "set_null"
+    }
+  }
+}

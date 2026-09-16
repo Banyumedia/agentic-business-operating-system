@@ -1,0 +1,79 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "item_batches",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "item_id",
+    "batch_no"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "item_id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "batch_no": {
+      "type": "string",
+      "length": 64
+    },
+    "expires_on": {
+      "type": "string",
+      "nullable": true,
+      "format": "date"
+    },
+    "qty_on_hand": {
+      "type": "number",
+      "default": 0,
+      "precision": 14,
+      "scale": 3,
+      "minimum": 0
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [
+    {
+      "fields": [
+        "item_id",
+        "expires_on"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [],
+  "references": {
+    "item_id": {
+      "entity": "items",
+      "on_delete": "cascade"
+    }
+  }
+}

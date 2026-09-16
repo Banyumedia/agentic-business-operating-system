@@ -149,11 +149,22 @@ default atau memilih alternatif. **Agent tidak menebak.**
 - **Evidence:** RED binding test 0/3; GREEN focused 3/3 (10 assertions); full `php artisan test` 82/82 (249 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean.
 - **Review:** scope 8 file kecil, tanpa schema/auth/money/API; self-review D-31/D-42 lulus. Kelas `Json*` sengaja deferred ke T-F3/T-F4 sesuai dependency plan.
 
+## Current Task
+
+### T-F2 — DONE (2026-09-16)
+
+- **Implemented:** 15 schema entitas netral industri, metadata migration-ready (type/nullable/default/length/precision/index/unique/reference), loader schema fail-closed, dan validator row untuk required/allowlist/type/enum/format/bounds/precision.
+- **Security:** `company_id` dilarang di payload/schema (scope implisit folder), path traversal ditolak, key `attributes` asing ditolak, metadata schema rusak dan angka non-finite ditolak.
+- **Files:** `database/schemas/*.schema.json` (15), `app/Services/Schema/EntitySchema.php`, `app/Services/Schema/SchemaValidator.php`, `tests/Unit/SchemaValidatorTest.php`.
+- **Evidence:** RED focused 0/20; GREEN focused 43/43 (131 assertions); validator load `15 schemas valid`; full `php artisan test` 125/125 (380 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean.
+- **Review:** tiga lane read-only + re-review; divergence terhadap `DATA_MODEL`, shallow schema metadata, list/object confusion, malformed enum, constraint storage, dan non-finite number diperbaiki. Tier B tetap dikecualikan dari Fase 2.
+- **Remaining risk:** `invoices` mengikuti D-23/`DATA_MODEL` (billing SaaS); kebutuhan ledger invoice bisnis pada T-F11 harus direkonsiliasi sebelum T-F11 tanpa mengubah keputusan diam-diam.
+
 ## Next READY
 
-**T-F2 — Skema kapabilitas JSON + validator** (D-32). T-F1 DONE membuka T-F2.
+**T-F3 — `JsonEntityRepository` + `JsonCompanyContext`** (D-41). T-F2 DONE membuka T-F3; T-F4 juga READY dari T-F1.
 
-Lanjut T-F2 → … → T-F15, lalu berhenti di `HUMAN:UI-LOCK`.
+Lanjut T-F3 → … → T-F15, lalu berhenti di `HUMAN:UI-LOCK`.
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 

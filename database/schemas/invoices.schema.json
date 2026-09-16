@@ -1,0 +1,118 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "invoices",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "type",
+    "order_id",
+    "amount"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "company_membership_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "type": {
+      "type": "string",
+      "length": 16,
+      "enum": [
+        "topup",
+        "subscription"
+      ]
+    },
+    "order_id": {
+      "type": "string",
+      "length": 64
+    },
+    "amount": {
+      "type": "number",
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "token_amount_granted": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "period_start": {
+      "type": "string",
+      "nullable": true,
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "nullable": true,
+      "format": "date"
+    },
+    "payment_status": {
+      "type": "string",
+      "default": "pending",
+      "length": 16,
+      "enum": [
+        "pending",
+        "paid",
+        "expired",
+        "failed"
+      ]
+    },
+    "payment_url": {
+      "type": "string",
+      "nullable": true,
+      "length": 255
+    },
+    "paid_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [],
+  "unique": [
+    {
+      "fields": [
+        "order_id"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "references": {
+    "company_membership_id": {
+      "entity": "company_memberships",
+      "on_delete": "restrict"
+    }
+  }
+}

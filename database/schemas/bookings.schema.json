@@ -1,0 +1,153 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "bookings",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "resource_id",
+    "starts_at",
+    "ends_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "resource_id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "contact_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "project_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "type": {
+      "type": "string",
+      "default": "booking",
+      "length": 32
+    },
+    "stage": {
+      "type": "string",
+      "default": "draft",
+      "length": 32
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ends_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "actual_ends_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "rate_amount": {
+      "type": "number",
+      "nullable": true,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "deposit_amount": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "late_fee_per_unit": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "late_fee_total": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "pic_user_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "attributes": {
+      "type": "object",
+      "nullable": true
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [
+    {
+      "fields": [
+        "resource_id",
+        "starts_at",
+        "ends_at"
+      ],
+      "company_scoped": true
+    },
+    {
+      "fields": [
+        "stage"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [],
+  "references": {
+    "resource_id": {
+      "entity": "resources",
+      "on_delete": "restrict"
+    },
+    "contact_id": {
+      "entity": "contacts",
+      "on_delete": "set_null"
+    },
+    "project_id": {
+      "entity": "projects",
+      "on_delete": "cascade"
+    },
+    "pic_user_id": {
+      "entity": "users",
+      "on_delete": "set_null"
+    }
+  }
+}

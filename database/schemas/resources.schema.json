@@ -1,0 +1,97 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "resources",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "type",
+    "name"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "type": {
+      "type": "string",
+      "length": 32
+    },
+    "name": {
+      "type": "string",
+      "length": 191
+    },
+    "category": {
+      "type": "string",
+      "nullable": true,
+      "length": 64
+    },
+    "status": {
+      "type": "string",
+      "default": "available",
+      "length": 32
+    },
+    "capacity": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "rate_amount": {
+      "type": "number",
+      "nullable": true,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "rate_unit": {
+      "type": "string",
+      "nullable": true,
+      "length": 16
+    },
+    "condition_notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 1000
+    },
+    "attributes": {
+      "type": "object",
+      "nullable": true
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [
+    {
+      "fields": [
+        "type"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [],
+  "references": {}
+}

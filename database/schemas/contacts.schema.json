@@ -1,0 +1,101 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "contacts",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "name"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "business_identity_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "type": {
+      "type": "string",
+      "default": "customer",
+      "length": 32
+    },
+    "name": {
+      "type": "string",
+      "length": 191
+    },
+    "wa_number": {
+      "type": "string",
+      "nullable": true,
+      "length": 32
+    },
+    "email": {
+      "type": "string",
+      "nullable": true,
+      "length": 191,
+      "format": "email"
+    },
+    "source": {
+      "type": "string",
+      "nullable": true,
+      "length": 32
+    },
+    "tags": {
+      "type": "array",
+      "nullable": true
+    },
+    "attributes": {
+      "type": "object",
+      "nullable": true
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [
+    {
+      "fields": [
+        "type"
+      ],
+      "company_scoped": true
+    },
+    {
+      "fields": [
+        "wa_number"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [],
+  "references": {
+    "business_identity_id": {
+      "entity": "business_identities",
+      "on_delete": "set_null"
+    }
+  }
+}

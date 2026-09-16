@@ -1,0 +1,96 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "deals",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "contact_id",
+    "title"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "contact_id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "title": {
+      "type": "string",
+      "length": 191
+    },
+    "stage": {
+      "type": "string",
+      "default": "new",
+      "length": 32
+    },
+    "value": {
+      "type": "number",
+      "nullable": true,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "expected_close_date": {
+      "type": "string",
+      "nullable": true,
+      "format": "date"
+    },
+    "owner_user_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "attributes": {
+      "type": "object",
+      "nullable": true
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [
+    {
+      "fields": [
+        "stage"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [],
+  "references": {
+    "contact_id": {
+      "entity": "contacts",
+      "on_delete": "cascade"
+    },
+    "owner_user_id": {
+      "entity": "users",
+      "on_delete": "set_null"
+    }
+  }
+}

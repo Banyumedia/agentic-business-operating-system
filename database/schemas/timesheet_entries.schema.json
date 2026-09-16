@@ -1,0 +1,88 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "timesheet_entries",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "employee_id",
+    "work_date",
+    "hours"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "project_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "employee_id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "work_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "hours": {
+      "type": "number",
+      "precision": 5,
+      "scale": 2,
+      "minimum": 0
+    },
+    "note": {
+      "type": "string",
+      "nullable": true,
+      "length": 1000
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [
+    {
+      "fields": [
+        "employee_id",
+        "work_date"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [],
+  "references": {
+    "project_id": {
+      "entity": "projects",
+      "on_delete": "set_null"
+    },
+    "employee_id": {
+      "entity": "employees",
+      "on_delete": "cascade"
+    }
+  }
+}
