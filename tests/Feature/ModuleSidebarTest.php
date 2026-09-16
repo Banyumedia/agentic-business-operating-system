@@ -6,6 +6,7 @@ use App\Contracts\CompanyContext;
 use App\Livewire\CommandPalette;
 use App\Livewire\DummyModule;
 use App\Services\CompanySettingsStore;
+use App\Services\DynamicMenuRegistry;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
@@ -136,5 +137,26 @@ class ModuleSidebarTest extends TestCase
         });
 
         $component->call('$refresh')->assertForbidden();
+    }
+
+    public function test_menu_labels_resolve_dictionary_terms_instead_of_hardcoded_defaults(): void
+    {
+        Storage::fake('company-json');
+        Storage::disk('company-json')->put(
+            'json/bengkel-arka/business_identity.json',
+            json_encode(['preset' => 'bengkel'], JSON_THROW_ON_ERROR),
+        );
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+
+        app(CompanySettingsStore::class)->update('bengkel-arka', static function (array $settings): array {
+            $settings['features']['pos.tables'] = true;
+
+            return $settings;
+        });
+
+        $labels = array_column(app(DynamicMenuRegistry::class)->menusFor('pos'), 'label');
+
+        $this->assertContains('Meja & Work Order', $labels);
+        $this->assertNotContains('Meja & Pesanan', $labels);
     }
 }

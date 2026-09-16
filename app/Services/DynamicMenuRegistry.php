@@ -251,7 +251,7 @@ class DynamicMenuRegistry
                 'items' => [
                     $this->item(null, 'Layar Kasir', '/app/pos', 'cashier', 'orders'),
                     $this->item('history', 'Riwayat Transaksi', '/app/pos/history', 'list', 'orders'),
-                    $this->item('tables', 'Meja & Pesanan', '/app/pos/tables', 'board', 'orders', ['pos.tables']),
+                    $this->item('tables', ['term' => 'orders', 'prefix' => 'Meja & '], '/app/pos/tables', 'board', 'orders', ['pos.tables']),
                     $this->item('prescriptions', 'Resep', '/app/pos/prescriptions', 'list', 'orders', ['pharmacy.prescription']),
                 ],
             ],

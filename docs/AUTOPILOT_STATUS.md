@@ -87,7 +87,7 @@ Merge tetap serial — satu per satu. Cek `docs/KIRO_SKILL.md` §Worker Registry
 | PHP | 8.3.30 | `php -v` |
 | Livewire | 4.4 | `composer.json` |
 | Tailwind | 4.3 (CSS-first `@theme`) | `package.json` |
-| Test suite | **179 passed, 584 assertions** | `php artisan test` |
+| Test suite | **189 passed, 619 assertions** | `php artisan test` |
 | Style | **Pint clean, seluruh repo** | `vendor/bin/pint --test` |
 | Build | Vite OK | `npm run build` |
 | Business migrations | none (hanya `users/cache/jobs`) | `ls database/migrations` |
@@ -186,7 +186,7 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 - **Evidence:** tiga lane review read-only direkonsiliasi; full `php artisan test` 139/139 (463 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean; build N/A (docs-only).
 - **Remaining risk:** enam preset D-01 + `custom` sengaja tetap dibuat pada T-08/Fase 3 di path kanonik; implementasi Fase 2 berikutnya hanya tiga preset demo T-F4.
 
-## Task Aktif
+## Detail Task Selesai (T-F8)
 
 ### T-F8 — DONE (2026-09-17)
 
@@ -197,6 +197,10 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 - **Evidence:** focused 27/27 (167 assertions); full `php artisan test` 188/188 (617 assertions); `php vendor/bin/pint --test` passed; `npm run build` passed (Vite 868 ms); `git diff --check` clean; perbandingan otomatis §9 menemukan 28/28 path, 0 missing.
 - **D-31/D-42:** scan source tidak menemukan nama industri di registry/UI atau `DB::`; dua nama domain yang tersisa hanya capability key canonical Tier B dari keputusan.
 - **Remaining risk:** verifikasi interaksi browser nyata dan audit aksesibilitas menyeluruh tetap dijadwalkan pada T-F14/T-F15; dependency browser automation tidak ditambahkan.
+- **Audit lanjutan (2026-09-17):** item `pos.tables` masih menanam istilah kamus `orders` sebagai literal (`Meja & Pesanan`) sehingga override terminologi company tidak diikuti (bengkel memetakan `orders` ke `Work Order`). Diperbaiki menjadi `['term' => 'orders', 'prefix' => 'Meja & ']` dan dikunci acceptance test `test_menu_labels_resolve_dictionary_terms_instead_of_hardcoded_defaults`. RED terbukti lebih dulu: `Failed asserting that an array contains 'Meja & Work Order'`.
+- **Files audit:** `app/Services/DynamicMenuRegistry.php`, `tests/Feature/ModuleSidebarTest.php`.
+- **Evidence audit:** focused 22/22 (135 assertions); full `php artisan test` 189/189 (619 assertions); `php vendor/bin/pint --test` passed (76 files); `npm run build` passed (Vite 904 ms); `git diff --check` clean.
+- **Dicatat, sengaja tidak diubah:** `DynamicMenuRegistry::accentFor()` menjadi dead code setelah T-F8 (0 pemanggil di `app/`, `resources/`, `tests/`) dan parameter `$module` tidak terpakai; dihapus pada task berikutnya yang memang menyentuh registry agar diff T-F8 tidak melebar.
 
 ## Detail Task Selesai (T-F7)
 
@@ -240,7 +244,7 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Next READY
 
-**T-F8 — Sidebar flag-aware + `term()` + route `/app/{module}` ke pola layar.**
+**T-F9 — `ListScreen` + `<x-data-table>` responsif + form dari skema entitas.**
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 
