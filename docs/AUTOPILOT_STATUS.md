@@ -160,9 +160,18 @@ default atau memilih alternatif. **Agent tidak menebak.**
 - **Review:** tiga lane read-only + re-review; divergence terhadap `DATA_MODEL`, shallow schema metadata, list/object confusion, malformed enum, constraint storage, dan non-finite number diperbaiki. Tier B tetap dikecualikan dari Fase 2.
 - **Remaining risk:** `invoices` mengikuti D-23/`DATA_MODEL` (billing SaaS); kebutuhan ledger invoice bisnis pada T-F11 harus direkonsiliasi sebelum T-F11 tanpa mengubah keputusan diam-diam.
 
+## Current Task
+
+### T-F3 — BLOCKED (2026-09-16)
+
+- **Conflict:** acceptance T-F3 meminta company aktif dari query dev lalu session, tetapi D-41 yang lebih tinggi eksplisit menetapkan `users.current_company_id` dan **bukan session**. Fase 2 melarang migration/model Eloquent bisnis, sehingga implementasi aman tidak bisa ditebak.
+- **Security review:** prototipe awal membuktikan risiko lintas-tenant bila `EntityRepository::for($company, ...)` mempercayai slug caller; perubahan prototipe tidak di-commit dan sudah dibersihkan.
+- **Exact question:** untuk adapter JSON Fase 2, apakah D-41 mengizinkan konteks sementara berbasis query+session sesuai acceptance T-F3, atau `CompanyContext` harus memperoleh company dari sumber pengguna non-Eloquent lain? Jika query+session diizinkan, siapa yang mengotorisasi pergantian company?
+- **Evidence:** focused prototype 8/8 dan full suite 133/133 sempat hijau, tetapi review tenant menemukan konflik keputusan; tidak dipromosikan DONE.
+
 ## Next READY
 
-**T-F3 — `JsonEntityRepository` + `JsonCompanyContext`** (D-41). T-F2 DONE membuka T-F3; T-F4 juga READY dari T-F1.
+**T-F4 — 3 preset JSON + validator + `JsonPresetSource`** (D-32, D-46). Independen dari T-F3 dan terbuka oleh T-F1.
 
 Lanjut T-F3 → … → T-F15, lalu berhenti di `HUMAN:UI-LOCK`.
 
