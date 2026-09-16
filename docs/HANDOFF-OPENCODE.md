@@ -137,7 +137,8 @@ User: bos / Password: HxxTi_93rx7hnMiS
 Basic auth via Caddy (`D:\PROJECTS\nalarin\Caddyfile`) karena aplikasi
 BELUM punya login sendiri (T-00c masih di Fase 3). **Jangan hapus basic
 auth sebelum ada auth aplikasi.** Dev server autostart lewat
-`Startup\AgenticBOS_DevServers.vbs`. Catatan DNS: Cloudflare Universal SSL
+`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\AgenticBOS_DevServers.vbs`
+(bukan folder di dalam repo ini). Catatan DNS: Cloudflare Universal SSL
 cuma nutup 1 tingkat subdomain — makanya host mockup `bos-mockup.nalar.army`
 bukan `mockup.agentic-bos.nalar.army` (yang itu gagal TLS).
 
