@@ -128,17 +128,23 @@ default atau memilih alternatif. **Agent tidak menebak.**
 - **D-42 (2026-09-16): Fase 2 = frontend-first dari JSON.** Semua layar dibangun dulu lewat `EntityRepository`/`PresetSource`/`CompanyContext` dengan implementasi `Json*`; Fase 3 mengganti ke `Eloquent*` via `DATA_SOURCE` tanpa mengubah Blade. JSON menggantikan tabel, bukan logika. Fase 2 = T-07 -> T-F1..T-F15 (kontrak, skema, resolver, WorkflowEngine, DashboardComposer, 6 pola layar, uji anti-hardcode, bukti `laundry.json`). T-05/T-06/T-03b/T-08b-e dipindah ke Fase 2. Stop line sekarang setelah T-F15. D-43 palet A (Slate+Emerald) locked, 5 tema tetap (A/B/C/D/E) dengan nilai lengkap di UX_UI_SPEC §7.3a. **Cakupan tema: per-USAHA (owner set, semua staf lihat sama), bukan per-user/localStorage** - koreksi dari draf awal T-07. Nilai CSS 5 tema siap dipakai T-07.
 - T-21c membuktikan D-31: tambah `klinik.json` + `salon.json` → produk berjalan **tanpa diff kode**.
 
+## Completed in Current Run
+
+### T-07 — DONE (2026-09-16)
+
+- **Scope:** design token `--erp-*`, lima tema, dan shell Settings.
+- **Implemented:** registry 5 tema × 36 token; 11 pasangan kontras AA per tema; route `/app/settings`; tab WAI-ARIA dengan keyboard/deep-link; selector dari registry; persistensi JSON per-usaha; tema aktif diterapkan oleh shared layout.
+- **Security:** properti Livewire sensitif dikunci; mutasi hanya owner dan fail-closed; query tidak dapat mengganti active company; penyimpanan memakai lock read/merge/write dan menolak JSON rusak tanpa overwrite.
+- **Files:** `app/Livewire/Settings.php`, `app/Services/ThemeRegistry.php`, `app/Services/CompanySettingsStore.php`, `app/Providers/AppServiceProvider.php`, `resources/css/app.css`, `resources/views/livewire/settings.blade.php`, `resources/views/components/layouts/module.blade.php`, `resources/views/layouts/app.blade.php`, `routes/web.php`, `tests/Feature/SettingsThemeTest.php`, `tests/Unit/ThemeContrastTest.php`.
+- **Evidence:** `php artisan test` → 79 passed / 239 assertions; `php vendor/bin/pint --test` → passed; `npm run build` → passed; route Settings → 1 route; `git diff --check` → clean; D-31 scan aplikasi/Blade → 0 temuan.
+- **Review:** tiga lane read-only dijalankan; temuan tenant tampering, fail-open role, tema lintas halaman, dan lost-update/JSON korup diperbaiki serta diuji.
+- **Remaining risk:** autentikasi/otorisasi produksi dan `CompanyContext` resmi masuk task fondasi Fase 2 berikutnya; T-07 tidak menambah migration/model bisnis.
+
 ## Next READY
 
-**T-07** — token `--erp-*` (36, `UX_UI_SPEC.md` §7), `ThemeRegistry::passesAa()`,
-`ThemeContrastTest` (11 pasangan), Settings tab WAI-ARIA di `/app/settings`,
-theme toggle. Ini membuka T-05 dan T-06. D-36 (ex-Q-03) locked (turunkan dari
-palet Tailwind v4, buktikan AA dengan test).
+**T-F1 — Contracts & binding data source** (D-42). T-07 DONE membuka T-F1.
 
-Setelah T-07 → T-05 → T-06 → laporkan → **berhenti di `HUMAN:UI-LOCK`**.
-
-T-05/T-06 wajib memakai stub `DashboardComposer`/`term()` (bukan hardcode
-industri) agar T-08c/T-08e cukup mengganti sumber data, bukan menulis ulang view.
+Lanjut T-F1 → … → T-F15, lalu berhenti di `HUMAN:UI-LOCK`.
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 
