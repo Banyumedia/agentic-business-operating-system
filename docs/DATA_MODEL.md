@@ -146,15 +146,52 @@ CREATE TABLE workflow_transitions_log (
     from_stage VARCHAR(32) NULL,
     to_stage VARCHAR(32) NOT NULL,
     actor_user_id BIGINT UNSIGNED NULL,   -- NULL = system/AI
-    approval_ticket_id BIGINT UNSIGNED NULL,
+    approval_ticket_id BIGINT UNSIGNED NULL, -- FK ke approval_tickets (§1.8)
+    note VARCHAR(255) NULL,               -- D-46: WAJIB diisi untuk transisi mundur (requires_note)
     effects_run JSON NULL,
+    changed_by_type VARCHAR(32) NOT NULL DEFAULT 'user', -- user | ai_agent | admin_impersonation (D-47) | system
     created_at TIMESTAMP NULL,
     INDEX idx_wf_log_company_entity (company_id, entity, entity_id),
-    CONSTRAINT fk_wf_log_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+    CONSTRAINT fk_wf_log_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_wf_log_ticket FOREIGN KEY (approval_ticket_id) REFERENCES approval_tickets(id) ON DELETE SET NULL
 );
 ```
 
-### 1.7 Konvensi `attributes JSON` (D-31e)
+### 1.8 `approval_tickets` (kapabilitas `approval_flow` — D-11/D-27/D-45)
+
+Sebelumnya `workflow_transitions_log.approval_ticket_id` menunjuk tabel yang
+belum pernah didefinisikan (FK menggantung). Tabel ini melengkapinya dan menjadi
+penyimpan "Kartu Persetujuan" yang dikirim ke WA Bos.
+
+```sql
+CREATE TABLE approval_tickets (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    code VARCHAR(8) NOT NULL,             -- D-27: 4-6 digit, dipakai pada balasan `YA <kode>`
+    action_type VARCHAR(64) NOT NULL,     -- mis. workflow.transition | order.void | expense.large
+    subject_type VARCHAR(191) NULL,       -- model terkait (polimorfik)
+    subject_id BIGINT UNSIGNED NULL,
+    payload JSON NOT NULL,                -- data aksi yang ditahan sampai disetujui
+    amount DECIMAL(18,2) NULL,            -- D-45: nominal wajib ditampilkan di teks konfirmasi
+    requested_by_user_id BIGINT UNSIGNED NULL,
+    approver_user_id BIGINT UNSIGNED NULL,
+    status VARCHAR(16) NOT NULL DEFAULT 'pending', -- pending | approved | rejected | expired | consumed
+    channel VARCHAR(16) NOT NULL DEFAULT 'whatsapp', -- whatsapp | web
+    expires_at TIMESTAMP NOT NULL,        -- kadaluarsa; mencegah persetujuan lama dipakai ulang
+    responded_at TIMESTAMP NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE (company_id, code, status),    -- kode unik selama masih pending di satu company
+    INDEX idx_approval_company_status (company_id, status),
+    CONSTRAINT fk_approval_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+```
+
+**Aturan wajib:** tiket `consumed` **tidak boleh** dipakai ulang (anti-replay,
+D-27); `YA` tanpa kode ditolak; tiket kedaluwarsa otomatis `expired` dan aksinya
+dibatalkan, bukan dieksekusi diam-diam.
+
+### 1.9 Konvensi `attributes JSON` (D-31e)
 Entitas generik (`contacts`, `resources`, `projects`, `items`) membawa kolom
 `type VARCHAR(32)` + `attributes JSON` untuk data spesifik industri yang tidak
 punya aturan bisnis sendiri. Contoh: `contacts.attributes = {"allergies": [...],
@@ -370,6 +407,99 @@ CREATE TABLE accounting_journal_lines (
 );
 ```
 Invarian wajib (ditegakkan di service layer + test): untuk setiap `journal_id`, `SUM(debit) = SUM(credit)`. Karena FK ke `projects`, migration tabel ini berjalan **setelah** tabel `projects` (T-13b).
+
+### 4.4 `cash_entries` (kapabilitas `finance.cashbook`)
+
+Buku kas sederhana untuk UMKM yang **belum** memakai `finance.accounting`.
+Sebelumnya entitas ini diminta oleh `EXECUTION_PLAN` T-F2 tetapi tidak pernah
+punya skema — gap ini menutupnya.
+
+```sql
+CREATE TABLE cash_entries (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    entry_date DATE NOT NULL,
+    direction VARCHAR(8) NOT NULL,        -- in | out
+    amount DECIMAL(18,2) NOT NULL,
+    category VARCHAR(64) NULL,            -- Listrik, Gaji, Penjualan, ...
+    description VARCHAR(255) NULL,
+    contact_id BIGINT UNSIGNED NULL,      -- opsional: dari/ke siapa
+    project_id BIGINT UNSIGNED NULL,      -- opsional: biaya per proyek
+    source_type VARCHAR(191) NULL,        -- polimorfik: order/invoice/manual/ai_agent
+    source_id BIGINT UNSIGNED NULL,
+    journal_id BIGINT UNSIGNED NULL,      -- terisi bila finance.accounting aktif (mirror double-entry)
+    created_by_user_id BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_cash_company_date (company_id, entry_date),
+    CONSTRAINT fk_cash_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_cash_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL,
+    CONSTRAINT fk_cash_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
+    CONSTRAINT fk_cash_journal FOREIGN KEY (journal_id) REFERENCES accounting_journals(id) ON DELETE SET NULL
+);
+```
+
+**Hubungan dengan `finance.accounting`:** bila kapabilitas akuntansi **mati**,
+`cash_entries` berdiri sendiri (UMKM cukup lihat kas masuk/keluar). Bila
+akuntansi **aktif**, setiap baris kas tetap dibuat **dan** memicu jurnal
+double-entry (D-04: jurnal hanya dari dokumen sah), lalu `journal_id` diisi.
+Tidak boleh ada jurnal tanpa dokumen sumber.
+
+### 4.5 `quotations` (kapabilitas `quotations` — Penawaran/SPH/RAB)
+
+Kapabilitas `quotations` ada di katalog D-32 dan dipakai preset agency,
+kontraktor, EO, B2B — tetapi tabelnya belum pernah didefinisikan.
+
+```sql
+CREATE TABLE quotations (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    number VARCHAR(64) NOT NULL,          -- SPH/2026/09/008
+    contact_id BIGINT UNSIGNED NULL,      -- calon pemberi kerja / pelanggan
+    deal_id BIGINT UNSIGNED NULL,         -- asal peluang, bila ada
+    project_id BIGINT UNSIGNED NULL,      -- terisi setelah dikonversi jadi proyek
+    title VARCHAR(191) NOT NULL,
+    stage VARCHAR(32) NOT NULL DEFAULT 'draft', -- dari workflow_definitions[entity='quotation']
+    valid_until DATE NULL,
+    subtotal DECIMAL(18,2) NOT NULL DEFAULT 0,
+    dpp DECIMAL(18,2) NOT NULL DEFAULT 0,      -- D-44: tidak dirender bila non_taxable
+    tax DECIMAL(18,2) NOT NULL DEFAULT 0,
+    grand_total DECIMAL(18,2) NOT NULL DEFAULT 0,
+    notes TEXT NULL,
+    attributes JSON NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    UNIQUE (company_id, number),
+    INDEX idx_quotations_company_stage (company_id, stage),
+    CONSTRAINT fk_quotations_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_quotations_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL,
+    CONSTRAINT fk_quotations_deal FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE SET NULL,
+    CONSTRAINT fk_quotations_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+);
+
+CREATE TABLE quotation_lines (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,   -- D-26: wajib walau tabel anak
+    quotation_id BIGINT UNSIGNED NOT NULL,
+    item_id BIGINT UNSIGNED NULL,          -- opsional: tertaut katalog inventory
+    description VARCHAR(255) NOT NULL,     -- uraian pekerjaan (RAB kontraktor)
+    quantity DECIMAL(18,4) NOT NULL DEFAULT 1,
+    unit VARCHAR(32) NULL,                 -- m2, titik, unit, jam
+    unit_price DECIMAL(18,2) NOT NULL DEFAULT 0,
+    line_total DECIMAL(18,2) NOT NULL DEFAULT 0,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_qlines_company_quotation (company_id, quotation_id),
+    CONSTRAINT fk_qlines_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_qlines_quotation FOREIGN KEY (quotation_id) REFERENCES quotations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_qlines_item FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE SET NULL
+);
+```
+
+**Aturan:** konversi penawaran → proyek hanya sah dari stage yang dideklarasikan
+preset (mis. `approved`), dieksekusi `WorkflowEngine`, dan mengisi `project_id`
+— bukan menyalin data secara manual di controller.
 
 ---
 
