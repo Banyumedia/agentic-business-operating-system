@@ -179,6 +179,14 @@ default atau memilih alternatif. **Agent tidak menebak.**
 
 ## Active Task
 
+### T-F6 — DONE (2026-09-16)
+
+- **Implemented:** `WorkflowEngine` generik dari `preset.workflows`, daftar stage/transisi sah untuk UI, `HasWorkflow` + adapter row JSON, transisi maju/lompat, guard role, alasan wajib untuk rework, approval tertahan, serta efek `notify.owner_wa` fake.
+- **Fail-closed:** record lintas company, entity/stage/transisi asing, role salah, log rusak, dan audit tenant mismatch ditolak; perubahan stage in-memory di-rollback bila append log gagal; append memakai lock dan atomic replacement.
+- **Files:** `app/Contracts/HasWorkflow.php`, `app/Services/Workflow/{WorkflowEngine,JsonWorkflowLog,ArrayWorkflowRecord}.php`, `app/Services/Workflow/Effects/*.php`, `tests/Feature/WorkflowEngineTest.php`, `docs/{EXECUTION_PLAN,AUTOPILOT_STATUS}.md`.
+- **Evidence:** RED focused gagal karena kontrak belum ada; GREEN focused 11/11 (37 assertions); full `php artisan test` 179/179 (584 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean; D-31 scan production scope 0 literal industri; build N/A (tanpa Blade/CSS/JS).
+- **Review:** tiga lane read-only; snapshot TOCTOU, validasi payload audit, API stage untuk T-F10, adapter row, dan coverage wildcard/malformed log diperbaiki. Risiko auth role trusted dan atomic persistence/idempotency tetap scope Fase 3 (`T-00c`/`T-08d`); Fase 2 hanya engine in-memory dengan efek fake.
+
 ### T-F5 — DONE (2026-09-16)
 
 - **Implemented:** `FeatureResolver` dan `TerminologyResolver` generik dengan urutan company override → preset tervalidasi → default global; helper `term()` dan directive Blade `@term`; preset company dibaca melalui `CompanyContext`; disk `company-json` menyatukan settings runtime dengan fixture JSON kanonik.
@@ -199,7 +207,7 @@ default atau memilih alternatif. **Agent tidak menebak.**
 
 ## Next READY
 
-**T-F6 — `WorkflowEngine` generik + efek in-memory/log JSON.**
+**T-F7 — `DashboardComposer` + `WidgetRegistry` + widget data repository.**
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 
