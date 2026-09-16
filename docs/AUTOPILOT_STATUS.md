@@ -174,9 +174,19 @@ default atau memilih alternatif. **Agent tidak menebak.**
 
 ## Next READY
 
-**T-F4 — preset JSON + validator + `JsonPresetSource`** (independen dari context production).
+**T-F4a — kontrak preset & QA readiness (docs-only).**
 
-Lanjut T-F4 → … → T-F15, lalu berhenti di `HUMAN:UI-LOCK`.
+Task baru ini dibuat atas arahan Bos dari hasil QA read-only OpenCode. Scope:
+
+1. Definisikan `terminal`, arah transisi dari urutan `stages[]`, dan
+   `requires_note` untuk transisi mundur di skema preset §2.
+2. Satukan seluruh referensi preset ke path kanonik `database/presets/`.
+3. Kunci workflow minimum bengkel/klinik/salon yang dibutuhkan T-F6/T-F10.
+4. Selaraskan state dan referensi task basi terkait T-F4/T-08/T-21c.
+5. Verifikasi docs-only dengan `git diff --check`.
+
+Setelah T-F4a DONE: lanjut T-F4 → … → T-F15, lalu berhenti di
+`HUMAN:UI-LOCK`.
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 
