@@ -42,6 +42,15 @@ Semua di `docs/00-DECISIONS.md`. Yang paling mengubah arah proyek:
 - **D-37**: satu bot Hermes per OWNER (bukan per company) — owner banyak
   usaha cukup 1 nomor WA, bot tanya kalau konteks company ambigu. Bot
   tambahan (mis. untuk manager cabang) = add-on berbayar.
+- **D-47**: Super Admin (Anda/tim platform) **boleh** membantu setup akun
+  klien yang tidak sempat/gaptek, lewat **"Login As" beraudit** — bukan
+  tahu password klien. Banner permanen "mode Bantuan Admin" saat aktif,
+  semua perubahan tercatat `changed_by_type=admin_impersonation`, aksi
+  finansial tetap lewat D-45 (tidak ada bypass approval), admin tidak bisa
+  lihat secret/password klien. Ini **melengkapi** U-01 (owner self-
+  onboarding), bukan menggantikannya — keduanya jalan berdampingan.
+  Task-nya **T-17c**, di Fase 4, `BLOCKED` sampai ada mockup panel admin
+  (belum digarap sama sekali, beda dari mockup `/app/*` yang sudah ada).
 - Q-01..Q-08 semua terjawab → jadi D-34..D-41. **Tidak ada item OPEN.**
 
 `docs/INDUSTRY_PRESETS.md §7` berisi peta 63 bisnis potensial → kapabilitas

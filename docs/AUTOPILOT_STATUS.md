@@ -22,6 +22,42 @@ dijalankan otomatis saat login Windows oleh
 (bukan folder di dalam repo ini). Aplikasi **belum punya auth sendiri**
 (T-00c Fase 3) - basic auth adalah satu-satunya pelindung; jangan hapus
 sebelum login aplikasi ada. Checkpoint rollback: tag `pre-fase-2`. **Catatan DNS:** Cloudflare Universal SSL hanya menutup satu tingkat subdomain (`*.nalar.army`); hostname dua tingkat seperti `mockup.agentic-bos.nalar.army` gagal TLS - karena itu dipakai `bos-mockup.nalar.army`.
+## Kiro CLI sebagai Coding Executor (2026-09-16)
+
+Kiro CLI dikonfigurasi sebagai delegate untuk eksekusi task coding dari Hermes bot.
+
+| Item | Detail |
+|---|---|
+| Executable | `C:\Users\User\AppData\Local\Programs\Kiro\bin\kiro.cmd` |
+| Startup | `%APPDATA%\...\Startup\Kiro_AgenticBOS.vbs` — buka PowerShell + `kiro chat` otomatis saat login |
+| Working dir | `D:\PROJECTS\agentic-bos` |
+| Kontrak prompt | `docs/KIRO_SKILL.md` (dibaca Kiro saat menerima delegasi) |
+| Skill Hermes | `agentic-bos-coding-agent/skills/software-development/delegate-to-kiro/SKILL.md` |
+
+**Cara kerja:** Hermes bot menerima perintah dari Telegram → baca `delegate-to-kiro` skill → susun prompt sesuai kontrak → kirim ke Kiro CLI → Kiro kerjakan task, commit, update STATUS → Hermes laporkan hasilnya balik ke Telegram.
+
+**Auto-commit:** ✅ diizinkan (gate `HUMAN:COMMIT` sudah terbuka). Kiro commit tanpa tanya untuk pekerjaan lokal.
+**Push:** ⛔ tetap butuh approval eksplisit.
+**Paralel write:** ✅ diizinkan via worker worktrees (lihat tabel di bawah). Merge ke main tetap serial.
+
+## Worker Registry (Multi-Worktree Paralel)
+
+| Worker | Path | Branch | Assigned Cluster | DB |
+|---|---|---|---|---|
+| **main** | `D:\PROJECTS\agentic-bos` | `main` | T-07, T-F1, T-F2, T-F5, T-F9, T-F14, T-F15 | `database\database.sqlite` |
+| **worker-a** | `D:\PROJECTS\agentic-bos-worker-a` | `worker-a` | T-F3 atau T-F4 | `database\database.sqlite` (copy) |
+| **worker-b** | `D:\PROJECTS\agentic-bos-worker-b` | `worker-b` | T-F6, T-F7, atau T-F8 | `database\database.sqlite` (copy) |
+| **worker-c** | `D:\PROJECTS\agentic-bos-worker-c` | `worker-c` | T-F10, T-F11, T-F12, atau T-F13 | `database\database.sqlite` (copy) |
+
+`vendor/` dan `node_modules/` = junction ke `main`. Jangan `composer install/update` dari worker.
+
+**Merge workflow setelah worker selesai:**
+```bash
+cd D:\PROJECTS\agentic-bos
+git merge --no-ff worker-x -m "feat(scope): deskripsi"
+```
+Merge tetap serial — satu per satu. Cek `docs/KIRO_SKILL.md` §Worker Registry untuk detail lengkap.
+
 ## Verified Baseline (sumber tunggal)
 
 | Item | Value | Cara verifikasi ulang |
