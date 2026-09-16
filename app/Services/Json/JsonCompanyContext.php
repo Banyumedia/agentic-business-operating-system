@@ -3,7 +3,10 @@
 namespace App\Services\Json;
 
 use App\Contracts\CompanyContext;
+use App\Services\CompanySettingsStore;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
+use JsonException;
 use LogicException;
 
 class JsonCompanyContext implements CompanyContext
@@ -11,7 +14,7 @@ class JsonCompanyContext implements CompanyContext
     /** @var list<string> */
     private array $allowedCompanies;
 
-    public function __construct()
+    public function __construct(private readonly CompanySettingsStore $settingsStore)
     {
         $companies = config('datasource.demo_companies', []);
         $this->allowedCompanies = is_array($companies) ? array_values($companies) : [];
@@ -40,6 +43,19 @@ class JsonCompanyContext implements CompanyContext
         return $company;
     }
 
+    public function preset(): string
+    {
+        $company = $this->current();
+        $settings = $this->settingsStore->read($company);
+        $preset = $settings['preset'] ?? $this->identityPreset($company);
+
+        if (! is_string($preset) || $preset === '') {
+            throw new InvalidArgumentException("Preset company belum dikonfigurasi: {$company}");
+        }
+
+        return $preset;
+    }
+
     public function setCurrent(string $company): void
     {
         $this->assertDemoEnvironment();
@@ -60,5 +76,21 @@ class JsonCompanyContext implements CompanyContext
             || ! in_array($company, $this->allowedCompanies, true)) {
             throw new InvalidArgumentException('Company demo tidak diizinkan.');
         }
+    }
+
+    private function identityPreset(string $company): mixed
+    {
+        $path = "json/{$company}/business_identity.json";
+        $disk = Storage::disk('company-json');
+        if (! $disk->exists($path)) {
+            return null;
+        }
+
+        $identity = json_decode($disk->get($path), flags: JSON_THROW_ON_ERROR);
+        if (! is_object($identity)) {
+            throw new JsonException("Identitas usaha harus object: {$company}");
+        }
+
+        return $identity->preset ?? null;
     }
 }

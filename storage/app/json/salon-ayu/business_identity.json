@@ -1,4 +1,5 @@
 {
     "id": 1,
-    "name": "Salon Ayu"
+    "name": "Salon Ayu",
+    "preset": "salon"
 }

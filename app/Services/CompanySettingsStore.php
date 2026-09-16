@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
+use JsonException;
 
 class CompanySettingsStore
 {
@@ -13,15 +14,18 @@ class CompanySettingsStore
     public function read(string $company): array
     {
         $path = $this->path($company);
-        $disk = Storage::disk('local');
+        $disk = Storage::disk('company-json');
 
         if (! $disk->exists($path)) {
             return [];
         }
 
-        $settings = json_decode($disk->get($path), true, flags: JSON_THROW_ON_ERROR);
+        $settings = json_decode($disk->get($path), flags: JSON_THROW_ON_ERROR);
+        if (! is_object($settings)) {
+            throw new JsonException('Pengaturan usaha harus berupa object JSON.');
+        }
 
-        return is_array($settings) ? $settings : [];
+        return $this->normalize($settings);
     }
 
     /**
@@ -31,7 +35,7 @@ class CompanySettingsStore
     public function update(string $company, Closure $update): array
     {
         $path = $this->path($company);
-        $disk = Storage::disk('local');
+        $disk = Storage::disk('company-json');
         $fullPath = $disk->path($path);
         $filesystem = app(Filesystem::class);
         $filesystem->ensureDirectoryExists(dirname($fullPath));
@@ -57,6 +61,10 @@ class CompanySettingsStore
             fclose($lock);
         }
 
+        if (app()->resolved(CompanyPresetResolver::class)) {
+            app(CompanyPresetResolver::class)->flushCache();
+        }
+
         return $settings;
     }
 
@@ -67,5 +75,17 @@ class CompanySettingsStore
         }
 
         return "json/$company/settings.json";
+    }
+
+    private function normalize(mixed $value): mixed
+    {
+        if (is_object($value)) {
+            $value = (array) $value;
+        }
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        return array_map(fn (mixed $item): mixed => $this->normalize($item), $value);
     }
 }

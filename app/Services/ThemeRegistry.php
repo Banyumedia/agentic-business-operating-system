@@ -91,7 +91,7 @@ class ThemeRegistry
         }
 
         $path = "json/$company/settings.json";
-        $disk = Storage::disk('local');
+        $disk = Storage::disk('company-json');
 
         if (! $disk->exists($path)) {
             return 'a';

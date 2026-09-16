@@ -1,4 +1,5 @@
 {
     "id": 1,
-    "name": "Klinik Sehat"
+    "name": "Klinik Sehat",
+    "preset": "klinik"
 }

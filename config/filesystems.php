@@ -38,6 +38,13 @@ return [
             'report' => false,
         ],
 
+        'company-json' => [
+            'driver' => 'local',
+            'root' => storage_path('app'),
+            'throw' => true,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

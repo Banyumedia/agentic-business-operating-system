@@ -179,6 +179,15 @@ default atau memilih alternatif. **Agent tidak menebak.**
 
 ## Active Task
 
+### T-F5 — DONE (2026-09-16)
+
+- **Implemented:** `FeatureResolver` dan `TerminologyResolver` generik dengan urutan company override → preset tervalidasi → default global; helper `term()` dan directive Blade `@term`; preset company dibaca melalui `CompanyContext`; disk `company-json` menyatukan settings runtime dengan fixture JSON kanonik.
+- **Fail-closed:** settings non-object, preset hilang/asing, override bertipe salah, dependensi kapabilitas putus, dan aktivasi Tier B pada preset Tier A ditolak; key istilah asing exception di local/testing dan fallback key di production.
+- **Files:** resolver + helper/provider, kontrak/implementasi `CompanyContext`, `CompanySettingsStore`, `ThemeRegistry`, disk config, metadata preset tiga fixture, dua acceptance test baru, regression test tema, serta status/plan.
+- **Evidence:** RED focused 0/5; GREEN focused 26/26 (145 assertions); full `php artisan test` 168/168 (547 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean; build N/A (tanpa Blade/CSS/JS).
+- **Review:** tiga lane read-only; temuan storage-root nyata, settings malformed yang fail-open, cache lintas request, dan bypass dependensi kapabilitas diperbaiki serta diuji.
+- **Remaining risk:** invalidasi cache otomatis terhubung ke `CompanySettingsStore::update`; writer lain yang mengubah file langsung dalam request yang sama wajib memanggil `flushCache()`.
+
 ### T-F4 — DONE (2026-09-16)
 
 - **Implemented:** tiga preset kanonik (`bengkel`, `klinik`, `salon`), validator katalog D-32/D-33 dan integritas workflow D-46, serta `JsonPresetSource` deterministik dari `database/presets`.
@@ -190,7 +199,7 @@ default atau memilih alternatif. **Agent tidak menebak.**
 
 ## Next READY
 
-**T-F5 — `FeatureResolver` + `TerminologyResolver` + `term()` + `@term`.**
+**T-F6 — `WorkflowEngine` generik + efek in-memory/log JSON.**
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 
