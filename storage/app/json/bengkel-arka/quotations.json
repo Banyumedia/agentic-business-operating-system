@@ -1,7 +1,53 @@
 [
-  {
-    "id": 1,
-    "number": "Number",
-    "title": "Title"
-  }
+    {
+        "id": 1,
+        "number": "PNW-2609-001",
+        "contact_id": 3,
+        "deal_id": null,
+        "project_id": 1,
+        "title": "Penawaran Perawatan Fleet 6 Unit",
+        "stage": "menunggu_persetujuan",
+        "valid_until": "2026-09-30",
+        "subtotal": 18000000,
+        "dpp": 18000000,
+        "tax": 0,
+        "grand_total": 18000000,
+        "notes": "Termasuk penggantian oli dan filter seluruh unit.",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "number": "PNW-2609-002",
+        "contact_id": 6,
+        "deal_id": null,
+        "project_id": 2,
+        "title": "Penawaran Restorasi Mesin",
+        "stage": "menunggu_persetujuan",
+        "valid_until": "2026-09-28",
+        "subtotal": 7500000,
+        "dpp": 7500000,
+        "tax": 0,
+        "grand_total": 7500000,
+        "notes": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "number": "PNW-2609-003",
+        "contact_id": 1,
+        "deal_id": null,
+        "project_id": 3,
+        "title": "Penawaran Overhaul Transmisi",
+        "stage": "draft",
+        "valid_until": null,
+        "subtotal": 5200000,
+        "dpp": 5200000,
+        "tax": 0,
+        "grand_total": 5200000,
+        "notes": "Menunggu konfirmasi ketersediaan suku cadang.",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

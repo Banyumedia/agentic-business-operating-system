@@ -1,7 +1,36 @@
 [
-  {
-    "id": 1,
-    "number": "Number",
-    "title": "Title"
-  }
+    {
+        "id": 1,
+        "number": "PNW-KLN-2609-001",
+        "contact_id": 7,
+        "deal_id": 5,
+        "project_id": null,
+        "title": "Penawaran Medical Check-Up Karyawan",
+        "stage": "menunggu_persetujuan",
+        "valid_until": "2026-09-30",
+        "subtotal": 12000000,
+        "dpp": 12000000,
+        "tax": 0,
+        "grand_total": 12000000,
+        "notes": "Untuk 40 karyawan, termasuk laboratorium dasar.",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "number": "PNW-KLN-2609-002",
+        "contact_id": 4,
+        "deal_id": 4,
+        "project_id": null,
+        "title": "Penawaran Tindakan Lanjutan",
+        "stage": "draft",
+        "valid_until": null,
+        "subtotal": 3200000,
+        "dpp": 3200000,
+        "tax": 0,
+        "grand_total": 3200000,
+        "notes": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

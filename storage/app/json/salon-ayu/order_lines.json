@@ -1,10 +1,110 @@
 [
-  {
-    "id": 1,
-    "order_id": 1,
-    "description": "Description",
-    "qty": 1,
-    "unit_price": 1,
-    "line_total": 1
-  }
+    {
+        "id": 1,
+        "order_id": 1,
+        "item_id": 5,
+        "description": "Jasa Potong Rambut",
+        "qty": 1,
+        "unit_price": 120000,
+        "discount_amount": 0,
+        "line_total": 120000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "order_id": 1,
+        "item_id": 1,
+        "description": "Shampoo Keratin 500ml",
+        "qty": 1,
+        "unit_price": 185000,
+        "discount_amount": 0,
+        "line_total": 185000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "order_id": 2,
+        "item_id": 6,
+        "description": "Jasa Facial Lengkap",
+        "qty": 1,
+        "unit_price": 285000,
+        "discount_amount": 25000,
+        "line_total": 260000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "order_id": 2,
+        "item_id": 2,
+        "description": "Krim Facial Brightening",
+        "qty": 1,
+        "unit_price": 240000,
+        "discount_amount": 0,
+        "line_total": 240000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 5,
+        "order_id": 3,
+        "item_id": 5,
+        "description": "Jasa Potong Rambut",
+        "qty": 1,
+        "unit_price": 120000,
+        "discount_amount": 0,
+        "line_total": 120000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 6,
+        "order_id": 4,
+        "item_id": 7,
+        "description": "Jasa Refleksi 60 Menit",
+        "qty": 1,
+        "unit_price": 140000,
+        "discount_amount": 0,
+        "line_total": 140000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 7,
+        "order_id": 4,
+        "item_id": 4,
+        "description": "Masker Rambut Argan",
+        "qty": 1,
+        "unit_price": 210000,
+        "discount_amount": 0,
+        "line_total": 210000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 8,
+        "order_id": 4,
+        "item_id": 3,
+        "description": "Cat Rambut Profesional",
+        "qty": 1,
+        "unit_price": 145000,
+        "discount_amount": 100000,
+        "line_total": 45000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 9,
+        "order_id": 5,
+        "item_id": null,
+        "description": "Creambath dan vitamin",
+        "qty": 1,
+        "unit_price": 165000,
+        "discount_amount": 0,
+        "line_total": 165000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    }
 ]

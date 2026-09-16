@@ -1,6 +1,6 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-17 (Fase 2 berjalan - T-F9 selesai, T-F10 berikutnya)
+**Updated:** 2026-09-17 (Fase 2 berjalan - T-F9 + T-F9b selesai, T-F10 berikutnya)
 **Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F9 DONE; next READY T-F10
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
@@ -87,7 +87,7 @@ Merge tetap serial — satu per satu. Cek `docs/KIRO_SKILL.md` §Worker Registry
 | PHP | 8.3.30 | `php -v` |
 | Livewire | 4.4 | `composer.json` |
 | Tailwind | 4.3 (CSS-first `@theme`) | `package.json` |
-| Test suite | **202 passed, 697 assertions** | `php artisan test` |
+| Test suite | **205 passed, 913 assertions** | `php artisan test` |
 | Style | **Pint clean, seluruh repo** | `vendor/bin/pint --test` |
 | Build | Vite OK | `npm run build` |
 | Business migrations | none (hanya `users/cache/jobs`) | `ls database/migrations` |
@@ -130,6 +130,7 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 | T-F7 | DONE | `DashboardTest`; `DashboardComposer` + `WidgetRegistry` |
 | T-F8 | DONE | `ModuleSidebarTest` + `DynamicMenuRegistryTest` + `LobbyNavigationTest`; registry kapabilitas, 403/404 fail-closed |
 | T-F9 | DONE | `ListScreenTest` (11); `ListScreen` + `<x-data-table>` + `<x-form-field>` dari schema |
+| T-F9b | DONE | 48 fixture demo terisi + uji jumlah baris & integritas referensi; dua defect widget T-F7 diperbaiki |
 
 ## Arsitektur D-31 (dibaca sebelum menulis kode apa pun setelah UI-LOCK)
 
@@ -192,6 +193,20 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 ## Task Aktif
 
 **Tidak ada task berjalan.** Writer berikutnya mengambil T-F10 (lihat Next READY).
+
+## Detail Task Selesai (T-F9b)
+
+### T-F9b — DONE (2026-09-17, permintaan Bos di luar rencana awal)
+
+- **Latar:** risiko (a) pada T-F9 — seluruh entitas masih berisi stub `{"id":1,"name":"Name"}` dari T-F3 sehingga layar tampak kosong menjelang gate `HUMAN:UI-LOCK`.
+- **Implemented:** 48 fixture pada tiga company demo diisi data operasional yang koheren dan saling terhubung: `bengkel-arka` (8 pelanggan, 5 mekanik, 8 sparepart, 7 work order + 12 baris, 3 pekerjaan + 4 termin, 10 transaksi kas), `klinik-sehat` (10 pasien, 4 staf, 8 janji temu, 6 kunjungan lintas tahap, 8 transaksi kas), `salon-ayu` (9 pelanggan, 5 terapis, 7 produk, 8 jadwal, 5 order POS + 9 baris, 9 transaksi kas). Nilai `stage` hanya memakai kode yang dideklarasikan workflow preset; pajak nol konsisten dengan mayoritas non-PKP (D-44).
+- **Dua defect T-F7 yang baru terlihat setelah data nyata masuk, diperbaiki dengan RED lebih dulu:**
+  - `WidgetRegistry::formatDateTime()` memakai `date()` sehingga dirender pada timezone server (`app.timezone=UTC`); booking `08:00+07:00` tampil **01:00**. Kini dirender pada offset yang tercatat di data. RED: `Expected: 17 Sep 2026 · 01:00 / To contain: 08:00`.
+  - Kartu `upcoming_schedule` berjudul "Agenda mendatang" tetapi menghitung dan menampilkan agenda yang sudah lewat (item teratas klinik/salon adalah booking kemarin, termasuk yang dibatalkan). Kini difilter `starts_at >= now` dan meta menjadi "… mendatang".
+- **Guard baru (permanen):** `test_committed_demo_fixtures_have_enough_rows_for_review` (ambang minimum per entitas) dan `test_committed_demo_fixtures_keep_referential_integrity` (setiap FK non-null wajib menunjuk baris yang ada; entitas Fase 3 seperti `users`/`business_identities` dikecualikan eksplisit).
+- **Files:** `storage/app/json/{bengkel-arka,klinik-sehat,salon-ayu}/*.json` (48), `app/Services/Dashboard/WidgetRegistry.php`, `tests/Feature/JsonDataSourceTest.php`, `tests/Feature/DashboardTest.php`, `docs/EXECUTION_PLAN.md`, `docs/AUTOPILOT_STATUS.md`.
+- **Evidence:** `JsonDataSourceTest` 17/17 (302 assertions); `DashboardTest` 4/4 (34 assertions); full `php artisan test` **205/205 (913 assertions)**; `php vendor/bin/pint --test` passed (79 files); `npm run build` passed (Vite 957 ms); `git diff --check` clean. Widget terverifikasi menghasilkan angka nyata per company (mis. bengkel arus kas bersih Rp 2.520.000, 2 sparepart di bawah batas, 3 dokumen menunggu; klinik 10 pasien, pipeline 6 kunjungan; salon 2 produk di bawah batas).
+- **Remaining risk:** tanggal fixture **dipaku** di sekitar 15-19 September 2026, jadi kartu "mendatang" akan menyusut menjadi kosong bila aplikasi ditinjau jauh setelah tanggal itu — perlu keputusan Bos apakah data demo dibuat relatif terhadap hari ini pada task terpisah. Skrip generator sekali-pakai sengaja tidak disimpan; regenerasi berarti menulis ulang fixture.
 
 ## Detail Task Selesai (T-F9)
 

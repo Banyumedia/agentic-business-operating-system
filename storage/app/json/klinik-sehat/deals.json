@@ -1,7 +1,68 @@
 [
-  {
-    "id": 1,
-    "contact_id": 1,
-    "title": "Title"
-  }
+    {
+        "id": 1,
+        "contact_id": 1,
+        "title": "Paket pemeriksaan berkala keluarga",
+        "stage": "new",
+        "value": 2400000,
+        "expected_close_date": "2026-09-25",
+        "owner_user_id": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "contact_id": 2,
+        "title": "Program kontrol tekanan darah 6 bulan",
+        "stage": "qualified",
+        "value": 1800000,
+        "expected_close_date": "2026-09-22",
+        "owner_user_id": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "contact_id": 5,
+        "title": "Paket kontrol gula darah",
+        "stage": "qualified",
+        "value": 1500000,
+        "expected_close_date": "2026-09-24",
+        "owner_user_id": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "contact_id": 4,
+        "title": "Tindakan lanjutan dan kontrol",
+        "stage": "proposal",
+        "value": 3200000,
+        "expected_close_date": "2026-09-20",
+        "owner_user_id": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 5,
+        "contact_id": 7,
+        "title": "Medical check-up karyawan UMKM",
+        "stage": "proposal",
+        "value": 12000000,
+        "expected_close_date": "2026-10-05",
+        "owner_user_id": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 6,
+        "contact_id": 3,
+        "title": "Paket imunisasi anak",
+        "stage": "won",
+        "value": 950000,
+        "expected_close_date": "2026-09-16",
+        "owner_user_id": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

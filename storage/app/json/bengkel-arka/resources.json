@@ -1,7 +1,54 @@
 [
-  {
-    "id": 1,
-    "type": "Type",
-    "name": "Name"
-  }
+    {
+        "id": 1,
+        "type": "bay",
+        "name": "Bay 1 - Lift Hidrolik",
+        "category": "servis_umum",
+        "status": "occupied",
+        "capacity": 1,
+        "rate_amount": 0,
+        "rate_unit": "jam",
+        "condition_notes": "Lift diservis rutin Agustus 2026",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "type": "bay",
+        "name": "Bay 2 - Lift Hidrolik",
+        "category": "servis_umum",
+        "status": "available",
+        "capacity": 1,
+        "rate_amount": 0,
+        "rate_unit": "jam",
+        "condition_notes": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "type": "bay",
+        "name": "Bay 3 - Kelistrikan",
+        "category": "kelistrikan",
+        "status": "available",
+        "capacity": 1,
+        "rate_amount": 0,
+        "rate_unit": "jam",
+        "condition_notes": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "type": "bay",
+        "name": "Area Cuci",
+        "category": "pencucian",
+        "status": "maintenance",
+        "capacity": 2,
+        "rate_amount": 0,
+        "rate_unit": "jam",
+        "condition_notes": "Pompa tekanan menunggu suku cadang",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

@@ -1,10 +1,146 @@
 [
-  {
-    "id": 1,
-    "order_id": 1,
-    "description": "Description",
-    "qty": 1,
-    "unit_price": 1,
-    "line_total": 1
-  }
+    {
+        "id": 1,
+        "order_id": 1,
+        "item_id": 1,
+        "description": "Oli Mesin 10W-40 1L",
+        "qty": 4,
+        "unit_price": 95000,
+        "discount_amount": 0,
+        "line_total": 380000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "order_id": 1,
+        "item_id": 2,
+        "description": "Filter Oli Universal",
+        "qty": 1,
+        "unit_price": 55000,
+        "discount_amount": 0,
+        "line_total": 55000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "order_id": 2,
+        "item_id": 3,
+        "description": "Kampas Rem Depan",
+        "qty": 1,
+        "unit_price": 210000,
+        "discount_amount": 0,
+        "line_total": 210000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "order_id": 2,
+        "item_id": 7,
+        "description": "Jasa Tune Up Mesin",
+        "qty": 1,
+        "unit_price": 350000,
+        "discount_amount": 15000,
+        "line_total": 335000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 5,
+        "order_id": 2,
+        "item_id": 5,
+        "description": "Busi Iridium",
+        "qty": 1,
+        "unit_price": 120000,
+        "discount_amount": 65000,
+        "line_total": 55000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 6,
+        "order_id": 3,
+        "item_id": 4,
+        "description": "Aki NS40 12V",
+        "qty": 1,
+        "unit_price": 780000,
+        "discount_amount": 0,
+        "line_total": 780000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 7,
+        "order_id": 3,
+        "item_id": 6,
+        "description": "Radiator Coolant 1L",
+        "qty": 2,
+        "unit_price": 65000,
+        "discount_amount": 10000,
+        "line_total": 120000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 8,
+        "order_id": 4,
+        "item_id": 7,
+        "description": "Jasa Tune Up Mesin",
+        "qty": 1,
+        "unit_price": 350000,
+        "discount_amount": 0,
+        "line_total": 350000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 9,
+        "order_id": 5,
+        "item_id": 8,
+        "description": "Jasa Spooring Balancing",
+        "qty": 1,
+        "unit_price": 280000,
+        "discount_amount": 0,
+        "line_total": 280000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 10,
+        "order_id": 6,
+        "item_id": 4,
+        "description": "Aki NS40 12V",
+        "qty": 1,
+        "unit_price": 780000,
+        "discount_amount": 30000,
+        "line_total": 750000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 11,
+        "order_id": 6,
+        "item_id": 8,
+        "description": "Jasa Spooring Balancing",
+        "qty": 1,
+        "unit_price": 280000,
+        "discount_amount": 0,
+        "line_total": 280000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 12,
+        "order_id": 6,
+        "item_id": 5,
+        "description": "Busi Iridium",
+        "qty": 1,
+        "unit_price": 120000,
+        "discount_amount": 50000,
+        "line_total": 70000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    }
 ]

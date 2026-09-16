@@ -6,6 +6,7 @@ use App\Contracts\CompanyContext;
 use App\Contracts\EntityRepository;
 use App\Services\Json\JsonCompanyContext;
 use App\Services\Json\JsonEntityRepository;
+use App\Services\Schema\EntitySchema;
 use App\Services\Schema\SchemaValidator;
 use Illuminate\Filesystem\Filesystem;
 use InvalidArgumentException;
@@ -185,6 +186,78 @@ class JsonDataSourceTest extends TestCase
             $this->assertIsArray($rows);
             foreach ($rows as $row) {
                 $validator->validate($entity, $row);
+            }
+        }
+    }
+
+    public function test_committed_demo_fixtures_have_enough_rows_for_review(): void
+    {
+        // Menjaga data demo tetap layak ditinjau; sebelumnya setiap entitas
+        // hanya berisi satu baris stub sehingga layar tampak kosong.
+        $minimums = ['contacts' => 8, 'employees' => 4, 'bookings' => 6, 'cash_entries' => 8];
+
+        foreach (['bengkel-arka', 'klinik-sehat', 'salon-ayu'] as $company) {
+            foreach ($minimums as $entity => $minimum) {
+                $rows = json_decode(
+                    (string) file_get_contents(storage_path("app/json/{$company}/{$entity}.json")),
+                    true,
+                    flags: JSON_THROW_ON_ERROR,
+                );
+
+                $this->assertGreaterThanOrEqual(
+                    $minimum,
+                    count($rows),
+                    "Data demo {$company}/{$entity} terlalu sedikit untuk review UI.",
+                );
+            }
+        }
+    }
+
+    public function test_committed_demo_fixtures_keep_referential_integrity(): void
+    {
+        // Entitas yang belum punya fixture pada Fase 2 (menyusul di Fase 3).
+        $external = ['users', 'business_identities', 'accounting_journals', 'company_memberships', 'pos_shifts'];
+
+        foreach (['bengkel-arka', 'klinik-sehat', 'salon-ayu'] as $company) {
+            $ids = [];
+            foreach (glob(storage_path("app/json/{$company}/*.json")) ?: [] as $file) {
+                $entity = pathinfo($file, PATHINFO_FILENAME);
+                $rows = json_decode((string) file_get_contents($file), true, flags: JSON_THROW_ON_ERROR);
+                if (is_array($rows) && array_is_list($rows)) {
+                    $ids[$entity] = array_column($rows, 'id');
+                }
+            }
+
+            foreach ($ids as $entity => $_) {
+                if (! is_file(database_path("schemas/{$entity}.schema.json"))) {
+                    continue;
+                }
+
+                $references = EntitySchema::load($entity)->references();
+                $rows = json_decode(
+                    (string) file_get_contents(storage_path("app/json/{$company}/{$entity}.json")),
+                    true,
+                    flags: JSON_THROW_ON_ERROR,
+                );
+
+                foreach ($references as $field => $reference) {
+                    if (in_array($reference['entity'], $external, true)) {
+                        continue;
+                    }
+
+                    foreach ($rows as $row) {
+                        $value = $row[$field] ?? null;
+                        if ($value === null) {
+                            continue;
+                        }
+
+                        $this->assertContains(
+                            $value,
+                            $ids[$reference['entity']] ?? [],
+                            "{$company}/{$entity}.{$field}={$value} menunjuk baris {$reference['entity']} yang tidak ada.",
+                        );
+                    }
+                }
             }
         }
     }

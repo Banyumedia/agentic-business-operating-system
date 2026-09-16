@@ -1,8 +1,42 @@
 [
-  {
-    "id": 1,
-    "employee_id": 1,
-    "work_date": "2026-09-16",
-    "hours": 1
-  }
+    {
+        "id": 1,
+        "project_id": null,
+        "employee_id": 1,
+        "work_date": "2026-09-15",
+        "hours": 8,
+        "note": "Poli pagi dan sore",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "project_id": null,
+        "employee_id": 2,
+        "work_date": "2026-09-15",
+        "hours": 6,
+        "note": "Poli sore",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "project_id": null,
+        "employee_id": 3,
+        "work_date": "2026-09-16",
+        "hours": 8,
+        "note": "Asistensi tindakan",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "project_id": null,
+        "employee_id": 1,
+        "work_date": "2026-09-17",
+        "hours": 5.5,
+        "note": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

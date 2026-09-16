@@ -6,7 +6,9 @@ use App\Contracts\CompanyContext;
 use App\Contracts\EntityRepository;
 use App\Services\FeatureResolver;
 use App\Services\TerminologyResolver;
+use DateTimeImmutable;
 use InvalidArgumentException;
+use Throwable;
 
 class WidgetRegistry
 {
@@ -60,14 +62,32 @@ class WidgetRegistry
     /** @return array{key: string, title: string, value: string, meta: string, items: list<array{primary: string, secondary: string}>, tone: string} */
     private function upcomingSchedule(): array
     {
-        $rows = $this->rows('bookings');
+        // Kartu ini berjudul "mendatang", jadi agenda yang sudah lewat tidak
+        // boleh ikut dihitung maupun ditampilkan.
+        $now = new DateTimeImmutable('now');
+        $rows = array_values(array_filter(
+            $this->rows('bookings'),
+            static function (array $row) use ($now): bool {
+                $startsAt = $row['starts_at'] ?? null;
+                if (! is_string($startsAt) || $startsAt === '') {
+                    return false;
+                }
+
+                try {
+                    return new DateTimeImmutable($startsAt) >= $now;
+                } catch (Throwable) {
+                    return false;
+                }
+            },
+        ));
+
         usort($rows, static fn (array $left, array $right): int => ($left['starts_at'] ?? '') <=> ($right['starts_at'] ?? ''));
         $items = array_map(fn (array $row): array => [
             'primary' => $this->terms->resolve('booking').' #'.($row['id'] ?? '—'),
             'secondary' => $this->formatDateTime($row['starts_at'] ?? null),
         ], array_slice($rows, 0, 3));
 
-        return $this->card('upcoming_schedule', 'Agenda mendatang', (string) count($rows), $this->terms->resolve('bookings').' tercatat', $items, 'info');
+        return $this->card('upcoming_schedule', 'Agenda mendatang', (string) count($rows), $this->terms->resolve('bookings').' mendatang', $items, 'info');
     }
 
     /** @return array{key: string, title: string, value: string, meta: string, items: list<array{primary: string, secondary: string}>, tone: string} */
@@ -177,6 +197,12 @@ class WidgetRegistry
             return 'Waktu belum ditentukan';
         }
 
-        return date('d M Y · H:i', strtotime($value));
+        try {
+            // Ditampilkan pada offset yang tercatat di data, bukan timezone
+            // server (UTC), supaya jam operasional terbaca sesuai jam usaha.
+            return (new DateTimeImmutable($value))->format('d M Y · H:i');
+        } catch (Throwable) {
+            return 'Waktu belum ditentukan';
+        }
     }
 }

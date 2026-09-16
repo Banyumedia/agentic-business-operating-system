@@ -1,6 +1,114 @@
 [
-  {
-    "id": 1,
-    "name": "Name"
-  }
+    {
+        "id": 1,
+        "sku": "OLI-10W40",
+        "name": "Oli Mesin 10W-40 1L",
+        "type": "goods",
+        "unit": "liter",
+        "price": 95000,
+        "cost": 68000,
+        "min_stock": 20,
+        "track_batches": true,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "sku": "FLT-OLI-01",
+        "name": "Filter Oli Universal",
+        "type": "goods",
+        "unit": "pcs",
+        "price": 55000,
+        "cost": 32000,
+        "min_stock": 15,
+        "track_batches": false,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "sku": "KMP-REM-D",
+        "name": "Kampas Rem Depan",
+        "type": "goods",
+        "unit": "set",
+        "price": 210000,
+        "cost": 145000,
+        "min_stock": 10,
+        "track_batches": false,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "sku": "BAT-NS40",
+        "name": "Aki NS40 12V",
+        "type": "goods",
+        "unit": "pcs",
+        "price": 780000,
+        "cost": 610000,
+        "min_stock": 4,
+        "track_batches": false,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 5,
+        "sku": "BSI-NGK",
+        "name": "Busi Iridium",
+        "type": "goods",
+        "unit": "pcs",
+        "price": 120000,
+        "cost": 78000,
+        "min_stock": 24,
+        "track_batches": false,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 6,
+        "sku": "RDT-COOL",
+        "name": "Radiator Coolant 1L",
+        "type": "goods",
+        "unit": "liter",
+        "price": 65000,
+        "cost": 41000,
+        "min_stock": 12,
+        "track_batches": true,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 7,
+        "sku": "JSA-TUNEUP",
+        "name": "Jasa Tune Up Mesin",
+        "type": "service",
+        "unit": "paket",
+        "price": 350000,
+        "cost": 0,
+        "min_stock": 0,
+        "track_batches": false,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 8,
+        "sku": "JSA-SPOORING",
+        "name": "Jasa Spooring Balancing",
+        "type": "service",
+        "unit": "paket",
+        "price": 280000,
+        "cost": 0,
+        "min_stock": 0,
+        "track_batches": false,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

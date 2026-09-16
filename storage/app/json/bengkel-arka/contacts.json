@@ -1,6 +1,104 @@
 [
-  {
-    "id": 1,
-    "name": "Name"
-  }
+    {
+        "id": 1,
+        "business_identity_id": 1,
+        "type": "customer",
+        "name": "Andi Prasetyo",
+        "wa_number": "628121110001",
+        "email": "andi.prasetyo@contoh.test",
+        "source": "walk_in",
+        "tags": [
+            "langganan"
+        ],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "business_identity_id": 1,
+        "type": "customer",
+        "name": "Bunga Lestari",
+        "wa_number": "628121110002",
+        "email": "bunga.lestari@contoh.test",
+        "source": "whatsapp",
+        "tags": [],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "business_identity_id": 1,
+        "type": "customer",
+        "name": "Cahyo Nugroho",
+        "wa_number": "628121110003",
+        "email": null,
+        "source": "referral",
+        "tags": [
+            "fleet"
+        ],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "business_identity_id": 1,
+        "type": "customer",
+        "name": "Dewi Anggraini",
+        "wa_number": "628121110004",
+        "email": "dewi.anggraini@contoh.test",
+        "source": "walk_in",
+        "tags": [],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 5,
+        "business_identity_id": 1,
+        "type": "customer",
+        "name": "Eko Saputra",
+        "wa_number": "628121110005",
+        "email": null,
+        "source": "instagram",
+        "tags": [],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 6,
+        "business_identity_id": 1,
+        "type": "customer",
+        "name": "Fitri Handayani",
+        "wa_number": "628121110006",
+        "email": "fitri.handayani@contoh.test",
+        "source": "whatsapp",
+        "tags": [
+            "langganan"
+        ],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 7,
+        "business_identity_id": 1,
+        "type": "vendor",
+        "name": "CV Sumber Sparepart",
+        "wa_number": "628121110007",
+        "email": "sales@sumbersparepart.test",
+        "source": "supplier",
+        "tags": [],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 8,
+        "business_identity_id": 1,
+        "type": "vendor",
+        "name": "UD Oli Makmur",
+        "wa_number": "628121110008",
+        "email": null,
+        "source": "supplier",
+        "tags": [],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

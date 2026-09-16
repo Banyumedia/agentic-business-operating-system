@@ -1,10 +1,14 @@
 [
-  {
-    "id": 1,
-    "order_id": 1,
-    "description": "Description",
-    "qty": 1,
-    "unit_price": 1,
-    "line_total": 1
-  }
+    {
+        "id": 1,
+        "order_id": 1,
+        "item_id": null,
+        "description": "Konsultasi dokter umum",
+        "qty": 1,
+        "unit_price": 150000,
+        "discount_amount": 0,
+        "line_total": 150000,
+        "fired_at": null,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    }
 ]

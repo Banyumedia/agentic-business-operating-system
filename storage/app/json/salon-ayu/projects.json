@@ -1,6 +1,18 @@
 [
-  {
-    "id": 1,
-    "name": "Name"
-  }
+    {
+        "id": 1,
+        "contact_id": 5,
+        "deal_id": 1,
+        "type": "project",
+        "name": "Persiapan Bridal Gita",
+        "stage": "planned",
+        "starts_at": "2026-09-27T07:00:00+07:00",
+        "ends_at": null,
+        "venue": "Salon Ayu",
+        "budget": 4800000,
+        "progress_pct": 0,
+        "owner_user_id": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

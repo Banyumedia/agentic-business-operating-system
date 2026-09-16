@@ -1,7 +1,54 @@
 [
-  {
-    "id": 1,
-    "type": "Type",
-    "name": "Name"
-  }
+    {
+        "id": 1,
+        "type": "chair",
+        "name": "Kursi Rambut 1",
+        "category": "rambut",
+        "status": "occupied",
+        "capacity": 1,
+        "rate_amount": 0,
+        "rate_unit": "sesi",
+        "condition_notes": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "type": "chair",
+        "name": "Kursi Rambut 2",
+        "category": "rambut",
+        "status": "available",
+        "capacity": 1,
+        "rate_amount": 0,
+        "rate_unit": "sesi",
+        "condition_notes": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "type": "bed",
+        "name": "Bed Facial 1",
+        "category": "perawatan_kulit",
+        "status": "occupied",
+        "capacity": 1,
+        "rate_amount": 0,
+        "rate_unit": "sesi",
+        "condition_notes": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "type": "bed",
+        "name": "Bed Refleksi",
+        "category": "refleksi",
+        "status": "available",
+        "capacity": 1,
+        "rate_amount": 0,
+        "rate_unit": "sesi",
+        "condition_notes": "Alas diganti 12 September 2026",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

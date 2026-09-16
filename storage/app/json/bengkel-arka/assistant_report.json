@@ -1,16 +1,18 @@
 [
-  {
-    "id": 1,
-    "generated_at": "2026-09-16T07:00:00+07:00",
-    "period": "Hari ini",
-    "summary": "Arus pekerjaan stabil. Ada jadwal aktif dan dokumen yang perlu ditinjau sebelum operasional berikutnya.",
-    "highlights": [
-      "Satu pekerjaan aktif tercatat pada sumber data demo.",
-      "Arus kas bersih tetap positif."
-    ],
-    "recommended_actions": [
-      "Tinjau dokumen yang menunggu persetujuan.",
-      "Pastikan agenda berikutnya memiliki penanggung jawab."
-    ]
-  }
+    {
+        "id": 1,
+        "generated_at": "2026-09-17T07:00:00+07:00",
+        "period": "Hari ini",
+        "summary": "Enam unit dalam pengerjaan dan satu unit siap diambil. Arus kas bersih hari ini masih positif, namun stok oli dan aki sudah menyentuh batas minimum.",
+        "highlights": [
+            "Satu unit menunggu diambil pelanggan sejak pagi.",
+            "Stok oli mesin dan aki berada di bawah batas minimum.",
+            "Dua penawaran menunggu persetujuan Bos."
+        ],
+        "recommended_actions": [
+            "Hubungi pelanggan unit WO-2609-004 untuk pengambilan.",
+            "Setujui restock oli dan aki sebelum akhir pekan.",
+            "Tinjau dua penawaran yang menunggu keputusan."
+        ]
+    }
 ]

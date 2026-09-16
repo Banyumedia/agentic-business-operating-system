@@ -1,7 +1,36 @@
 [
-  {
-    "id": 1,
-    "number": "Number",
-    "title": "Title"
-  }
+    {
+        "id": 1,
+        "number": "PNW-SLN-2609-001",
+        "contact_id": 5,
+        "deal_id": null,
+        "project_id": null,
+        "title": "Penawaran Paket Bridal 5 Orang",
+        "stage": "menunggu_persetujuan",
+        "valid_until": "2026-09-29",
+        "subtotal": 4800000,
+        "dpp": 4800000,
+        "tax": 0,
+        "grand_total": 4800000,
+        "notes": "Termasuk rias dan penataan rambut.",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "number": "PNW-SLN-2609-002",
+        "contact_id": 1,
+        "deal_id": null,
+        "project_id": null,
+        "title": "Penawaran Membership Tahunan",
+        "stage": "draft",
+        "valid_until": null,
+        "subtotal": 2400000,
+        "dpp": 2400000,
+        "tax": 0,
+        "grand_total": 2400000,
+        "notes": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

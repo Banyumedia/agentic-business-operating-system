@@ -1,6 +1,57 @@
 [
-  {
-    "id": 1,
-    "name": "Name"
-  }
+    {
+        "id": 1,
+        "name": "Lestari Handayani",
+        "position": "Kepala Terapis",
+        "base_salary": 5500000,
+        "hourly_cost": 50000,
+        "joined_on": "2023-05-02",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "name": "Mira Anjani",
+        "position": "Terapis Senior",
+        "base_salary": 4600000,
+        "hourly_cost": 40000,
+        "joined_on": "2024-02-19",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "name": "Nadia Puspita",
+        "position": "Terapis",
+        "base_salary": 4000000,
+        "hourly_cost": 35000,
+        "joined_on": "2025-06-09",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "name": "Oktaviani Sari",
+        "position": "Kapster Rambut",
+        "base_salary": 4300000,
+        "hourly_cost": 38000,
+        "joined_on": "2024-11-04",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 5,
+        "name": "Putri Amelia",
+        "position": "Admin & Kasir",
+        "base_salary": 3900000,
+        "hourly_cost": null,
+        "joined_on": "2025-09-15",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

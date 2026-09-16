@@ -1,7 +1,18 @@
 [
-  {
-    "id": 1,
-    "item_id": 1,
-    "batch_no": "Batch No"
-  }
+    {
+        "id": 1,
+        "item_id": 1,
+        "batch_no": "SRG-2608-A",
+        "expires_on": "2028-08-31",
+        "qty_on_hand": 24,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "item_id": 2,
+        "batch_no": "MSK-2609-A",
+        "expires_on": "2029-09-30",
+        "qty_on_hand": 30,
+        "created_at": "2026-09-10T07:00:00+07:00"
+    }
 ]

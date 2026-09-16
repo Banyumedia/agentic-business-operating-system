@@ -1,6 +1,30 @@
 [
-  {
-    "id": 1,
-    "name": "Name"
-  }
+    {
+        "id": 1,
+        "sku": "BHP-SARUNG",
+        "name": "Sarung Tangan Medis",
+        "type": "goods",
+        "unit": "box",
+        "price": 0,
+        "cost": 85000,
+        "min_stock": 10,
+        "track_batches": true,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "sku": "BHP-MASKER",
+        "name": "Masker Bedah",
+        "type": "goods",
+        "unit": "box",
+        "price": 0,
+        "cost": 45000,
+        "min_stock": 10,
+        "track_batches": true,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

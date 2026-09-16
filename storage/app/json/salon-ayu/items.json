@@ -1,6 +1,100 @@
 [
-  {
-    "id": 1,
-    "name": "Name"
-  }
+    {
+        "id": 1,
+        "sku": "SHP-KRT",
+        "name": "Shampoo Keratin 500ml",
+        "type": "goods",
+        "unit": "botol",
+        "price": 185000,
+        "cost": 120000,
+        "min_stock": 8,
+        "track_batches": true,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "sku": "CRM-FCL",
+        "name": "Krim Facial Brightening",
+        "type": "goods",
+        "unit": "jar",
+        "price": 240000,
+        "cost": 155000,
+        "min_stock": 6,
+        "track_batches": true,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "sku": "CAT-RMB",
+        "name": "Cat Rambut Profesional",
+        "type": "goods",
+        "unit": "tube",
+        "price": 145000,
+        "cost": 92000,
+        "min_stock": 10,
+        "track_batches": false,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "sku": "MSK-RMB",
+        "name": "Masker Rambut Argan",
+        "type": "goods",
+        "unit": "botol",
+        "price": 210000,
+        "cost": 138000,
+        "min_stock": 5,
+        "track_batches": true,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 5,
+        "sku": "JSA-POTONG",
+        "name": "Jasa Potong Rambut",
+        "type": "service",
+        "unit": "sesi",
+        "price": 120000,
+        "cost": 0,
+        "min_stock": 0,
+        "track_batches": false,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 6,
+        "sku": "JSA-FACIAL",
+        "name": "Jasa Facial Lengkap",
+        "type": "service",
+        "unit": "sesi",
+        "price": 285000,
+        "cost": 0,
+        "min_stock": 0,
+        "track_batches": false,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 7,
+        "sku": "JSA-REFLEKSI",
+        "name": "Jasa Refleksi 60 Menit",
+        "type": "service",
+        "unit": "sesi",
+        "price": 140000,
+        "cost": 0,
+        "min_stock": 0,
+        "track_batches": false,
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

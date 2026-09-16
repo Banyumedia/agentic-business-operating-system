@@ -1,7 +1,13 @@
 [
-  {
-    "id": 1,
-    "contact_id": 1,
-    "title": "Title"
-  }
+    {
+        "id": 1,
+        "contact_id": 5,
+        "title": "Paket bridal 5 orang",
+        "stage": "proposal",
+        "value": 4800000,
+        "expected_close_date": "2026-09-29",
+        "owner_user_id": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

@@ -1,6 +1,57 @@
 [
-  {
-    "id": 1,
-    "name": "Name"
-  }
+    {
+        "id": 1,
+        "name": "Joko Susilo",
+        "position": "Kepala Mekanik",
+        "base_salary": 6500000,
+        "hourly_cost": 45000,
+        "joined_on": "2023-02-01",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "name": "Rahmat Hidayat",
+        "position": "Mekanik Mesin",
+        "base_salary": 4800000,
+        "hourly_cost": 35000,
+        "joined_on": "2024-06-17",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "name": "Sigit Purnomo",
+        "position": "Mekanik Kelistrikan",
+        "base_salary": 4500000,
+        "hourly_cost": 33000,
+        "joined_on": "2025-01-13",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "name": "Yuni Kartika",
+        "position": "Admin Servis",
+        "base_salary": 4200000,
+        "hourly_cost": null,
+        "joined_on": "2024-09-02",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 5,
+        "name": "Bagas Wicaksono",
+        "position": "Mekanik Magang",
+        "base_salary": 2500000,
+        "hourly_cost": 20000,
+        "joined_on": "2026-07-01",
+        "is_active": false,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]

@@ -1,16 +1,18 @@
 [
-  {
-    "id": 1,
-    "generated_at": "2026-09-16T07:00:00+07:00",
-    "period": "Hari ini",
-    "summary": "Operasional hari ini terkendali. Agenda aktif tersedia dan persediaan perlu tetap dipantau sebelum jam sibuk.",
-    "highlights": [
-      "Agenda aktif siap diproses.",
-      "Arus kas bersih tetap positif."
-    ],
-    "recommended_actions": [
-      "Konfirmasi agenda terdekat.",
-      "Periksa item yang mendekati batas stok minimum."
-    ]
-  }
+    {
+        "id": 1,
+        "generated_at": "2026-09-17T07:00:00+07:00",
+        "period": "Hari ini",
+        "summary": "Lima jadwal hari ini, dua sedang dilayani. Arus kas bersih masih positif, tetapi krim facial dan masker rambut sudah di bawah batas minimum.",
+        "highlights": [
+            "Dua pelanggan sedang dilayani pagi ini.",
+            "Pewarnaan sore sudah menerima deposit Rp 200.000.",
+            "Krim facial dan masker rambut perlu restock."
+        ],
+        "recommended_actions": [
+            "Pesan krim facial dan masker rambut hari ini.",
+            "Konfirmasi jadwal pewarnaan pukul 15.00.",
+            "Tindak lanjuti penawaran paket bridal."
+        ]
+    }
 ]

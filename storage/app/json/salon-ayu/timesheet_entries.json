@@ -1,8 +1,52 @@
 [
-  {
-    "id": 1,
-    "employee_id": 1,
-    "work_date": "2026-09-16",
-    "hours": 1
-  }
+    {
+        "id": 1,
+        "project_id": null,
+        "employee_id": 1,
+        "work_date": "2026-09-15",
+        "hours": 8,
+        "note": "Shift pagi",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "project_id": null,
+        "employee_id": 2,
+        "work_date": "2026-09-15",
+        "hours": 7.5,
+        "note": "Facial dan creambath",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "project_id": null,
+        "employee_id": 4,
+        "work_date": "2026-09-16",
+        "hours": 8,
+        "note": "Pewarnaan dan potong",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "project_id": null,
+        "employee_id": 3,
+        "work_date": "2026-09-16",
+        "hours": 6,
+        "note": null,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 5,
+        "project_id": null,
+        "employee_id": 1,
+        "work_date": "2026-09-17",
+        "hours": 4.5,
+        "note": "Shift pagi",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
 ]
