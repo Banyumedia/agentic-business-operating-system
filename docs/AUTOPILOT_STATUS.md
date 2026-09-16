@@ -9,6 +9,27 @@
 > Agent yang resume: baca file ini, lalu `EXECUTION_PLAN.md` §0 untuk definisi
 > `READY` dan command verifikasi. Jangan pakai angka/SHA dari ingatan sesi.
 
+## Review Bisnis Menyeluruh 2026-09-16 (D-48..D-56)
+
+Review ujung-ke-ujung seluruh dokumen. Hasil: 56 keputusan terkunci, **tidak
+ada item OPEN**, semua keputusan punya task pelaksana.
+
+**Kontradiksi diperbaiki:** D-32 (18→21 kapabilitas), D-36 & U-06 digantikan
+D-43, PRD (nama warisan + "1 bot per company" → per owner), `companies.theme`
+dan `admin_impersonation_sessions` ditambahkan ke skema.
+
+**Kesalahan skema diperbaiki:** FK menggantung `approval_ticket_id` (tabel
+`approval_tickets` kini didefinisikan §1.8), tabel hilang `cash_entries` (§4.4),
+`quotations` + `quotation_lines` (§4.5).
+
+**Task baru dari keputusan bisnis:** T-10c (mode hemat token, D-48), T-10d
+(gerbang kapabilitas per paket, D-52), T-12b (trial + ekspor data, D-51), T-18
+diperluas (tangga dunning, D-49), **Fase 4b T-27..T-27e** (kepatuhan PDP,
+D-50 — memblokir penjualan preset klinik/apotek), Fase 6b (katalog add-on,
+D-56).
+
+**Yang belum berubah:** T-07 tetap task READY berikutnya. UI-LOCK belum
+diberikan Bos. Fase 2 (frontend-first D-42) tidak terpengaruh review ini.
 ## Akses Pratinjau Jarak Jauh (untuk review dari HP)
 
 | URL | Sumber | Port |

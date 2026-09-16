@@ -53,6 +53,35 @@ Semua di `docs/00-DECISIONS.md`. Yang paling mengubah arah proyek:
   (belum digarap sama sekali, beda dari mockup `/app/*` yang sudah ada).
 - Q-01..Q-08 semua terjawab → jadi D-34..D-41. **Tidak ada item OPEN.**
 
+### Hasil review bisnis menyeluruh (2026-09-16, D-48..D-56)
+
+Review ujung-ke-ujung menemukan 7 kontradiksi internal (sudah diperbaiki) dan
+9 celah kebijakan bisnis yang belum pernah diputuskan (sudah dijawab Bos):
+
+- **D-48** saldo token habis → **turun ke model murah**, bukan mati total.
+  Kuota darurat `emergency_token_quota`; web tetap jalan walau bot berhenti.
+- **D-49** telat bayar → tangga: H+0 bot mati → H+7 hanya-baca (ekspor tetap
+  jalan) → H+30 beku → H+90 hapus **hanya setelah 3 peringatan tercatat**.
+- **D-50** UU PDP disiapkan dari awal. Klinik/apotek = data kesehatan.
+  **Fase 4b (T-27..T-27e) memblokir penjualan preset klinik/apotek.**
+- **D-51** trial 14 hari fitur penuh + **ekspor data selalu tersedia**
+  (termasuk saat menunggak) — "data tidak disandera".
+- **D-52** paket membatasi **KAPABILITAS**, bukan nama preset. Bos memilih
+  "preset kompleks untuk paket atas"; diwujudkan lewat kapabilitas agar tidak
+  melanggar D-31. `allowed_presets` dihapus dari skema.
+- **D-53** kuota **grup WA** dari paket; **bot ke-2** = add-on. Tabel simulasi
+  COMMERCIAL §2.3 dikoreksi (angka itu kuota grup, bukan jumlah bot).
+- **D-54** Enterprise = VPS **dikelola platform**; on-premise sejati dihapus
+  dari katalog (merusak metering token + white-label).
+- **D-55** **nomor WhatsApp default milik KLIEN** (scan QR). Platform
+  menyediakan nomor hanya sebagai add-on berbayar.
+- **D-56** katalog add-on resmi (7 item dipilih Bos) → Fase 6b.
+
+Kesalahan skema yang ditemukan & diperbaiki: FK menggantung
+`workflow_transitions_log.approval_ticket_id` (tabel `approval_tickets` tidak
+pernah didefinisikan), serta tabel hilang `cash_entries`, `quotations`,
+`quotation_lines` yang dituntut D-32/T-F2.
+
 `docs/INDUSTRY_PRESETS.md §7` berisi peta 63 bisnis potensial → kapabilitas
 (95% Tier A tanpa kode). `EXECUTION_PLAN.md` Fase 6 = ekspansi preset pasca
 UI-LOCK.
