@@ -1,9 +1,9 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-16 (D-31 Composable Capability Architecture)  
-**Mode:** FASE 1 DONE — FASE 2 READY (T-07 first)  
-**Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)  
-**Canonical workspace:** `D:\PROJECTS\agentic-bos`  
+**Updated:** 2026-09-16 (Fase 2 berjalan - T-F7 selesai, T-F8 berikutnya)
+**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F7 DONE; next READY T-F8
+**Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
+**Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
 
 > Agent yang resume: baca file ini, lalu `EXECUTION_PLAN.md` §0 untuk definisi
@@ -87,7 +87,7 @@ Merge tetap serial — satu per satu. Cek `docs/KIRO_SKILL.md` §Worker Registry
 | PHP | 8.3.30 | `php -v` |
 | Livewire | 4.4 | `composer.json` |
 | Tailwind | 4.3 (CSS-first `@theme`) | `package.json` |
-| Test suite | **17 passed, 135 assertions** | `php artisan test` |
+| Test suite | **179 passed, 584 assertions** | `php artisan test` |
 | Style | **Pint clean, seluruh repo** | `vendor/bin/pint --test` |
 | Build | Vite OK | `npm run build` |
 | Business migrations | none (hanya `users/cache/jobs`) | `ls database/migrations` |
@@ -104,9 +104,10 @@ Merge tetap serial — satu per satu. Cek `docs/KIRO_SKILL.md` §Worker Registry
 
 ## Keputusan OPEN yang Menahan Task
 
-Lihat `00-DECISIONS.md` §OPEN (Q-01..Q-08). Setiap item punya **rekomendasi
-default**. Task yang bergantung padanya berstatus `BLOCKED` sampai Bos menyetujui
-default atau memilih alternatif. **Agent tidak menebak.**
+**Tidak ada.** Q-01..Q-08 sudah dijawab Bos 2026-09-16 dan dipromosikan menjadi
+D-34..D-41 (lihat bagian OPEN di `00-DECISIONS.md`). Item OPEN berikutnya baru
+muncul dari T-25 (pilihan modul Tier B). Aturan tetap: agent **tidak menebak**
+item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Completion Ledger
 
@@ -118,6 +119,14 @@ default atau memilih alternatif. **Agent tidak menebak.**
 | T-03 | DONE (statis) | `DynamicMenuRegistryTest` (7) + `ModuleSidebarTest` (4). Unknown module → **nol DOM** |
 | T-04 | DONE (dummy) | Alpine modal + `wire:model.live` |
 | T-09 | DONE (merged ke T-00a) | — |
+| T-07 | DONE | `ThemeContrastTest` + `SettingsThemeTest`; 5 tema x 36 token, per-usaha (D-43) |
+| T-F1 | DONE | `DataSourceBindingTest`; kontrak `EntityRepository`/`PresetSource`/`CompanyContext` + `DATA_SOURCE` |
+| T-F2 | DONE | `SchemaValidatorTest`; 15 `database/schemas/*.schema.json`, fail-closed |
+| T-F3 | DONE | `JsonEntityRepository` + `JsonCompanyContext` + middleware; 3 folder tenant demo |
+| T-F4 | DONE | `PresetDefinitionValidator` + `JsonPresetSource`; preset `bengkel`/`klinik`/`salon` |
+| T-F4a | DONE (docs) | kontrak workflow + path kanonik `database/presets/{slug}.json` |
+| T-F5 | DONE | `FeatureResolver` + `TerminologyResolver` + helper `term()`/`@term` |
+| T-F6 | DONE | `WorkflowEngineTest` (11); `WorkflowEngine` + efek fake + log JSON |
 
 ## Arsitektur D-31 (dibaca sebelum menulis kode apa pun setelah UI-LOCK)
 
@@ -166,7 +175,7 @@ default atau memilih alternatif. **Agent tidak menebak.**
 - **Review:** dua lane read-only; seluruh HIGH ditutup. MEDIUM stale Livewire, HTTP production, short write, query boundaries, committed corpus, dan unresolved identity reference ditutup dengan negative/acceptance tests.
 - **Remaining risk:** adapter ini sengaja demo-only; production tetap tidak dapat memakai context JSON sampai auth/company persistence Fase 3 tersedia.
 
-## Last Completed
+## Detail Task Selesai (T-F4a)
 
 ### T-F4a — DONE (2026-09-16)
 
@@ -177,7 +186,23 @@ default atau memilih alternatif. **Agent tidak menebak.**
 - **Evidence:** tiga lane review read-only direkonsiliasi; full `php artisan test` 139/139 (463 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean; build N/A (docs-only).
 - **Remaining risk:** enam preset D-01 + `custom` sengaja tetap dibuat pada T-08/Fase 3 di path kanonik; implementasi Fase 2 berikutnya hanya tiga preset demo T-F4.
 
-## Active Task
+## Task Aktif
+
+**Tidak ada task berjalan.** Writer berikutnya mengambil T-F8 (lihat Next READY).
+
+## Detail Task Selesai (T-F7)
+
+### T-F7 — DONE (2026-09-16)
+
+- **Implemented:** `DashboardComposer` generik merakit tiga KPI universal, laporan asisten per-company, dan zona widget dari `preset.dashboard`; `WidgetRegistry` menghitung `upcoming_schedule`, `low_stock`, `kpi_cashflow`, `pending_approvals`, dan `deals_pipeline` hanya melalui `EntityRepository`/resolver capability.
+- **Frontend:** route nyata `/app/dashboard`, Livewire dashboard + widget card, layout responsif berbasis token, loading/empty/recoverable-error + retry, `aria-live`, heading/landmark, dan fokus keyboard.
+- **Data:** schema `assistant_report` dan tiga fixture `{company}/assistant_report.json`; inventory demo menjadi 48 file tervalidasi schema tanpa migration, Eloquent, atau `DB::`.
+- **D-31/D-42:** scan production dashboard tidak menemukan literal nama industri atau `DB::`; preset memilih widget, terminologi resolver memberi label, dan Blade tidak menyimpan angka bisnis statis.
+- **Files:** `app/Services/Dashboard/*`, `app/Livewire/{Dashboard,Widgets/DashboardWidget}.php`, dua Blade dashboard/widget, route, schema + tiga report fixture, dua test fitur, `docs/{EXECUTION_PLAN,AUTOPILOT_STATUS}.md`.
+- **Evidence:** RED focused gagal karena composer belum ada; GREEN focused 3/3 (30 assertions); full `php artisan test` 182/182 (617 assertions); `php vendor/bin/pint --test` passed; `npm run build` passed (Vite 962 ms); scan D-31 dashboard 0 temuan.
+- **Remaining risk:** registry T-F7 sengaja mengimplementasikan lima widget yang dipakai tiga preset demo; katalog lain tetap tervalidasi tetapi renderer datanya ditambahkan saat preset yang memakainya masuk scope.
+
+## Detail Task Selesai (T-F6, T-F5, T-F4)
 
 ### T-F6 — DONE (2026-09-16)
 
@@ -207,7 +232,7 @@ default atau memilih alternatif. **Agent tidak menebak.**
 
 ## Next READY
 
-**T-F7 — `DashboardComposer` + `WidgetRegistry` + widget data repository.**
+**T-F8 — Sidebar flag-aware + `term()` + route `/app/{module}` ke pola layar.**
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 

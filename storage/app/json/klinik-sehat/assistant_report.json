@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "generated_at": "2026-09-16T07:00:00+07:00",
+    "period": "Hari ini",
+    "summary": "Agenda layanan berjalan sesuai jadwal. Fokus hari ini adalah menjaga waktu tunggu dan menindaklanjuti peluang aktif.",
+    "highlights": [
+      "Agenda aktif tersedia untuk ditindaklanjuti.",
+      "Peluang baru tercatat di pipeline."
+    ],
+    "recommended_actions": [
+      "Konfirmasi agenda terdekat.",
+      "Perbarui tahap peluang setelah layanan selesai."
+    ]
+  }
+]

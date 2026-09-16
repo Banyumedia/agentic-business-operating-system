@@ -1,0 +1,19 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "assistant_report",
+  "version": 1,
+  "company_scope": "folder",
+  "required": ["id", "generated_at", "period", "summary", "highlights", "recommended_actions"],
+  "properties": {
+    "id": {"type": "integer", "unsigned": true},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "period": {"type": "string", "length": 64},
+    "summary": {"type": "string", "length": 1000},
+    "highlights": {"type": "array"},
+    "recommended_actions": {"type": "array"}
+  },
+  "attributes": {},
+  "indexes": [],
+  "unique": [],
+  "references": {}
+}

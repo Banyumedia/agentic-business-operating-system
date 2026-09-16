@@ -164,7 +164,7 @@ class JsonDataSourceTest extends TestCase
         $repository->save(['id' => 1]);
     }
 
-    public function test_committed_demo_inventory_has_45_schema_valid_files(): void
+    public function test_committed_demo_inventory_has_48_schema_valid_files(): void
     {
         $schemaNames = array_map(
             static fn (string $path): string => str_replace('.schema.json', '', basename($path)),
@@ -176,7 +176,7 @@ class JsonDataSourceTest extends TestCase
         ));
         $validator = app(SchemaValidator::class);
 
-        $this->assertCount(45, $files);
+        $this->assertCount(48, $files);
 
         foreach ($files as $file) {
             $rows = json_decode((string) file_get_contents($file), true, flags: JSON_THROW_ON_ERROR);

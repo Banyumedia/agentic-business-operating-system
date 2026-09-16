@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "generated_at": "2026-09-16T07:00:00+07:00",
+    "period": "Hari ini",
+    "summary": "Operasional hari ini terkendali. Agenda aktif tersedia dan persediaan perlu tetap dipantau sebelum jam sibuk.",
+    "highlights": [
+      "Agenda aktif siap diproses.",
+      "Arus kas bersih tetap positif."
+    ],
+    "recommended_actions": [
+      "Konfirmasi agenda terdekat.",
+      "Periksa item yang mendekati batas stok minimum."
+    ]
+  }
+]
