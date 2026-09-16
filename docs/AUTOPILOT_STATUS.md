@@ -140,11 +140,20 @@ default atau memilih alternatif. **Agent tidak menebak.**
 - **Review:** tiga lane read-only dijalankan; temuan tenant tampering, fail-open role, tema lintas halaman, dan lost-update/JSON korup diperbaiki serta diuji.
 - **Remaining risk:** autentikasi/otorisasi produksi dan `CompanyContext` resmi masuk task fondasi Fase 2 berikutnya; T-07 tidak menambah migration/model bisnis.
 
+## Current Task
+
+### T-F1 — DONE (2026-09-16)
+
+- **Implemented:** kontrak `EntityRepository`, `PresetSource`, `CompanyContext`; `DATA_SOURCE` config; provider binding deferred ke kelas `Json*`; binding `eloquent` fail dengan exception Fase 3 yang eksplisit; driver asing ditolak.
+- **Files:** `.env.example`, `app/Contracts/*.php`, `app/Providers/DataSourceServiceProvider.php`, `bootstrap/providers.php`, `config/datasource.php`, `tests/Feature/DataSourceBindingTest.php`.
+- **Evidence:** RED binding test 0/3; GREEN focused 3/3 (10 assertions); full `php artisan test` 82/82 (249 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean.
+- **Review:** scope 8 file kecil, tanpa schema/auth/money/API; self-review D-31/D-42 lulus. Kelas `Json*` sengaja deferred ke T-F3/T-F4 sesuai dependency plan.
+
 ## Next READY
 
-**T-F1 — Contracts & binding data source** (D-42). T-07 DONE membuka T-F1.
+**T-F2 — Skema kapabilitas JSON + validator** (D-32). T-F1 DONE membuka T-F2.
 
-Lanjut T-F1 → … → T-F15, lalu berhenti di `HUMAN:UI-LOCK`.
+Lanjut T-F2 → … → T-F15, lalu berhenti di `HUMAN:UI-LOCK`.
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 
