@@ -149,12 +149,47 @@ Baseline **awal** repo (2 test, tanpa Git) adalah historis.
 - 36 token `--erp-*` tidak pernah didefinisikan — **ditambah** `UX_UI_SPEC.md` §7.
 
 ## Temuan Terbuka (tidak diperbaiki, dicatat)
+> **Rujukan task diperbarui 2026-09-16** mengikuti D-42: T-05/T-06/bagian UI T-20 dipindah ke Fase 2 menjadi T-F7/T-F9/T-F13.
 
 - `README.md` masih stock Laravel + promosi Boost. Diperbaiki saat T-22.
 - `composer.json` `name: laravel/laravel`. Diperbaiki saat T-22.
-- `resources/views/welcome.blade.php` tidak dipakai. Dihapus saat T-05.
-- `CommandPalette` dummy `href="#"` (5 item). Diselesaikan T-20.
-- `DummyModule` `href="#"` di baris tabel. Diselesaikan T-06.
-- `/app/{module-tak-dikenal}` masih 200. Menjadi 404 di T-16.
+- `resources/views/welcome.blade.php` tidak dipakai. Dihapus saat **T-F7**.
+- `CommandPalette` dummy `href="#"` (5 item). Diselesaikan **T-F13** (UI), lalu T-20 (Scout nyata).
+- `DummyModule` `href="#"` di baris tabel. Diselesaikan **T-F9**.
+- `/app/{module-tak-dikenal}` masih 200. Menjadi 404 di **T-F8**, ditegakkan ulang T-16.
 - Dua layout (`layouts/app.blade.php`, `components/layouts/module.blade.php`) tanpa
-  skip-link. Disatukan/ditambah skip-link di T-05.
+  skip-link. Disatukan/ditambah skip-link di **T-F7**.
+
+---
+
+## G-12: Review Bisnis Ujung-ke-Ujung (2026-09-16) - RESOLVED
+
+Review menyeluruh seluruh dokumen atas permintaan Bos. Ditemukan & diperbaiki:
+
+**Kontradiksi internal (7):** D-32 salah hitung kapabilitas (18 -> 21); D-36 dan
+U-06 bertabrakan dengan D-43 (ditandai digantikan); PRD memakai nama warisan
+"ERP Nalarin" (D-30) dan masih menyatakan "1 bot per perusahaan" padahal D-37
+menetapkan per owner; `companies.theme` (D-43) dan `admin_impersonation_sessions`
+(D-47) disebut keputusan tetapi belum ada di skema.
+
+**Kesalahan skema (4):** `workflow_transitions_log.approval_ticket_id` adalah
+**FK menggantung** - tabel `approval_tickets` tidak pernah didefinisikan padahal
+D-27/D-45 bergantung penuh padanya (kini DATA_MODEL 1.8); tabel hilang
+`cash_entries` (4.4), `quotations` + `quotation_lines` (4.5) yang dituntut
+D-32/T-F2.
+
+**Celah kebijakan bisnis (9) -> D-48..D-56:** perilaku saat token habis, tangga
+penurunan layanan saat menunggak, kepatuhan UU PDP, trial + ekspor data, gerbang
+kapabilitas per paket, kuota grup vs bot, penghapusan janji on-premise,
+kepemilikan nomor WhatsApp, dan katalog add-on resmi.
+
+**Celah spesifikasi (3):** `TaxRateService` tidak menangani `non_taxable`
+(mayoritas klien); `FeatureResolver` belum memuat gerbang paket D-52; tidak ada
+spesifikasi UI untuk status akun trial/menunggak/hanya-baca/beku (kini UX 6.11).
+
+**Risiko dokumen:** judul REQUIREMENTS 4 "Spesifikasi 6 Modul Industri Spesifik"
+berpotensi dibaca autopilot sebagai izin membangun modul per industri -
+dikoreksi menjadi "Contoh Komposisi Kapabilitas" dengan peringatan D-31.
+
+Semua keputusan kini memiliki task pelaksana (T-10c, T-10d, T-12b, T-18
+diperluas, Fase 4b T-27..T-27e, Fase 6b).
