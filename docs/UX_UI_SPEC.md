@@ -387,6 +387,20 @@ atas tema apa pun.
 
 Setelah Bos memilih, T-07 menulis nilai terpilih ke §7.3 dan `app.css`;
 kandidat lain menjadi blok `[data-theme="..."]`.
+### 6.9 Aturan dari Temuan UX Mockup (2026-09-16)
+
+1. **Pajak (D-44).** `tax_mode=non_taxable` -> tidak ada baris DPP/PPN di
+   layar, struk, faktur, dan laporan. Jangan tampilkan `Rp 0`. Label pada
+   mode `taxable` memakai bahasa awam: "Harga sudah termasuk pajak" /
+   "Pajak ditambahkan".
+2. **Konfirmasi berisiko (D-45).** Type-to-confirm dengan
+   `strtoupper(trim($input)) === 'YA'`; `inputmode="text"`
+   `autocapitalize="characters"` `autocorrect="off"` `spellcheck="false"`.
+   Modal menyebut akibat konkret + nominal. Tekan-tahan dilarang untuk aksi
+   finansial.
+3. **Perpindahan tahap.** Tombol "tahap berikutnya" untuk alur normal, plus
+   menu pada badge tahap berisi **hanya transisi yang sah** dari stage saat
+   ini menurut preset. Tidak ada daftar stage penuh yang bisa diklik bebas.
 ### 7.4 Larangan
 
 - Dilarang memakai `bg-gray-*`, `text-gray-*`, `bg-slate-*` dst. **langsung** pada
