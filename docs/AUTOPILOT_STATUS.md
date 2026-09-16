@@ -286,14 +286,16 @@ kesiapan autopilot) ditemukan 34 + 30 + 20 temuan. Yang diperbaiki:
 
 ## Temuan Terbuka (dicatat, diselesaikan di task yang tepat)
 
-| Temuan | Task |
-|---|---|
-| `README.md` stock Laravel + Boost; `composer.json name: laravel/laravel` | T-22 |
-| `welcome.blade.php` tidak dipakai; dua layout tanpa skip-link | T-05 |
-| `CommandPalette` dummy `href="#"` ×5 | T-20 |
-| `DummyModule` `href="#"` di tabel | T-06 |
-| `/app/{unknown}` → 200 (harus 404) | T-16 |
-| Registry statis tanpa `Company`/flag | T-03b |
+| Temuan | Task | Status |
+|---|---|---|
+| `README.md` stock Laravel + Boost; `composer.json name: laravel/laravel` | T-22 | Belum |
+| `welcome.blade.php` tidak dipakai; dua layout tanpa skip-link | T-05 | Belum |
+
+QA review 2026-09-17 menutup 3 temuan lama (kode dicek langsung, bukan asumsi):
+- ~~`CommandPalette` dummy `href="#"` ×5~~ — **SELESAI** (T-F8): grep `href="#"` di seluruh `resources/` = 0 hit, `CommandPalette` memakai URL nyata dari `DynamicMenuRegistry::menusFor()`.
+- ~~`DummyModule` `href="#"` di tabel~~ — **SELESAI** (T-F8): route sudah nyata, re-validasi capability/path setiap render.
+- ~~`/app/{unknown}` → 200 (harus 404)~~ — **SELESAI** (T-F8): `EnsureFeatureEnabled` → `abort_unless(hasModule, 404)`.
+- ~~Registry statis tanpa `Company`/flag~~ — **SELESAI** (T-F8): `DynamicMenuRegistry` sudah preset/company-driven via `FeatureResolver`.
 
 ## Correction Log
 
