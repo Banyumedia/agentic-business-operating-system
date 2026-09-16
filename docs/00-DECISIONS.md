@@ -69,12 +69,14 @@ Status: `LOCKED` = keputusan final Bos. `OPEN` = menunggu diskusi lanjutan.
 | D-39 | **Vendor string terlarang di UI tenant** (ex-Q-06) | `Hermes`, `Nous`, `Nous Research`, `Laravel`, `Midtrans`, dan `laravel/laravel` di `composer.json name`. Diaudit T-22. |
 | D-40 | **Onboarding: form web dulu** (ex-Q-07) | Wawancara AI via WA menyusul setelah node API Hermes tersedia (T-17b). Human call opsional untuk Enterprise. |
 | D-41 | **Konteks tenant aktif: `users.current_company_id`** (ex-Q-08) | Kolom + middleware; bukan subdomain/session. Selaras D-21 dan D-37 (bot juga menyimpan `active_company_id` per percakapan, sinkron dengan kolom ini bila user sama). |
+| D-42 | **Frontend-first: aplikasi utuh dari JSON dulu, database menyusul** (2026-09-16) | Seluruh layar Fase 2 dibangun dengan sumber data JSON di balik interface (`EntityRepository`, `PresetSource`, `CompanyContext`); Fase 3 mengganti `Json*` -> `Eloquent*` via `DATA_SOURCE` tanpa mengubah Blade. **JSON menggantikan tabel, bukan logika**: preset di `database/presets/`, skema entitas di `database/schemas/` (sumber migration), baris per company di `storage/app/json/{company}/`. Enam pola layar generik, bukan satu Blade per kapabilitas. Anti-hardcode ditegakkan test arsitektur permanen (T-F14) dan bukti `laundry.json` (T-F15). Gate `HUMAN:UI-LOCK` bergeser: dikunci setelah melihat aplikasi utuh 4 preset. |
+| D-43 | **Palet warna tema** - OPEN, menunggu pilihan Bos | Lihat `UX_UI_SPEC.md` §7.1 untuk 4 kandidat palet siap pakai. Memblokir T-07 hanya untuk nilai hex; struktur token tidak berubah. Default bila tidak dijawab: kandidat A (Slate + Emerald). |
 
 ---
 
 ## Keputusan OPEN
 
-Tidak ada. Q-01..Q-08 dijawab Bos 2026-09-16 dan dipromosikan menjadi D-34..D-41
+**D-43 (palet warna)** menunggu pilihan Bos - lihat UX_UI_SPEC §7.1. Q-01..Q-08 dijawab Bos 2026-09-16 dan dipromosikan menjadi D-34..D-41
 (Q-04 dijawab **berbeda dari default**: lihat D-37). Item OPEN baru berikutnya
 muncul dari T-25 (pilihan modul Tier B). Aturan tetap: autopilot **tidak boleh
 menebak** item OPEN; tandai task `BLOCKED` dan lanjutkan task independen.

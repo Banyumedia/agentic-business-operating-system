@@ -102,24 +102,77 @@ dipakai untuk regresi.
 
 ---
 
-## Fase 2: Tampilan Halaman Operasional (Mobile-First)
+## Fase 2: Frontend-First - Aplikasi Utuh dari JSON (D-42)
 
-| ID | Task | Depends On | Decisions | Gate | File Target | Acceptance (dapat diuji) | State |
-|---|---|---|---|---|---|---|---|
-| T-07 | Design token `--erp-*` + Settings tab + theme toggle | T-03 | D-36 (ex-Q-03, **locked**: turunkan dari palet Tailwind v4, buktikan AA dengan test) | — | `resources/css/app.css`, `app/Livewire/Settings.php`, `resources/views/livewire/settings.blade.php`, `app/Services/ThemeRegistry.php` | (a) `app.css` `@theme` mendeklarasikan **36 token** sesuai `UX_UI_SPEC.md` §7; (b) `tests/Unit/ThemeContrastTest` membuktikan 11 pasangan kontras ≥ 4.5:1 untuk tema default; (c) `/app/settings` merender `role="tablist"`, 6 `role="tab"` dengan `aria-selected`/`aria-controls`/`tabindex` sesuai §4.0, tab dibaca dari **array registry** (bukan hardcode 6 `<button>`) agar U-02 "tab dinamis" terpenuhi saat role/flag hadir; (d) tab aktif dari `?tab=` query; (e) toggle tema menyimpan pilihan `auto/light/dark` di `localStorage` **dan** `<html data-theme>`; (f) Pint + build hijau. | `READY` |
-| T-05 | Dashboard *Midnight Command* | T-07 | — | — | `app/Livewire/Dashboard.php`, `resources/views/livewire/dashboard.blade.php`, `routes/web.php` (tambah `/app/dashboard`) | (a) route `/app/dashboard` → 200 dan menjadi tujuan default setelah login nanti; (b) memakai **hanya** token `--erp-*`, tidak ada `bg-gray-*` hardcoded (grep = 0); (c) zona universal: 3 kartu KPI dummy + 1 kartu "Laporan AI"; (d) zona industri: **dirender oleh `DashboardComposer` stub** (T-08e nanti menggantinya) yang membaca susunan widget dari array preset dummy — **bukan** `@if($preset==='agency')` hardcode; widget dummy dibuat sebagai komponen terpisah per nama katalog (`INDUSTRY_PRESETS.md` §4) agar T-08e cukup mengganti sumber data; (e) `main#main-content` + skip-link ada; (f) test feature `assertSee` untuk setiap kartu; (g) **tidak ada literal istilah bisnis** di Blade — pakai placeholder `term()` stub yang mengembalikan default global (T-08c menggantinya). | `BLOCKED` (T-07) |
-| T-06 | Komponen tabel responsif → card di mobile | T-07 | — | — | `resources/views/components/data-table.blade.php`, ganti tabel dummy di `dummy-module.blade.php` | (a) komponen Blade `<x-data-table :rows :columns>`; (b) `<table class="hidden md:table">` + `<div class="md:hidden">` card list dengan data sama; (c) `data-table` memakai token `--erp-*`; (d) semua `href="#"` di `dummy-module.blade.php` dihapus (grep = 0); (e) test feature mengecek kedua varian dirender; (f) header kolom menerima label dari caller, komponen **tidak** menyimpan istilah bisnis. | `BLOCKED` (T-07) |
+> **Keputusan Bos 2026-09-16 (D-42):** seluruh layar dibangun dulu dengan data
+> JSON, backend/database menyusul. Syarat mutlak agar tidak ditulis ulang:
+> **JSON menggantikan TABEL, bukan LOGIKA.** Layar membaca lewat interface;
+> Fase 3 hanya mengganti implementasi `Json*` dengan `Eloquent*`. Blade tidak
+> berubah. Tidak ada nama industri atau istilah bisnis literal di `app/` dan
+> `resources/` - keduanya hanya boleh ada di `database/presets/*.json`.
 
-**Urutan wajib Fase 2: T-07 → T-05 → T-06.** T-07 dulu karena T-05 dan T-06
-bergantung pada token. Ketiganya menyentuh `app.css`/layout, jadi **serial**.
+**Tata letak data sementara:**
+
+| Nanti hidup di | Sekarang | Isi |
+|---|---|---|
+| `business_presets` | `database/presets/{slug}.json` | kapabilitas, terminologi, workflow, dashboard, menu (skema `INDUSTRY_PRESETS.md` §2) |
+| Skema kolom tabel | `database/schemas/{entity}.schema.json` | field, tipe, wajib/opsional, `attributes` yang diizinkan - sumber migration Fase 3 |
+| Tabel per company | `storage/app/json/{company_slug}/{entity}.json` | baris dummy per company; folder = isolasi tenant |
+| Kode | tetap kode | validasi, `WorkflowEngine`, komponen, `term()`, resolver |
+
+**Enam pola layar generik** (bukan satu Blade per kapabilitas):
+`ListScreen` (list+detail+form) - `PipelineScreen` (kanban stage) - `CalendarScreen`
+- `CashierScreen` - `LedgerScreen` - `Composer` (dashboard/settings/onboarding).
+Layar "Pasien" (klinik) dan "Penyewa" (rental) adalah `ListScreen` yang sama
+dengan `entity=contacts` dan `term()` berbeda.
+
+**Preset Fase 2:** `bengkel`, `klinik`, `salon` (Tier A). Tier B
+(`pharmacy.prescription`, `construction.retention`) **dikecualikan** dari Fase 2.
+
+| ID | Task | Depends On | Decisions | File Target | Acceptance (dapat diuji) | State |
+|---|---|---|---|---|---|---|
+| T-07 | Design token `--erp-*` + tema + Settings shell | T-03 | D-36, **D-43 palet (menunggu pilihan Bos)** | `resources/css/app.css`, `app/Services/ThemeRegistry.php`, `app/Livewire/Settings.php` | (a) 36 token `@theme` sesuai UX §7; (b) `ThemeContrastTest` 11 pasangan >= 4.5:1 per tema; (c) `/app/settings` `role=tablist` dari array registry; (d) toggle `auto/light/dark` di `localStorage` + `<html data-theme>`; (e) Pint + build hijau. | `READY` |
+| T-F1 | **Kontrak data**: interface + binding `.env` | T-01 | D-42 | `app/Contracts/{EntityRepository,PresetSource,CompanyContext}.php`, `app/Providers/DataSourceServiceProvider.php`, `config/datasource.php` | `DATA_SOURCE=json` mengikat `Json*`; `eloquent` mengikat class yang belum ada -> exception jelas. `EntityRepository::for(company, entity)->all()/find()/save()/query(filters)`. Test binding per env. | `BLOCKED` (T-07) |
+| T-F2 | Skema kapabilitas JSON + validator | T-F1 | D-32 | `database/schemas/*.schema.json` (contacts, deals, projects, project_milestones, resources, bookings, items, item_batches, orders, order_lines, employees, cash_entries, invoices, quotations, timesheet_entries), `app/Services/Schema/EntitySchema.php`, `SchemaValidator` | Setiap entitas §1 punya skema; `attributes` hanya key yang dideklarasikan; `company_id` implisit dari folder. Test: baris tanpa field wajib ditolak; key `attributes` asing ditolak. Skema ini **adalah** sumber migration Fase 3 (T-13*). | `BLOCKED` |
+| T-F3 | `JsonEntityRepository` + `JsonCompanyContext` | T-F2 | D-41 | `app/Services/Json/JsonEntityRepository.php`, `JsonCompanyContext.php`, `storage/app/json/{bengkel-arka,klinik-sehat,salon-ayu}/*.json` | Baca/tulis/filter/sort/paginate; tulis atomik (temp+rename); **tidak bisa** membaca folder company lain (test: path traversal `../` ditolak). Company aktif dari `?company=` (dev) lalu session. | `BLOCKED` |
+| T-F4 | 3 preset JSON + `PresetDefinitionValidator` + `JsonPresetSource` | T-F1 | D-32 | `database/presets/{bengkel,klinik,salon}.json`, `app/Services/Preset/PresetDefinitionValidator.php`, `app/Services/Json/JsonPresetSource.php` | Skema §2 dipatuhi; validator menolak capability/term/widget/effect di luar katalog §1/§3/§4/§5 (test negatif per katalog). **Definisi dari T-08 dipindah ke sini; T-08 Fase 3 hanya menambah tabel + seeder dari file yang sama.** | `BLOCKED` |
+| T-F5 | `FeatureResolver` + `TerminologyResolver` + `term()` + `@term` | T-F4, T-F3 | — | `app/Services/FeatureResolver.php`, `TerminologyResolver.php`, `app/Support/helpers.php` | Resolusi override company (`storage/app/json/{c}/settings.json`) -> preset -> default global §3. Test: `klinik`->`term('contact')='Pasien'`, `bengkel`->`'Pelanggan'`; key asing -> exception di dev. **Menggantikan T-08b/T-08c Fase 3b**; Fase 3 hanya mengganti sumber. | `BLOCKED` |
+| T-F6 | `WorkflowEngine` (in-memory + log JSON) + efek `approval.request`, `notify.owner_wa` (fake) | T-F5 | — | `app/Services/Workflow/WorkflowEngine.php`, `Effects/*.php`, `app/Contracts/HasWorkflow.php` | Transisi dari `preset.workflows`; tolak transisi tak terdefinisi/role salah; `requires_approval` menahan; log ke `{c}/workflow_log.json`. Test 6 kasus. **Menggantikan T-08d**; Fase 3 menambah tabel log + `DB::transaction`. | `BLOCKED` |
+| T-F7 | `DashboardComposer` + `WidgetRegistry` + widget katalog §4 (data dari repository) | T-F5 | — | `app/Services/Dashboard/*`, `app/Livewire/Widgets/*.php`, `app/Livewire/Dashboard.php`, `resources/views/livewire/dashboard.blade.php` | `/app/dashboard` merender zona universal (3 KPI + laporan asisten dari `{c}/assistant_report.json`) + widget sesuai `preset.dashboard`; widget menghitung dari repository (bukan angka dummy statis); **grep literal istilah = 0**; test render untuk 3 preset. Acuan visual: branch `mockup/ux-dummy` (bengkel). **Menggantikan T-05 dan T-08e.** | `BLOCKED` |
+| T-F8 | Sidebar flag-aware + `term()` + route `/app/{module}` -> pola layar | T-F5 | — | `app/Services/DynamicMenuRegistry.php`, `app/Livewire/Sidebar.php`, `Lobby.php`, `routes/web.php`, `app/Http/Middleware/EnsureFeatureEnabled.php` | Registry per kapabilitas (§9); modul off -> tidak ada DOM & 403; label via `term()`; route memetakan modul -> `{pola layar, entity}`. Test: `salon` tanpa `projects` -> menu & route hilang; `klinik` menampilkan `Pasien`. **Menggantikan T-03b dan bagian route T-16.** | `BLOCKED` |
+| T-F9 | `ListScreen` + `<x-data-table>` responsif + form dari skema | T-F8, T-F2 | — | `app/Livewire/Screens/ListScreen.php`, `resources/views/livewire/screens/list.blade.php`, `resources/views/components/data-table.blade.php`, `form-field.blade.php` | Kolom & form **digenerate dari `{entity}.schema.json`** + label `term()`; tabel desktop / card mobile; search, sort, paginate; create/edit/delete lewat repository; empty-state via `term()`. Test: entitas `contacts` untuk 3 preset; `employees` untuk `salon`. **Menggantikan T-06.** | `BLOCKED` |
+| T-F10 | `PipelineScreen` (kanban) + `CalendarScreen` | T-F9, T-F6 | — | `app/Livewire/Screens/{PipelineScreen,CalendarScreen}.php` + Blade | Kolom kanban = stage dari `WorkflowEngine`; drag/pindah = `transition()` (ditolak -> toast, tidak berubah); kalender harian/mingguan untuk `bookings`/`scheduling` dengan **anti-double-booking** di repository (test overlap). Test: work-order `bengkel`, janji temu `klinik`, booking kursi `salon`. | `BLOCKED` |
+| T-F11 | `CashierScreen` + `LedgerScreen` | T-F9 | D-03 | `app/Livewire/Screens/{CashierScreen,LedgerScreen}.php`, `app/Services/TaxRateService.php` | Keranjang -> `orders`+`order_lines` via repository; pajak dari `business_identity` company (JSON) inclusive/exclusive (test 4 skenario REQUIREMENTS §1.3); pembayaran = state mock; `LedgerScreen` untuk `cash_entries` & `invoices` dengan saldo berjalan. | `BLOCKED` |
+| T-F12 | Settings 6 tab (Profil, Identitas Usaha, Preset & Istilah, Alur, Asisten AI, Tampilan) + onboarding form (D-40) | T-F9, T-F7 | D-40 | `app/Livewire/Settings.php` + tab components, `app/Livewire/Onboarding.php` | Tab dari registry + role/flag; dropdown preset **dari `PresetSource`** (bukan hardcode 3); tab Istilah mengedit override -> `term()` berubah tanpa reload server; tab Alur menampilkan graf stage dari preset; onboarding membuat folder company baru + `settings.json`. | `BLOCKED` |
+| T-F13 | Universal Search dari repository | T-F9 | — | `app/Livewire/CommandPalette.php` | Hasil dari entitas yang kapabilitasnya aktif, label `term()`, `href` nyata (grep `href="#"` = 0), scoped company. **Menggantikan bagian UI T-20**; Scout menyusul Fase 3. | `BLOCKED` |
+| T-F14 | **Uji anti-hardcode otomatis** | T-F7..T-F13 | D-31 | `tests/Architecture/NoIndustryHardcodeTest.php`, `NoLiteralTermsTest.php`, `RenderAllPresetsTest.php` | (1) grep regex nama industri (`bengkel|klinik|salon|agency|apotek|pharmacy|rental|kontraktor|...`) di `app/` + `resources/` = 0; (2) grep istilah kamus §3 literal di Blade = 0; (3) setiap route `/app/*` dirender untuk 3 preset -> 200/403 sesuai kapabilitas, tanpa exception. Test ini **permanen** dan berjalan di `php artisan test` selamanya. | `BLOCKED` |
+| T-F15 | **Bukti D-31 awal: `laundry.json`** | T-F14 | D-31 | `database/presets/laundry.json`, `storage/app/json/laundry-bersih/*.json` | Tambah preset + data dummy -> aplikasi lengkap (menu, dashboard, kanban `order`, kasir) muncul. **`git diff --stat` di luar `database/presets/`, `storage/app/json/`, dan test = kosong.** Bila tidak -> `BLOCKED` dengan daftar hardcode. | `BLOCKED` |
+
+**Urutan Fase 2:** T-07 -> T-F1 -> T-F2 -> (T-F3, T-F4) -> T-F5 -> (T-F6, T-F7,
+T-F8) -> T-F9 -> (T-F10, T-F11, T-F12, T-F13) -> T-F14 -> T-F15. Semua writer
+serial; yang dalam kurung independen secara file tetapi tetap satu writer.
+
+**Yang berubah di fase berikutnya karena D-42:**
+- T-05, T-06, T-03b, T-08b, T-08c, T-08d, T-08e, bagian UI T-16/T-20: **DONE
+  (moved to Fase 2)** - jangan dikerjakan ulang.
+- T-08 (Fase 3b) menjadi: tabel `business_presets` + seeder yang membaca
+  `database/presets/*.json` yang sudah ada + `EloquentPresetSource`.
+- T-13* (Fase 3c) menjadi: migration **digenerate/diturunkan dari
+  `database/schemas/*.schema.json`** + `EloquentEntityRepository` per entitas +
+  `php artisan json:import` untuk memindahkan `storage/app/json` menjadi seeder
+  demo. Acceptance tambahan setiap T-13*: `RenderAllPresetsTest` tetap hijau
+  dengan `DATA_SOURCE=eloquent` **tanpa mengubah Blade**.
+- T-21c tetap ada sebagai bukti akhir dengan database nyata.
 
 ---
 
-## ⛔ GATE `HUMAN:UI-LOCK`
+## GATE `HUMAN:UI-LOCK`
 
-Fase 3 dan seterusnya **tidak boleh dimulai** sebelum Bos menyatakan Fase 1–2
-`LOCKED`. Ini keputusan bisnis (persetujuan visual), bukan pilihan teknis. Saat
-autopilot tiba di sini, laporkan ringkasan Fase 2 dan **berhenti menunggu**.
+Fase 3 **tidak boleh dimulai** sebelum Bos menyatakan Fase 2 `LOCKED` setelah
+melihat **aplikasi utuh berjalan** untuk `bengkel`, `klinik`, `salon`, dan
+`laundry` dengan `DATA_SOURCE=json`. Ini persetujuan visual + alur, bukan pilihan
+teknis. Saat autopilot tiba di sini: laporkan ringkasan, URL tiap preset, hasil
+T-F14/T-F15, dan **berhenti menunggu**.
 
 ---
 
@@ -144,12 +197,12 @@ autopilot tiba di sini, laporkan ringkasan Fase 2 dan **berhenti menunggu**.
 
 | ID | Task | Depends On | Decisions | File Target | Acceptance | State |
 |---|---|---|---|---|---|---|
-| T-08 | `business_presets` + `PresetDefinitionValidator` + seeder 7 preset dari JSON | T-00a | — | migration, `app/Models/BusinessPreset.php`, `app/Services/Preset/PresetDefinitionValidator.php`, `database/seeders/BusinessPresetSeeder.php`, `database/seeders/presets/{agency,fnb,pharmacy,eo,contractor,rental,custom}.json` | Skema `definition` sesuai `INDUSTRY_PRESETS.md` §2; validator menolak capability/term/effect/widget asing (test negatif per katalog); 7 baris terseed; `tier` benar; test bahwa `pharmacy.json` menyatakan dependensi Tier B lengkap. | `BLOCKED` (gate) |
-| T-08b | `FeatureResolver` + `Company::feature()/hasAnyFeature()` | T-00b, T-08 | — | `app/Services/FeatureResolver.php`, `app/Models/Company.php` | Resolusi: `module_settings[features]` → `preset.definition.capabilities` → `false`. Test: A override tidak bocor ke B; key asing → `false`; cache per request; ganti `business_preset` company → resolusi berubah tanpa migration. | `BLOCKED` |
-| T-08c | `TerminologyResolver` + helper `term()` | T-08b | — | `app/Services/TerminologyResolver.php`, `app/Support/helpers.php` (`term()`), Blade directive `@term` | Resolusi company → preset → default global (`INDUSTRY_PRESETS.md` §3); key tak dikenal → exception di dev, fallback key di prod; test: `rental` → `term('contact')='Penyewa'`, `pharmacy` → `'Pasien'`; override company menang. | `BLOCKED` |
-| T-08d | `workflow_definitions` + `workflow_transitions_log` + `WorkflowEngine` + katalog efek | T-08b | — | migration ×2, `app/Services/Workflow/WorkflowEngine.php`, `app/Services/Workflow/Effects/*.php`, `app/Contracts/HasWorkflow.php` | `transition($model,$to,$actor)`: tolak transisi tak terdefinisi (exception), tolak role salah (403), `requires_approval` → buat tiket & tahan, jalankan `effects` dalam `DB::transaction`, tulis log. Materialisasi dari preset saat company dibuat. Test: 6 kasus + rollback bila efek gagal. Efek awal yang diimplementasi: `approval.request`, `notify.owner_wa` (via `HermesNodeClient` fake) — efek lain menyusul bersama kapabilitasnya. | `BLOCKED` |
-| T-08e | `WidgetRegistry` + `DashboardComposer` | T-08b | — | `app/Services/Dashboard/WidgetRegistry.php`, `app/Services/Dashboard/DashboardComposer.php`, `app/Livewire/Widgets/*.php` (kerangka) | Registry memetakan nama widget → kapabilitas yang dibutuhkan (katalog §4); `compose(Company)` mengembalikan hanya widget yang kapabilitasnya `true`, urut sesuai `preset.definition.dashboard`; test: preset `rental` → `resources_status` ada, `expiring_batches` tidak. Widget nyata dibangun bertahap; T-05 memakai composer ini dengan widget dummy. | `BLOCKED` |
-| T-03b | Refactor `DynamicMenuRegistry` ke bentuk flag-aware + `term()` (`INDUSTRY_PRESETS.md` §9) | T-08b, T-08c | — | `app/Services/DynamicMenuRegistry.php`, `app/Livewire/Sidebar.php`, `app/Livewire/Lobby.php`, test terkait | Registry per **kapabilitas** (bukan industri); `visible` closure per modul & item; label via `term()`; Lobby hanya menampilkan modul `visible`; test lama diperbarui; test baru: preset `fnb` **tidak** menampilkan HRD>Payroll, preset `klinik` (bukan 6 awal, di-seed hanya untuk test) menampilkan `Pasien`/`Janji Temu` **tanpa kode baru** → bukti D-31. Emoji → nama ikon Lucide. | `BLOCKED` |
+| T-08 | `business_presets` + seeder dari `database/presets/*.json` (sudah ada) + `EloquentPresetSource` | T-00a, T-F4 | D-42 | migration, `app/Models/BusinessPreset.php`, `app/Services/Preset/PresetDefinitionValidator.php`, `database/seeders/BusinessPresetSeeder.php`, `database/seeders/presets/{agency,fnb,pharmacy,eo,contractor,rental,custom}.json` | Skema `definition` sesuai `INDUSTRY_PRESETS.md` §2; validator menolak capability/term/effect/widget asing (test negatif per katalog); 7 baris terseed; `tier` benar; test bahwa `pharmacy.json` menyatakan dependensi Tier B lengkap. | `BLOCKED` (gate) |
+| T-08b | ~~`FeatureResolver`~~ -> **DONE (moved to T-F5)**. Sisa: `Company::feature()` membaca `module_settings` via `EloquentCompanyContext` | T-00b, T-08 | D-42 | `app/Services/FeatureResolver.php`, `app/Models/Company.php` | Resolusi: `module_settings[features]` → `preset.definition.capabilities` → `false`. Test: A override tidak bocor ke B; key asing → `false`; cache per request; ganti `business_preset` company → resolusi berubah tanpa migration. | `BLOCKED` |
+| T-08c | ~~`TerminologyResolver`~~ -> **DONE (moved to T-F5)**. Sisa: override dari `module_settings[terminology]` | T-08b | D-42 | `app/Services/TerminologyResolver.php`, `app/Support/helpers.php` (`term()`), Blade directive `@term` | Resolusi company → preset → default global (`INDUSTRY_PRESETS.md` §3); key tak dikenal → exception di dev, fallback key di prod; test: `rental` → `term('contact')='Penyewa'`, `pharmacy` → `'Pasien'`; override company menang. | `BLOCKED` |
+| T-08d | Tabel `workflow_definitions` + `workflow_transitions_log`; `WorkflowEngine` (T-F6) diberi `DB::transaction` + log ke tabel | T-08b | D-42 | migration ×2, `app/Services/Workflow/WorkflowEngine.php`, `app/Services/Workflow/Effects/*.php`, `app/Contracts/HasWorkflow.php` | `transition($model,$to,$actor)`: tolak transisi tak terdefinisi (exception), tolak role salah (403), `requires_approval` → buat tiket & tahan, jalankan `effects` dalam `DB::transaction`, tulis log. Materialisasi dari preset saat company dibuat. Test: 6 kasus + rollback bila efek gagal. Efek awal yang diimplementasi: `approval.request`, `notify.owner_wa` (via `HermesNodeClient` fake) — efek lain menyusul bersama kapabilitasnya. | `BLOCKED` |
+| T-08e | ~~`WidgetRegistry` + `DashboardComposer`~~ -> **DONE (moved to T-F7)** | — | D-42 | `app/Services/Dashboard/WidgetRegistry.php`, `app/Services/Dashboard/DashboardComposer.php`, `app/Livewire/Widgets/*.php` (kerangka) | Registry memetakan nama widget → kapabilitas yang dibutuhkan (katalog §4); `compose(Company)` mengembalikan hanya widget yang kapabilitasnya `true`, urut sesuai `preset.definition.dashboard`; test: preset `rental` → `resources_status` ada, `expiring_batches` tidak. Widget nyata dibangun bertahap; T-05 memakai composer ini dengan widget dummy. | `BLOCKED` |
+| T-03b | ~~Refactor `DynamicMenuRegistry`~~ -> **DONE (moved to T-F8)** | — | D-42 | `app/Services/DynamicMenuRegistry.php`, `app/Livewire/Sidebar.php`, `app/Livewire/Lobby.php`, test terkait | Registry per **kapabilitas** (bukan industri); `visible` closure per modul & item; label via `term()`; Lobby hanya menampilkan modul `visible`; test lama diperbarui; test baru: preset `fnb` **tidak** menampilkan HRD>Payroll, preset `klinik` (bukan 6 awal, di-seed hanya untuk test) menampilkan `Pasien`/`Janji Temu` **tanpa kode baru** → bukti D-31. Emoji → nama ikon Lucide. | `BLOCKED` |
 | T-09 | ~~kolom `business_preset`~~ → digabung ke T-00a. | — | — | — | — | `DONE (merged)` |
 
 **Urutan wajib Fase 3b: T-08 → T-08b → (T-08c ∥ T-08d ∥ T-08e read-only design boleh paralel, implementasi serial) → T-03b.**
@@ -266,7 +319,7 @@ T-00a ─┬─ T-00b ─── T-08 ─── T-08b ─┬─ T-08c ───�
                                            └─ T-22 ──┴─ T-23
 ```
 
-**Prinsip urutan:** fondasi tenant → **mesin komposisi** → tabel kapabilitas
+**Prinsip urutan (D-42):** kerangka UI -> **frontend utuh dari JSON (kontrak + mesin komposisi + 6 pola layar) -> UI-LOCK** -> fondasi tenant → **mesin komposisi** → tabel kapabilitas
 generik → Tier B → API → bukti komposisi → **ekspansi pasar sebagai data** (Fase 6). Tabel domain **tidak boleh** dibuat
 sebelum `WorkflowEngine`, `FeatureResolver`, `TerminologyResolver` ada, karena
 tabel itu bergantung pada ketiganya.

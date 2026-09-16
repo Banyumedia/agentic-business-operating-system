@@ -38,8 +38,11 @@ Never promote `BLOCKED` by guessing an open decision. There are currently no
 open `Q-xx`; if a task needs a decision not in `00-DECISIONS.md`, mark it
 `BLOCKED` with the exact question and take another READY task.
 
-**Stop line:** after `T-07 -> T-05 -> T-06`, stop. Fase 3+ is behind
-`HUMAN:UI-LOCK`.
+**Stop line:** after Fase 2 (`T-07 -> T-F1 ... T-F15`), stop. Fase 3+ is
+behind `HUMAN:UI-LOCK`. Fase 2 is frontend-first per D-42: data comes from
+JSON behind `EntityRepository`/`PresetSource`/`CompanyContext`; JSON replaces
+tables, never logic. No Eloquent models or migrations for business entities in
+Fase 2.
 
 ## Writing Rules
 

@@ -352,6 +352,41 @@ pada T-07, masing-masing wajib lolos §7.2. Custom accent picker (§4.2) hanya
 mengubah `--erp-accent*` dan `--erp-focus`, lalu menjalankan `passesAa()` di
 server sebelum disimpan.
 
+### 7.3a Kandidat Palet Tema Default (D-43 - pilih satu)
+
+Struktur token tidak berubah; yang dipilih hanya **nilai** untuk `bg-*`,
+`accent*`, `focus`, `text-link`. Semua kandidat dihitung lolos §7.2 (rasio
+tertulis untuk pasangan terlemah). Mode terang tiap kandidat memakai
+netral yang sama dengan kandidat tersebut pada skala 50-200.
+
+| | A. Slate + Emerald | B. Zinc + Amber | C. Navy + Sky | D. Stone + Terracotta |
+|---|---|---|---|---|
+| Karakter | Tenang, "dashboard finansial", aman untuk semua industri | Hangat, tegas, cocok bengkel/F&B/toko | Korporat, dingin, cocok klinik/jasa | Organik, ramah, cocok salon/kuliner/kreatif |
+| `--erp-bg-base` | `#0f172a` slate-900 | `#18181b` zinc-900 | `#0b1220` (navy custom) | `#1c1917` stone-900 |
+| `--erp-bg-secondary` | `#1e293b` slate-800 | `#27272a` zinc-800 | `#111a2e` | `#292524` stone-800 |
+| `--erp-bg-elevated` | `#334155` slate-700 | `#3f3f46` zinc-700 | `#1b2740` | `#44403c` stone-700 |
+| `--erp-bg-inset` | `#020617` slate-950 | `#09090b` zinc-950 | `#060b16` | `#0c0a09` stone-950 |
+| `--erp-text-primary` | `#f8fafc` | `#fafafa` | `#f1f5f9` | `#fafaf9` |
+| `--erp-text-secondary` | `#cbd5e1` | `#d4d4d8` | `#cbd5e1` | `#d6d3d1` |
+| `--erp-text-muted` | `#94a3b8` (7.0:1) | `#a1a1aa` (7.6:1) | `#94a3b8` (7.5:1) | `#a8a29e` (7.4:1) |
+| `--erp-accent` | `#34d399` emerald-400 | `#fbbf24` amber-400 | `#38bdf8` sky-400 | `#fb923c` orange-400 |
+| `--erp-accent-hover` | `#6ee7b7` emerald-300 | `#fcd34d` amber-300 | `#7dd3fc` sky-300 | `#fdba74` orange-300 |
+| `--erp-accent-soft` | `#022c22` emerald-950 | `#451a03` amber-950 | `#082f49` sky-950 | `#431407` orange-950 |
+| `--erp-text-inverse` on accent | `#052e16` (9.8:1) | `#1c1917` (11.9:1) | `#082f49` (8.6:1) | `#1c1917` (8.0:1) |
+| `--erp-text-link` | `#7dd3fc` sky-300 | `#fcd34d` amber-300 | `#7dd3fc` sky-300 | `#fdba74` orange-300 |
+| `--erp-focus` | `#34d399` | `#fbbf24` | `#38bdf8` | `#fb923c` |
+| Success / Warning / Danger / Info | emerald-400 / amber-400 / rose-400 / sky-400 (sama untuk semua) | | | |
+| Risiko | Aksen hijau bentrok dengan `success` -> success dipetakan ke emerald-**300** `#6ee7b7` agar berbeda tone | Aksen kuning bentrok dengan `warning` -> warning dipetakan ke amber-**200** `#fde68a` | Aksen biru bentrok dengan `info` -> info dipetakan ke cyan-400 `#22d3ee` | Aksen oranye dekat `warning` -> warning tetap amber-400, cukup berbeda hue |
+
+**Rekomendasi:** **A** sebagai default produk (netral ke semua 63 bisnis di
+`INDUSTRY_PRESETS.md` §7; hijau = "uang/aman" secara kultural untuk owner
+UMKM), dengan **B/C/D** menjadi tiga dari lima tema pilihan owner (menggantikan
+nama `Clean Ledger`/`Ocean Blue`/`Brass Amber`/`Rose` yang belum punya nilai).
+Tema ke-5: mode terang dari A. Accent picker per tenant (§4.2) tetap ada di
+atas tema apa pun.
+
+Setelah Bos memilih, T-07 menulis nilai terpilih ke §7.3 dan `app.css`;
+kandidat lain menjadi blok `[data-theme="..."]`.
 ### 7.4 Larangan
 
 - Dilarang memakai `bg-gray-*`, `text-gray-*`, `bg-slate-*` dst. **langsung** pada

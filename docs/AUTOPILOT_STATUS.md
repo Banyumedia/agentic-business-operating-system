@@ -55,6 +55,7 @@ default atau memilih alternatif. **Agent tidak menebak.**
 - Kapabilitas hanya dari katalog `INDUSTRY_PRESETS.md` §1 (D-32).
 - Istilah via `term()`, alur via `WorkflowEngine`, dashboard via `DashboardComposer`.
 - Fase 3b (mesin komposisi) **wajib selesai** sebelum tabel domain (Fase 3c).
+- **D-42 (2026-09-16): Fase 2 = frontend-first dari JSON.** Semua layar dibangun dulu lewat `EntityRepository`/`PresetSource`/`CompanyContext` dengan implementasi `Json*`; Fase 3 mengganti ke `Eloquent*` via `DATA_SOURCE` tanpa mengubah Blade. JSON menggantikan tabel, bukan logika. Fase 2 = T-07 -> T-F1..T-F15 (kontrak, skema, resolver, WorkflowEngine, DashboardComposer, 6 pola layar, uji anti-hardcode, bukti `laundry.json`). T-05/T-06/T-03b/T-08b-e dipindah ke Fase 2. Stop line sekarang setelah T-F15. **D-43 palet warna OPEN** - memblokir nilai hex T-07 saja; default kandidat A.
 - T-21c membuktikan D-31: tambah `klinik.json` + `salon.json` → produk berjalan **tanpa diff kode**.
 
 ## Next READY
