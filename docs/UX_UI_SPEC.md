@@ -393,12 +393,12 @@ kandidat lain menjadi blok `[data-theme="..."]`.
    layar, struk, faktur, dan laporan. Jangan tampilkan `Rp 0`. Label pada
    mode `taxable` memakai bahasa awam: "Harga sudah termasuk pajak" /
    "Pajak ditambahkan".
-2. **Konfirmasi berisiko (D-45).** Type-to-confirm dengan
+2. **Konfirmasi berisiko (D-45) - tiga tingkat.** Tingkat 1 (ketik `YA`) hanya untuk aksi tak dapat dibatalkan berdampak legal/fiskal; tingkat 2 (dua tombol, aksi merah) untuk destruktif yang dapat dipulihkan; tingkat 3 tanpa konfirmasi. Tombol aksi **inert 400 ms** sejak modal muncul. Type-to-confirm dengan
    `strtoupper(trim($input)) === 'YA'`; `inputmode="text"`
    `autocapitalize="characters"` `autocorrect="off"` `spellcheck="false"`.
    Modal menyebut akibat konkret + nominal. Tekan-tahan dilarang untuk aksi
    finansial.
-3. **Perpindahan tahap.** Tombol "tahap berikutnya" untuk alur normal, plus
+3. **Perpindahan tahap (D-46).** Tidak boleh ada jalan buntu: setiap tahap non-terminal punya transisi keluar, tahap QC/pemeriksaan wajib punya cabang mundur (rework). Transisi mundur membuka isian **alasan singkat** yang tercatat di log. Tombol "tahap berikutnya" untuk alur normal, plus
    menu pada badge tahap berisi **hanya transisi yang sah** dari stage saat
    ini menurut preset. Tidak ada daftar stage penuh yang bisa diklik bebas.
 ### 7.4 Larangan
