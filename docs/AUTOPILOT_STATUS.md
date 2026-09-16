@@ -9,6 +9,18 @@
 > Agent yang resume: baca file ini, lalu `EXECUTION_PLAN.md` §0 untuk definisi
 > `READY` dan command verifikasi. Jangan pakai angka/SHA dari ingatan sesi.
 
+## Akses Pratinjau Jarak Jauh (untuk review dari HP)
+
+| URL | Sumber | Port |
+|---|---|---|
+| `https://agentic-bos.nalar.army/` | worktree `main` (aplikasi nyata) | 8000 |
+| `https://mockup.agentic-bos.nalar.army/mockup/dashboard` | worktree `mockup/ux-dummy` (referensi visual) | 8001 |
+
+Keduanya di balik basic auth Caddy (user `bos`) dan `noindex`. Dev server
+dijalankan otomatis saat login Windows oleh
+`Startup\AgenticBOS_DevServers.vbs`. Aplikasi **belum punya auth sendiri**
+(T-00c Fase 3) - basic auth adalah satu-satunya pelindung; jangan hapus
+sebelum login aplikasi ada. Checkpoint rollback: tag `pre-fase-2`.
 ## Verified Baseline (sumber tunggal)
 
 | Item | Value | Cara verifikasi ulang |
