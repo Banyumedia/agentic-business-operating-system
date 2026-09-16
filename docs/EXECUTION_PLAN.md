@@ -222,7 +222,7 @@ T-F14/T-F15, dan **berhenti menunggu**.
 | T-11 | Akuntansi `chart_of_accounts`, `accounting_journals`, `accounting_journal_lines` (§4) + `JournalService` + `TaxRateService` | T-13b (FK `project_id`) | — | migration ×3 + model + 2 service | `company_id` di lines (D-26); `post()` menolak unbalance; `TaxRateService::calculateTax()` sesuai REQUIREMENTS §1.3 (test 4 skenario); template jurnal untuk cashbook (Debit beban / Kredit kas); test A/B. | `BLOCKED` |
 | T-10 | `membership_plans`, `company_memberships` (§11.1–11.2) | T-00a | — | migration + model | Test A/B. | `BLOCKED` |
 | T-10a | `token_ledger_entries` + `TokenLedgerService` (§11.3) | T-10 | — | migration + model + service | Idempoten via `idempotency_key`; saldo cache + ledger dalam 1 transaksi; test dua panggilan key sama → saldo berubah sekali. | `BLOCKED` |
-| T-10b | `hermes_nodes`, `hermes_profiles`, `hermes_profile_companies`, `hermes_conversation_contexts` (§12) | T-00a | D-37 (**1 bot `primary` per owner, lintas company; bot tambahan = add-on berbayar**) | migration x4 + model | `*_secret_reference` bukan plaintext; `owner_user_id` (bukan `company_id UNIQUE`); test: owner 2 company → 1 profile + 2 pivot; `type=addon` tanpa `billing_addon_id` ditolak; tepat satu `primary` per owner divalidasi model. | `BLOCKED` |
+| T-10b | `hermes_nodes`, `hermes_profiles`, `hermes_profile_companies`, `hermes_conversation_contexts` (§12) | T-00a | D-37, **D-53** (kuota GRUP dari paket vs bot ke-2 = add-on), **D-55** (nomor WA **milik klien** via scan QR; platform menyediakan nomor hanya sebagai add-on — jalur default tidak boleh mengasumsikan platform punya stok nomor) | migration x4 + model | `*_secret_reference` bukan plaintext; `owner_user_id` (bukan `company_id UNIQUE`); test: owner 2 company → 1 profile + 2 pivot; `type=addon` tanpa `billing_addon_id` ditolak; tepat satu `primary` per owner divalidasi model. | `BLOCKED` |
 | T-12 | `invoices` (§2.3) | T-10, T-13b | — | migration + model | `type` topup/subscription; transisi status valid; `paid→paid` no-op. | `BLOCKED` |
 | T-14 | `attachments` + trait `HasAttachments` (§13) | T-00a | — | migration + model + trait | Test morph ke `Contact`, `Prescription`; A/B. | `BLOCKED` |
 | T-14b | **Tier B**: `prescriptions` + `retentions` (§10) + aturan domain | T-13, T-13b, T-13d, T-13e, T-14 | — | migration ×2 + model + `PrescriptionGuard`, `RetentionService` | Obat `drug_class ∈ {keras, psikotropika}` **ditolak** masuk `order_lines` tanpa `prescription_id` `verified` (test negatif); retensi dipotong otomatis dari invoice milestone bila `retention_pct>0`, `status=held`, tidak bisa `invoiced` sebelum `release_on` (test). | `BLOCKED` |
@@ -247,10 +247,34 @@ migration **serial**.
 | T-19b | Webhook NalarPesan → `orders` (D-04) | T-13e | — | `HUMAN:SECRET` → fake | `app/Http/Controllers/Api/NalarPesanWebhookController.php` | HMAC fail-closed; `external_ref` idempoten (replay → no-op); order masuk `stage='open'` dengan `resource_id` meja bila `pos.tables`; test 4 kasus. | `BLOCKED` |
 | T-17 | API Master Bot (BOS Care) | T-10a, T-19, `support_tickets` (dipindah ke T-17 sendiri) | D-34 | `HUMAN:SECRET` → fake | migration `support_tickets`, `routes/api.php`, `app/Http/Controllers/Api/MasterBot/*`, `app/Http/Middleware/AuthenticateMasterBot.php` | Header `X-Master-Bot-Key` via `hash_equals`; endpoint tiket, saldo, topup-invoice; semua wajib `company_id` & 403 bila WA user tidak memiliki company; test 6 kasus. | `BLOCKED` |
 | T-17b | API Tenant Bot (MCP ERP) — `mcp_configure_modules`, `mcp_update_company_settings`, `mcp_create_contact`, `mcp_create_deal`, `mcp_record_expense`, `mcp_create_reminder` | T-08b, T-08c, T-13, T-11, T-13f | — | `HUMAN:SECRET` → fake | `routes/api.php`, `app/Http/Controllers/Api/TenantBot/*`, `app/Http/Middleware/AuthenticateTenantBot.php` | Auth per `hermes_profiles.webhook_secret_reference`; **setiap** tool wajib `company_id` & ditolak 403 bila caller `wa_number` bukan anggota company (COMMERCIAL §4 Lapis 3); `PUT /api/bot/settings|features` hanya untuk `wa_number` role owner (REQUIREMENTS §3.1–3.2); `mcp_configure_modules` menulis `module_settings[features|terminology]` → menu berubah tanpa kode (test dengan preset `custom`); aksi destruktif → `approval_flow` tiket `YA <kode>` (D-27). Test 8 kasus. | `BLOCKED` |
-| T-18 | `billing:check-expiring` | T-12, T-17 | — | `HUMAN:SECRET` → fake | `app/Console/Commands/BillingCheckExpiring.php`, `app/Contracts/HermesNodeClient.php`, `app/Services/Hermes/FakeHermesNodeClient.php`, `routes/console.php` | H-3 → invoice `subscription` `pending` + `sendWhatsApp()`; idempoten per hari; dijadwalkan harian; test dengan `Carbon::setTestNow`. | `BLOCKED` |
+| T-18 | `billing:check-expiring` + **tangga penurunan layanan (D-49)** | T-12, T-17 | D-49 | `HUMAN:SECRET` → fake | `app/Console/Commands/BillingCheckExpiring.php`, `app/Services/Billing/DunningLadder.php`, `app/Contracts/HermesNodeClient.php`, `app/Services/Hermes/FakeHermesNodeClient.php`, `routes/console.php` | H-3 → invoice `subscription` `pending` + `sendWhatsApp()`; idempoten per hari; dijadwalkan harian; test `Carbon::setTestNow`. **Tangga D-49:** H+0 `status=ai_suspended` (bot mati, web penuh); H+7 `read_only` (tulis ditolak 423, **ekspor tetap jalan**); H+30 `frozen` (login ditolak, data utuh); H+90 boleh hapus **hanya bila** `dunning_notified_at` memuat 3 peringatan (H+30/H+60/H+83). Pembayaran di tahap mana pun → `active` seketika tanpa kehilangan data. Test: 6 transisi tangga + test negatif "hapus tanpa 3 peringatan ditolak". | `BLOCKED` |
 | T-20 | Scout + Universal Search nyata | T-13, T-12, T-08b, T-08c | D-35 (`database`, locked) | — | `composer require laravel/scout`, `Searchable` di `Contact`, `Deal`, `Project`, `Invoice`, `Item`; `app/Livewire/CommandPalette.php` | Hasil dari DB, scoped `company_id`, label via `term()`; dummy & `href="#"` dihapus; test: A tidak melihat B; hasil menampilkan `Pasien` untuk preset `pharmacy`. | `BLOCKED` |
 | T-17c | **Panel Super Admin minimal + "Login As" beraudit (D-47)** | T-00c, T-16 | `HUMAN:UI-LOCK` (belum ada mockup panel admin) | `app/Http/Controllers/Admin/*`, migration `admin_impersonation_sessions`, `app/Http/Middleware/RequireSuperAdmin.php`, banner Blade global | Route `/admin/*` terpisah dari `/app/*`, guard role `platform_admin` (bukan `companies` biasa); tombol "Login As" per company → buat sesi impersonasi + redirect `/app/dashboard`; banner kuning permanen non-dismissable selama sesi; semua tulis ke `module_settings`/`business_preset`/`companies.theme` selama impersonasi tercatat `changed_by_type=admin_impersonation` + `admin_user_id`; aksi finansial/destruktif tetap lewat D-45 tingkat 1/2 (tidak ada bypass); admin **tidak** bisa lihat password/secret klien (test 403 pada endpoint secret); tombol "Akhiri Sesi Bantuan" mengembalikan ke `/admin`. Test 6 kasus termasuk audit log lengkap. | `BLOCKED` |
+| T-10c | **Mode hemat saat saldo token habis (D-48)** | T-10a | D-48 | — | `app/Services/Token/EmergencyModeResolver.php`, `app/Services/Token/ModelSelector.php` | Saat `current_token_balance <= 0` → `emergency_mode_active=true`, pemilihan model dipaksa ke multiplier terendah di `ai_model_pricings`, debit tetap tercatat di `token_ledger_entries` dari `emergency_balance`. Bot memberi tahu **sekali per percakapan** (U-05: tidak berulang, tidak terasa jualan). `emergency_balance` habis → bot berhenti membalas + link topup, **web tetap 200 penuh** (test). Topup → mode hemat mati seketika. Test 5 kasus termasuk "web tidak terpengaruh saat bot mati". | `BLOCKED` |
+| T-10d | **Gerbang kapabilitas per paket (D-52)** | T-10, T-08b | D-52 | — | `app/Services/PlanCapabilityGate.php`, integrasi ke `FeatureResolver` | `FeatureResolver` menghasilkan irisan: kapabilitas aktif = `preset ∩ module_settings ∩ plan.features`. Kapabilitas di luar paket → `false` (menu hilang, route 403). Saat onboarding, preset yang menuntut kapabilitas di luar paket tampil berlabel **"perlu paket lebih tinggi" + daftar kapabilitas yang kurang** (pengecualian sah U-04 karena ini informasi harga). **Dilarang** memakai nama preset/industri sebagai syarat (D-31) — test grep memastikan gerbang hanya menyebut kunci kapabilitas. Test: Starter tidak bisa `projects.progress_billing`; upgrade paket → kapabilitas muncul tanpa migration. | `BLOCKED` |
+| T-12b | **Trial 14 hari + ekspor data mandiri (D-51)** | T-10, T-00c | D-51 | — | `app/Services/Billing/TrialProvisioner.php`, `app/Livewire/Settings/DataExport.php`, `app/Jobs/BuildCompanyExport.php` | Trial: 14 hari fitur penuh, `trial_token_quota`, tanpa kartu; satu owner satu trial (dicegah via `wa_number` **dan** email, bukan email saja — test duplikat); berakhir → masuk D-49 tahap H+7 (hanya-baca), bukan hilang. **Ekspor:** owner unduh seluruh data usahanya dari `/app/settings` kapan saja (CSV per entitas + JSON preset/pengaturan), **tetap berfungsi saat status `read_only`/menunggak** (test eksplisit). Tidak perlu minta admin platform. Lampiran tetap di Drive klien (D-22). | `BLOCKED` |
 
+
+---
+
+## Fase 4b: Kepatuhan Data Pribadi (D-50) — WAJIB sebelum menjual preset klinik/apotek
+
+> Produk menyimpan data pribadi pelanggan klien, dan untuk klinik/apotek juga
+> **data kesehatan** — data pribadi spesifik menurut UU 27/2022 (PDP). Platform
+> berperan sebagai **prosesor**, tenant sebagai **pengendali**. Fase ini bukan
+> opsional: tanpa ini, preset klinik/apotek tidak boleh dijual.
+
+| ID | Task | Depends On | Decisions | Acceptance | State |
+|---|---|---|---|---|---|
+| T-27 | Penandaan kapabilitas sensitif + kebijakan privasi & persetujuan | T-08, T-00c | D-50(a) | Katalog kapabilitas diberi atribut `sensitive: true` (mis. yang menyimpan kondisi kesehatan); teks kebijakan privasi + persetujuan ditampilkan saat onboarding dan **waktu persetujuannya dicatat** (`companies.privacy_accepted_at`, `accepted_by_user_id`, versi teks). Test: company tanpa persetujuan tidak bisa mengaktifkan kapabilitas `sensitive`. | `BLOCKED` |
+| T-27b | Enkripsi at-rest kolom sensitif | T-27, T-13 | D-50(b) | Kolom identitas pasien/catatan medis/NIK dienkripsi di level aplikasi (cast terenkripsi Laravel), bukan hanya TLS. Kunci dari `APP_KEY`/KMS, **tidak** di repo. Test: baris di DB tidak terbaca polos; pencarian tetap berfungsi lewat kolom hash/blind-index terpisah bila diperlukan. | `BLOCKED` |
+| T-27c | `access_logs` — siapa membuka data sensitif | T-27 | D-50(c) | migration `access_logs` (company_id, user_id, subject_type, subject_id, action, ip, created_at); setiap pembacaan entitas bertanda `sensitive` tercatat. Test: buka rekam pasien → 1 baris log; ekspor massal → tercatat sebagai satu peristiwa. Log ini **tidak** boleh bisa dihapus dari UI tenant. | `BLOCKED` |
+| T-27d | Hak subjek data: ekspor & hapus per pelanggan | T-12b, T-27c | D-50(d) | Owner tenant dapat mengekspor **atau menghapus** data satu pelanggan/pasien atas permintaan orang tersebut, dari UI. Penghapusan memakai D-45 tingkat 1 (ketik YA) dan menyisakan catatan audit tanpa data pribadi. Test: setelah hapus, data pribadi hilang dari semua entitas terkait; jejak transaksi keuangan tetap ada dalam bentuk teranonimkan (kewajiban pembukuan tetap terpenuhi). | `BLOCKED` |
+| T-27e | Kendali pengiriman data ke AI | T-27, T-17b | D-50(f) | Data pada kapabilitas bertanda `sensitive` **tidak** dikirim ke model AI kecuali owner mengaktifkan secara eksplisit per-kapabilitas; default **mati**. Test: dengan flag mati, payload MCP tidak memuat field sensitif (assert field-by-field), dan bot menjawab bahwa ia tidak memiliki akses tersebut. | `BLOCKED` |
+
+**Catatan:** T-27..T-27e tidak memblokir peluncuran preset non-kesehatan
+(bengkel, salon, laundry, kontraktor, ritel). Yang diblokir hanya penjualan
+preset klinik/apotek sampai fase ini hijau.
 
 ---
 
@@ -276,13 +300,32 @@ dan buka tiket D-32/D-33 ke Bos.**
 
 | ID | Task | Depends On | Gate | Acceptance | State |
 |---|---|---|---|---|---|
-| T-24 | Preset gelombang 1: `klinik`, `salon` **dipromosikan** dari bukti T-21c ke preset resmi | T-21c | — | `klinik.json`, `salon.json` lolos `PresetValidator`; muncul di dropdown onboarding (UX §4.3); `DogfoodTenantSeeder` memuatnya. | `BLOCKED` |
+| T-24 | Preset gelombang 1: `klinik`, `salon` **dipromosikan** dari bukti T-21c ke preset resmi | T-21c, **T-27..T-27e (D-50) untuk `klinik`** | D-50 | `klinik.json`, `salon.json` lolos `PresetValidator`; muncul di dropdown onboarding (UX §4.3); `DogfoodTenantSeeder` memuatnya. | `BLOCKED` |
 | T-24b | Preset gelombang 2: `bengkel`, `kursus`, `kos_coworking`, `laundry` | T-24 | — | 4 JSON + `PresetCompositionTest` per preset: kapabilitas, `term()`, workflow default, widget dashboard sesuai §7.3/§7.6/§7.7/§7.9. Workflow `laundry` (`order`: diterima→dicuci→siap_diambil→selesai) memicu `notify.owner_wa`. **Diff kode = 0.** | `BLOCKED` |
-| T-24c | Preset gelombang 3: `katering`, `bakery_preorder`, `travel_umroh`, `gym`, `praktek_dokter`, `cuci_mobil` | T-24b | — | 6 JSON + test; sama seperti T-24b. | `BLOCKED` |
+| T-24c | Preset gelombang 3: `katering`, `bakery_preorder`, `travel_umroh`, `gym`, `praktek_dokter`, `cuci_mobil` | T-24b, **T-27..T-27e untuk `praktek_dokter`** | D-50 | 6 JSON + test; sama seperti T-24b. | `BLOCKED` |
 | T-24d | Preset gelombang 4: sisa Tier A dari §7 (prioritas ditentukan Bos berdasarkan permintaan pasar) | T-24c | `HUMAN:PRIORITY` | Batch ≤6 preset per PR; setiap batch memperbarui tabel §6/§7 dan `PRESET_COVERAGE.md` (dibuat di T-24). | `BLOCKED` |
 | T-25 | **Keputusan Tier B berikutnya** (bukan kode) | T-24b | `HUMAN:DECISION` | Bos memilih 0–2 dari: `manufacturing.production_order` (BOM multi-level + WIP, §7.8) dan `finance.loan_schedule` (angsuran/koperasi, §7.9). Hasil dicatat sebagai D-34/D-35 di `00-DECISIONS.md` dengan spesifikasi tabel di `DATA_MODEL.md`. Tanpa keputusan → tidak ada task kode. | `BLOCKED` |
 | T-25b | Implementasi modul Tier B terpilih | T-25 | — | Mengikuti pola T-14b: tabel + workflow effect + widget; **dibungkus flag** sehingga preset yang tidak memakainya tidak berubah (regression T-24* tetap hijau). | `BLOCKED` |
 | T-26 | Halaman publik "Cocok untuk bisnis apa?" | T-24b, T-22 | `HUMAN:UI-LOCK` (copy) | Route publik `/industri` membaca daftar preset + `description` dari `business_presets` (bukan hardcode); tiap preset punya CTA onboarding 1-klik. Grep nama industri literal di Blade = 0. | `BLOCKED` |
+
+### Fase 6b: Add-on Komersial (D-56) — dibangun sesuai permintaan pasar
+
+Katalog add-on resmi ada di D-56. **Urutan pembangunan ditentukan permintaan
+nyata, bukan ditebak sekarang** — karena itu belum diberi ID task tetap. Setiap
+add-on wajib: (a) diaktifkan lewat mekanisme kapabilitas (D-52) atau item
+billing, (b) **tidak** menambah nama industri ke kode (D-31), (c) tunduk Tier B
+(D-33) bila butuh aturan domain khusus.
+
+| Add-on (D-56) | Bergantung pada | Catatan teknis |
+|---|---|---|
+| Cabang/lokasi tambahan | T-00a, T-16 | Multi-company sudah ada (D-06/D-41); yang perlu dibangun: penagihan per cabang + pelaporan gabungan |
+| e-Faktur / Coretax (PKP) | T-11, T-13e | Integrasi eksternal; hanya relevan bila `tax_mode=taxable` (D-44) |
+| Loyalty pelanggan (poin/voucher) | T-13, T-13e | Kapabilitas generik baru → **butuh keputusan D-32** sebelum dibangun |
+| Integrasi marketplace/ojol | T-13e, T-19b | Pola sama dengan webhook NalarPesan: idempoten via `external_ref` (D-04) |
+| Payroll lanjutan (BPJS/PPh21) | T-13f | Perluasan `hr.payroll`, bukan kapabilitas baru |
+| Nomor WA disediakan platform | T-10b | **D-55**: default tetap nomor klien; ini jalur tambahan, bukan pengganti |
+| Domain & struk ber-merek sendiri | T-22 | White-label lebih dalam dari D-09 |
+| Penyimpanan terkelola (non-BYOS) | T-14 | Alternatif D-22 bagi klien tanpa Google Drive |
 
 **Metrik keberhasilan fase:** rasio *preset ditambah* : *diff kode* — target
 ≥ 20 preset baru dengan 0 baris kode domain baru selain T-25b.
