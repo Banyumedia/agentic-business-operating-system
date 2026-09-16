@@ -14,7 +14,7 @@ bisnis. Owner: dipanggil "Bos", komunikasi Bahasa Indonesia.
 Sumber kebenaran, urutan prioritas bila bertentangan:
 `docs/00-DECISIONS.md` > `HERMES.md` > `docs/EXECUTION_PLAN.md` > dokumen lain.
 
-## Keputusan yang baru dikunci sesi ini (D-31 sampai D-46)
+## Keputusan yang dikunci sesi ini (D-31 sampai D-56, total 56 keputusan)
 
 Semua di `docs/00-DECISIONS.md`. Yang paling mengubah arah proyek:
 
@@ -79,8 +79,38 @@ Review ujung-ke-ujung menemukan 7 kontradiksi internal (sudah diperbaiki) dan
 
 Kesalahan skema yang ditemukan & diperbaiki: FK menggantung
 `workflow_transitions_log.approval_ticket_id` (tabel `approval_tickets` tidak
-pernah didefinisikan), serta tabel hilang `cash_entries`, `quotations`,
-`quotation_lines` yang dituntut D-32/T-F2.
+pernah didefinisikan padahal D-27/D-45 bergantung penuh padanya — kini
+`DATA_MODEL.md` §1.8), serta tabel hilang `cash_entries` (§4.4), `quotations`
++ `quotation_lines` (§4.5) yang dituntut D-32/T-F2.
+
+**Celah spesifikasi yang ditutup (mudah terlewat, penting):**
+- `TaxRateService` **tidak menangani `non_taxable` sama sekali** — padahal itu
+  mayoritas klien. Kini REQUIREMENTS §1 punya "Skenario 0".
+- `FeatureResolver` belum memuat gerbang paket D-52 → ditambahkan ke
+  REQUIREMENTS §2.1 (`plan.features ∩ (module_settings ?? preset)`).
+- **D-32 terbaca seolah daftar kunci lengkap** → `PresetDefinitionValidator`
+  akan **menolak `pharmacy.prescription`/`construction.retention`** dan
+  membuat preset apotek/kontraktor gagal validasi. D-32 & T-F4 diperjelas:
+  validator wajib menerima **Tier A + Tier B**.
+- Tidak ada spesifikasi UI untuk status akun trial/menunggak/hanya-baca/beku
+  → kini UX_UI_SPEC **§6.11** (prinsip: ekspor selalu tersedia, nada memberi
+  tahu bukan mengancam).
+- UX §4.5 menyuruh `bg-emerald-600` padahal §7.4 di dokumen yang sama
+  melarang kelas warna langsung → diperbaiki ke token.
+
+**Jebakan dokumen yang dibereskan:** judul REQUIREMENTS §4 dulu berbunyi
+"Spesifikasi **6 Modul Industri Spesifik**" — autopilot bisa membacanya
+sebagai izin membangun `PharmacyModule`/`ContractorModule` (melanggar D-31).
+Kini "Contoh Komposisi Kapabilitas" + peringatan eksplisit.
+
+**D-18 ditandai DIGANTIKAN** (D-31/D-33): tabel manufaktur warisan (SPH, PO
+bertingkat, DO, jurnal manufaktur) **tidak pernah ada** di skema. Konsekuensi
+jujur: **klien manufaktur bertingkat belum bisa dilayani** sampai T-25
+diputuskan + T-25b dibangun. Jangan dijanjikan saat jualan.
+
+**Verifikasi akhir review (semua nol):** FK menggantung 0 · task yatim 0 dari
+72 task · item OPEN 0 · keputusan tanpa task pelaksana 0 · `php artisan test`
+17 hijau · Pint bersih. Log lengkap: `PRD_RECONCILIATION.md` **G-12**.
 
 `docs/INDUSTRY_PRESETS.md §7` berisi peta 63 bisnis potensial → kapabilitas
 (95% Tier A tanpa kode). `EXECUTION_PLAN.md` Fase 6 = ekspansi preset pasca
@@ -112,7 +142,7 @@ Aturan penting yang sudah ditulis di `HERMES.md`/skill:
   jangan commit, pindah task.
 - D-31 guard: berhenti kalau task tampak butuh kode khusus industri.
 
-## Kiro CLI — writer/reviewer alternatif (BARU, belum dipakai eksekusi nyata)
+## Kiro CLI — reviewer UI terbukti (sudah dipakai 2x untuk review nyata)
 
 `C:\Users\User\AppData\Local\Kiro-Cli\kiro-cli.exe`. Login: Builder ID
 `didik.w.yudi@gmail.com`. MCP Playwright terpasang (browser sungguhan +
@@ -193,6 +223,40 @@ chat itu, config `dm_topics` sudah menunggu.
 - Modul Tier B berikutnya (manufaktur BOM/WIP atau pinjaman/angsuran) —
   T-25 di Fase 6, keputusan Bos nanti, bukan sekarang.
 
+## Cara memeriksa ulang klaim di dokumen ini (jangan percaya begitu saja)
+
+Perintah di bawah memverifikasi kondisi yang saya klaim. Jalankan dari
+`D:\PROJECTS\agentic-bos` bila ragu — semua harus mengembalikan 0/kosong.
+
+```powershell
+# FK menggantung (selain `users` yang memang tabel bawaan Laravel, di-ALTER)
+$def = (Select-String docs\DATA_MODEL.md -Pattern 'CREATE TABLE (\w+)' | % { $_.Matches[0].Groups[1].Value })
+$ref = (Select-String docs\DATA_MODEL.md -Pattern 'REFERENCES (\w+)' -AllMatches | % { $_.Matches } | % { $_.Groups[1].Value })
+$ref | ? { $def -notcontains $_ -and $_ -ne 'users' } | Sort-Object -Unique
+
+# Keputusan yang tidak dirujuk dokumen mana pun (kandidat keputusan terlupakan)
+$ds = (Select-String docs\00-DECISIONS.md -Pattern '^\| (D-\d+) \|' | % { $_.Matches[0].Groups[1].Value })
+foreach ($d in $ds) {
+  $n = (Select-String docs\*.md,HERMES.md -Pattern "\b$d\b" | ? { $_.Filename -ne '00-DECISIONS.md' }).Count
+  if ($n -eq 0) { "TIDAK DIRUJUK: $d" }
+}
+
+# Item OPEN tersisa (harus 0)
+(Select-String docs\00-DECISIONS.md -Pattern '^\| Q-\d+').Count
+
+# Tes & gaya kode
+php artisan test ; vendor/bin/pint --test
+```
+
+**Peringatan soal blok 2:** dokumen HANDOFF ini sendiri ikut ter-grep. Saat
+review G-12, ada **6** keputusan yang tidak dirujuk dokumen mana pun: D-07
+(model AI per-tenant), D-10 (role grup WA), D-13 (deployment NalarPesan), D-14
+(token key terpusat), D-16 (urutan UI kernel), dan D-18 (**sudah digantikan**
+D-31/D-33). Semuanya historis, menyangkut produk lain, atau sudah mati —
+**bukan cacat**. Kalau ingin
+hasil bersih, kecualikan HANDOFF: tambahkan
+`-and $_.Filename -ne 'HANDOFF-OPENCODE.md'` pada filter.
+
 ## Kesalahan yang jangan diulang (pelajaran sesi ini)
 
 1. Jangan klaim "sudah oke"/"siap lock" dari membaca kode atau HTTP 200
@@ -204,3 +268,13 @@ chat itu, config `dm_topics` sudah menunggu.
 4. Kalau sebuah keputusan (mis. cakupan tema) sudah "terlanjur" digambar di
    mockup dengan asumsi berbeda dari yang Bos putuskan, **dokumen resmi
    menang** — mockup dikoreksi mengikuti dokumen, bukan sebaliknya.
+5. Saat Bos memilih sesuatu yang bertabrakan dengan arsitektur, **jangan
+   menolak dan jangan menurut buta**. Contoh nyata: Bos memilih "preset
+   kompleks khusus paket atas"; kalau digerbang per *nama preset*, sistem
+   harus mengenal kata "kontraktor" → melanggar D-31. Solusinya digerbang per
+   **kapabilitas** (D-52): hasil bisnis identik, arsitektur tetap bersih.
+   Selalu jelaskan penyesuaian semacam ini ke Bos, jangan diam-diam.
+6. Keputusan tanpa task pelaksana = keputusan yang akan terlupakan. Setelah
+   mengunci keputusan baru, **langsung turunkan jadi task** di
+   `EXECUTION_PLAN.md` dan verifikasi dengan grep bahwa setiap `D-xx`
+   dirujuk minimal sekali di luar `00-DECISIONS.md`.
