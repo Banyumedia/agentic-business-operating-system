@@ -66,7 +66,7 @@ Kiro CLI dikonfigurasi sebagai delegate untuk eksekusi task coding dari Hermes b
 | Worker | Path | Branch | Assigned Cluster | DB |
 |---|---|---|---|---|
 | **main** | `D:\PROJECTS\agentic-bos` | `main` | T-07, T-F1, T-F2, T-F5, T-F9, T-F14, T-F15 | `database\database.sqlite` |
-| **worker-a** | `D:\PROJECTS\agentic-bos-worker-a` | `worker-a` | T-F3 atau T-F4 | `database\database.sqlite` (copy) |
+| **worker-a** | `D:\PROJECTS\agentic-bos-worker-a` | `worker-a` | T-F4 | `database\database.sqlite` (copy) |
 | **worker-b** | `D:\PROJECTS\agentic-bos-worker-b` | `worker-b` | T-F6, T-F7, atau T-F8 | `database\database.sqlite` (copy) |
 | **worker-c** | `D:\PROJECTS\agentic-bos-worker-c` | `worker-c` | T-F10, T-F11, T-F12, atau T-F13 | `database\database.sqlite` (copy) |
 
@@ -125,8 +125,8 @@ default atau memilih alternatif. **Agent tidak menebak.**
 - Kapabilitas hanya dari katalog `INDUSTRY_PRESETS.md` §1 (D-32).
 - Istilah via `term()`, alur via `WorkflowEngine`, dashboard via `DashboardComposer`.
 - Fase 3b (mesin komposisi) **wajib selesai** sebelum tabel domain (Fase 3c).
-- **D-42 (2026-09-16): Fase 2 = frontend-first dari JSON.** Semua layar dibangun dulu lewat `EntityRepository`/`PresetSource`/`CompanyContext` dengan implementasi `Json*`; Fase 3 mengganti ke `Eloquent*` via `DATA_SOURCE` tanpa mengubah Blade. JSON menggantikan tabel, bukan logika. Fase 2 = T-07 -> T-F1..T-F15 (kontrak, skema, resolver, WorkflowEngine, DashboardComposer, 6 pola layar, uji anti-hardcode, bukti `laundry.json`). T-05/T-06/T-03b/T-08b-e dipindah ke Fase 2. Stop line sekarang setelah T-F15. D-43 palet A (Slate+Emerald) locked, 5 tema tetap (A/B/C/D/E) dengan nilai lengkap di UX_UI_SPEC §7.3a. **Cakupan tema: per-USAHA (owner set, semua staf lihat sama), bukan per-user/localStorage** - koreksi dari draf awal T-07. Nilai CSS 5 tema siap dipakai T-07.
-- T-21c membuktikan D-31: tambah `klinik.json` + `salon.json` → produk berjalan **tanpa diff kode**.
+- **D-42 (2026-09-16): Fase 2 = frontend-first dari JSON.** Semua layar dibangun dulu lewat `EntityRepository`/`PresetSource`/`CompanyContext` dengan implementasi `Json*`; Fase 3 mengganti ke `Eloquent*` via `DATA_SOURCE` tanpa mengubah Blade. JSON menggantikan tabel, bukan logika. Fase 2 = T-07 -> T-F1..T-F15 (kontrak, skema, resolver, WorkflowEngine, DashboardComposer, 6 pola layar, uji anti-hardcode, bukti `laundry.json`). T-05/T-06/T-03b/T-08b-e memindahkan **scope inti** ke Fase 2; adapter Eloquent, materialisasi workflow, dan persistence database tetap menjadi scope residual Fase 3. Stop line sekarang setelah T-F15. D-43 palet A (Slate+Emerald) locked, 5 tema tetap (A/B/C/D/E) dengan nilai lengkap di UX_UI_SPEC §7.3a. **Cakupan tema: per-USAHA (owner set, semua staf lihat sama), bukan per-user/localStorage** - koreksi dari draf awal T-07. Nilai CSS 5 tema siap dipakai T-07.
+- T-21c membuktikan D-31 pada database nyata dengan men-seed ulang preset kanonik `laundry.json` yang sudah lolos bukti JSON T-F15, tanpa perubahan kode.
 
 ## Completed in Current Run
 
@@ -140,16 +140,12 @@ default atau memilih alternatif. **Agent tidak menebak.**
 - **Review:** tiga lane read-only dijalankan; temuan tenant tampering, fail-open role, tema lintas halaman, dan lost-update/JSON korup diperbaiki serta diuji.
 - **Remaining risk:** autentikasi/otorisasi produksi dan `CompanyContext` resmi masuk task fondasi Fase 2 berikutnya; T-07 tidak menambah migration/model bisnis.
 
-## Current Task
-
 ### T-F1 — DONE (2026-09-16)
 
 - **Implemented:** kontrak `EntityRepository`, `PresetSource`, `CompanyContext`; `DATA_SOURCE` config; provider binding deferred ke kelas `Json*`; binding `eloquent` fail dengan exception Fase 3 yang eksplisit; driver asing ditolak.
 - **Files:** `.env.example`, `app/Contracts/*.php`, `app/Providers/DataSourceServiceProvider.php`, `bootstrap/providers.php`, `config/datasource.php`, `tests/Feature/DataSourceBindingTest.php`.
 - **Evidence:** RED binding test 0/3; GREEN focused 3/3 (10 assertions); full `php artisan test` 82/82 (249 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean.
 - **Review:** scope 8 file kecil, tanpa schema/auth/money/API; self-review D-31/D-42 lulus. Kelas `Json*` sengaja deferred ke T-F3/T-F4 sesuai dependency plan.
-
-## Current Task
 
 ### T-F2 — DONE (2026-09-16)
 
@@ -159,8 +155,6 @@ default atau memilih alternatif. **Agent tidak menebak.**
 - **Evidence:** RED focused 0/20; GREEN focused 43/43 (131 assertions); validator load `15 schemas valid`; full `php artisan test` 125/125 (380 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean.
 - **Review:** tiga lane read-only + re-review; divergence terhadap `DATA_MODEL`, shallow schema metadata, list/object confusion, malformed enum, constraint storage, dan non-finite number diperbaiki. Tier B tetap dikecualikan dari Fase 2.
 - **Remaining risk:** `invoices` mengikuti D-23/`DATA_MODEL` (billing SaaS); kebutuhan ledger invoice bisnis pada T-F11 harus direkonsiliasi sebelum T-F11 tanpa mengubah keputusan diam-diam.
-
-## Current Task
 
 ### T-F3 — DONE (2026-09-16; review follow-up closed)
 
@@ -172,21 +166,22 @@ default atau memilih alternatif. **Agent tidak menebak.**
 - **Review:** dua lane read-only; seluruh HIGH ditutup. MEDIUM stale Livewire, HTTP production, short write, query boundaries, committed corpus, dan unresolved identity reference ditutup dengan negative/acceptance tests.
 - **Remaining risk:** adapter ini sengaja demo-only; production tetap tidak dapat memakai context JSON sampai auth/company persistence Fase 3 tersedia.
 
+## Last Completed
+
+### T-F4a — DONE (2026-09-16)
+
+- **Implemented:** kontrak workflow menetapkan `stages[0]` sebagai awal, `terminal`, reachability/dead-end, arah transisi berdasar indeks `stages[]`, dan `requires_note: true` untuk transisi mundur; contoh rental valid dan key entity konsisten plural.
+- **Canonical source:** seluruh dokumentasi memakai `database/presets/{slug}.json`; T-08 menambah tujuh preset awal tersisa di path yang sama lalu seeder membaca seluruh file tanpa salinan folder seeder.
+- **Plan alignment:** acceptance T-F4 mengunci workflow bengkel/klinik/salon; state T-07/T-F1/T-F2/T-F3 diselaraskan; scope inti vs residual Eloquent T-08b-e diperjelas; bukti T-21c/T-23/T-24 tidak lagi membuat ulang preset.
+- **Files:** `docs/INDUSTRY_PRESETS.md`, `docs/DATA_MODEL.md`, `docs/EXECUTION_PLAN.md`, `docs/AUTOPILOT_STATUS.md`.
+- **Evidence:** tiga lane review read-only direkonsiliasi; full `php artisan test` 139/139 (463 assertions); `php vendor/bin/pint --test` passed; `git diff --check` clean; build N/A (docs-only).
+- **Remaining risk:** enam preset D-01 + `custom` sengaja tetap dibuat pada T-08/Fase 3 di path kanonik; implementasi Fase 2 berikutnya hanya tiga preset demo T-F4.
+
 ## Next READY
 
-**T-F4a — kontrak preset & QA readiness (docs-only).**
+**T-F4 — 3 preset JSON + `PresetDefinitionValidator` + `JsonPresetSource`.**
 
-Task baru ini dibuat atas arahan Bos dari hasil QA read-only OpenCode. Scope:
-
-1. Definisikan `terminal`, arah transisi dari urutan `stages[]`, dan
-   `requires_note` untuk transisi mundur di skema preset §2.
-2. Satukan seluruh referensi preset ke path kanonik `database/presets/`.
-3. Kunci workflow minimum bengkel/klinik/salon yang dibutuhkan T-F6/T-F10.
-4. Selaraskan state dan referensi task basi terkait T-F4/T-08/T-21c.
-5. Verifikasi docs-only dengan `git diff --check`.
-
-Setelah T-F4a DONE: lanjut T-F4 → … → T-F15, lalu berhenti di
-`HUMAN:UI-LOCK`.
+Acceptance berikutnya: buat `bengkel.json`, `klinik.json`, `salon.json` di path kanonik; validator menolak stage tak terjangkau, dead end non-terminal, terminal tak sah, transisi mundur tanpa catatan, dan key katalog asing; workflow minimum §6.1 wajib lulus. Setelah itu lanjut T-F5 → … → T-F15, lalu berhenti di `HUMAN:UI-LOCK`.
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 
@@ -197,7 +192,7 @@ Jawaban: **bisa, tetapi desain lama akan mengunci pola 1 industri = N tabel + N 
 - `00-DECISIONS.md`: +D-31 (prinsip), D-32 (katalog kapabilitas v1 dikunci), D-33 (Tier A/B); D-01/D-02 diperluas.
 - `INDUSTRY_PRESETS.md`: **ditulis ulang** — katalog ~20 kapabilitas generik (ganti flag ber-nama industri), skema `definition` JSON, kamus terminologi, katalog widget & efek workflow, 6 preset awal sebagai data, **§7 peta pasar 63 bisnis potensial (9 sektor) dipetakan ke kapabilitas — 95% Tier A tanpa kode, +§7.11 prioritas GTM**, registry menu per kapabilitas.
 - `DATA_MODEL.md`: `business_presets.definition` JSON + `tier`; `companies.business_preset` VARCHAR (bukan ENUM); +`workflow_definitions`, `workflow_transitions_log`, konvensi `attributes JSON`; **tabel per industri (`crm_*`, `rental_*`, `eo_*`, `pharmacy_*`, `contractor_*`, `hr_*`) diganti tabel kapabilitas generik** (`contacts`, `deals`, `projects`, `project_milestones`, `resources`, `bookings`, `items`, `item_batches`, `orders`, `employees`…) + 2 modul Tier B (`prescriptions`, `retentions`); `stage` VARCHAR bukan ENUM.
-- `EXECUTION_PLAN.md`: +**Fase 3b Mesin Komposisi** (T-08 validator+seeder JSON, T-08b `FeatureResolver`, T-08c `TerminologyResolver`, T-08d `WorkflowEngine`, T-08e `DashboardComposer`) **sebelum** Fase 3c tabel kapabilitas; T-15 digabung ke T-08b; +T-13b..f, T-17b (MCP tenant bot), T-19b (NalarPesan webhook), **T-21c bukti D-31**; T-05/T-06/T-07 dilarang hardcode industri; +**Fase 6 Ekspansi Pasar** (T-24..T-24d preset gelombang 1-4 dari §7.11, T-25 keputusan Tier B manufaktur/angsuran, T-26 halaman publik `/industri`).
+- `EXECUTION_PLAN.md`: +**Fase 3b Mesin Komposisi**; resolver/engine/composer inti dipindahkan ke T-F5/T-F6/T-F7, sedangkan T-08b-e mempertahankan adapter Eloquent, materialisasi, persistence, dan regression parity pada Fase 3; T-15 digabung ke T-08b; +T-13b..f, T-17b (MCP tenant bot), T-19b (NalarPesan webhook), **T-21c bukti D-31**; T-05/T-06/T-07 dilarang hardcode industri; +**Fase 6 Ekspansi Pasar** (T-24..T-24d preset gelombang 1-4 dari §7.11, T-25 keputusan Tier B manufaktur/angsuran, T-26 halaman publik `/industri`).
 - `REQUIREMENTS.md` §2: prinsip 4 resolver, §2.2 WorkflowEngine, §2.3 `term()`.
 - `UX_UI_SPEC.md` §5: kartu per industri → widget per kapabilitas; §4.3 preset dinamis + sub-tab Istilah/Alur; empty-state via `term()`.
 - `PRD.md` Pilar 3 → Composable Capability.

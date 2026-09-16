@@ -103,13 +103,13 @@ Skema dikunci; seeder dan endpoint admin memvalidasinya.
     "deal": null                     // null = pakai default
   },
   "workflows": {                     // per entity; stage codes netral, label ID
-    "booking": {
+    "bookings": {
       "stages": [
         {"code": "draft",     "label": "Draft"},
         {"code": "confirmed", "label": "Dikonfirmasi"},
         {"code": "out",       "label": "Sedang Disewa"},
-        {"code": "returned",  "label": "Dikembalikan"},
         {"code": "overdue",   "label": "Terlambat"},
+        {"code": "returned",  "label": "Dikembalikan"},
         {"code": "cancelled", "label": "Batal"}
       ],
       "transitions": [
@@ -117,8 +117,10 @@ Skema dikunci; seeder dan endpoint admin memvalidasinya.
         {"from": "confirmed", "to": "out",       "roles": ["owner","staff"], "effects": ["deposit.collect"]},
         {"from": "out",       "to": "returned",  "roles": ["owner","staff"], "effects": ["late_fee.compute","deposit.settle"]},
         {"from": "out",       "to": "overdue",   "roles": ["system"]},
+        {"from": "overdue",   "to": "returned",  "roles": ["owner","staff"], "effects": ["late_fee.compute","deposit.settle"]},
         {"from": "*",         "to": "cancelled", "roles": ["owner"], "requires_approval": true}
-      ]
+      ],
+      "terminal": ["returned", "cancelled"]
     }
   },
   "dashboard": {                     // susunan widget dari katalog §4
@@ -138,6 +140,16 @@ Aturan skema:
 - `capabilities` hanya boleh memakai key dari §1 (validasi seeder menolak key asing).
 - `terminology` hanya boleh mengisi kunci yang ada di **kamus istilah global** (§3).
 - `workflows.<entity>.stages[*].code` harus `^[a-z_]+$`; label bebas Indonesia.
+  Elemen `stages[0]` adalah stage awal workflow.
+- `workflows.<entity>.terminal` wajib berupa array non-kosong yang hanya berisi
+  kode stage terdaftar. Stage terminal boleh tidak punya transisi keluar;
+  setiap stage non-terminal wajib punya sedikitnya satu transisi keluar.
+- Urutan elemen `stages[]` adalah dasar arah transisi. Transisi ke stage dengan
+  indeks lebih kecil adalah **transisi mundur** dan wajib memiliki
+  `requires_note: true`. Nilai `from: "*"` hanya mencakup stage non-terminal.
+- Semua stage harus terjangkau dari stage pertama melalui `transitions[]`.
+  Preset dengan stage tidak terjangkau, dead end non-terminal, atau tanpa
+  deklarasi `terminal` ditolak sesuai D-46.
 - `transitions[*].effects` hanya dari **katalog efek** yang diimplementasikan `WorkflowEngine` (§5).
 - `dashboard.industry_zone[*].widget` hanya dari **katalog widget** (§4).
 - Preset `tier: "B"` boleh menyebut kapabilitas Tier B; validator memastikan dependensinya juga `true`.
@@ -219,8 +231,24 @@ di kode, dirujuk preset sebagai string.
 
 ## 6. Enam Preset Awal (contoh `definition`)
 
-Ringkasan kapabilitas; `definition` lengkap ada di seeder
-`database/seeders/presets/*.json`.
+Ringkasan kapabilitas; `definition` lengkap memakai satu sumber kanonik di
+`database/presets/{slug}.json`. Seeder Fase 3 membaca file yang sama dan tidak
+memiliki salinan di folder seeder.
+
+### 6.1 Kontrak workflow minimum preset demo Fase 2
+
+Kontrak berikut wajib hadir pada file kanonik T-F4 agar layar T-F6/T-F10
+memiliki alur nyata. Nama preset tetap data; `WorkflowEngine` hanya membaca
+struktur generik ini.
+
+| Preset | Entity | Urutan `stages[]` minimum | Transisi wajib | `terminal` |
+|---|---|---|---|---|
+| Bengkel | `orders` | `masuk`, `pemeriksaan`, `pengerjaan`, `qc`, `siap_diambil`, `selesai`, `dibatalkan` | alur maju; lompatan `masuk -> pengerjaan`; rework `qc -> pengerjaan` dengan `requires_note: true`; `qc -> siap_diambil` | `selesai`, `dibatalkan` |
+| Klinik | `bookings` | `dijadwalkan`, `check_in`, `diperiksa`, `selesai`, `dibatalkan` | alur maju menuju `selesai`; pembatalan dari stage non-terminal | `selesai`, `dibatalkan` |
+| Salon | `bookings` | `dijadwalkan`, `check_in`, `dilayani`, `selesai`, `dibatalkan` | alur maju menuju `selesai`; pembatalan dari stage non-terminal | `selesai`, `dibatalkan` |
+
+Setiap transisi tambahan tetap tunduk pada aturan reachability, dead end, dan
+transisi mundur di §2; tabel ini adalah minimum, bukan cabang industri di kode.
 
 | Kapabilitas | Agency | F&B | Apotek | EO | Kontraktor | Persewaan | Custom |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|

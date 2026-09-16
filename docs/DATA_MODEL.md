@@ -119,9 +119,9 @@ dibuat saat company memilih preset agar query runtime cepat dan dapat diaudit.
 CREATE TABLE workflow_definitions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_id BIGINT UNSIGNED NOT NULL,
-    entity VARCHAR(64) NOT NULL,           -- 'deal' | 'project' | 'booking' | 'order' | 'prescription' | ...
+    entity VARCHAR(64) NOT NULL,           -- 'deals' | 'projects' | 'bookings' | 'orders' | 'prescriptions' | ...
     version INT UNSIGNED NOT NULL DEFAULT 1,
-    definition JSON NOT NULL,              -- {stages:[{code,label}], transitions:[{from,to,roles,effects,requires_approval}]}
+    definition JSON NOT NULL,              -- {stages:[{code,label}], terminal:[code], transitions:[{from,to,roles,effects,requires_approval,requires_note}]}
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
@@ -219,10 +219,11 @@ CREATE TABLE business_presets (
     updated_at TIMESTAMP NULL
 );
 ```
-Seeder membaca `database/seeders/presets/*.json` (satu file per preset) dan
-**memvalidasi** setiap `definition` terhadap katalog kapabilitas, kamus istilah,
-katalog efek, dan katalog widget sebelum menyimpan. Menambah industri baru =
-menambah satu file JSON. Seeder awal: 7 preset (6 industri + `custom`).
+Seeder membaca `database/presets/*.json` (satu sumber kanonik per preset),
+memvalidasi setiap `definition` terhadap katalog kapabilitas, kamus istilah,
+katalog efek, dan katalog widget sebelum menyimpan; tidak ada salinan preset di
+folder seeder. Menambah industri baru = menambah satu file JSON. Jumlah baris
+yang di-seed wajib sama dengan jumlah file kanonik yang tersedia.
 
 ### 2.2 `support_tickets` (Master Bot CS)
 Tabel untuk mencatat keluhan Bos yang diterima oleh Agen Pusat (BOS Care). Data ini diakses di level platform (bukan per-tenant).
@@ -312,7 +313,7 @@ CREATE TABLE contacts (
 
 ### 3.2 `deals` (kapabilitas `deals`)
 Peluang/pendaftaran/kunjungan yang melewati stage. `stage` adalah kode netral dari
-`workflow_definitions[entity='deal']`, **bukan** ENUM (D-38).
+`workflow_definitions[entity='deals']`, **bukan** ENUM (D-38).
 ```sql
 CREATE TABLE deals (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -459,7 +460,7 @@ CREATE TABLE quotations (
     deal_id BIGINT UNSIGNED NULL,         -- asal peluang, bila ada
     project_id BIGINT UNSIGNED NULL,      -- terisi setelah dikonversi jadi proyek
     title VARCHAR(191) NOT NULL,
-    stage VARCHAR(32) NOT NULL DEFAULT 'draft', -- dari workflow_definitions[entity='quotation']
+    stage VARCHAR(32) NOT NULL DEFAULT 'draft', -- dari workflow_definitions[entity='quotations']
     valid_until DATE NULL,
     subtotal DECIMAL(18,2) NOT NULL DEFAULT 0,
     dpp DECIMAL(18,2) NOT NULL DEFAULT 0,      -- D-44: tidak dirender bila non_taxable
@@ -516,7 +517,7 @@ CREATE TABLE projects (
     deal_id BIGINT UNSIGNED NULL,        -- asal peluang, bila ada
     type VARCHAR(32) NOT NULL DEFAULT 'project', -- project | event | work_order | case
     name VARCHAR(191) NOT NULL,
-    stage VARCHAR(32) NOT NULL DEFAULT 'planned', -- dari workflow_definitions[entity='project']
+    stage VARCHAR(32) NOT NULL DEFAULT 'planned', -- dari workflow_definitions[entity='projects']
     starts_at DATETIME NULL,
     ends_at DATETIME NULL,
     venue VARCHAR(191) NULL,
@@ -652,7 +653,7 @@ CREATE TABLE bookings (
     contact_id BIGINT UNSIGNED NULL,
     project_id BIGINT UNSIGNED NULL,     -- rundown event: booking ber-parent ke project
     type VARCHAR(32) NOT NULL DEFAULT 'booking', -- booking | appointment | rundown_item | shift
-    stage VARCHAR(32) NOT NULL DEFAULT 'draft', -- dari workflow_definitions[entity='booking']
+    stage VARCHAR(32) NOT NULL DEFAULT 'draft', -- dari workflow_definitions[entity='bookings']
     starts_at DATETIME NOT NULL,
     ends_at DATETIME NOT NULL,
     actual_ends_at DATETIME NULL,
@@ -805,7 +806,7 @@ CREATE TABLE orders (
     resource_id BIGINT UNSIGNED NULL,    -- meja (pos.tables) — FK ke resources.type='table'
     prescription_id BIGINT UNSIGNED NULL, -- Tier B pharmacy
     order_no VARCHAR(64) NOT NULL,
-    stage VARCHAR(32) NOT NULL DEFAULT 'open', -- dari workflow_definitions[entity='order']: open | sent_to_kitchen | paid | void
+    stage VARCHAR(32) NOT NULL DEFAULT 'open', -- dari workflow_definitions[entity='orders']: open | sent_to_kitchen | paid | void
     subtotal DECIMAL(18,2) NOT NULL DEFAULT 0,
     discount_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
     dpp DECIMAL(18,2) NOT NULL DEFAULT 0,
