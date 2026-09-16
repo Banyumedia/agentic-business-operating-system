@@ -1,7 +1,7 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-17 (Fase 2 berjalan - T-F10 selesai, T-F11 berikutnya)
-**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F10 DONE; next READY T-F11
+**Updated:** 2026-09-17 (Fase 2 berjalan - T-F11 selesai, T-F12 berikutnya)
+**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F11 DONE; next READY T-F12
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
@@ -98,7 +98,7 @@ Merge tetap serial — satu per satu. Cek `docs/KIRO_SKILL.md` §Worker Registry
 | PHP | 8.3.30 | `php -v` |
 | Livewire | 4.4 | `composer.json` |
 | Tailwind | 4.3 (CSS-first `@theme`) | `package.json` |
-| Test suite | **227 passed, 999 assertions** | `php artisan test` |
+| Test suite | **254 passed, 1109 assertions** | `php artisan test` |
 | Style | **Pint clean, seluruh repo** | `vendor/bin/pint --test` |
 | Build | Vite OK | `npm run build` |
 | Business migrations | none (hanya `users/cache/jobs`) | `ls database/migrations` |
@@ -144,6 +144,7 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 | T-F9b | DONE | 48 fixture demo terisi + uji jumlah baris & integritas referensi; dua defect widget T-F7 diperbaiki |
 | prep PG-1 | DONE | Dispatcher pola layar berbasis konvensi (`ModuleSidebarTest::test_screen_pattern_is_dispatched_to_a_component_by_convention`); membuka PG-1 (T-F10..T-F13) untuk paralel |
 | T-F10 | DONE | `PipelineScreenTest` (12) + `CalendarScreenTest` (8); papan tahap dari `WorkflowEngine` + kalender harian/mingguan + `no_overlap` berbasis schema |
+| T-F11 | DONE | `TaxRateServiceTest` (8) + `CashierScreenTest` (11) + `LedgerScreenTest` (7); pajak D-03/D-44, konfirmasi D-45 bertingkat, saldo berjalan; defect presisi `fitsDecimal` diperbaiki |
 
 ## Arsitektur D-31 (dibaca sebelum menulis kode apa pun setelah UI-LOCK)
 
@@ -205,7 +206,23 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Task Aktif
 
-**Tidak ada task berjalan.** Writer berikutnya mengambil T-F11 (lihat Next READY).
+**Tidak ada task berjalan.** Writer berikutnya mengambil T-F12 (lihat Next READY).
+
+## Detail Task Selesai (T-F11)
+
+### T-F11 — DONE (2026-09-17)
+
+- **`TaxRateService`:** implementasi persis kontrak `REQUIREMENTS.md` §1.3, termasuk normalisasi tarif (`11` dan `0.11` diperlakukan sama sehingga salah input persen tidak menggandakan pajak sebelas kali) dan pengambilan PPN inklusif sebagai **selisih** agar total yang dibayar pelanggan tidak bergeser karena pembulatan. Nilai uang/tarif negatif atau non-finite ditolak.
+- **Profil pajak dari data (D-03):** `BusinessIdentityStore::taxProfile()` membaca `business_identity.json`. `tax_mode` yang **tidak ada** berarti non-PKP (default aman, mayoritas klien), tetapi nilai yang **ada tapi tidak dikenal ditolak keras** — menganggapnya non-PKP diam-diam berarti berhenti memungut PPN pada usaha yang sebenarnya PKP.
+- **`CashierScreen`:** katalog dari `items`, keranjang tambah/ubah jumlah/hapus, total lewat `TaxRateService`, checkout menulis `orders` + `order_lines` lewat repository, metode pembayaran mock, dan tahap awal diambil dari alur kerja preset bila entitas itu punya alur (transaksi kasir langsung tampil di papan tahap).
+- **D-44 ditegakkan:** `showsTax` dari profil adalah satu-satunya penentu apakah baris DPP/PPN dirender. Test menghitung `preg_match_all('/\b(?:DPP|PPN)\b/')` pada DOM company non-PKP dan mensyaratkan hasilnya **0** — bukan tampil `Rp 0`.
+- **D-45 bertingkat lewat komponen bersama:** `<x-confirm-dialog>` menerima `level` (`type`/`simple`). Tingkat per aksi dideklarasikan di `CashierScreen::CONFIRM` (`checkout` => `type`, `clearCart` => `simple`), bukan per layar. Frasa dinormalkan `mb_strtoupper(trim())`: `"  ya  "` diterima, `"y"` ditolak; input memakai `autocapitalize=characters autocorrect=off`; tombol aksi `disabled` saat dialog muncul lalu aktif setelah 400 ms; teks dialog memuat nominal konkret.
+- **`LedgerScreen`:** kolom nilai, kolom tanggal, dan arah masuk/keluar diturunkan dari schema (arah dikenali dari enum `["in","out"]`), sehingga buku kas dan buku tagihan memakai satu layar. Saldo berjalan dihitung menaik lalu ditampilkan terbaru lebih dulu; saldo negatif dilaporkan apa adanya.
+- **Files:** `app/Services/{TaxRateService,TaxCalculationResult,TaxProfile,BusinessIdentityStore}.php`, `app/Livewire/Screens/{CashierScreen,LedgerScreen}.php`, `resources/views/livewire/screens/{cashier,ledger}.blade.php`, `resources/views/components/confirm-dialog.blade.php`, `app/Services/Schema/SchemaValidator.php`, `storage/app/json/*/business_identity.json`, `storage/app/json/salon-ayu/orders.json`, `tests/Unit/{TaxRateServiceTest,SchemaValidatorTest}.php`, `tests/Feature/{CashierScreenTest,LedgerScreenTest,ModuleSidebarTest}.php`.
+- **Evidence:** focused `TaxRateServiceTest` 8/8 (31 assertions), `CashierScreenTest` 11/11, `LedgerScreenTest` 7/7; full `php artisan test` **254/254 (1109 assertions)**; `php vendor/bin/pint --test` passed (92 files); `npm run build` passed (Vite 949 ms); `git diff --check` clean.
+- **Defect lama yang terpapar dan diperbaiki:** `SchemaValidator::fitsDecimal()` memakai `sprintf('%.14F')` sehingga galat representasi biner **menolak nilai dua desimal yang sah**. Terlihat begitu pemecahan PPN inklusif masuk: `684684.68` ditolak sebagai "Presisi field tidak valid", dan fixture salon yang sudah di-commit pun ikut gagal validasi. Artinya **tenant PKP mana pun tidak akan bisa menyimpan transaksi** sebelum ini diperbaiki. Kini dibandingkan lewat `round($value, $scale) === $value` + `number_format`; kasus negatif `1.234` pada scale 2 tetap ditolak, dan ada test positif untuk lima nilai hasil pembulatan.
+- **Demo:** salon dijadikan PKP harga-inklusif (`tax_mode=taxable`, `price_includes_tax=true`, 11%) dan lima ordernya dihitung ulang, supaya kedua mode pajak terlihat saat review; bengkel dan klinik tetap non-PKP sesuai mayoritas klien.
+- **Remaining risk:** (a) pembayaran masih state mock — belum ada gateway, sesuai batas Fase 2; (b) checkout belum membuat baris `cash_entries`, jadi buku kas belum otomatis bertambah dari kasir — perlu keputusan apakah itu otomatis atau posting manual; (c) diskon per baris dan per dokumen belum ada di layar (skema sudah menyiapkan kolomnya); (d) `<x-confirm-dialog>` belum dipakai `ListScreen` yang masih punya dialog sendiri — penyatuan ditunda agar diff T-F11 tetap fokus.
 
 ## Detail Task Selesai (T-F10)
 
@@ -307,12 +324,11 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Next READY
 
-**T-F11 — `CashierScreen` + `LedgerScreen` + `TaxRateService` (D-03, D-44, D-45).**
+**T-F12 — Settings 6 tab + onboarding form (D-40).**
 
-T-F11, T-F12, dan T-F13 semuanya `READY` dan kini benar-benar dapat berjalan
-paralel: prep dispatcher PG-1 sudah landed, jadi menambah pola layar tidak lagi
-menabrak `dummy-module.blade.php`. Klaim lewat branch `task/{TASK-ID}` sesuai
-`HERMES.md` §Parallel Writer Policy.
+T-F12 dan T-F13 sama-sama `READY` dan dapat berjalan paralel (file target lepas:
+T-F12 menyentuh `Settings`/`Onboarding`, T-F13 menyentuh `CommandPalette`). Klaim
+lewat branch `task/{TASK-ID}` sesuai `HERMES.md` §Parallel Writer Policy.
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 

@@ -1,5 +1,6 @@
 {
     "id": 1,
     "name": "Bengkel Arka",
-    "preset": "bengkel"
+    "preset": "bengkel",
+    "tax_mode": "non_taxable"
 }

@@ -1,5 +1,8 @@
 {
     "id": 1,
     "name": "Salon Ayu",
-    "preset": "salon"
+    "preset": "salon",
+    "tax_mode": "taxable",
+    "price_includes_tax": true,
+    "tax_rate": 0.11
 }

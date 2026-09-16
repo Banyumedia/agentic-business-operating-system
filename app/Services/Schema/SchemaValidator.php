@@ -110,10 +110,19 @@ class SchemaValidator
 
     private function fitsDecimal(int|float $value, int $precision, int $scale): bool
     {
-        $normalized = is_int($value)
-            ? (string) abs($value)
-            : rtrim(rtrim(sprintf('%.14F', abs($value)), '0'), '.');
+        $float = (float) $value;
+
+        // Nilai yang sah pada skala ini tidak berubah ketika dibulatkan ke skala
+        // itu. Memeriksa lewat `sprintf('%.14F')` memaparkan galat representasi
+        // biner sehingga hasil pembulatan dua desimal yang sah - misalnya
+        // pemecahan PPN inklusif 684684.68 - ikut tertolak.
+        if (round($float, $scale) !== $float) {
+            return false;
+        }
+
+        $normalized = number_format(abs($float), $scale, '.', '');
         [$whole, $fraction] = array_pad(explode('.', $normalized, 2), 2, '');
+        $fraction = rtrim($fraction, '0');
         $wholeDigits = max(1, strlen(ltrim($whole, '0')));
 
         return strlen($fraction) <= $scale && $wholeDigits + strlen($fraction) <= $precision;

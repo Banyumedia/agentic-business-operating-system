@@ -1,5 +1,6 @@
 {
     "id": 1,
     "name": "Klinik Sehat",
-    "preset": "klinik"
+    "preset": "klinik",
+    "tax_mode": "non_taxable"
 }

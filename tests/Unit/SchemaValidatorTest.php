@@ -131,6 +131,24 @@ class SchemaValidatorTest extends TestCase
         app(SchemaValidator::class)->validate($entity, $row);
     }
 
+    public function test_rounded_money_values_are_accepted_despite_binary_float_error(): void
+    {
+        $validator = app(SchemaValidator::class);
+
+        // Hasil pemecahan PPN inklusif: sah pada scale 2, tetapi representasi
+        // binernya tidak eksak. Nilai seperti ini pernah tertolak keliru.
+        foreach ([684684.68, 274774.77, 450450.45, 108108.11, 0.01] as $amount) {
+            $row = $validator->validate('cash_entries', [
+                'id' => 1,
+                'entry_date' => '2026-09-17',
+                'direction' => 'in',
+                'amount' => $amount,
+            ]);
+
+            $this->assertSame($amount, $row['amount']);
+        }
+    }
+
     public function test_unknown_top_level_field_and_path_traversal_are_rejected(): void
     {
         try {

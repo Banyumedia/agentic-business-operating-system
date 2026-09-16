@@ -45,20 +45,37 @@ class ModuleSidebarTest extends TestCase
 
     public function test_screen_pattern_is_dispatched_to_a_component_by_convention(): void
     {
+        Storage::fake('company-json');
+        Storage::disk('company-json')->put(
+            'json/bengkel-arka/business_identity.json',
+            json_encode(['id' => 1, 'preset' => 'bengkel', 'tax_mode' => 'non_taxable'], JSON_THROW_ON_ERROR),
+        );
         app(CompanyContext::class)->setCurrent('bengkel-arka');
 
-        // Pola yang sudah punya komponen dirender komponennya.
-        Livewire::test(DummyModule::class, ['module' => 'contacts'])
-            ->assertViewHas('screenComponent', 'screens.list-screen');
+        // Setiap pola yang sudah punya kelas komponen dipetakan secara konvensi.
+        foreach ([
+            ['contacts', null, 'screens.list-screen'],
+            ['pos', null, 'screens.cashier-screen'],
+            ['pos', 'pipeline', 'screens.pipeline-screen'],
+            ['bookings', null, 'screens.calendar-screen'],
+            ['accounting', null, 'screens.ledger-screen'],
+        ] as [$module, $submodule, $expected]) {
+            Livewire::test(DummyModule::class, ['module' => $module, 'submodule' => $submodule])
+                ->assertViewHas('screenComponent', $expected);
+        }
 
         // Pola yang belum punya komponen tidak boleh error: jatuh ke kartu kontrak.
-        $this->get('/app/pos?company=bengkel-arka')
-            ->assertOk()
-            ->assertSee('Kontrak layar aktif')
-            ->assertSee('cashier');
+        app(CompanySettingsStore::class)->update('bengkel-arka', static function (array $settings): array {
+            $settings['features']['finance.accounting'] = true;
 
-        Livewire::test(DummyModule::class, ['module' => 'pos'])
-            ->assertViewHas('screenComponent', null);
+            return $settings;
+        });
+
+        Livewire::test(DummyModule::class, ['module' => 'accounting', 'submodule' => 'reports'])
+            ->assertOk()
+            ->assertViewHas('screenComponent', null)
+            ->assertSee('Kontrak layar aktif')
+            ->assertSee('report');
     }
 
     public function test_unknown_module_and_unknown_subpath_are_not_found(): void
