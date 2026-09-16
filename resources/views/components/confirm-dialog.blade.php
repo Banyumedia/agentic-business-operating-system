@@ -24,9 +24,10 @@
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-description"
-        x-data="{ ready: false }"
+        x-data="{ ready: false, opener: document.activeElement }"
+        x-trap.inert.noscroll="true"
         x-init="setTimeout(() => ready = true, 400); $nextTick(() => $refs.cancel?.focus())"
-        x-on:keydown.escape.window="$wire.{{ $cancel }}()"
+        x-on:keydown.escape.window="const target = opener; $wire.{{ $cancel }}().then(() => target?.focus())"
         class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)]"
     >
         <h2 id="confirm-dialog-title" class="text-lg font-semibold text-[var(--erp-text-primary)]">{{ $title }}</h2>
@@ -53,17 +54,17 @@
             <button
                 type="button"
                 x-ref="cancel"
-                wire:click="{{ $cancel }}"
+                x-on:click="const target = opener; $wire.{{ $cancel }}().then(() => target?.focus())"
                 class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] px-4 text-sm font-semibold text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
             >
                 Batal
             </button>
             <button
                 type="button"
-                wire:click="{{ $confirm }}"
+                x-on:click="const target = opener; $wire.{{ $confirm }}().then(() => target?.focus())"
                 disabled
                 x-bind:disabled="! ready"
-                class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-not-allowed disabled:opacity-60 {{ $level === 'type' ? 'bg-[var(--erp-danger)] hover:opacity-90' : 'bg-[var(--erp-accent)] hover:bg-[var(--erp-accent-hover)]' }}"
+                class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-danger)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-not-allowed disabled:opacity-60"
             >
                 {{ $confirmLabel }}
             </button>

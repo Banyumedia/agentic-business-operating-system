@@ -110,6 +110,10 @@ class SchemaValidator
 
     private function fitsDecimal(int|float $value, int $precision, int $scale): bool
     {
+        if (is_int($value)) {
+            return strlen((string) abs($value)) <= $precision - $scale;
+        }
+
         $float = (float) $value;
 
         // Nilai yang sah pada skala ini tidak berubah ketika dibulatkan ke skala
@@ -125,7 +129,9 @@ class SchemaValidator
         $fraction = rtrim($fraction, '0');
         $wholeDigits = max(1, strlen(ltrim($whole, '0')));
 
-        return strlen($fraction) <= $scale && $wholeDigits + strlen($fraction) <= $precision;
+        return strlen($fraction) <= $scale
+            && $wholeDigits <= $precision - $scale
+            && $wholeDigits + strlen($fraction) <= $precision;
     }
 
     private function matchesFormat(string $value, string $format): bool

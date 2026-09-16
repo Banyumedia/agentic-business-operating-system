@@ -11,6 +11,7 @@ use App\Services\Schema\EntitySchema;
 use App\Services\Schema\SchemaPresenter;
 use App\Services\TaxRateService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -27,6 +28,9 @@ use Throwable;
  */
 class CashierScreen extends Component
 {
+    /** Float tax arithmetic stays cent-accurate below this operational cap. */
+    private const MAX_SAFE_MONEY = 1_000_000_000_000;
+
     /**
      * Tingkat konfirmasi per aksi (D-45).
      *
@@ -49,6 +53,9 @@ class CashierScreen extends Component
     #[Locked]
     public string $company;
 
+    #[Locked]
+    public string $checkoutToken;
+
     /** @var array<int, array{item_id: int|null, description: string, qty: float, unit_price: float}> */
     public array $cart = [];
 
@@ -68,6 +75,7 @@ class CashierScreen extends Component
         $this->module = $module;
         $this->submodule = $submodule;
         $this->company = app(CompanyContext::class)->current();
+        $this->checkoutToken = (string) Str::uuid();
     }
 
     public function addItem(int $itemId): void
@@ -189,41 +197,60 @@ class CashierScreen extends Component
     {
         $entity = $this->definition()['entity'];
         $orders = app(EntityRepository::class)->for($this->company(), $entity);
-        $lines = app(EntityRepository::class)->for($this->company(), 'order_lines');
-        $totals = $this->totals();
+        $identity = app(BusinessIdentityStore::class)->read($this->company());
 
-        $order = [
-            'business_identity_id' => (int) (app(BusinessIdentityStore::class)->read($this->company())['id'] ?? 1),
-            'order_no' => $this->nextOrderNumber($orders),
-            'subtotal' => $totals['subtotal'],
-            'discount_amount' => 0,
-            'dpp' => $totals['dpp'],
-            'tax_amount' => $totals['tax'],
-            'grand_total' => $totals['grand_total'],
-            'payment_method' => $this->paymentMethod,
-            'paid_at' => now()->toIso8601String(),
-            'source' => 'pos',
-        ];
+        if (! in_array($this->paymentMethod, ['cash', 'transfer', 'qris'], true)) {
+            $this->failure = 'Metode pembayaran tidak valid.';
 
-        $stage = $this->initialStage($entity);
-        if ($stage !== null) {
-            $order['stage'] = $stage;
+            return;
         }
 
         try {
-            $saved = $orders->save($order);
+            $lines = $this->authoritativeLines();
+            $totals = $this->totals($lines);
 
-            foreach ($this->cart as $line) {
-                $lines->save([
-                    'order_id' => (int) $saved['id'],
-                    'item_id' => $line['item_id'],
-                    'description' => $line['description'],
-                    'qty' => $line['qty'],
-                    'unit_price' => $line['unit_price'],
-                    'discount_amount' => 0,
-                    'line_total' => round($line['qty'] * $line['unit_price'], 2),
-                ]);
+            $order = [
+                'business_identity_id' => $identity['id'],
+                'order_no' => now()->format('ymd').'-'.mb_strtoupper(substr(str_replace('-', '', $this->checkoutToken), 0, 8)),
+                'subtotal' => $totals['subtotal'],
+                'discount_amount' => 0,
+                'dpp' => $totals['dpp'],
+                'tax_amount' => $totals['tax'],
+                'grand_total' => $totals['grand_total'],
+                'payment_method' => $this->paymentMethod,
+                'paid_at' => now()->toIso8601String(),
+                'source' => 'pos',
+                'external_ref' => $this->checkoutToken,
+            ];
+
+            $stage = $this->initialStage($entity);
+            if ($stage !== null) {
+                $order['stage'] = $stage;
             }
+
+            $children = array_map(static function (array $line): array {
+                unset($line['_source_active']);
+
+                return $line;
+            }, $lines);
+
+            $result = $orders->saveAggregate(
+                $order,
+                'order_lines',
+                'order_id',
+                $children,
+                'external_ref',
+                array_map(static fn (array $line): array => [
+                    'entity' => 'items',
+                    'id' => $line['item_id'],
+                    'expected' => [
+                        'name' => $line['description'],
+                        'price' => $line['unit_price'],
+                        'is_active' => $line['_source_active'],
+                    ],
+                ], $lines),
+            );
+            $saved = $result['parent'];
         } catch (InvalidArgumentException $exception) {
             $this->failure = $exception->getMessage();
 
@@ -231,6 +258,7 @@ class CashierScreen extends Component
         }
 
         $this->cart = [];
+        $this->checkoutToken = (string) Str::uuid();
         $this->notice = 'Transaksi '.$saved['order_no'].' tersimpan.';
         $this->cancelAction();
     }
@@ -251,25 +279,15 @@ class CashierScreen extends Component
         }
     }
 
-    private function nextOrderNumber(EntityRepository $orders): string
-    {
-        $highest = 0;
-        foreach ($orders->all() as $row) {
-            $id = $row['id'] ?? 0;
-            if (is_int($id) && $id > $highest) {
-                $highest = $id;
-            }
-        }
-
-        return sprintf('%s-%04d', now()->format('ymd'), $highest + 1);
-    }
-
     /** @return array{subtotal: float, dpp: float, tax: float, grand_total: float} */
-    private function totals(): array
+    private function totals(?array $lines = null): array
     {
-        $subtotal = 0.0;
-        foreach ($this->cart as $line) {
-            $subtotal += $line['qty'] * $line['unit_price'];
+        if ($lines === null) {
+            $lines = $this->cart === [] ? [] : $this->authoritativeLines();
+        }
+        $subtotal = array_sum(array_column($lines, 'line_total'));
+        if (! is_int($subtotal) && ! is_float($subtotal) || abs((float) $subtotal) > self::MAX_SAFE_MONEY) {
+            throw new InvalidArgumentException('Total transaksi melampaui batas presisi aman.');
         }
 
         $profile = app(BusinessIdentityStore::class)->taxProfile($this->company());
@@ -285,6 +303,78 @@ class CashierScreen extends Component
             'tax' => $result->tax,
             'grand_total' => $result->grandTotal,
         ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function authoritativeLines(): array
+    {
+        $items = app(EntityRepository::class)->for($this->company(), 'items');
+        $lines = [];
+
+        foreach ($this->cart as $cartLine) {
+            $itemId = $cartLine['item_id'] ?? null;
+            $qty = $cartLine['qty'] ?? null;
+            if (! is_int($itemId) || (! is_int($qty) && ! is_float($qty)) || ! is_finite((float) $qty) || $qty <= 0) {
+                throw new InvalidArgumentException('Isi keranjang tidak valid.');
+            }
+
+            $item = $items->find($itemId);
+            if ($item === null || ($item['is_active'] ?? true) === false) {
+                throw new InvalidArgumentException('Barang atau layanan tidak lagi tersedia.');
+            }
+
+            $price = $item['price'] ?? null;
+            if (! is_int($price) && ! is_float($price)) {
+                throw new InvalidArgumentException('Harga barang atau layanan tidak valid.');
+            }
+
+            $qty = $this->normalizedQuantity($qty);
+            $price = $this->normalizedMoney($price);
+            $lines[] = [
+                'item_id' => $itemId,
+                'description' => (string) ($item['name'] ?? ('#'.$itemId)),
+                'qty' => $qty,
+                'unit_price' => $price,
+                'discount_amount' => 0,
+                'line_total' => $this->multiplyMoney($price, $qty),
+                '_source_active' => $item['is_active'] ?? null,
+            ];
+        }
+
+        if ($lines === []) {
+            throw new InvalidArgumentException('Keranjang masih kosong.');
+        }
+
+        return $lines;
+    }
+
+    private function normalizedQuantity(int|float $qty): int|float
+    {
+        return is_float($qty) && floor($qty) === $qty ? (int) $qty : $qty;
+    }
+
+    private function normalizedMoney(int|float $money): int|float
+    {
+        return is_float($money) && floor($money) === $money && $money <= PHP_INT_MAX
+            ? (int) $money
+            : $money;
+    }
+
+    private function multiplyMoney(int|float $money, int|float $qty): int|float
+    {
+        if (is_int($money) && is_int($qty)) {
+            if ($qty !== 0 && $money > intdiv(PHP_INT_MAX, $qty)) {
+                throw new InvalidArgumentException('Total baris transaksi melampaui batas aman.');
+            }
+
+            return $money * $qty;
+        }
+
+        if (abs((float) $money) > self::MAX_SAFE_MONEY) {
+            throw new InvalidArgumentException('Harga pecahan melampaui batas presisi aman.');
+        }
+
+        return round((float) $money * (float) $qty, 2);
     }
 
     public function render(): View
@@ -307,11 +397,18 @@ class CashierScreen extends Component
             ];
         }
 
+        try {
+            $totals = $this->totals();
+        } catch (InvalidArgumentException $exception) {
+            $this->failure = $exception->getMessage();
+            $totals = ['subtotal' => 0.0, 'dpp' => 0.0, 'tax' => 0.0, 'grand_total' => 0.0];
+        }
+
         return view('livewire.screens.cashier', [
             'label' => $definition['label'],
             'term' => $definition['term'] ?? $definition['label'],
             'catalog' => $catalog,
-            'totals' => $this->totals(),
+            'totals' => $totals,
             // D-44: satu-satunya penentu apakah kosakata pajak dirender.
             'showsTax' => $profile->taxable,
             'confirmLevel' => $this->pendingAction === null ? null : self::CONFIRM[$this->pendingAction],

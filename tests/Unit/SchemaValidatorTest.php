@@ -149,6 +149,42 @@ class SchemaValidatorTest extends TestCase
         }
     }
 
+    public function test_decimal_precision_preserves_large_integer_boundaries(): void
+    {
+        $validator = app(SchemaValidator::class);
+
+        $row = $validator->validate('cash_entries', [
+            'id' => 1,
+            'entry_date' => '2026-09-17',
+            'direction' => 'in',
+            'amount' => 9999999999999999,
+        ]);
+        $this->assertSame(9999999999999999, $row['amount']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Presisi field tidak valid: amount');
+        $validator->validate('cash_entries', [
+            'id' => 2,
+            'entry_date' => '2026-09-17',
+            'direction' => 'in',
+            'amount' => 99999999999999990.0,
+        ]);
+    }
+
+    public function test_decimal_precision_rejects_integer_beyond_whole_digit_capacity(): void
+    {
+        $validator = app(SchemaValidator::class);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Presisi field tidak valid: amount');
+        $validator->validate('cash_entries', [
+            'id' => 2,
+            'entry_date' => '2026-09-17',
+            'direction' => 'in',
+            'amount' => 99999999999999999,
+        ]);
+    }
+
     public function test_unknown_top_level_field_and_path_traversal_are_rejected(): void
     {
         try {

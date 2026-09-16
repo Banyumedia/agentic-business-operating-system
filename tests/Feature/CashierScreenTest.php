@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Contracts\CompanyContext;
 use App\Contracts\EntityRepository;
 use App\Livewire\Screens\CashierScreen;
+use App\Services\BusinessIdentityStore;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -127,7 +128,8 @@ class CashierScreenTest extends TestCase
         // D-45: teks wajib memuat nominal konkret.
         $this->assertStringContainsString('Rp 305.000', $html);
         // D-45: tombol aksi inert saat dialog muncul.
-        $this->assertMatchesRegularExpression('/wire:click="confirmAction"[^>]*\sdisabled/', $html);
+        $this->assertStringContainsString('$wire.confirmAction()', $html);
+        $this->assertStringContainsString('x-bind:disabled="! ready"', $html);
         $this->assertStringContainsString('autocapitalize="characters"', $html);
 
         // Singkatan ditolak.
@@ -177,6 +179,103 @@ class CashierScreenTest extends TestCase
         $this->assertEquals(760000, array_sum(array_column($lines, 'line_total')));
     }
 
+    public function test_checkout_reloads_server_prices_and_rejects_unknown_payment_methods(): void
+    {
+        $this->useCompany('bengkel-arka', 'bengkel', ['tax_mode' => 'non_taxable']);
+        $this->seedItems();
+
+        $component = Livewire::test(CashierScreen::class, ['module' => 'pos'])
+            ->call('addItem', 1)
+            ->set('cart.0.unit_price', 1)
+            ->set('cart.0.description', 'Harga palsu')
+            ->set('paymentMethod', 'gratis')
+            ->call('requestAction', 'checkout')
+            ->set('confirmPhrase', 'YA')
+            ->call('confirmAction');
+
+        $component->assertSee('Metode pembayaran tidak valid');
+        $this->assertSame([], app(EntityRepository::class)->for('bengkel-arka', 'orders')->all());
+
+        $component->set('paymentMethod', 'cash')->call('confirmAction')->assertSet('failure', null);
+        $order = app(EntityRepository::class)->for('bengkel-arka', 'orders')->all()[0];
+        $line = app(EntityRepository::class)->for('bengkel-arka', 'order_lines')->all()[0];
+
+        $this->assertEquals(305000, $order['subtotal']);
+        $this->assertEquals(305000, $line['unit_price']);
+        $this->assertSame('Layanan Uji', $line['description']);
+    }
+
+    public function test_checkout_rejects_money_beyond_safe_exact_precision(): void
+    {
+        $this->useCompany('bengkel-arka', 'bengkel', ['tax_mode' => 'non_taxable']);
+        app(EntityRepository::class)->for('bengkel-arka', 'items')->save([
+            'id' => 1,
+            'name' => 'Nilai batas',
+            'price' => 1000000000001,
+            'unit' => 'unit',
+        ]);
+
+        Livewire::test(CashierScreen::class, ['module' => 'pos'])
+            ->call('addItem', 1)
+            ->assertSee('batas presisi aman');
+
+        $this->assertSame([], app(EntityRepository::class)->for('bengkel-arka', 'orders')->all());
+    }
+
+    public function test_checkout_is_all_or_nothing_and_replay_is_a_no_op(): void
+    {
+        $this->useCompany('bengkel-arka', 'bengkel', ['tax_mode' => 'non_taxable']);
+        $this->seedItems();
+
+        $linesPath = $this->jsonPath.DIRECTORY_SEPARATOR.'bengkel-arka'.DIRECTORY_SEPARATOR.'order_lines.json';
+        (new Filesystem)->ensureDirectoryExists(dirname($linesPath));
+        file_put_contents($linesPath, '{rusak');
+
+        $component = Livewire::test(CashierScreen::class, ['module' => 'pos'])
+            ->call('addItem', 1)
+            ->call('requestAction', 'checkout')
+            ->set('confirmPhrase', 'YA');
+
+        try {
+            $component->call('confirmAction');
+        } catch (Throwable) {
+            // Repository harus gagal sebelum parent ditulis.
+        }
+
+        $this->assertSame([], app(EntityRepository::class)->for('bengkel-arka', 'orders')->all());
+
+        file_put_contents($linesPath, "[]\n");
+        $component->call('confirmAction')->assertSet('failure', null);
+        $this->assertCount(1, app(EntityRepository::class)->for('bengkel-arka', 'orders')->all());
+        $this->assertCount(1, app(EntityRepository::class)->for('bengkel-arka', 'order_lines')->all());
+
+        // Aksi UI yang diputar ulang setelah sukses tidak boleh menggandakan transaksi.
+        $component->call('confirmAction');
+        $this->assertCount(1, app(EntityRepository::class)->for('bengkel-arka', 'orders')->all());
+        $this->assertCount(1, app(EntityRepository::class)->for('bengkel-arka', 'order_lines')->all());
+    }
+
+    public function test_business_identity_is_tenant_scoped_and_missing_configuration_fails_closed(): void
+    {
+        $this->useCompany('bengkel-arka', 'bengkel', ['tax_mode' => 'non_taxable']);
+
+        $this->expectException(\LogicException::class);
+        app(BusinessIdentityStore::class)->read('salon-ayu');
+    }
+
+    public function test_checkout_refuses_missing_tax_mode_or_identity_id(): void
+    {
+        $this->useCompany('bengkel-arka', 'bengkel', []);
+        $this->seedItems();
+
+        try {
+            Livewire::test(CashierScreen::class, ['module' => 'pos']);
+            $this->fail('Konfigurasi fiskal yang hilang harus fail-closed.');
+        } catch (Throwable $exception) {
+            $this->assertStringContainsString('Mode pajak', $exception->getMessage());
+        }
+    }
+
     public function test_checkout_starts_at_the_first_workflow_stage_when_one_exists(): void
     {
         $this->useCompany('bengkel-arka', 'bengkel', ['tax_mode' => 'non_taxable']);
@@ -204,7 +303,11 @@ class CashierScreenTest extends TestCase
 
         // Tingkat 2: tidak ada input ketik-untuk-menegaskan.
         $component->assertDontSee('autocapitalize="characters"', false);
-        $this->assertMatchesRegularExpression('/wire:click="confirmAction"[^>]*\sdisabled/', $component->html());
+        $this->assertStringContainsString('$wire.confirmAction()', $component->html());
+        $this->assertStringContainsString('x-bind:disabled="! ready"', $component->html());
+        $this->assertStringContainsString('bg-[var(--erp-danger)]', $component->html());
+        $this->assertStringContainsString('x-trap.inert.noscroll="true"', $component->html());
+        $this->assertStringContainsString('target?.focus()', $component->html());
 
         $component->call('cancelAction');
         $this->assertCount(1, $component->get('cart'));

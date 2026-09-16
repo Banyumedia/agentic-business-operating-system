@@ -11,12 +11,15 @@ use InvalidArgumentException;
 use JsonException;
 use LogicException;
 use RuntimeException;
+use Throwable;
 
 class JsonEntityRepository implements EntityRepository
 {
     private ?string $company = null;
 
     private ?string $entity = null;
+
+    private bool $suppressRecovery = false;
 
     public function __construct(
         private readonly CompanyContext $companyContext,
@@ -63,9 +66,13 @@ class JsonEntityRepository implements EntityRepository
         $path = $this->path();
         (new Filesystem)->ensureDirectoryExists(dirname($path));
 
-        $lock = $this->acquireLock($path);
+        $transactionLock = $this->acquireLock($this->transactionLockPath());
+        $lock = null;
 
         try {
+            $this->recoverPendingJournals();
+            $this->suppressRecovery = true;
+            $lock = $this->acquireLock($path);
             $rows = $this->readRows();
 
             if (! array_key_exists('id', $record) || $record['id'] === null) {
@@ -74,6 +81,7 @@ class JsonEntityRepository implements EntityRepository
 
             $record = $this->validator->validate($this->entity, $record);
             $this->assertNoOverlap($record, $rows);
+            $this->assertUnique($record, $rows);
 
             $updated = false;
             foreach ($rows as $index => $row) {
@@ -90,10 +98,168 @@ class JsonEntityRepository implements EntityRepository
 
             $this->writeRows($path, $rows);
         } finally {
-            $this->releaseLock($lock);
+            if (is_resource($lock)) {
+                $this->releaseLock($lock);
+            }
+            $this->suppressRecovery = false;
+            $this->releaseLock($transactionLock);
         }
 
         return $record;
+    }
+
+    public function saveAggregate(
+        array $parent,
+        string $childEntity,
+        string $foreignKey,
+        array $children,
+        ?string $idempotencyField = null,
+        array $guards = [],
+    ): array {
+        $this->assertScoped();
+        $this->assertIdentifier($childEntity, 'Entity');
+        EntitySchema::load($childEntity);
+
+        if (! preg_match('/^[a-z][a-z0-9_]*$/', $foreignKey)) {
+            throw new InvalidArgumentException('Foreign key aggregate tidak valid.');
+        }
+
+        $childRepository = $this->for($this->scopedCompany(), $childEntity);
+        if ($childRepository->path() === $this->path()) {
+            throw new InvalidArgumentException('Parent dan child aggregate harus berbeda entitas.');
+        }
+
+        $guardRepositories = [];
+        foreach ($guards as $guard) {
+            $guardEntity = $guard['entity'] ?? null;
+            if (! is_string($guardEntity)) {
+                throw new InvalidArgumentException('Entity guard aggregate tidak valid.');
+            }
+            $guardRepositories[$guardEntity] = $this->for($this->scopedCompany(), $guardEntity);
+        }
+
+        $repositoriesByPath = [];
+        foreach ([$this, $childRepository, ...array_values($guardRepositories)] as $repository) {
+            $repositoriesByPath[$repository->path()] = $repository;
+        }
+        $repositories = array_values($repositoriesByPath);
+        usort($repositories, static fn (self $left, self $right): int => $left->path() <=> $right->path());
+
+        foreach ($repositories as $repository) {
+            (new Filesystem)->ensureDirectoryExists(dirname($repository->path()));
+        }
+
+        $transactionLock = $this->acquireLock($this->transactionLockPath());
+        $locks = [];
+        try {
+            $this->recoverPendingJournals();
+            foreach ($repositories as $repository) {
+                $repository->suppressRecovery = true;
+            }
+            foreach ($repositories as $repository) {
+                $locks[] = $repository->acquireLock($repository->path());
+            }
+
+            $parentRows = $this->readRows();
+            $childRows = $childRepository->readRows();
+
+            if ($idempotencyField !== null && array_key_exists($idempotencyField, $parent)) {
+                foreach ($parentRows as $existing) {
+                    if (($existing[$idempotencyField] ?? null) === $parent[$idempotencyField]) {
+                        return [
+                            'parent' => $existing,
+                            'children' => array_values(array_filter(
+                                $childRows,
+                                static fn (array $row): bool => (string) ($row[$foreignKey] ?? '') === (string) $existing['id'],
+                            )),
+                            'replayed' => true,
+                        ];
+                    }
+                }
+            }
+
+            foreach ($guards as $guard) {
+                $guardRepository = $guardRepositories[$guard['entity']];
+                $guardRow = null;
+                foreach ($guardRepository->readRows() as $row) {
+                    if ((string) ($row['id'] ?? '') === (string) $guard['id']) {
+                        $guardRow = $row;
+                        break;
+                    }
+                }
+                if ($guardRow === null) {
+                    throw new InvalidArgumentException('Data acuan transaksi tidak lagi tersedia.');
+                }
+                foreach ($guard['expected'] as $field => $expected) {
+                    if (($guardRow[$field] ?? null) !== $expected) {
+                        throw new InvalidArgumentException('Data acuan transaksi berubah; muat ulang sebelum melanjutkan.');
+                    }
+                }
+            }
+
+            if (array_key_exists('id', $parent)) {
+                throw new InvalidArgumentException('ID parent aggregate ditetapkan repository.');
+            }
+            $parent['id'] = $this->nextId($parentRows);
+            $parent = $this->validator->validate($this->scopedEntity(), $parent);
+            $this->assertNoOverlap($parent, $parentRows);
+            $this->assertUnique($parent, $parentRows);
+
+            $savedChildren = [];
+            $nextChildId = $childRepository->nextId($childRows);
+            foreach ($children as $child) {
+                if (array_key_exists('id', $child)) {
+                    throw new InvalidArgumentException('ID child aggregate ditetapkan repository.');
+                }
+                $child['id'] = $nextChildId++;
+                $child[$foreignKey] = $parent['id'];
+                $child = $this->validator->validate($childEntity, $child);
+                $childRepository->assertNoOverlap($child, [...$childRows, ...$savedChildren]);
+                $childRepository->assertUnique($child, [...$childRows, ...$savedChildren]);
+                $savedChildren[] = $child;
+            }
+
+            $parentPath = $this->path();
+            $childPath = $childRepository->path();
+            $journalPath = dirname($parentPath).DIRECTORY_SEPARATOR.'.aggregate-'.$this->scopedEntity().'-'.$childEntity.'.json';
+            $journal = [
+                'state' => 'prepared',
+                'files' => [
+                    $parentPath => [
+                        'before' => is_file($parentPath) ? file_get_contents($parentPath) : null,
+                        'after' => $this->encodeRows([...$parentRows, $parent]),
+                    ],
+                    $childPath => [
+                        'before' => is_file($childPath) ? file_get_contents($childPath) : null,
+                        'after' => $this->encodeRows([...$childRows, ...$savedChildren]),
+                    ],
+                ],
+            ];
+            $this->writeAtomically($journalPath, json_encode($journal, JSON_THROW_ON_ERROR));
+
+            try {
+                $this->writeAtomically($parentPath, $journal['files'][$parentPath]['after']);
+                $this->afterAggregateParentWrite();
+                $childRepository->writeAtomically($childPath, $journal['files'][$childPath]['after']);
+                $journal['state'] = 'committed';
+                $this->writeAtomically($journalPath, json_encode($journal, JSON_THROW_ON_ERROR));
+                unlink($journalPath);
+            } catch (Throwable $exception) {
+                $this->recoverJournal($journalPath, true);
+
+                throw $exception;
+            }
+
+            return ['parent' => $parent, 'children' => $savedChildren, 'replayed' => false];
+        } finally {
+            foreach (array_reverse($locks) as $lock) {
+                $this->releaseLock($lock);
+            }
+            foreach ($repositories as $repository) {
+                $repository->suppressRecovery = false;
+            }
+            $this->releaseLock($transactionLock);
+        }
     }
 
     public function delete(string|int $id): bool
@@ -105,9 +271,13 @@ class JsonEntityRepository implements EntityRepository
             return false;
         }
 
-        $lock = $this->acquireLock($path);
+        $transactionLock = $this->acquireLock($this->transactionLockPath());
+        $lock = null;
 
         try {
+            $this->recoverPendingJournals();
+            $this->suppressRecovery = true;
+            $lock = $this->acquireLock($path);
             $rows = $this->readRows();
             $remaining = array_values(array_filter(
                 $rows,
@@ -120,7 +290,11 @@ class JsonEntityRepository implements EntityRepository
 
             $this->writeRows($path, $remaining);
         } finally {
-            $this->releaseLock($lock);
+            if (is_resource($lock)) {
+                $this->releaseLock($lock);
+            }
+            $this->suppressRecovery = false;
+            $this->releaseLock($transactionLock);
         }
 
         return true;
@@ -198,13 +372,48 @@ class JsonEntityRepository implements EntityRepository
         return $highest + 1;
     }
 
+    /** @param list<array<string, mixed>> $rows */
+    private function assertUnique(array $record, array $rows): void
+    {
+        foreach (EntitySchema::load($this->scopedEntity())->unique() as $constraint) {
+            $fields = $constraint['fields'];
+            if (! is_array($fields)) {
+                continue;
+            }
+
+            foreach ($rows as $row) {
+                if ((string) ($row['id'] ?? '') === (string) ($record['id'] ?? '')) {
+                    continue;
+                }
+
+                $matches = true;
+                foreach ($fields as $field) {
+                    $value = $record[$field] ?? null;
+                    if ($value === null || ($row[$field] ?? null) !== $value) {
+                        $matches = false;
+                        break;
+                    }
+                }
+
+                if ($matches) {
+                    throw new InvalidArgumentException('Nilai unik sudah digunakan: '.implode(', ', $fields));
+                }
+            }
+        }
+    }
+
     /**
      * @param  list<array<string, mixed>>  $rows
      */
     private function writeRows(string $path, array $rows): void
     {
-        $contents = json_encode(array_values($rows), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR).PHP_EOL;
-        $this->writeAtomically($path, $contents);
+        $this->writeAtomically($path, $this->encodeRows($rows));
+    }
+
+    /** @param list<array<string, mixed>> $rows */
+    private function encodeRows(array $rows): string
+    {
+        return json_encode(array_values($rows), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR).PHP_EOL;
     }
 
     /** @return resource */
@@ -322,6 +531,14 @@ class JsonEntityRepository implements EntityRepository
     /** @return list<array<string, mixed>> */
     private function readRows(): array
     {
+        if (! $this->suppressRecovery) {
+            $transactionLock = $this->acquireLock($this->transactionLockPath());
+            try {
+                $this->recoverPendingJournals();
+            } finally {
+                $this->releaseLock($transactionLock);
+            }
+        }
         $path = $this->path();
         if (! is_file($path)) {
             return [];
@@ -359,6 +576,14 @@ class JsonEntityRepository implements EntityRepository
         return rtrim($root, '/\\').DIRECTORY_SEPARATOR.$this->company.DIRECTORY_SEPARATOR.$this->entity.'.json';
     }
 
+    private function transactionLockPath(): string
+    {
+        $directory = dirname($this->path());
+        (new Filesystem)->ensureDirectoryExists($directory);
+
+        return $directory.DIRECTORY_SEPARATOR.'.repository-transaction';
+    }
+
     private function writeAtomically(string $path, string $contents): void
     {
         $temporary = tempnam(dirname($path), basename($path).'.tmp-');
@@ -383,11 +608,107 @@ class JsonEntityRepository implements EntityRepository
         return file_put_contents($path, $contents);
     }
 
+    protected function afterAggregateParentWrite(): void {}
+
+    private function recoverPendingJournals(): void
+    {
+        $directory = dirname($this->path());
+        if (! is_dir($directory)) {
+            return;
+        }
+
+        foreach (glob($directory.DIRECTORY_SEPARATOR.'.aggregate-*.json') ?: [] as $journalPath) {
+            $this->recoverJournal($journalPath);
+        }
+    }
+
+    private function recoverJournal(string $journalPath, bool $locksHeld = false): void
+    {
+        if (! is_file($journalPath)) {
+            return;
+        }
+
+        $journal = json_decode((string) file_get_contents($journalPath), true, flags: JSON_THROW_ON_ERROR);
+        if (! is_array($journal) || ! in_array($journal['state'] ?? null, ['prepared', 'committed'], true) || ! is_array($journal['files'] ?? null)) {
+            throw new JsonException('Journal aggregate rusak; recovery ditolak.');
+        }
+
+        $companyDirectory = dirname($this->path());
+        if (count($journal['files']) !== 2) {
+            throw new JsonException('Journal aggregate harus memuat tepat dua file entitas.');
+        }
+        foreach (array_keys($journal['files']) as $path) {
+            if (! is_string($path) || dirname($path) !== $companyDirectory || ! preg_match('/^([a-z][a-z0-9_]*)\.json$/', basename($path), $matches)) {
+                throw new JsonException('Path journal aggregate keluar dari scope company.');
+            }
+            EntitySchema::load($matches[1]);
+        }
+
+        $recoveryLocks = [];
+        if (! $locksHeld) {
+            $paths = array_keys($journal['files']);
+            sort($paths);
+            try {
+                foreach ($paths as $path) {
+                    if (! is_string($path)) {
+                        throw new JsonException('Path journal aggregate tidak valid.');
+                    }
+                    $lock = fopen($path.'.lock', 'c');
+                    if ($lock === false || ! flock($lock, LOCK_EX | LOCK_NB)) {
+                        if (is_resource($lock)) {
+                            fclose($lock);
+                        }
+                        throw new RuntimeException('Transaksi aggregate masih berlangsung.');
+                    }
+                    $recoveryLocks[] = $lock;
+                }
+            } catch (Throwable $exception) {
+                foreach (array_reverse($recoveryLocks) as $lock) {
+                    $this->releaseLock($lock);
+                }
+
+                throw $exception;
+            }
+        }
+
+        try {
+            foreach ($journal['files'] as $path => $versions) {
+                if (! is_string($path) || ! is_array($versions)) {
+                    throw new JsonException('Isi journal aggregate tidak valid.');
+                }
+
+                $contents = $journal['state'] === 'committed' ? ($versions['after'] ?? null) : ($versions['before'] ?? null);
+                if (is_string($contents)) {
+                    $this->writeAtomically($path, $contents);
+                } elseif ($contents === null) {
+                    if (is_file($path)) {
+                        unlink($path);
+                    }
+                } else {
+                    throw new JsonException('Versi file journal aggregate tidak valid.');
+                }
+            }
+
+            unlink($journalPath);
+        } finally {
+            foreach (array_reverse($recoveryLocks) as $lock) {
+                $this->releaseLock($lock);
+            }
+        }
+    }
+
     private function scopedEntity(): string
     {
         $this->assertScoped();
 
         return $this->entity;
+    }
+
+    private function scopedCompany(): string
+    {
+        $this->assertScoped();
+
+        return $this->company;
     }
 
     private function assertScoped(): void

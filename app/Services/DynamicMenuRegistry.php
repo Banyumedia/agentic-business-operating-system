@@ -234,9 +234,9 @@ class DynamicMenuRegistry
                 'requires_all' => ['projects'],
                 'items' => [
                     $this->item(null, ['term' => 'projects', 'prefix' => 'Daftar '], '/app/projects', 'list', 'projects'),
+                    $this->item('billing', 'Termin & Opname', '/app/projects/billing', 'contract', 'invoices', ['projects.progress_billing']),
                     $this->item('quotations', 'Penawaran', '/app/projects/quotations', 'list', 'quotations', ['quotations']),
                     $this->item('timesheet', 'Timesheet', '/app/projects/timesheet', 'list', 'timesheets', ['timesheet']),
-                    $this->item('billing', 'Progress Billing', '/app/projects/billing', 'ledger', 'invoices', ['projects.progress_billing']),
                     $this->item('retention', 'Retensi', '/app/projects/retention', 'list', 'project_milestones', ['construction.retention']),
                 ],
             ],
@@ -281,7 +281,7 @@ class DynamicMenuRegistry
                 'requires_any' => ['finance.cashbook', 'finance.accounting'],
                 'items' => [
                     $this->item(null, 'Buku Kas', '/app/accounting', 'ledger', 'cash_entries', ['finance.cashbook']),
-                    $this->item('invoices', ['term' => 'invoices'], '/app/accounting/invoices', 'ledger', 'invoices', [], ['milestone_billing', 'pos']),
+                    $this->item('invoices', ['term' => 'invoices'], '/app/accounting/invoices', 'contract', 'invoices', [], ['milestone_billing', 'pos']),
                     $this->item('reports', 'Laporan Keuangan', '/app/accounting/reports', 'report', 'cash_entries', ['finance.accounting']),
                     $this->item('coa', 'Bagan Akun', '/app/accounting/coa', 'list', 'cash_entries', ['finance.accounting']),
                     $this->item('journals', 'Jurnal', '/app/accounting/journals', 'ledger', 'cash_entries', ['finance.accounting']),

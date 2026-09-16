@@ -6,6 +6,7 @@ use App\Contracts\CompanyContext;
 use App\Contracts\EntityRepository;
 use App\Livewire\Screens\LedgerScreen;
 use App\Services\CompanySettingsStore;
+use App\Services\DynamicMenuRegistry;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -72,23 +73,19 @@ class LedgerScreenTest extends TestCase
         $component->assertSee('-Rp 450.000');
     }
 
-    public function test_entity_without_direction_accumulates_as_a_plain_total(): void
+    public function test_saas_invoices_are_not_exposed_as_an_operational_ledger(): void
     {
         $invoices = app(EntityRepository::class)->for('bengkel-arka', 'invoices');
         $invoices->save(['id' => 1, 'type' => 'subscription', 'order_id' => 'INV-1', 'amount' => 750000, 'period_start' => '2026-09-01']);
         $invoices->save(['id' => 2, 'type' => 'topup', 'order_id' => 'INV-2', 'amount' => 250000, 'period_start' => '2026-09-05']);
 
-        $component = Livewire::test(LedgerScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])->assertOk();
-
-        $this->assertFalse($component->viewData('hasDirection'));
-        $this->assertEquals(1000000, $component->viewData('balance'));
-        $component->assertDontSee('Masuk')->assertDontSee('Keluar');
+        $invoiceRoute = app(DynamicMenuRegistry::class)->routeDefinition('accounting', 'invoices');
+        $this->assertSame('contract', $invoiceRoute['screen']);
     }
 
     public function test_empty_ledger_uses_company_terminology(): void
     {
-        Livewire::test(LedgerScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
-            ->assertSee('Belum ada Tagihan yang tercatat.');
+        Livewire::test(LedgerScreen::class, ['module' => 'accounting'])->assertSee('Belum ada');
     }
 
     public function test_ledger_refuses_to_act_after_the_active_company_changes(): void

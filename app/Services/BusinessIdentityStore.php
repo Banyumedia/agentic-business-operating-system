@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\CompanyContext;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use JsonException;
@@ -16,19 +17,29 @@ class BusinessIdentityStore
 {
     private const DEFAULT_RATE = 0.11;
 
+    public function __construct(private readonly CompanyContext $companyContext) {}
+
     /** @return array<string, mixed> */
     public function read(string $company): array
     {
+        if ($company !== $this->companyContext->current()) {
+            throw new \LogicException('Akses identitas usaha lintas company ditolak.');
+        }
+
         $path = $this->path($company);
         $disk = Storage::disk('company-json');
 
         if (! $disk->exists($path)) {
-            return [];
+            throw new InvalidArgumentException("Identitas usaha tidak ditemukan: {$company}");
         }
 
         $identity = json_decode($disk->get($path), true, flags: JSON_THROW_ON_ERROR);
         if (! is_array($identity) || array_is_list($identity)) {
             throw new JsonException("Identitas usaha harus object: {$company}");
+        }
+
+        if (! isset($identity['id']) || ! is_int($identity['id']) || $identity['id'] < 1) {
+            throw new InvalidArgumentException("ID identitas usaha tidak valid: {$company}");
         }
 
         return $identity;
@@ -37,11 +48,8 @@ class BusinessIdentityStore
     /**
      * Profil pajak efektif.
      *
-     * Bila kunci `tax_mode` tidak ada, usaha dianggap non-PKP - default yang
-     * sesuai mayoritas klien (D-44) dan tidak pernah memunculkan pajak yang
-     * tidak diminta. Nilai yang ada tetapi tidak dikenali **ditolak keras**,
-     * karena diam-diam menganggapnya non-PKP berarti berhenti memungut PPN
-     * pada usaha yang sebenarnya PKP.
+     * Mode wajib eksplisit. Konfigurasi fiskal yang hilang atau tidak dikenal
+     * ditolak karena default diam-diam dapat menghentikan pemungutan pajak.
      */
     public function taxProfile(string $company): TaxProfile
     {
@@ -49,7 +57,7 @@ class BusinessIdentityStore
         $mode = $identity['tax_mode'] ?? null;
 
         if ($mode === null) {
-            return TaxProfile::nonTaxable();
+            throw new InvalidArgumentException("Mode pajak identitas usaha belum dikonfigurasi: {$company}");
         }
 
         if (! in_array($mode, ['taxable', 'non_taxable'], true)) {

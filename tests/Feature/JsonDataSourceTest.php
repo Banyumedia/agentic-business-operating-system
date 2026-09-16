@@ -97,6 +97,131 @@ class JsonDataSourceTest extends TestCase
         }
     }
 
+    public function test_aggregate_rejects_same_entity_and_recovers_after_parent_write_failure(): void
+    {
+        app(JsonCompanyContext::class)->setCurrent('bengkel-arka');
+        $base = app(EntityRepository::class)->for('bengkel-arka', 'orders');
+
+        $this->expectException(InvalidArgumentException::class);
+        $base->saveAggregate([], 'orders', 'order_id', []);
+    }
+
+    public function test_aggregate_rolls_back_parent_when_child_write_fails(): void
+    {
+        app(JsonCompanyContext::class)->setCurrent('bengkel-arka');
+
+        $repository = new class(app(CompanyContext::class), app(SchemaValidator::class)) extends JsonEntityRepository
+        {
+            protected function afterAggregateParentWrite(): void
+            {
+                throw new \RuntimeException('simulasi mati setelah parent');
+            }
+        };
+
+        try {
+            $repository->for('bengkel-arka', 'orders')->saveAggregate(
+                [
+                    'business_identity_id' => 1,
+                    'order_no' => 'ORDER-ATOMIC',
+                    'external_ref' => 'token-atomic',
+                ],
+                'order_lines',
+                'order_id',
+                [[
+                    'description' => 'Baris uji',
+                    'qty' => 1,
+                    'unit_price' => 100,
+                    'line_total' => 100,
+                ]],
+                'external_ref',
+            );
+            $this->fail('Kegagalan setelah parent harus dipropagasi.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('simulasi mati setelah parent', $exception->getMessage());
+        }
+
+        $this->assertSame([], app(EntityRepository::class)->for('bengkel-arka', 'orders')->all());
+        $this->assertSame([], app(EntityRepository::class)->for('bengkel-arka', 'order_lines')->all());
+        $this->assertSame([], glob($this->jsonPath.'/bengkel-arka/.aggregate-*.json') ?: []);
+    }
+
+    public function test_aggregate_idempotency_returns_the_original_parent_and_children(): void
+    {
+        app(JsonCompanyContext::class)->setCurrent('bengkel-arka');
+        $repository = app(EntityRepository::class)->for('bengkel-arka', 'orders');
+        $parent = [
+            'business_identity_id' => 1,
+            'order_no' => 'ORDER-REPLAY',
+            'external_ref' => 'token-replay',
+        ];
+        $children = [[
+            'description' => 'Baris uji',
+            'qty' => 1,
+            'unit_price' => 100,
+            'line_total' => 100,
+        ]];
+
+        $first = $repository->saveAggregate($parent, 'order_lines', 'order_id', $children, 'external_ref');
+        $second = $repository->saveAggregate(
+            $parent,
+            'order_lines',
+            'order_id',
+            $children,
+            'external_ref',
+            [['entity' => 'items', 'id' => 999, 'expected' => ['price' => 1]]],
+        );
+
+        $this->assertFalse($first['replayed']);
+        $this->assertTrue($second['replayed']);
+        $this->assertSame($first['parent'], $second['parent']);
+        $this->assertSame($first['children'], $second['children']);
+        $this->assertCount(1, $repository->all());
+        $this->assertCount(1, app(EntityRepository::class)->for('bengkel-arka', 'order_lines')->all());
+    }
+
+    public function test_aggregate_guard_rejects_a_stale_reference_inside_the_transaction_lock(): void
+    {
+        app(JsonCompanyContext::class)->setCurrent('bengkel-arka');
+        app(EntityRepository::class)->for('bengkel-arka', 'items')->save([
+            'id' => 1,
+            'name' => 'Barang',
+            'price' => 125000,
+            'unit' => 'pcs',
+        ]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Data acuan transaksi berubah');
+        app(EntityRepository::class)->for('bengkel-arka', 'orders')->saveAggregate(
+            ['business_identity_id' => 1, 'order_no' => 'ORDER-GUARD'],
+            'order_lines',
+            'order_id',
+            [['description' => 'Barang', 'qty' => 1, 'unit_price' => 100000, 'line_total' => 100000]],
+            guards: [[
+                'entity' => 'items',
+                'id' => 1,
+                'expected' => ['name' => 'Barang', 'price' => 100000],
+            ]],
+        );
+    }
+
+    public function test_aggregate_recovery_rejects_journal_paths_outside_company_folder(): void
+    {
+        app(JsonCompanyContext::class)->setCurrent('bengkel-arka');
+        $companyPath = $this->jsonPath.'/bengkel-arka';
+        (new Filesystem)->ensureDirectoryExists($companyPath);
+        file_put_contents($companyPath.'/.aggregate-orders-order_lines.json', json_encode([
+            'state' => 'prepared',
+            'files' => [
+                $this->jsonPath.'/outside.json' => ['before' => null, 'after' => "[]\n"],
+                $companyPath.'/orders.json' => ['before' => null, 'after' => "[]\n"],
+            ],
+        ], JSON_THROW_ON_ERROR));
+
+        $this->expectException(\JsonException::class);
+        $this->expectExceptionMessage('keluar dari scope company');
+        app(EntityRepository::class)->for('bengkel-arka', 'orders')->all();
+    }
+
     public function test_repository_reads_writes_finds_filters_sorts_and_paginates(): void
     {
         app(CompanyContext::class)->setCurrent('bengkel-arka');

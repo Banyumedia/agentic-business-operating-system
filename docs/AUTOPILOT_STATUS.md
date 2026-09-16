@@ -1,7 +1,7 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-17 (Fase 2 berjalan - T-F11 selesai, T-F12 berikutnya)
-**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F11 DONE; next READY T-F12
+**Updated:** 2026-09-17 (T-F11R QA finansial selesai; T-F12 berikutnya)
+**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F11R DONE; next READY T-F12
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
@@ -98,7 +98,7 @@ Merge tetap serial — satu per satu. Cek `docs/KIRO_SKILL.md` §Worker Registry
 | PHP | 8.3.30 | `php -v` |
 | Livewire | 4.4 | `composer.json` |
 | Tailwind | 4.3 (CSS-first `@theme`) | `package.json` |
-| Test suite | **254 passed, 1109 assertions** | `php artisan test` |
+| Test suite | **266 passed, 1146 assertions** | `php artisan test` |
 | Style | **Pint clean, seluruh repo** | `vendor/bin/pint --test` |
 | Build | Vite OK | `npm run build` |
 | Business migrations | none (hanya `users/cache/jobs`) | `ls database/migrations` |
@@ -144,7 +144,8 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 | T-F9b | DONE | 48 fixture demo terisi + uji jumlah baris & integritas referensi; dua defect widget T-F7 diperbaiki |
 | prep PG-1 | DONE | Dispatcher pola layar berbasis konvensi (`ModuleSidebarTest::test_screen_pattern_is_dispatched_to_a_component_by_convention`); membuka PG-1 (T-F10..T-F13) untuk paralel |
 | T-F10 | DONE | `PipelineScreenTest` (12) + `CalendarScreenTest` (8); papan tahap dari `WorkflowEngine` + kalender harian/mingguan + `no_overlap` berbasis schema |
-| T-F11 | DONE | `TaxRateServiceTest` (8) + `CashierScreenTest` (11) + `LedgerScreenTest` (7); pajak D-03/D-44, konfirmasi D-45 bertingkat, saldo berjalan; defect presisi `fitsDecimal` diperbaiki |
+| T-F11 | DONE | Scope awal `084181f` + koreksi QA finansial T-F11R. |
+| T-F11R | DONE | Checkout server-authoritative; aggregate journaled/idempoten; identity fail-closed; invoice SaaS tidak masuk ledger operasional; dialog D-45+a11y; decimal bounded. |
 
 ## Arsitektur D-31 (dibaca sebelum menulis kode apa pun setelah UI-LOCK)
 
@@ -206,7 +207,8 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Task Aktif
 
-**Tidak ada task berjalan.** Writer berikutnya mengambil T-F12 (lihat Next READY).
+**Tidak ada task berjalan.** Writer berikutnya mengambil T-F12 atau T-F13
+(keduanya READY dan boleh paralel di worktree terpisah).
 
 ## Detail Task Selesai (T-F11)
 
@@ -223,6 +225,16 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 - **Defect lama yang terpapar dan diperbaiki:** `SchemaValidator::fitsDecimal()` memakai `sprintf('%.14F')` sehingga galat representasi biner **menolak nilai dua desimal yang sah**. Terlihat begitu pemecahan PPN inklusif masuk: `684684.68` ditolak sebagai "Presisi field tidak valid", dan fixture salon yang sudah di-commit pun ikut gagal validasi. Artinya **tenant PKP mana pun tidak akan bisa menyimpan transaksi** sebelum ini diperbaiki. Kini dibandingkan lewat `round($value, $scale) === $value` + `number_format`; kasus negatif `1.234` pada scale 2 tetap ditolak, dan ada test positif untuk lima nilai hasil pembulatan.
 - **Demo:** salon dijadikan PKP harga-inklusif (`tax_mode=taxable`, `price_includes_tax=true`, 11%) dan lima ordernya dihitung ulang, supaya kedua mode pajak terlihat saat review; bengkel dan klinik tetap non-PKP sesuai mayoritas klien.
 - **Remaining risk:** (a) pembayaran masih state mock — belum ada gateway, sesuai batas Fase 2; (b) checkout belum membuat baris `cash_entries`, jadi buku kas belum otomatis bertambah dari kasir — perlu keputusan apakah itu otomatis atau posting manual; (c) diskon per baris dan per dokumen belum ada di layar (skema sudah menyiapkan kolomnya); (d) `<x-confirm-dialog>` belum dipakai `ListScreen` yang masih punya dialog sendiri — penyatuan ditunda agar diff T-F11 tetap fokus.
+
+### T-F11R — DONE (2026-09-17, QA finansial)
+
+- **Server-authoritative checkout:** state Livewire hanya membawa item id + qty; nama, harga, dan status aktif diambil ulang dari repository, lalu dijaga ulang di dalam lock aggregate. Metode bayar memakai allowlist.
+- **Aggregate durable/idempoten:** `EntityRepository::saveAggregate()` menyimpan parent+children di bawah company transaction lock + entity locks, unique constraints, UUID `external_ref`, dan journal `prepared/committed` dengan rollback/roll-forward recovery. Journal hanya boleh menunjuk tepat dua schema file dalam folder company aktif; path lain ditolak.
+- **Fiscal fail-closed:** `BusinessIdentityStore` memverifikasi company aktif; file, id, atau `tax_mode` hilang/invalid menolak transaksi. Tidak ada fallback identity id atau mode pajak diam-diam.
+- **Ledger semantics:** schema `invoices` saat ini tetap invoice SaaS. Route kanonik invoice/progress billing dipertahankan sebagai fallback kontrak read-only; tidak dihitung sebagai saldo operasional dan tidak mendapat CRUD generik.
+- **Money/a11y:** subtotal berasal dari jumlah line yang sudah dibulatkan; nilai di atas batas aman aritmetika float ditolak; decimal validator menjaga kapasitas whole digits; dialog semua tingkat memakai aksi merah, `x-trap.inert.noscroll`, Escape/cancel/confirm mengembalikan fokus.
+- **Evidence:** focused 112/112 (686 assertions); full `php artisan test` **266/266 (1146 assertions)**; `vendor/bin/pint --test` passed; `npm run build` passed (Vite 1.38 s); `git diff --check` clean.
+- **Review:** tiga putaran read-only menutup seluruh blocker: client-price tampering, write parsial, duplicate/replay, tenant identity, invoice semantics, precision, journal path injection, recovery self-lock, item-active TOCTOU, dan focus restoration.
 
 ## Detail Task Selesai (T-F10)
 
