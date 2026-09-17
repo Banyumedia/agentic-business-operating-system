@@ -1,7 +1,7 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-17 (T-F12 tab kapabilitas Settings + onboarding selesai; T-F13 berikutnya)
-**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F12 DONE; next READY T-F13
+**Updated:** 2026-09-17 (T-F13 universal search dari repository selesai; T-F14 berikutnya)
+**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F13 DONE; next READY T-F14
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
@@ -145,6 +145,8 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 | prep PG-1 | DONE | Dispatcher pola layar berbasis konvensi (`ModuleSidebarTest::test_screen_pattern_is_dispatched_to_a_component_by_convention`); membuka PG-1 (T-F10..T-F13) untuk paralel |
 | T-F10 | DONE | `PipelineScreenTest` (12) + `CalendarScreenTest` (8); papan tahap dari `WorkflowEngine` + kalender harian/mingguan + `no_overlap` berbasis schema |
 | T-F11 | DONE | Scope awal `084181f` + koreksi QA finansial T-F11R. |
+| T-F12 | DONE | `SettingsCapabilityTabsTest` (10) + `OnboardingTest` (6); tab Fitur Bisnis/Istilah/Alur dari registry + PresetSource, onboarding form D-40 |
+| T-F13 | DONE | `CommandPaletteDataSearchTest` (7); pencarian data lintas entity dari EntityRepository, scoped company, href nyata |
 | T-F11R | DONE | Checkout server-authoritative; aggregate journaled/idempoten; identity fail-closed; invoice SaaS tidak masuk ledger operasional; dialog D-45+a11y; decimal bounded. |
 
 ## Arsitektur D-31 (dibaca sebelum menulis kode apa pun setelah UI-LOCK)
@@ -207,7 +209,24 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Task Aktif
 
-**Tidak ada task berjalan.** Writer berikutnya mengambil T-F13.
+**Tidak ada task berjalan.** Writer berikutnya mengambil T-F14.
+
+## Detail Task Selesai (T-F13)
+
+### T-F13 — DONE (2026-09-17)
+
+- **Latar:** `CommandPalette` sejak T-F8 hanya mencari MENU statis dari `DynamicMenuRegistry`, belum data sungguhan -- tidak memenuhi acceptance "Universal Search dari repository" (U-07).
+- **`searchEntityData()` (baru):** memakai `EntityRepository::query(['_search' => ..., '_per_page' => ...])` untuk setiap entity yang benar-benar tampil di menu company aktif (dari `registry->visibleModules()`/`menusFor()`) - bukan memindai seluruh 15 schema. Kapabilitas yang mati untuk company otomatis tidak tersentuh karena registry sudah menegakkan zero-bloat/D-31 lebih dulu.
+- **Judul hasil data** memakai `SchemaPresenter::titleField()` (kolom `name`->`title`->string pertama) yang sama dipakai `ListScreen`/`PipelineScreen`/`CalendarScreen`, bukan logika baru.
+- **`href` nyata, bukan deep-link palsu:** pola layar Fase 2 (`ListScreen`) belum punya route per-baris (list+inline edit, tidak ada halaman detail). Hasil data karena itu diarahkan ke route dasar module (mis. `/app/contacts`) yang benar-benar ada, dipilih via `searchableEntities()` yang memprioritaskan item menu berpola `list/ledger/pipeline/calendar`. Test membuktikan href hasil pencarian di-GET sungguhan dan `assertOk()`, bukan sekadar string tidak kosong.
+- **Scoped company:** `searchEntityData()` mengambil `CompanyContext::current()` sendiri (fail-closed ke hasil kosong bila context invalid), lalu `EntityRepository::for($company, $entity)` -- repository sendiri menolak akses lintas company (`LogicException`), jadi kebocoran data antar tenant dicegah dua lapis.
+- **Batasan volume:** `MAX_PER_ENTITY = 3` dan `MAX_DATA_RESULTS = 8` agar satu pencarian tidak memindai/menumpuk hasil tanpa batas saat banyak entity cocok.
+- **Defect registry pre-existing ditemukan (dicatat, tidak diperbaiki - di luar file target task ini):** dua item `DynamicMenuRegistry` (`projects/timesheet`, `hrd/attendance`) merujuk entity `'timesheets'`, padahal schema yang ada adalah `timesheet_entries.schema.json`. `EntitySchema::load('timesheets')` melempar `InvalidArgumentException`. `searchEntityData()` menangkap ini per-entity (`try/catch` di sekitar `EntitySchema::load()`) sehingga satu entity yang rusak tidak menggagalkan seluruh pencarian - konsisten dengan pola `searchableMenus()` yang sudah menangkap `LogicException`. **Perlu task terpisah** untuk memperbaiki nama entity di registry atau menambah schema `timesheets`.
+- **Defect nyata lain ditemukan & diperbaiki sebelum lanjut (commit terpisah `1ac52b8`, sebelum T-F13 dimulai):** `WidgetRegistry::upcomingSchedule()` memakai `new DateTimeImmutable('now')` yang mengabaikan `Carbon::setTestNow()`/`travelTo()` Laravel; test lolos hanya secara kebetulan selama jam server belum melewati tanggal fixture demo (Sept 2026) dan mulai gagal begitu waktu nyata melewatinya. Diganti `now()->toDateTimeImmutable()`.
+- **Insiden proses (ditemukan & diperbaiki sebelum commit):** draft awal test menulis `EntityRepository::save()` tanpa mengisolasi `datasource.json_path`, sehingga tiga file demo asli (`storage/app/json/{bengkel-arka,klinik-sehat}/contacts.json`, `.../projects.json`) tercemar data uji. Terdeteksi dari `git status` sebelum commit, dipulihkan via `git checkout --`, dan test diperbaiki memakai path `storage_path('framework/testing/palette-...')` + `tearDown()` seperti pola `ListScreenTest`/`CashierScreenTest`. Tidak ada data demo yang ikut ter-commit.
+- **Files:** `app/Livewire/CommandPalette.php`, `tests/Feature/CommandPaletteDataSearchTest.php` (baru).
+- **Evidence:** focused `CommandPaletteDataSearchTest` 7/7 (12 assertions); regresi `ModuleSidebarTest` (test command palette lama) tetap hijau; full `php artisan test` **289/289 (1211 assertions)**; `vendor/bin/pint --test` passed (97 files); `git diff --check` clean; build dilewati (tidak ada Blade/CSS/JS yang berubah - diverifikasi via `git status --short`); scan D-31 pada file yang disentuh -> 0 nama industri, 0 `DB::`.
+- **Remaining risk:** (a) mismatch entity `timesheets` di registry (lihat di atas) - task terpisah; (b) href hasil data mengarah ke halaman list module, bukan baris spesifik - jujur sesuai arsitektur Fase 2 saat ini, akan berubah bila pola layar detail-per-baris ditambahkan; (c) Scout (U-07) tetap menyusul Fase 3 sesuai rencana awal task ini, pencarian saat ini murni `EntityRepository::query()` substring.
 
 ## Detail Task Selesai (T-F12)
 
@@ -352,11 +371,11 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Next READY
 
-**T-F12 — Settings 6 tab + onboarding form (D-40).**
+**T-F14 — Uji anti-hardcode otomatis (`NoIndustryHardcodeTest`, `NoLiteralTermsTest`, `RenderAllPresetsTest`).**
 
-T-F12 dan T-F13 sama-sama `READY` dan dapat berjalan paralel (file target lepas:
-T-F12 menyentuh `Settings`/`Onboarding`, T-F13 menyentuh `CommandPalette`). Klaim
-lewat branch `task/{TASK-ID}` sesuai `HERMES.md` §Parallel Writer Policy.
+T-F14 adalah barrier konvergensi: depends T-F7..T-F13 + T-F11R (semuanya `DONE`).
+Selalu serial (lihat `EXECUTION_PLAN.md` section Matriks Grup Paralel). Setelah T-F14,
+T-F15 (bukti `laundry.json`) lalu berhenti di gate `HUMAN:UI-LOCK`.
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 
