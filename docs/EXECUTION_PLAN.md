@@ -190,9 +190,9 @@ T-F14/T-F15, dan **berhenti menunggu**.
 
 | ID | Task | Depends On | Decisions | Gate | File Target | Acceptance | State |
 |---|---|---|---|---|---|---|---|
-| T-00a | Migration + model `companies`, `business_identities`; `ALTER users` (+`wa_number`, `wa_is_verified`, `current_company_id`) | — | D-41 (ex-Q-08, **locked**; default**: kolom `current_company_id`) | `HUMAN:UI-LOCK` | `database/migrations/`, `app/Models/Company.php`, `app/Models/BusinessIdentity.php`, `app/Models/User.php` | Schema sesuai `DATA_MODEL.md` §1.1–1.2, 1.4 via Schema Builder; `migrate:fresh` hijau di SQLite; factory untuk `Company`; test relasi `Company→identities`, `User→companies`. | `BLOCKED` (gate) |
-| T-00b | Migration + model `module_settings` (bentuk D-19/D-25) | T-00a | — | — | `database/migrations/`, `app/Models/ModuleSetting.php` | `UNIQUE(company_id, module_name)`; `settings_json` cast array; test tulis/baca modul `features`. | `BLOCKED` |
-| T-00c | Auth scaffold minimal (login email+password, D-21) + middleware `SetCurrentCompany` | T-00a | — | — | `routes/web.php`, `app/Http/Middleware/SetCurrentCompany.php`, `resources/views/auth/` | Login → redirect `/app/dashboard`; guest → `/login`; `current_company_id` tersedia via `auth()->user()`; test guest 302, user 200. **Tanpa** Breeze/Jetstream — Livewire form sendiri agar tidak menambah dependency. | `BLOCKED` |
+| T-00a | Migration + model `companies`, `business_identities`; `ALTER users` (+`wa_number`, `wa_is_verified`, `current_company_id`) | — | D-41 (ex-Q-08, **locked**; default**: kolom `current_company_id`) | `HUMAN:UI-LOCK` | `database/migrations/`, `app/Models/Company.php`, `app/Models/BusinessIdentity.php`, `app/Models/User.php` | Schema sesuai `DATA_MODEL.md` §1.1–1.2, 1.4 via Schema Builder; `migrate:fresh` hijau di SQLite; factory untuk `Company`; test relasi `Company→identities`, `User→companies`. | `DONE` |
+| T-00b | Migration + model `module_settings` (bentuk D-19/D-25) | T-00a | — | — | `database/migrations/`, `app/Models/ModuleSetting.php` | `UNIQUE(company_id, module_name)`; `settings_json` cast array; test tulis/baca modul `features`. | `READY` |
+| T-00c | Auth scaffold minimal (login email+password, D-21) + middleware `SetCurrentCompany` | T-00a | — | — | `routes/web.php`, `app/Http/Middleware/SetCurrentCompany.php`, `resources/views/auth/` | Login → redirect `/app/dashboard`; guest → `/login`; `current_company_id` tersedia via `auth()->user()`; test guest 302, user 200. **Tanpa** Breeze/Jetstream — Livewire form sendiri agar tidak menambah dependency. | `READY` |
 
 ---
 

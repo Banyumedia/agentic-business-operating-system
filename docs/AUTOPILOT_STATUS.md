@@ -1,7 +1,7 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-17 (T-F16 UI Polish selesai; Fase 2 lengkap - menunggu `HUMAN:UI-LOCK`)
-**Mode:** FASE 2 SELESAI - T-07 + T-F1..T-F16 DONE; **berhenti menunggu gate `HUMAN:UI-LOCK`** (bukan soal teknis, keputusan Bos)
+**Updated:** 2026-09-18 (T-00a DONE; Fase 3a dimulai)
+**Mode:** FASE 3a AKTIF - Gate UI-LOCK sudah dibuka.
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
@@ -109,7 +109,7 @@ Merge tetap serial — satu per satu. Cek `docs/KIRO_SKILL.md` §Worker Registry
 | Gate | Status |
 |---|---|
 | `HUMAN:COMMIT` | ✅ terbuka untuk pekerjaan lokal |
-| `HUMAN:UI-LOCK` | ⛔ **belum** — menahan Fase 3+ |
+| `HUMAN:UI-LOCK` | ✅ TERBUKA |
 | `HUMAN:SECRET` | ⛔ belum — fake/stub diizinkan di dev |
 | `HUMAN:DEPLOY` | ⛔ belum |
 
@@ -209,13 +209,16 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Task Aktif
 
-**Tidak ada task berjalan. Fase 2 lengkap (T-07 -> T-F1..T-F15 semua `DONE`).**
-Autopilot **berhenti** di gate `HUMAN:UI-LOCK` sesuai Stop Line `HERMES.md`.
-Menunggu Bos melihat aplikasi utuh berjalan untuk `bengkel`, `klinik`, `salon`,
-`laundry` (semua `DATA_SOURCE=json`) dan menyatakan Fase 2 `LOCKED` sebelum
-Fase 3 (fondasi tenant database nyata) boleh dimulai. Ini persetujuan
-visual + alur, bukan keputusan teknis - jangan dilanjutkan tanpa konfirmasi
-eksplisit.
+**T-00a DONE (2026-09-18)**
+
+- **Scope:** Fondasi tenant Fase 3a (migration + model `companies`, `business_identities`, ALTER `users`).
+- **Implemented:**
+  - Migration portable Schema Builder.
+  - `User` punya `wa_number`, `wa_is_verified`, `current_company_id` (D-41).
+  - Model Eloquent + Relasi + Factory.
+- **Evidence:** test TenantFoundationTest 3/3; seluruh test 303/303 hijau; pint hijau.
+
+Fase 3+ telah dibuka oleh HUMAN:UI-LOCK dari Bos.
 
 **URL demo per preset** (jalankan `php artisan serve` lalu buka):
 - Bengkel: `/?company=bengkel-arka`
