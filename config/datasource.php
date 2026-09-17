@@ -7,5 +7,6 @@ return [
         'bengkel-arka',
         'klinik-sehat',
         'salon-ayu',
+        'laundry-bersih',
     ],
 ];
