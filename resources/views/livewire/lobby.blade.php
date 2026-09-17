@@ -3,7 +3,7 @@
         <header class="mb-10 text-center">
             <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--erp-accent)]">Ruang kerja perusahaan</p>
             <h1 class="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">Agentic BOS</h1>
-            <p class="mt-3 text-[var(--erp-text-secondary)]">Pilih modul aktif untuk memulai pekerjaan.</p>
+            <p class="mt-3 text-[var(--erp-text-secondary)]">Pilih modul aktif untuk memulai hari.</p>
         </header>
 
         <nav aria-label="Modul perusahaan" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

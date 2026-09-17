@@ -13,18 +13,18 @@ class FeatureResolver
         'inventory.batch_expiry', 'inventory.bom', 'pos', 'pos.tables',
         'quotations', 'milestone_billing', 'approval_flow', 'timesheet',
         'finance.cashbook', 'finance.accounting', 'hr.employees', 'hr.payroll',
-        'system.ai_agent', 'pharmacy.prescription', 'construction.retention',
+        'system.ai_agent', 'pos.prescription', 'construction.retention',
     ];
 
     /** @var array<string, list<string>> */
     private const DEPENDENCIES = [
         'system.ai_agent' => ['approval_flow'],
-        'pharmacy.prescription' => ['inventory.batch_expiry', 'pos', 'contacts'],
+        'pos.prescription' => ['inventory.batch_expiry', 'pos', 'contacts'],
         'construction.retention' => ['projects.progress_billing', 'milestone_billing'],
     ];
 
     /** @var list<string> */
-    private const TIER_B = ['pharmacy.prescription', 'construction.retention'];
+    private const TIER_B = ['pos.prescription', 'construction.retention'];
 
     public function __construct(private readonly CompanyPresetResolver $companyPreset) {}
 

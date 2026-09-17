@@ -272,7 +272,7 @@ class DynamicMenuRegistry
                     $this->item('pipeline', ['term' => 'orders', 'prefix' => 'Papan '], '/app/pos/pipeline', 'pipeline', 'orders', [], [], true, 'orders'),
                     $this->item('history', 'Riwayat Transaksi', '/app/pos/history', 'list', 'orders'),
                     $this->item('tables', ['term' => 'orders', 'prefix' => 'Meja & '], '/app/pos/tables', 'board', 'orders', ['pos.tables']),
-                    $this->item('prescriptions', 'Resep', '/app/pos/prescriptions', 'list', 'orders', ['pharmacy.prescription']),
+                    $this->item('prescriptions', 'Resep', '/app/pos/prescriptions', 'list', 'orders', ['pos.prescription']),
                 ],
             ],
             'accounting' => [

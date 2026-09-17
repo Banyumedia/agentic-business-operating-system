@@ -5,7 +5,7 @@
     <header class="mb-8">
         <p class="text-sm font-semibold text-[var(--erp-accent)]">Pengaturan usaha</p>
         <h1 class="mt-1 text-3xl font-bold text-[var(--erp-text-primary)]">Atur Agentic BOS sesuai cara kerja tim</h1>
-        <p class="mt-2 text-[var(--erp-text-secondary)]">Tema berlaku untuk seluruh staf di usaha ini.</p>
+        <p class="mt-2 text-[var(--erp-text-secondary)]">Tema berlaku untuk seluruh pengguna di usaha ini.</p>
     </header>
 
     <div
@@ -120,7 +120,7 @@
                     <div>
                         <div class="mb-4">
                             <h3 class="text-lg font-semibold text-[var(--erp-text-primary)]">Istilah</h3>
-                            <p class="mt-1 text-sm text-[var(--erp-text-secondary)]">Sesuaikan label yang tampil di seluruh layar, mis. "Kontak" menjadi "Pasien".</p>
+                            <p class="mt-1 text-sm text-[var(--erp-text-secondary)]">Sesuaikan label yang tampil di seluruh layar.</p>
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-2">
@@ -194,7 +194,7 @@
                 <div class="mb-6">
                     <h2 class="text-xl font-semibold text-[var(--erp-text-primary)]">Skema warna usaha</h2>
                     <p class="mt-1 text-sm text-[var(--erp-text-secondary)]">
-                        Pilih satu tema. Perubahan disimpan di server dan digunakan seluruh staf usaha.
+                        Pilih satu tema. Perubahan disimpan di server dan digunakan seluruh pengguna usaha.
                     </p>
                 </div>
 

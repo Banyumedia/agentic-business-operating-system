@@ -27,7 +27,7 @@
                     wire:model="name"
                     required
                     class="mt-2 min-h-11 w-full rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] px-3 text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
-                    placeholder="Contoh: Bengkel Jaya Motor"
+                    placeholder="Contoh: Usaha Jaya Bersama"
                 >
             </div>
 
