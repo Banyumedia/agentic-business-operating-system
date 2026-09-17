@@ -1,0 +1,18 @@
+[
+    {
+        "id": 1,
+        "generated_at": "2026-09-17T07:00:00+07:00",
+        "period": "Hari ini",
+        "summary": "Tiga cucian sedang diproses dan satu siap diambil pelanggan. Arus kas bersih hari ini masih positif, namun stok deterjen dan pewangi sudah menyentuh batas minimum.",
+        "highlights": [
+            "Satu cucian menunggu diambil pelanggan.",
+            "Stok deterjen cair dan pewangi berada di bawah batas minimum.",
+            "Satu permintaan pembatalan menunggu persetujuan Bos."
+        ],
+        "recommended_actions": [
+            "Hubungi pelanggan untuk pengambilan cucian yang sudah siap.",
+            "Setujui restock deterjen dan pewangi sebelum akhir pekan.",
+            "Tinjau permintaan pembatalan yang menunggu keputusan."
+        ]
+    }
+]

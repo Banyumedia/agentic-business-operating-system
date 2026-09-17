@@ -1,0 +1,53 @@
+{
+    "key": "laundry",
+    "name": "Laundry",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "inventory": true,
+        "pos": true,
+        "approval_flow": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "item": "Layanan",
+        "items": "Layanan",
+        "order": "Cucian",
+        "orders": "Cucian",
+        "staff": "Karyawan",
+        "staffs": "Karyawan"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {"code": "terima", "label": "Diterima"},
+                {"code": "proses", "label": "Diproses"},
+                {"code": "siap_diambil", "label": "Siap Diambil"},
+                {"code": "diambil", "label": "Diambil"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "terima", "to": "proses", "roles": ["owner", "staff"]},
+                {"from": "proses", "to": "terima", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "proses", "to": "siap_diambil", "roles": ["owner", "staff"]},
+                {"from": "siap_diambil", "to": "diambil", "roles": ["owner", "staff"], "effects": ["notify.owner_wa"]},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"], "requires_approval": true}
+            ],
+            "terminal": ["diambil", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "pos", "contacts", "inventory", "hrd", "accounting", "settings"]
+    }
+}

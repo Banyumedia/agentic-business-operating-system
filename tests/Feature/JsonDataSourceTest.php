@@ -292,12 +292,16 @@ class JsonDataSourceTest extends TestCase
 
     public function test_committed_demo_inventory_has_48_schema_valid_files(): void
     {
+        // Dibatasi pada tiga company demo Fase 2 asli (T-F9b): setiap company
+        // punya satu file per schema (16 x 3 = 48). `laundry-bersih` (T-F15)
+        // sengaja hanya mengisi entity yang relevan untuk kapabilitasnya,
+        // bukan seluruh 16 schema, jadi diverifikasi terpisah di bawah.
         $schemaNames = array_map(
             static fn (string $path): string => str_replace('.schema.json', '', basename($path)),
             glob(database_path('schemas/*.schema.json')) ?: [],
         );
         $files = array_values(array_filter(
-            glob(storage_path('app/json/*/*.json')) ?: [],
+            glob(storage_path('app/json/{bengkel-arka,klinik-sehat,salon-ayu}/*.json'), GLOB_BRACE) ?: [],
             static fn (string $path): bool => in_array(pathinfo($path, PATHINFO_FILENAME), $schemaNames, true),
         ));
         $validator = app(SchemaValidator::class);
@@ -311,6 +315,62 @@ class JsonDataSourceTest extends TestCase
             $this->assertIsArray($rows);
             foreach ($rows as $row) {
                 $validator->validate($entity, $row);
+            }
+        }
+    }
+
+    public function test_laundry_preset_fixture_is_schema_valid_and_referentially_sound(): void
+    {
+        // T-F15: bukti awal D-31 - preset baru (data) + fixture demo, nol
+        // kode baru. Setiap file yang ada harus tetap lolos schema yang sama
+        // dipakai company lain, dan referensi antar entity harus konsisten.
+        $schemaNames = array_map(
+            static fn (string $path): string => str_replace('.schema.json', '', basename($path)),
+            glob(database_path('schemas/*.schema.json')) ?: [],
+        );
+        $files = array_values(array_filter(
+            glob(storage_path('app/json/laundry-bersih/*.json')) ?: [],
+            static fn (string $path): bool => in_array(pathinfo($path, PATHINFO_FILENAME), $schemaNames, true),
+        ));
+        $validator = app(SchemaValidator::class);
+
+        $this->assertNotEmpty($files, 'Fixture laundry-bersih tidak ditemukan.');
+
+        $ids = [];
+        foreach ($files as $file) {
+            $rows = json_decode((string) file_get_contents($file), true, flags: JSON_THROW_ON_ERROR);
+            $entity = pathinfo($file, PATHINFO_FILENAME);
+
+            $this->assertIsArray($rows);
+            $this->assertNotEmpty($rows, "Fixture laundry-bersih/{$entity}.json tidak boleh kosong.");
+            foreach ($rows as $row) {
+                $validator->validate($entity, $row);
+            }
+            $ids[$entity] = array_column($rows, 'id');
+        }
+
+        $external = ['users', 'business_identities', 'accounting_journals', 'company_memberships', 'pos_shifts'];
+        foreach ($files as $file) {
+            $entity = pathinfo($file, PATHINFO_FILENAME);
+            $rows = json_decode((string) file_get_contents($file), true, flags: JSON_THROW_ON_ERROR);
+
+            foreach (EntitySchema::load($entity)->references() as $field => $reference) {
+                if (in_array($reference['entity'], $external, true)) {
+                    continue;
+                }
+
+                foreach ($rows as $row) {
+                    $value = $row[$field] ?? null;
+                    if ($value === null) {
+                        continue;
+                    }
+
+                    $this->assertContains(
+                        $value,
+                        $ids[$reference['entity']] ?? [],
+                        "laundry-bersih/{$entity}.{$field}={$value} menunjuk baris {$reference['entity']} yang tidak ada.",
+                    );
+                }
             }
         }
     }

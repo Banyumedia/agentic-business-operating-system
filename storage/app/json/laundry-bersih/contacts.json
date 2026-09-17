@@ -1,0 +1,74 @@
+[
+    {
+        "id": 1,
+        "business_identity_id": 1,
+        "type": "customer",
+        "name": "Rina Wulandari",
+        "wa_number": "628131110001",
+        "email": "rina.wulandari@contoh.test",
+        "source": "walk_in",
+        "tags": ["langganan"],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "business_identity_id": 1,
+        "type": "customer",
+        "name": "Fajar Ramadhan",
+        "wa_number": "628131110002",
+        "email": null,
+        "source": "whatsapp",
+        "tags": [],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "business_identity_id": 1,
+        "type": "customer",
+        "name": "Siti Marlina",
+        "wa_number": "628131110003",
+        "email": "siti.marlina@contoh.test",
+        "source": "referral",
+        "tags": ["langganan"],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "business_identity_id": 1,
+        "type": "customer",
+        "name": "Bayu Kurniawan",
+        "wa_number": "628131110004",
+        "email": null,
+        "source": "instagram",
+        "tags": [],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 5,
+        "business_identity_id": 1,
+        "type": "customer",
+        "name": "Melati Putri",
+        "wa_number": "628131110005",
+        "email": "melati.putri@contoh.test",
+        "source": "walk_in",
+        "tags": [],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 6,
+        "business_identity_id": 1,
+        "type": "vendor",
+        "name": "Toko Kimia Bersih Sentosa",
+        "wa_number": "628131110006",
+        "email": "sales@kimiabersih.test",
+        "source": "supplier",
+        "tags": [],
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
+]

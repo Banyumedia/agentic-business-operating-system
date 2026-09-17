@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "item_id": 5,
+        "batch_no": "DET-2609-01",
+        "expires_on": null,
+        "qty_on_hand": 6,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "item_id": 6,
+        "batch_no": "PWG-2609-01",
+        "expires_on": null,
+        "qty_on_hand": 3,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
+]

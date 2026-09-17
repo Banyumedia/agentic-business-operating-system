@@ -1,0 +1,46 @@
+[
+    {
+        "id": 1,
+        "name": "Wahyu Setiawan",
+        "position": "Kepala Operasional",
+        "base_salary": 4200000,
+        "hourly_cost": null,
+        "joined_on": "2023-05-10",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "name": "Lestari Ningsih",
+        "position": "Operator Cuci",
+        "base_salary": 2900000,
+        "hourly_cost": 18000,
+        "joined_on": "2024-02-19",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "name": "Dodi Firmansyah",
+        "position": "Operator Setrika",
+        "base_salary": 2800000,
+        "hourly_cost": 17000,
+        "joined_on": "2024-11-04",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "name": "Anisa Rahmawati",
+        "position": "Kasir",
+        "base_salary": 2700000,
+        "hourly_cost": null,
+        "joined_on": "2025-03-21",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
+]

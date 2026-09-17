@@ -15,7 +15,10 @@ class CommittedCapabilityFixtureTest extends TestCase
             'bengkel-arka' => ['preset' => 'bengkel', 'contact' => 'Pelanggan', 'feature' => 'projects'],
             'klinik-sehat' => ['preset' => 'klinik', 'contact' => 'Pasien', 'feature' => 'bookings'],
             'salon-ayu' => ['preset' => 'salon', 'contact' => 'Pelanggan', 'feature' => 'bookings'],
+            'laundry-bersih' => ['preset' => 'laundry', 'contact' => 'Pelanggan', 'feature' => 'pos'],
         ];
+
+        config(['datasource.demo_companies' => array_keys($cases)]);
 
         foreach ($cases as $company => $expected) {
             session(['active_company' => $company]);

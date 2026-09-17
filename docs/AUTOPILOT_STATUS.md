@@ -1,7 +1,7 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-17 (T-F14 Uji anti-hardcode otomatis selesai; T-F15 berikutnya)
-**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F14 DONE; next READY T-F15
+**Updated:** 2026-09-17 (T-F15 bukti D-31 `laundry.json` selesai; Fase 2 lengkap - menunggu `HUMAN:UI-LOCK`)
+**Mode:** FASE 2 SELESAI - T-07 + T-F1..T-F15 DONE; **berhenti menunggu gate `HUMAN:UI-LOCK`** (bukan soal teknis, keputusan Bos)
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
@@ -209,7 +209,33 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Task Aktif
 
-**Tidak ada task berjalan.** Writer berikutnya mengambil T-F15.
+**Tidak ada task berjalan. Fase 2 lengkap (T-07 -> T-F1..T-F15 semua `DONE`).**
+Autopilot **berhenti** di gate `HUMAN:UI-LOCK` sesuai Stop Line `HERMES.md`.
+Menunggu Bos melihat aplikasi utuh berjalan untuk `bengkel`, `klinik`, `salon`,
+`laundry` (semua `DATA_SOURCE=json`) dan menyatakan Fase 2 `LOCKED` sebelum
+Fase 3 (fondasi tenant database nyata) boleh dimulai. Ini persetujuan
+visual + alur, bukan keputusan teknis - jangan dilanjutkan tanpa konfirmasi
+eksplisit.
+
+**URL demo per preset** (jalankan `php artisan serve` lalu buka):
+- Bengkel: `/?company=bengkel-arka`
+- Klinik: `/?company=klinik-sehat`
+- Salon: `/?company=salon-ayu`
+- Laundry (baru, T-F15): `/?company=laundry-bersih`
+
+## Detail Task Selesai (T-F15)
+
+### T-F15 — DONE (2026-09-17)
+
+- **Latar:** bukti awal D-31 ("industri = data, kapabilitas = kode") pada industri **ke-4** yang belum pernah ada saat kode kapabilitas (`app/`, `resources/views/`) ditulis - satu-satunya cara task ini bisa `DONE` adalah kalau menambah industri baru benar-benar tidak butuh kode baru.
+- **`database/presets/laundry.json` (baru):** Tier A murni, 7 kapabilitas dari katalog terkunci D-32 (`contacts`, `inventory`, `pos`, `approval_flow`, `finance.cashbook`, `hr.employees`, `system.ai_agent` - dependensi `system.ai_agent` -> `approval_flow` terpenuhi), terminologi (`contact->Pelanggan`, `item->Layanan`, `order->Cucian`, `staff->Karyawan`), workflow `orders` 5-stage (`terima -> proses -> siap_diambil -> diambil`, `dibatalkan` dari mana pun butuh approval, mundur `proses->terima` butuh catatan), widget dashboard (`low_stock`, `kpi_cashflow`, `pending_approvals`), urutan menu. Tidak ada kunci kapabilitas baru dibuat, tidak ada modul Tier B.
+- **`storage/app/json/laundry-bersih/*.json` (baru, 9 file):** `business_identity`, `contacts` (5 pelanggan + 1 vendor), `employees` (4), `items` (4 jasa + 2 barang), `item_batches` (2 baris, salah satu di bawah `min_stock` supaya widget `low_stock` punya data nyata), `orders` (6 baris mengisi seluruh 5 stage termasuk `dibatalkan`), `order_lines` (8 baris, aritmetika `qty*unit_price-discount=line_total` diverifikasi), `cash_entries` (6), `assistant_report` (1). Seluruh referensi FK (`contact_id`, `order_id`, `item_id`, `source_id`) menunjuk baris yang benar-benar ada di file sibling.
+- **Zero-code proof:** `git status` selama task ini hanya menunjukkan file baru di `database/presets/` dan `storage/app/json/laundry-bersih/`, plus 4 file test yang diadaptasi (bukan file `app/` atau `resources/views/` apa pun). Ini bukti langsung acceptance "diff di luar `database/presets/`, `storage/app/json/`, dan test = kosong".
+- **Test yang diadaptasi (bukan dilemahkan):** (a) `JsonPresetSourceTest` - daftar 3 preset jadi 4 (urutan alfabetis `bengkel, klinik, laundry, salon`), tambah assertion transisi/terminal workflow laundry; (b) `JsonDataSourceTest` - test "48 file schema-valid" dipersempit ke glob eksplisit 3 company asli (komentar menjelaskan kenapa: laundry tidak mengisi seluruh 16 schema), ditambah test baru independen yang memvalidasi schema + integritas referensial khusus `laundry-bersih`; (c) `CommittedCapabilityFixtureTest` - tambah satu case `laundry-bersih` ke map yang sudah ada; (d) `tests/Architecture/RenderAllPresetsTest.php` - tambah `laundry-bersih` ke slug map preset + test baru yang membuktikan `/app/pos` (kasir menampilkan katalog jasa laundry), `/app/pos/pipeline` (kanban "Papan Cucian" dengan stage "Diterima"), `/app/contacts`, `/app/inventory` render 200 dengan konten nyata, dan `/app/projects`/`/app/bookings` tetap 403 (kapabilitas off, zero-bloat tetap tegak untuk company baru).
+- **QA independen (`semantic_reviewer` sub-agent) dijalankan sebelum commit:** cross-check terhadap D-31/D-32/D-33, verifikasi manual seluruh FK fixture baru, retrace graf workflow terhadap aturan `PresetDefinitionValidator` (reachability + terminal-reachability), dan verifikasi keempat edit test tidak melemahkan assertion apa pun (semua additive/scoped dengan alasan tertulis). **Verdict: APPROVED.** Satu catatan non-blocking: transisi mundur `proses->terima` agak tidak umum untuk alur laundry (mekanis valid, sudah wajib catatan) - dicatat sebagai desain yang disengaja (analog rework QC di preset bengkel: pelanggan menambah cucian saat proses berjalan), bukan defect.
+- **Files:** `database/presets/laundry.json` (baru), `storage/app/json/laundry-bersih/*.json` (baru, 9 file), `tests/Architecture/RenderAllPresetsTest.php`, `tests/Feature/{JsonPresetSourceTest,JsonDataSourceTest,CommittedCapabilityFixtureTest}.php`.
+- **Evidence:** focused (`JsonPresetSourceTest`, `RenderAllPresetsTest`, `JsonDataSourceTest`, `CommittedCapabilityFixtureTest`) 33/33 (414 assertions); full `php artisan test` **300/300 (1293 assertions)**; `vendor/bin/pint --test` passed (100 files, tidak ada file PHP baru); `npm run build` passed (Vite ~1.7s, tidak ada Blade/CSS/JS yang berubah); `git diff --check` clean; `git status` sebelum staging mengonfirmasi nol perubahan di luar `database/presets/`, `storage/app/json/`, `tests/`; `bengkel-arka`/`klinik-sehat`/`salon-ayu` tidak tersentuh.
+- **Remaining risk:** (a) transisi mundur `proses->terima` - dicatat di atas, bukan blocker; (b) glob 3-company yang dipersempit di `JsonDataSourceTest` memakai daftar eksplisit (`{bengkel-arka,klinik-sehat,salon-ayu}`), bukan pola exclude generik - company Tier A kelima di masa depan (bila punya fixture 16-schema lengkap) perlu ditambahkan manual ke daftar itu atau diberi test sibling seperti laundry, ini trade-off eksplisit yang didokumentasikan komentar, bukan gap diam-diam; (c) **Fase 2 sekarang lengkap** - autopilot berhenti di gate `HUMAN:UI-LOCK`, menunggu Bos.
 
 ## Detail Task Selesai (T-F14)
 
@@ -409,14 +435,16 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Next READY
 
-**T-F15 — Bukti D-31 awal: `laundry.json`.**
+**Tidak ada task `READY` lagi. Fase 2 selesai (T-07 -> T-F1..T-F15 semua `DONE`).**
 
-T-F14 (`DONE`) adalah barrier konvergensi yang sudah tertutup: depends T-F7..T-F13 +
-T-F13R (semuanya `DONE`). T-F15 depends T-F14, selalu serial (lihat
-`EXECUTION_PLAN.md` section Matriks Grup Paralel). T-F15 menambah preset +
-data dummy `laundry.json` untuk membuktikan D-31 (`git diff --stat` di luar
-`database/presets/`, `storage/app/json/`, dan test harus kosong). Setelah
-T-F15, berhenti di gate `HUMAN:UI-LOCK` - Fase 3+ butuh keputusan Bos.
+Baris berikutnya di `EXECUTION_PLAN.md` (Fase 3a dst.) semuanya `BLOCKED` di
+belakang gate `⛔ HUMAN:UI-LOCK` - lihat section Matriks Grup Paralel. Sesuai
+Stop Line `HERMES.md`: *"after Fase 2 (T-07 -> T-F1 ... T-F15), stop. Fase 3+
+is behind HUMAN:UI-LOCK."* Ini persetujuan visual + alur produk (lihat Bos
+melihat aplikasi utuh berjalan untuk `bengkel`, `klinik`, `salon`, `laundry`),
+bukan sesuatu yang bisa diputuskan lewat test/lint/build. **Autopilot berhenti
+di sini menunggu konfirmasi Bos** bahwa Fase 2 `LOCKED` sebelum Fase 3
+(fondasi tenant database nyata, migration, adapter Eloquent) boleh dimulai.
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 

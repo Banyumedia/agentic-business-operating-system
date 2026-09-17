@@ -17,7 +17,7 @@ class JsonPresetSourceTest extends TestCase
         $source = app(PresetSource::class);
 
         $this->assertInstanceOf(JsonPresetSource::class, $source);
-        $this->assertSame(['bengkel', 'klinik', 'salon'], array_column($source->all(), 'key'));
+        $this->assertSame(['bengkel', 'klinik', 'laundry', 'salon'], array_column($source->all(), 'key'));
         $this->assertSame('klinik', $source->find('klinik')['key']);
         $this->assertNull($source->find('unknown'));
     }
@@ -48,6 +48,13 @@ class JsonPresetSourceTest extends TestCase
             $this->assertContains('selesai', $workflow['terminal']);
             $this->assertContains('dibatalkan', $workflow['terminal']);
         }
+
+        $laundry = $source->find('laundry')['workflows']['orders'];
+        $this->assertContains(
+            ['from' => 'terima', 'to' => 'proses', 'roles' => ['owner', 'staff']],
+            $laundry['transitions'],
+        );
+        $this->assertSame(['diambil', 'dibatalkan'], $laundry['terminal']);
     }
 
     public function test_source_rejects_a_filename_that_does_not_match_the_definition_key(): void
