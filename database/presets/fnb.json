@@ -1,0 +1,102 @@
+{
+    "key": "fnb",
+    "name": "Food & Beverage",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "pos": true,
+        "pos.tables": true,
+        "inventory": true,
+        "hr.employees": true,
+        "finance.cashbook": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "item": "Menu",
+        "items": "Menu",
+        "order": "Pesanan",
+        "orders": "Pesanan",
+        "staff": "Pramusaji",
+        "staffs": "Pramusaji"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {
+                    "code": "dipesan",
+                    "label": "Dipesan"
+                },
+                {
+                    "code": "diproses",
+                    "label": "Diproses Dapur"
+                },
+                {
+                    "code": "disajikan",
+                    "label": "Disajikan"
+                },
+                {
+                    "code": "selesai",
+                    "label": "Selesai (Dibayar)"
+                },
+                {
+                    "code": "dibatalkan",
+                    "label": "Dibatalkan"
+                }
+            ],
+            "terminal": [
+                "selesai",
+                "dibatalkan"
+            ],
+            "transitions": [
+                {
+                    "from": "dipesan",
+                    "to": "diproses",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "diproses",
+                    "to": "disajikan",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "disajikan",
+                    "to": "selesai",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "*",
+                    "to": "dibatalkan",
+                    "requires_approval": true,
+                    "requires_note": true,
+                    "roles": ["owner"]
+                }
+            ]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {
+                "widget": "kpi_revenue"
+            },
+            {
+                "widget": "low_stock"
+            },
+            {
+                "widget": "kpi_cashflow"
+            }
+        ]
+    },
+    "menus": {
+        "order": [
+            "dashboard",
+            "pos",
+            "orders",
+            "inventory",
+            "contacts",
+            "employees",
+            "accounting",
+            "settings"
+        ]
+    }
+}

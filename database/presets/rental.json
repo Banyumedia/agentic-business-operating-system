@@ -1,0 +1,113 @@
+{
+    "key": "rental",
+    "name": "Persewaan",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "bookings": true,
+        "bookings.deposit": true,
+        "inventory": true,
+        "finance.cashbook": true
+    },
+    "terminology": {
+        "contact": "Penyewa",
+        "contacts": "Penyewa",
+        "booking": "Booking",
+        "bookings": "Booking",
+        "item": "Unit Sewa",
+        "items": "Unit Sewa",
+        "order": "Sewa",
+        "orders": "Sewa"
+    },
+    "workflows": {
+        "bookings": {
+            "stages": [
+                {
+                    "code": "dipesan",
+                    "label": "Dipesan (DP)"
+                },
+                {
+                    "code": "disiapkan",
+                    "label": "Disiapkan"
+                },
+                {
+                    "code": "disewa",
+                    "label": "Disewa (Active)"
+                },
+                {
+                    "code": "kembali",
+                    "label": "Dikembalikan (Cek)"
+                },
+                {
+                    "code": "selesai",
+                    "label": "Selesai"
+                },
+                {
+                    "code": "dibatalkan",
+                    "label": "Dibatalkan"
+                }
+            ],
+            "terminal": [
+                "selesai",
+                "dibatalkan"
+            ],
+            "transitions": [
+                {
+                    "from": "dipesan",
+                    "to": "disiapkan",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "disiapkan",
+                    "to": "disewa",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "disewa",
+                    "to": "kembali",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "kembali",
+                    "to": "disewa",
+                    "requires_note": true,
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "kembali",
+                    "to": "selesai",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "*",
+                    "to": "dibatalkan",
+                    "requires_approval": true,
+                    "roles": ["owner"]
+                }
+            ]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {
+                "widget": "bookings_due_today"
+            },
+            {
+                "widget": "overdue_returns"
+            },
+            {
+                "widget": "kpi_cashflow"
+            }
+        ]
+    },
+    "menus": {
+        "order": [
+            "dashboard",
+            "bookings",
+            "inventory",
+            "contacts",
+            "accounting",
+            "settings"
+        ]
+    }
+}

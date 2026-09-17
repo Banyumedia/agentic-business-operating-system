@@ -1,0 +1,122 @@
+{
+    "key": "agency",
+    "name": "Creative Agency",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "projects": true,
+        "projects.progress_billing": true,
+        "milestone_billing": true,
+        "timesheet": true,
+        "finance.cashbook": true
+    },
+    "terminology": {
+        "contact": "Klien",
+        "contacts": "Klien",
+        "project": "Proyek",
+        "projects": "Proyek",
+        "staff": "Kreatif",
+        "staffs": "Kreatif"
+    },
+    "workflows": {
+        "projects": {
+            "stages": [
+                {
+                    "code": "briefing",
+                    "label": "Briefing"
+                },
+                {
+                    "code": "produksi",
+                    "label": "Produksi"
+                },
+                {
+                    "code": "review",
+                    "label": "Review Klien"
+                },
+                {
+                    "code": "revisi",
+                    "label": "Revisi"
+                },
+                {
+                    "code": "final",
+                    "label": "Final Delivery"
+                },
+                {
+                    "code": "selesai",
+                    "label": "Selesai"
+                },
+                {
+                    "code": "dibatalkan",
+                    "label": "Dibatalkan"
+                }
+            ],
+            "terminal": [
+                "selesai",
+                "dibatalkan"
+            ],
+            "transitions": [
+                {
+                    "from": "briefing",
+                    "to": "produksi",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "produksi",
+                    "to": "review",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "review",
+                    "to": "revisi",
+                    "requires_note": true,
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "review",
+                    "to": "final",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "revisi",
+                    "to": "review",
+                    "requires_note": true,
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "final",
+                    "to": "selesai",
+                    "effects": ["notify.owner_wa"],
+                    "roles": ["owner"]
+                },
+                {
+                    "from": "*",
+                    "to": "dibatalkan",
+                    "requires_approval": true,
+                    "roles": ["owner"]
+                }
+            ]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {
+                "widget": "projects_progress"
+            },
+            {
+                "widget": "timesheet_summary"
+            },
+            {
+                "widget": "kpi_cashflow"
+            }
+        ]
+    },
+    "menus": {
+        "order": [
+            "dashboard",
+            "projects",
+            "contacts",
+            "accounting",
+            "settings"
+        ]
+    }
+}

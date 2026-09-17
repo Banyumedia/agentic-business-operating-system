@@ -1,0 +1,74 @@
+{
+    "key": "custom",
+    "name": "Custom",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "finance.cashbook": true
+    },
+    "terminology": {
+        "contact": "Kontak",
+        "contacts": "Kontak",
+        "staff": "Staf",
+        "staffs": "Staf"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {
+                    "code": "baru",
+                    "label": "Baru"
+                },
+                {
+                    "code": "diproses",
+                    "label": "Diproses"
+                },
+                {
+                    "code": "selesai",
+                    "label": "Selesai"
+                },
+                {
+                    "code": "dibatalkan",
+                    "label": "Dibatalkan"
+                }
+            ],
+            "terminal": [
+                "selesai",
+                "dibatalkan"
+            ],
+            "transitions": [
+                {
+                    "from": "baru",
+                    "to": "diproses",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "diproses",
+                    "to": "selesai",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "*",
+                    "to": "dibatalkan",
+                    "requires_approval": true,
+                    "roles": ["owner"]
+                }
+            ]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {
+                "widget": "kpi_cashflow"
+            }
+        ]
+    },
+    "menus": {
+        "order": [
+            "dashboard",
+            "contacts",
+            "accounting",
+            "settings"
+        ]
+    }
+}

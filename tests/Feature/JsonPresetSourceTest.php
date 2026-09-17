@@ -17,7 +17,14 @@ class JsonPresetSourceTest extends TestCase
         $source = app(PresetSource::class);
 
         $this->assertInstanceOf(JsonPresetSource::class, $source);
-        $this->assertSame(['bengkel', 'klinik', 'laundry', 'salon'], array_column($source->all(), 'key'));
+
+        $keys = array_column($source->all(), 'key');
+        sort($keys);
+
+        $this->assertSame([
+            'agency', 'bengkel', 'contractor', 'custom', 'eo', 'fnb',
+            'klinik', 'laundry', 'pharmacy', 'rental', 'salon',
+        ], $keys);
         $this->assertSame('klinik', $source->find('klinik')['key']);
         $this->assertNull($source->find('unknown'));
     }

@@ -1,0 +1,129 @@
+{
+    "key": "contractor",
+    "name": "Kontraktor",
+    "tier": "B",
+    "capabilities": {
+        "contacts": true,
+        "projects": true,
+        "projects.progress_billing": true,
+        "milestone_billing": true,
+        "construction.retention": true,
+        "approval_flow": true,
+        "finance.cashbook": true
+    },
+    "terminology": {
+        "contact": "Klien",
+        "contacts": "Klien",
+        "project": "Proyek",
+        "projects": "Proyek",
+        "staff": "Pekerja",
+        "staffs": "Pekerja",
+        "order": "Kontrak",
+        "orders": "Kontrak"
+    },
+    "workflows": {
+        "projects": {
+            "stages": [
+                {
+                    "code": "tender",
+                    "label": "Tender / SPK"
+                },
+                {
+                    "code": "persiapan",
+                    "label": "Persiapan Lahan"
+                },
+                {
+                    "code": "konstruksi",
+                    "label": "Konstruksi"
+                },
+                {
+                    "code": "bast_satu",
+                    "label": "BAST 1"
+                },
+                {
+                    "code": "retensi",
+                    "label": "Masa Retensi"
+                },
+                {
+                    "code": "bast_dua",
+                    "label": "BAST 2 (Final)"
+                },
+                {
+                    "code": "selesai",
+                    "label": "Selesai"
+                },
+                {
+                    "code": "dibatalkan",
+                    "label": "Dibatalkan"
+                }
+            ],
+            "terminal": [
+                "selesai",
+                "dibatalkan"
+            ],
+            "transitions": [
+                {
+                    "from": "tender",
+                    "to": "persiapan",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "persiapan",
+                    "to": "konstruksi",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "konstruksi",
+                    "to": "bast_satu",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "bast_satu",
+                    "to": "retensi",
+                    "roles": ["owner"]
+                },
+                {
+                    "from": "retensi",
+                    "to": "bast_dua",
+                    "roles": ["owner"]
+                },
+                {
+                    "from": "bast_dua",
+                    "to": "selesai",
+                    "roles": ["owner"]
+                },
+                {
+                    "from": "*",
+                    "to": "dibatalkan",
+                    "requires_approval": true,
+                    "roles": ["owner"]
+                }
+            ]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {
+                "widget": "projects_progress"
+            },
+            {
+                "widget": "retention_held"
+            },
+            {
+                "widget": "pending_approvals"
+            },
+            {
+                "widget": "kpi_cashflow"
+            }
+        ]
+    },
+    "menus": {
+        "order": [
+            "dashboard",
+            "projects",
+            "contacts",
+            "accounting",
+            "settings"
+        ]
+    }
+}

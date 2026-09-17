@@ -1,0 +1,111 @@
+{
+    "key": "eo",
+    "name": "Event Organizer",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "bookings": true,
+        "bookings.deposit": true,
+        "projects": true,
+        "approval_flow": true,
+        "finance.cashbook": true
+    },
+    "terminology": {
+        "contact": "Klien",
+        "contacts": "Klien",
+        "booking": "Reservasi",
+        "bookings": "Reservasi",
+        "project": "Event",
+        "projects": "Event",
+        "order": "Kontrak",
+        "orders": "Kontrak"
+    },
+    "workflows": {
+        "projects": {
+            "stages": [
+                {
+                    "code": "konsep",
+                    "label": "Konsep & Pitching"
+                },
+                {
+                    "code": "persiapan",
+                    "label": "Persiapan"
+                },
+                {
+                    "code": "pelaksanaan",
+                    "label": "Pelaksanaan (Hari H)"
+                },
+                {
+                    "code": "evaluasi",
+                    "label": "Evaluasi & BAST"
+                },
+                {
+                    "code": "selesai",
+                    "label": "Selesai"
+                },
+                {
+                    "code": "dibatalkan",
+                    "label": "Dibatalkan"
+                }
+            ],
+            "terminal": [
+                "selesai",
+                "dibatalkan"
+            ],
+            "transitions": [
+                {
+                    "from": "konsep",
+                    "to": "persiapan",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "persiapan",
+                    "to": "pelaksanaan",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "pelaksanaan",
+                    "to": "evaluasi",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "evaluasi",
+                    "to": "selesai",
+                    "roles": ["owner"]
+                },
+                {
+                    "from": "*",
+                    "to": "dibatalkan",
+                    "requires_approval": true,
+                    "roles": ["owner"]
+                }
+            ]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {
+                "widget": "projects_progress"
+            },
+            {
+                "widget": "upcoming_schedule"
+            },
+            {
+                "widget": "pending_approvals"
+            },
+            {
+                "widget": "kpi_cashflow"
+            }
+        ]
+    },
+    "menus": {
+        "order": [
+            "dashboard",
+            "projects",
+            "bookings",
+            "contacts",
+            "accounting",
+            "settings"
+        ]
+    }
+}

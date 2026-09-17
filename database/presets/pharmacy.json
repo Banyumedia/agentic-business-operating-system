@@ -1,0 +1,108 @@
+{
+    "key": "pharmacy",
+    "name": "Apotek",
+    "tier": "B",
+    "capabilities": {
+        "contacts": true,
+        "pos": true,
+        "inventory": true,
+        "inventory.batch_expiry": true,
+        "pharmacy.prescription": true,
+        "finance.cashbook": true
+    },
+    "terminology": {
+        "contact": "Pasien",
+        "contacts": "Pasien",
+        "item": "Obat",
+        "items": "Obat",
+        "order": "Transaksi",
+        "orders": "Transaksi",
+        "staff": "Apoteker",
+        "staffs": "Apoteker"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {
+                    "code": "antre",
+                    "label": "Antre"
+                },
+                {
+                    "code": "racik",
+                    "label": "Peracikan"
+                },
+                {
+                    "code": "penyerahan",
+                    "label": "Penyerahan"
+                },
+                {
+                    "code": "selesai",
+                    "label": "Selesai"
+                },
+                {
+                    "code": "dibatalkan",
+                    "label": "Dibatalkan"
+                }
+            ],
+            "terminal": [
+                "selesai",
+                "dibatalkan"
+            ],
+            "transitions": [
+                {
+                    "from": "antre",
+                    "to": "racik",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "antre",
+                    "to": "penyerahan",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "racik",
+                    "to": "penyerahan",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "penyerahan",
+                    "to": "selesai",
+                    "roles": ["owner", "staff"]
+                },
+                {
+                    "from": "*",
+                    "to": "dibatalkan",
+                    "requires_approval": true,
+                    "roles": ["owner"]
+                }
+            ]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {
+                "widget": "prescription_queue"
+            },
+            {
+                "widget": "expiring_batches"
+            },
+            {
+                "widget": "low_stock"
+            },
+            {
+                "widget": "kpi_revenue"
+            }
+        ]
+    },
+    "menus": {
+        "order": [
+            "dashboard",
+            "pos",
+            "orders",
+            "inventory",
+            "contacts",
+            "accounting",
+            "settings"
+        ]
+    }
+}
