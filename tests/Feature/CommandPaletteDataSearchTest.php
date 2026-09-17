@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Contracts\CompanyContext;
+use App\Contracts\CompanySettingsStore;
 use App\Contracts\EntityRepository;
 use App\Livewire\CommandPalette;
-use App\Services\CompanySettingsStore;
 use App\Services\DynamicMenuRegistry;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;

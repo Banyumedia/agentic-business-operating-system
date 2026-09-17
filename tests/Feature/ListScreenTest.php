@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Contracts\CompanyContext;
+use App\Contracts\CompanySettingsStore;
 use App\Contracts\EntityRepository;
 use App\Livewire\Screens\ListScreen;
-use App\Services\CompanySettingsStore;
 use App\Services\Schema\EntitySchema;
 use App\Services\Schema\SchemaPresenter;
 use Illuminate\Filesystem\Filesystem;

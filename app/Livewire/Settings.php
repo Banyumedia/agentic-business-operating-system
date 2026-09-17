@@ -3,9 +3,9 @@
 namespace App\Livewire;
 
 use App\Contracts\CompanyContext;
+use App\Contracts\CompanySettingsStore;
 use App\Contracts\PresetSource;
 use App\Services\BusinessIdentityStore;
-use App\Services\CompanySettingsStore;
 use App\Services\SettingsTabRegistry;
 use App\Services\ThemeRegistry;
 use InvalidArgumentException;

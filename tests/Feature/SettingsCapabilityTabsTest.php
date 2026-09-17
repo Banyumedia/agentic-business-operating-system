@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\CompanySettingsStore;
 use App\Contracts\PresetSource;
 use App\Livewire\Settings;
-use App\Services\CompanySettingsStore;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;

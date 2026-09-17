@@ -3,8 +3,8 @@
 namespace App\Livewire\Screens;
 
 use App\Contracts\CompanyContext;
+use App\Contracts\CompanySettingsStore;
 use App\Contracts\EntityRepository;
-use App\Services\CompanySettingsStore;
 use App\Services\DynamicMenuRegistry;
 use App\Services\Schema\EntitySchema;
 use App\Services\Schema\SchemaPresenter;

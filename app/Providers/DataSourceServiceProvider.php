@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\CompanyContext;
+use App\Contracts\CompanySettingsStore;
 use App\Contracts\EntityRepository;
 use App\Contracts\PresetSource;
 use Illuminate\Support\ServiceProvider;
@@ -15,13 +16,15 @@ class DataSourceServiceProvider extends ServiceProvider
         EntityRepository::class => 'App\\Services\\Json\\JsonEntityRepository',
         PresetSource::class => 'App\\Services\\Json\\JsonPresetSource',
         CompanyContext::class => 'App\\Services\\Json\\JsonCompanyContext',
+        CompanySettingsStore::class => 'App\\Services\\Json\\JsonCompanySettingsStore',
     ];
 
     /** @var array<class-string, class-string> */
     private const ELOQUENT_BINDINGS = [
         EntityRepository::class => 'App\\Services\\Eloquent\\EloquentEntityRepository',
-        PresetSource::class => 'App\\Services\\Eloquent\\EloquentPresetSource',
+        PresetSource::class => 'App\\Services\\Preset\\EloquentPresetSource',
         CompanyContext::class => 'App\\Services\\Eloquent\\EloquentCompanyContext',
+        CompanySettingsStore::class => 'App\\Services\\Eloquent\\EloquentCompanySettingsStore',
     ];
 
     public function register(): void
@@ -30,7 +33,11 @@ class DataSourceServiceProvider extends ServiceProvider
 
         if ($driver === 'json') {
             foreach (self::JSON_BINDINGS as $contract => $implementation) {
-                $this->app->bind($contract, $implementation);
+                if ($contract === CompanyContext::class || $contract === CompanySettingsStore::class) {
+                    $this->app->scoped($contract, $implementation);
+                } else {
+                    $this->app->bind($contract, $implementation);
+                }
             }
 
             return;
@@ -38,11 +45,21 @@ class DataSourceServiceProvider extends ServiceProvider
 
         if ($driver === 'eloquent') {
             foreach (self::ELOQUENT_BINDINGS as $contract => $implementation) {
-                $this->app->bind($contract, function () use ($implementation): never {
-                    throw new LogicException(
-                        "DATA_SOURCE=eloquent belum tersedia sebelum Fase 3: $implementation",
-                    );
-                });
+                if ($contract === EntityRepository::class) {
+                    $this->app->bind($contract, function () use ($implementation): never {
+                        throw new LogicException(
+                            "DATA_SOURCE=eloquent belum tersedia sebelum Fase 3: $implementation",
+                        );
+                    });
+
+                    continue;
+                }
+
+                if ($contract === CompanyContext::class || $contract === CompanySettingsStore::class) {
+                    $this->app->scoped($contract, $implementation);
+                } else {
+                    $this->app->bind($contract, $implementation);
+                }
             }
 
             return;

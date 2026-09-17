@@ -1,14 +1,16 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Json;
 
+use App\Contracts\CompanySettingsStore;
+use App\Services\CompanyPresetResolver;
 use Closure;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use JsonException;
 
-class CompanySettingsStore
+class JsonCompanySettingsStore implements CompanySettingsStore
 {
     /** @return array<string, mixed> */
     public function read(string $company): array
