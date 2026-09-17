@@ -26,7 +26,7 @@
         </p>
     @endif
 
-    <div class="overflow-x-auto pb-2">
+    <div class="overflow-x-auto pb-2 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="move">
         <ol role="list" class="flex min-w-full gap-4">
             @foreach ($columns as $column)
                 <li class="flex w-72 shrink-0 flex-col rounded-[var(--erp-radius-lg)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)]">

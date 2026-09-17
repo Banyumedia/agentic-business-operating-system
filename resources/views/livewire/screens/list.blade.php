@@ -77,7 +77,7 @@
             </div>
         </div>
 
-        <div class="mt-4">
+        <div class="mt-4 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="search, goToPage, delete">
             <x-data-table
                 :columns="$columns"
                 :rows="$rows"

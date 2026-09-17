@@ -1,7 +1,7 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-17 (T-F15 bukti D-31 `laundry.json` selesai; Fase 2 lengkap - menunggu `HUMAN:UI-LOCK`)
-**Mode:** FASE 2 SELESAI - T-07 + T-F1..T-F15 DONE; **berhenti menunggu gate `HUMAN:UI-LOCK`** (bukan soal teknis, keputusan Bos)
+**Updated:** 2026-09-17 (T-F16 UI Polish selesai; Fase 2 lengkap - menunggu `HUMAN:UI-LOCK`)
+**Mode:** FASE 2 SELESAI - T-07 + T-F1..T-F16 DONE; **berhenti menunggu gate `HUMAN:UI-LOCK`** (bukan soal teknis, keputusan Bos)
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.

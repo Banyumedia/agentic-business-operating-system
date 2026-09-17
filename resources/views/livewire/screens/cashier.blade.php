@@ -44,7 +44,7 @@
             @endif
         </section>
 
-        <section aria-labelledby="cart-title" class="flex flex-col rounded-[var(--erp-radius-lg)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] p-4 shadow-[var(--erp-card-shadow)] sm:p-6">
+        <section aria-labelledby="cart-title" class="flex flex-col rounded-[var(--erp-radius-lg)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] p-4 shadow-[var(--erp-card-shadow)] sm:p-6 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="addItem, removeLine, setQty, requestAction, cancelAction, confirmAction">
             <h2 id="cart-title" class="text-lg font-semibold text-[var(--erp-text-primary)]">Keranjang</h2>
 
             @if ($cart === [])

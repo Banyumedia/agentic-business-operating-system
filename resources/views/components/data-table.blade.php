@@ -30,9 +30,17 @@
 
 <div>
     @if ($rows === [])
-        <p role="status" class="rounded-[var(--erp-radius-md)] border border-dashed border-[var(--erp-border-strong)] bg-[var(--erp-bg-inset)] px-4 py-10 text-center text-sm text-[var(--erp-text-secondary)]">
-            {{ $emptyMessage }}
-        </p>
+        <div role="status" class="flex flex-col items-center justify-center rounded-[var(--erp-radius-lg)] border border-dashed border-[var(--erp-border-strong)] bg-[var(--erp-bg-inset)] px-4 py-16 text-center">
+            <div class="mb-4 rounded-full bg-[var(--erp-bg-secondary)] p-3 text-[var(--erp-text-muted)] shadow-sm border border-[var(--erp-border)]">
+                <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+            </div>
+            <p class="text-base font-medium text-[var(--erp-text-primary)]">Tidak ada data</p>
+            <p class="mt-1 max-w-sm text-sm text-[var(--erp-text-secondary)]">
+                {{ $emptyMessage }}
+            </p>
+        </div>
     @else
         {{-- Tabel padat untuk layar lebar (D-20 Operator Grid) --}}
         <div class="hidden overflow-x-auto md:block">
