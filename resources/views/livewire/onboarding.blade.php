@@ -14,7 +14,7 @@
             </p>
         </div>
     @else
-        <form wire:submit.prevent="submit" class="space-y-6" novalidate>
+        <form wire:submit.prevent="submit" class="space-y-6">
             @if ($failure)
                 <p role="alert" class="rounded-[var(--erp-radius-sm)] bg-[var(--erp-danger-soft)] p-3 text-sm text-[var(--erp-danger)]">{{ $failure }}</p>
             @endif
@@ -26,9 +26,12 @@
                     id="onboarding-name"
                     wire:model="name"
                     required
-                    class="mt-2 min-h-11 w-full rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] px-3 text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                    class="mt-2 min-h-11 w-full rounded-[var(--erp-radius-sm)] border {{ $errors->has('name') ? 'border-[var(--erp-danger)]' : 'border-[var(--erp-border)]' }} bg-[var(--erp-bg-elevated)] px-3 text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
                     placeholder="Contoh: Usaha Jaya Bersama"
                 >
+                @error('name')
+                    <p class="mt-1 text-xs text-[var(--erp-danger)]" role="alert">{{ $message }}</p>
+                @enderror
             </div>
 
             <div>

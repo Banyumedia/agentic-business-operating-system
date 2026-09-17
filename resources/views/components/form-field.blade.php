@@ -32,7 +32,7 @@
                 id="{{ $fieldId }}"
                 wire:model="{{ $model }}"
                 @required($field['required'])
-                class="min-h-11 w-full rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-inset)] px-3 py-2 text-sm text-[var(--erp-text-primary)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                class="min-h-11 w-full rounded-[var(--erp-radius-md)] border {{ $errors->has($field['field']) ? 'border-[var(--erp-danger)]' : 'border-[var(--erp-border)]' }} bg-[var(--erp-bg-inset)] px-3 py-2 text-sm text-[var(--erp-text-primary)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
             >
                 <option value="">Pilih {{ $field['label'] }}</option>
                 @foreach ($field['options'] as $option)
@@ -46,8 +46,12 @@
                 wire:model="{{ $model }}"
                 @required($field['required'])
                 {!! $extraAttrs !!}
-                class="min-h-11 w-full rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-inset)] px-3 py-2 text-sm text-[var(--erp-text-primary)] placeholder:text-[var(--erp-text-muted)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] {{ $field['type'] === 'integer' || $field['type'] === 'number' ? 'font-[family-name:var(--erp-font-mono)] text-right' : '' }}"
+                class="min-h-11 w-full rounded-[var(--erp-radius-md)] border {{ $errors->has($field['field']) ? 'border-[var(--erp-danger)]' : 'border-[var(--erp-border)]' }} bg-[var(--erp-bg-inset)] px-3 py-2 text-sm text-[var(--erp-text-primary)] placeholder:text-[var(--erp-text-muted)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] {{ $field['type'] === 'integer' || $field['type'] === 'number' ? 'font-[family-name:var(--erp-font-mono)] text-right' : '' }}"
             />
         @endif
+
+        @error($field['field'])
+            <p class="mt-1 text-xs text-[var(--erp-danger)]" role="alert">{{ $message }}</p>
+        @enderror
     @endif
 </div>
