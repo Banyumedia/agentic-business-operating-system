@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Contracts\CompanyContext;
+use App\Contracts\CompanySettingsStore;
 use App\Livewire\CommandPalette;
 use App\Livewire\DummyModule;
-use App\Services\CompanySettingsStore;
 use App\Services\DynamicMenuRegistry;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;

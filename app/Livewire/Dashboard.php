@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use App\Contracts\CompanyContext;
-use App\Services\CompanySettingsStore;
+use App\Contracts\CompanySettingsStore;
 use App\Services\Dashboard\DashboardComposer;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;

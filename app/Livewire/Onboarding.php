@@ -2,8 +2,8 @@
 
 namespace App\Livewire;
 
+use App\Contracts\CompanySettingsStore;
 use App\Contracts\PresetSource;
-use App\Services\CompanySettingsStore;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;

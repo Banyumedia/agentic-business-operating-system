@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\CompanySettingsStore;
 use App\Livewire\Settings;
-use App\Services\CompanySettingsStore;
 use Illuminate\Support\Facades\Storage;
 use JsonException;
 use Livewire\Livewire;

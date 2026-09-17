@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\CompanyContext;
+use App\Contracts\CompanySettingsStore;
 use App\Contracts\PresetSource;
 use InvalidArgumentException;
 

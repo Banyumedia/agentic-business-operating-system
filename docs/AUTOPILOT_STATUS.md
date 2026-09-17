@@ -209,6 +209,12 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Task Aktif
 
+**T-08b DONE (2026-09-18) - SIAP DIREVIEW**
+
+- **Scope:** Adapter Eloquent untuk FeatureResolver + CompanyContext + Company::feature().
+- **Implemented:** `EloquentCompanyContext`, `EloquentCompanySettingsStore`, `Company::feature()`. Memperbaiki life-cycle binding ke `scoped` agar `CompanyPresetResolver` menerima update `current_company`.
+- **Evidence:** `php artisan test` 317/317 hijau (1344 assertions); pint clean; git check diff clean.
+
 **T-00a DONE (2026-09-18)**
 
 - **Scope:** Fondasi tenant Fase 3a (migration + model `companies`, `business_identities`, ALTER `users`).

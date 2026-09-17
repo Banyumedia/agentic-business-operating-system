@@ -3,7 +3,7 @@
 namespace App\Services\Json;
 
 use App\Contracts\CompanyContext;
-use App\Services\CompanySettingsStore;
+use App\Contracts\CompanySettingsStore;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use JsonException;

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Contracts\CompanyContext;
+use App\Services\FeatureResolver;
 use Database\Factories\CompanyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -50,5 +52,16 @@ class Company extends Model
     public function defaultIdentity(): HasOne
     {
         return $this->hasOne(BusinessIdentity::class)->where('is_default', true);
+    }
+
+    /**
+     * Check if a feature capability is enabled for this company.
+     */
+    public function feature(string $key): bool
+    {
+        $context = app(CompanyContext::class);
+        $context->setCurrent((string) $this->id);
+
+        return app(FeatureResolver::class)->enabled($key);
     }
 }
