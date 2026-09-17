@@ -28,7 +28,8 @@
         x-trap.inert.noscroll="true"
         x-init="setTimeout(() => ready = true, 400); $nextTick(() => $refs.cancel?.focus())"
         x-on:keydown.escape.window="const target = opener; $wire.{{ $cancel }}().then(() => target?.focus())"
-        class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)]"
+        class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)] ring-2 ring-[var(--erp-focus)] ring-offset-4 ring-offset-black/60 focus:outline-none"
+        tabindex="-1"
     >
         <h2 id="confirm-dialog-title" class="text-lg font-semibold text-[var(--erp-text-primary)]">{{ $title }}</h2>
         <p id="confirm-dialog-description" class="mt-2 text-sm text-[var(--erp-text-secondary)]">{{ $description }}</p>

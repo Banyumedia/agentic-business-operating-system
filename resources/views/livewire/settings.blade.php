@@ -237,7 +237,10 @@
                 </p>
             @else
                 <div class="rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] p-6">
-                    <h2 class="text-lg font-semibold text-[var(--erp-text-primary)]">{{ $tab['label'] }}</h2>
+                    <h2 class="text-lg font-semibold text-[var(--erp-text-primary)]">
+                        {{ $tab['label'] }}
+                        <span class="ml-2 inline-flex items-center rounded-full bg-[var(--erp-warning-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--erp-warning)]">Segera</span>
+                    </h2>
                     <p class="mt-2 text-sm text-[var(--erp-text-secondary)]">Bagian ini akan dilengkapi pada task fitur terkait.</p>
                 </div>
             @endif
