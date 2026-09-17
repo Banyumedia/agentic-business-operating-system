@@ -64,7 +64,11 @@ class WidgetRegistry
     {
         // Kartu ini berjudul "mendatang", jadi agenda yang sudah lewat tidak
         // boleh ikut dihitung maupun ditampilkan.
-        $now = new DateTimeImmutable('now');
+        // Memakai now() (Carbon) agar menghormati waktu beku Laravel
+        // (Carbon::setTestNow()/travelTo()) - DateTimeImmutable('now') native
+        // mengabaikannya dan pernah membuat test ini lolos hanya karena jam
+        // server belum melewati tanggal fixture demo.
+        $now = now()->toDateTimeImmutable();
         $rows = array_values(array_filter(
             $this->rows('bookings'),
             static function (array $row) use ($now): bool {
