@@ -29,7 +29,7 @@ class PresetDefinitionValidator
         'hr.employees',
         'hr.payroll',
         'system.ai_agent',
-        'pos.prescription',
+        'pharmacy.prescription',
         'construction.retention',
     ];
 
@@ -59,7 +59,7 @@ class PresetDefinitionValidator
     ];
 
     private const TIER_B_DEPENDENCIES = [
-        'pos.prescription' => ['inventory.batch_expiry', 'pos', 'contacts'],
+        'pharmacy.prescription' => ['inventory.batch_expiry', 'pos', 'contacts'],
         'construction.retention' => ['projects.progress_billing', 'milestone_billing'],
     ];
 

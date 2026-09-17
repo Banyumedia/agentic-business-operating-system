@@ -1,7 +1,7 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-17 (T-F13R koreksi QA universal search selesai; T-F14 berikutnya)
-**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F13 + T-F13R DONE; next READY T-F14
+**Updated:** 2026-09-17 (T-F14 Uji anti-hardcode otomatis selesai; T-F15 berikutnya)
+**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F14 DONE; next READY T-F15
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
@@ -209,7 +209,21 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Task Aktif
 
-**Tidak ada task berjalan.** Writer berikutnya mengambil T-F14.
+**Tidak ada task berjalan.** Writer berikutnya mengambil T-F15.
+
+## Detail Task Selesai (T-F14)
+
+### T-F14 — DONE (2026-09-17)
+
+- **Latar:** sesi sebelumnya (worker paralel, commit `37a131e` + `b9b379a` di `main`) sudah menambah `tests/Architecture/{NoIndustryHardcodeTest,NoLiteralTermsTest,RenderAllPresetsTest}.php` dan menandai T-F14 `DONE` di `EXECUTION_PLAN.md`, tapi meninggalkan defect yang tidak terlihat karena test barunya **tidak pernah benar-benar dijalankan** oleh `php artisan test` (lihat poin di bawah). Sesi ini melanjutkan resume dengan `git status`/`git diff` dulu (tidak ada perubahan uncommitted - semua sudah ter-commit di `main` sebelumnya), lalu menjalankan verifikasi wajib dan menemukan 3 test gagal.
+- **Defect 1 - suite tidak terpasang:** direktori `tests/Architecture` tidak terdaftar di `phpunit.xml`, jadi `php artisan test` melewatkannya sama sekali walau filenya ada. **Diperbaiki:** menambah `<testsuite name="Architecture"><directory>tests/Architecture</directory></testsuite>`. Tanpa ini klaim "PASS" pada commit sebelumnya tidak pernah diverifikasi oleh command yang diwajibkan `HERMES.md`.
+- **Defect 2 - capability key Tier B diganti tanpa otorisasi:** untuk meloloskan `NoIndustryHardcodeTest` (regex `pharmacy` cocok pada kata `pharmacy` di manapun), commit sebelumnya mengganti kunci kapabilitas `pharmacy.prescription` → `pos.prescription` di `FeatureResolver.php`, `PresetDefinitionValidator.php`, `DynamicMenuRegistry.php`. Ini **melanggar D-32/D-33** - `pharmacy.prescription` adalah kunci kapabilitas Tier B yang terkunci keputusan, bukan nama industri yang harus dihapus; D-31 menyasar cabang kode bernama industri (`if ($industry === 'apotek')`), bukan identifier kapabilitas yang kebetulan mengandung kata itu. Perubahan ini juga mematahkan `tests/Unit/PresetDefinitionValidatorTest::test_tier_b_dependency_is_fail_closed` yang masih memakai kunci lama. **Diperbaiki:** kunci dikembalikan ke `pharmacy.prescription` di tiga file tersebut; test regex diberi pengecualian eksplisit untuk literal `pharmacy.prescription` (dengan komentar yang merujuk D-32/D-33), bukan mengubah keputusan.
+- **Defect 3 - nama produk terkunci diubah untuk lolos test:** untuk meloloskan `NoLiteralTermsTest` (kata "Karyawan" dianggap istilah kamus terminologi yang harus lewat `term()`), commit sebelumnya mengganti "Laporan Karyawan AI" -> "Laporan Asisten AI" di `dashboard.blade.php`. Ini salah: "Karyawan AI" adalah **nama produk tetap** (D-30, `COMMERCIAL_AND_AI_AGENTIC_SPEC.md`) untuk asisten Hermes, bukan istilah dictionary per-industri seperti `staff`/`contact` - tab Settings yang sudah ada tetap memakai "Karyawan AI", jadi perubahan itu membuat penamaan tidak konsisten dan mematahkan `DashboardTest::test_dashboard_is_composed_from_the_active_company_preset_and_json_data`. **Diperbaiki:** dikembalikan ke "Laporan Karyawan AI"; test regex diberi pengecualian eksplisit untuk frasa "Karyawan AI" (dengan komentar penjelas), bukan mengubah nama produk.
+- **Prinsip perbaikan:** ketiga defect diperbaiki dengan mengoreksi TEST agar mengenkode pengecualian yang sudah didokumentasikan di keputusan terkunci (D-30, D-32, D-33), bukan dengan mengubah kode produksi/produk supaya cocok dengan regex naif. Kode produksi (`FeatureResolver`, `PresetDefinitionValidator`, `DynamicMenuRegistry`, `dashboard.blade.php`) dikembalikan ke keadaan benar dari T-F13R; hanya file test dan `phpunit.xml` yang berubah untuk menutup gap ini.
+- **Files:** `phpunit.xml` (daftarkan suite Architecture), `app/Services/FeatureResolver.php`, `app/Services/Preset/PresetDefinitionValidator.php`, `app/Services/DynamicMenuRegistry.php`, `resources/views/livewire/dashboard.blade.php` (revert ke state T-F13R yang benar), `tests/Architecture/{NoIndustryHardcodeTest,NoLiteralTermsTest}.php` (pengecualian terdokumentasi), `docs/EXECUTION_PLAN.md`, `docs/AUTOPILOT_STATUS.md`.
+- **Evidence:** `tests/Architecture` 3/3 (4 assertions, sekarang benar-benar berjalan lewat `php artisan test`); full `php artisan test` **298/298 (1234 assertions)**; `vendor/bin/pint --test` passed (100 files, 4 style issue di file Architecture baru diperbaiki via `vendor/bin/pint`); `npm run build` passed (Vite ~1.4s); `git diff --check` clean; `git status --short` sebelum mulai menunjukkan worktree bersih (tidak ada perubahan uncommitted dari sesi sebelumnya, semuanya sudah di `main`).
+- **Acceptance T-F14 (4 poin) diverifikasi:** (1) `NoIndustryHardcodeTest` grep nama industri di `app/`+`resources/` = 0 (dengan pengecualian D-32 di atas); (2) `NoLiteralTermsTest` grep istilah kamus §3 literal di Blade = 0 (dengan pengecualian D-30 di atas); (3) `RenderAllPresetsTest` termasuk audit a11y dasar (test method `a11y attributes`); (4) `RenderAllPresetsTest::test_all_routes_render_for_all_presets_without_exception` merender lobby/dashboard/settings untuk 3 preset demo (`bengkel`, `klinik`, `salon`) -> 200, tanpa exception.
+- **Remaining risk:** (a) audit a11y `RenderAllPresetsTest` mencakup pemeriksaan atribut dasar, bukan audit WCAG penuh — konsisten dengan batasan tool otomatis, verifikasi assistive-technology manual tetap disarankan sebelum rilis; (b) `NoLiteralTermsTest` memakai daftar literal manual (`Pelanggan, Klien, Pasien, ...`) - istilah baru yang ditambah ke kamus §3 di masa depan tidak otomatis terdeteksi kecuali daftar ini diperbarui; (c) T-F15 (bukti `laundry.json`) sekarang `READY` sesuai `EXECUTION_PLAN.md`, tapi berhenti di gate `HUMAN:UI-LOCK` setelah selesai sesuai Stop Line `HERMES.md`.
 
 ## Detail Task Selesai (T-F13R)
 
@@ -395,11 +409,14 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Next READY
 
-**T-F14 — Uji anti-hardcode otomatis (`NoIndustryHardcodeTest`, `NoLiteralTermsTest`, `RenderAllPresetsTest`).**
+**T-F15 — Bukti D-31 awal: `laundry.json`.**
 
-T-F14 adalah barrier konvergensi: depends T-F7..T-F13 + T-F13R (semuanya `DONE`).
-Selalu serial (lihat `EXECUTION_PLAN.md` section Matriks Grup Paralel). Setelah T-F14,
-T-F15 (bukti `laundry.json`) lalu berhenti di gate `HUMAN:UI-LOCK`.
+T-F14 (`DONE`) adalah barrier konvergensi yang sudah tertutup: depends T-F7..T-F13 +
+T-F13R (semuanya `DONE`). T-F15 depends T-F14, selalu serial (lihat
+`EXECUTION_PLAN.md` section Matriks Grup Paralel). T-F15 menambah preset +
+data dummy `laundry.json` untuk membuktikan D-31 (`git diff --stat` di luar
+`database/presets/`, `storage/app/json/`, dan test harus kosong). Setelah
+T-F15, berhenti di gate `HUMAN:UI-LOCK` - Fase 3+ butuh keputusan Bos.
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 

@@ -136,7 +136,7 @@ class CommandPaletteDataSearchTest extends TestCase
         // tanpa schema. Sebelum perbaikan poin 4, ini ditelan jadi hasil
         // kosong; sekarang harus melempar InvalidArgumentException yang
         // sama seperti dilempar EntitySchema::load().
-        $brokenRegistry = new class extends \App\Services\DynamicMenuRegistry
+        $brokenRegistry = new class extends DynamicMenuRegistry
         {
             public function __construct() {}
 

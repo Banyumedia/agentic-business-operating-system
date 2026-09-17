@@ -10,45 +10,55 @@ class NoIndustryHardcodeTest extends TestCase
     {
         // Industries to check against
         $industries = [
-            'bengkel', 'klinik', 'salon', 'agency', 'apotek', 
-            'pharmacy', 'rental', 'kontraktor', 'laundry'
+            'bengkel', 'klinik', 'salon', 'agency', 'apotek',
+            'pharmacy', 'rental', 'kontraktor', 'laundry',
         ];
-        
-        $regex = '/\b(' . implode('|', $industries) . ')\b/i';
-        
+
+        $regex = '/\b('.implode('|', $industries).')\b/i';
+
         $directories = [
-            __DIR__ . '/../../app',
-            __DIR__ . '/../../resources/views',
+            __DIR__.'/../../app',
+            __DIR__.'/../../resources/views',
         ];
-        
+
         $violations = [];
-        
+
         foreach ($directories as $dir) {
             $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
             foreach ($iterator as $file) {
                 if ($file->isFile() && in_array($file->getExtension(), ['php', 'blade.php'])) {
                     $content = file_get_contents($file->getPathname());
-                    
+
                     // Exclude comments if possible (simplified approach here)
                     // For now, doing a raw regex match.
                     if (preg_match_all($regex, $content, $matches, PREG_OFFSET_CAPTURE)) {
-                        $relativePath = str_replace(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR, '', $file->getPathname());
-                        
+                        $relativePath = str_replace(dirname(__DIR__, 2).DIRECTORY_SEPARATOR, '', $file->getPathname());
+
                         foreach ($matches[0] as $match) {
                             $word = $match[0];
                             $offset = $match[1];
+
+                            // `pharmacy.prescription` is a Tier B capability
+                            // KEY locked by decision D-32/D-33, not a branch on
+                            // an industry name (D-31 targets conditionals like
+                            // `if ($industry === 'apotek')`, not capability
+                            // identifiers that happen to share the word).
+                            if (strtolower($word) === 'pharmacy' && substr($content, $offset, 21) === 'pharmacy.prescription') {
+                                continue;
+                            }
+
                             $line = substr_count(substr($content, 0, $offset), "\n") + 1;
-                            
+
                             $violations[] = "{$relativePath}:{$line} contains hardcoded industry name '{$word}'";
                         }
                     }
                 }
             }
         }
-        
+
         $this->assertEmpty(
-            $violations, 
-            "Found hardcoded industry names in codebase:\n" . implode("\n", $violations)
+            $violations,
+            "Found hardcoded industry names in codebase:\n".implode("\n", $violations)
         );
     }
 }

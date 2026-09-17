@@ -51,7 +51,7 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <p class="text-sm font-semibold text-[var(--erp-accent)]">{{ $dashboard['assistant_report']['period'] }}</p>
-                    <h2 id="assistant-report-title" class="mt-1 text-lg font-semibold text-[var(--erp-text-primary)]">Laporan Asisten AI</h2>
+                    <h2 id="assistant-report-title" class="mt-1 text-lg font-semibold text-[var(--erp-text-primary)]">Laporan Karyawan AI</h2>
                 </div>
                 @if ($dashboard['assistant_report']['generated_at'] !== '')
                     <time datetime="{{ $dashboard['assistant_report']['generated_at'] }}" class="text-sm text-[var(--erp-text-muted)]">
