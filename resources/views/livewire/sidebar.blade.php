@@ -40,6 +40,7 @@
                 href="{{ $menu['route'] }}"
                 wire:navigate
                 x-on:click="if (!desktop) closeSidebar()"
+                title="{{ $menu['label'] }}"
                 @if ($isActive) aria-current="page" @endif
                 class="flex min-h-11 items-center gap-3 rounded-[var(--erp-radius-md)] px-4 py-3 text-sm font-medium text-[var(--erp-sidebar-text)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] {{ $isActive ? 'bg-[var(--erp-sidebar-active)]' : 'hover:bg-[var(--erp-sidebar-active)]' }}"
             >
@@ -50,14 +51,14 @@
     </nav>
 
     <div class="border-t border-[var(--erp-border)] p-4">
-        <a href="/app/settings" wire:navigate x-on:click="if (!desktop) closeSidebar()" class="flex min-h-11 items-center gap-3 rounded-[var(--erp-radius-md)] px-4 py-3 text-sm font-medium text-[var(--erp-sidebar-text)] hover:bg-[var(--erp-sidebar-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+        <a href="/app/settings" wire:navigate x-on:click="if (!desktop) closeSidebar()" title="Pengaturan" class="flex min-h-11 items-center gap-3 rounded-[var(--erp-radius-md)] px-4 py-3 text-sm font-medium text-[var(--erp-sidebar-text)] hover:bg-[var(--erp-sidebar-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <circle cx="12" cy="12" r="3" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20.3h-3v-.08a1.7 1.7 0 0 0-1.03-1.56A1.7 1.7 0 0 0 8.8 19l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 15a1.7 1.7 0 0 0-1.56-1.03H5.36v-3h.08A1.7 1.7 0 0 0 7 9.94a1.7 1.7 0 0 0-.34-1.88L6.6 8l2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56V4.64h3v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06L19.8 8l-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.08v3h-.08A1.7 1.7 0 0 0 19.4 15Z" />
             </svg>
             Pengaturan
         </a>
-        <a href="{{ route('lobby') }}" wire:navigate x-on:click="if (!desktop) closeSidebar()" class="flex min-h-11 items-center gap-3 rounded-[var(--erp-radius-md)] px-4 py-3 text-sm font-medium text-[var(--erp-sidebar-text)] hover:bg-[var(--erp-sidebar-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+        <a href="{{ route('lobby') }}" wire:navigate x-on:click="if (!desktop) closeSidebar()" title="Pilih modul lain" class="flex min-h-11 items-center gap-3 rounded-[var(--erp-radius-md)] px-4 py-3 text-sm font-medium text-[var(--erp-sidebar-text)] hover:bg-[var(--erp-sidebar-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10" />
             </svg>

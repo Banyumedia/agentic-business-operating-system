@@ -57,6 +57,7 @@
                                             <button
                                                 type="button"
                                                 wire:click="move({{ $card['id'] }}, '{{ $transition['to'] }}')"
+                                                title="{{ $transition['label'] }}@if ($transition['requires_note']) (butuh alasan)@endif"
                                                 class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-2 text-xs font-medium text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
                                             >
                                                 &rarr; {{ $transition['label'] }}@if ($transition['requires_note'])<span aria-hidden="true"> *</span>@endif
@@ -116,6 +117,7 @@
                     <button
                         type="button"
                         wire:click="cancelMove"
+                        title="Batal"
                         class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] px-4 text-sm font-semibold text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
                     >
                         Batal
@@ -123,6 +125,7 @@
                     <button
                         type="button"
                         wire:click="confirmMove"
+                        title="Simpan alasan &amp; pindahkan"
                         class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
                     >
                         Simpan alasan &amp; pindahkan

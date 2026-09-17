@@ -57,6 +57,7 @@
                                 <button
                                     type="button"
                                     wire:click="sortBy('{{ $column['field'] }}')"
+                                    title="Urutkan berdasarkan {{ $column['label'] }}"
                                     class="inline-flex min-h-11 items-center gap-1 rounded-[var(--erp-radius-sm)] px-1 uppercase hover:text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
                                 >
                                     {{ $column['label'] }}
@@ -86,6 +87,7 @@
                                             <button
                                                 type="button"
                                                 wire:click="{{ $action['method'] }}({{ $row['id'] }})"
+                                                title="{{ $action['label'] }}"
                                                 class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] {{ ($action['variant'] ?? null) === 'danger' ? 'text-[var(--erp-danger)] hover:bg-[var(--erp-danger-soft)]' : 'text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)]' }}"
                                             >
                                                 {{ $action['label'] }}<span class="sr-only"> {{ $caption }} baris {{ $row['id'] }}</span>
@@ -118,6 +120,7 @@
                                 <button
                                     type="button"
                                     wire:click="{{ $action['method'] }}({{ $row['id'] }})"
+                                    title="{{ $action['label'] }}"
                                     class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] {{ ($action['variant'] ?? null) === 'danger' ? 'text-[var(--erp-danger)] hover:bg-[var(--erp-danger-soft)]' : 'text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)]' }}"
                                 >
                                     {{ $action['label'] }}<span class="sr-only"> {{ $caption }} baris {{ $row['id'] }}</span>
