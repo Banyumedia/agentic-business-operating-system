@@ -236,7 +236,7 @@ class DynamicMenuRegistry
                     $this->item(null, ['term' => 'projects', 'prefix' => 'Daftar '], '/app/projects', 'list', 'projects'),
                     $this->item('billing', 'Termin & Opname', '/app/projects/billing', 'contract', 'invoices', ['projects.progress_billing']),
                     $this->item('quotations', 'Penawaran', '/app/projects/quotations', 'list', 'quotations', ['quotations']),
-                    $this->item('timesheet', 'Timesheet', '/app/projects/timesheet', 'list', 'timesheets', ['timesheet']),
+                    $this->item('timesheet', 'Timesheet', '/app/projects/timesheet', 'list', 'timesheet_entries', ['timesheet']),
                     $this->item('retention', 'Retensi', '/app/projects/retention', 'list', 'project_milestones', ['construction.retention']),
                 ],
             ],
@@ -294,7 +294,7 @@ class DynamicMenuRegistry
                 'items' => [
                     $this->item(null, ['term' => 'staffs', 'prefix' => 'Data '], '/app/hrd', 'list', 'employees', ['hr.employees']),
                     $this->item('employees', ['term' => 'staffs', 'prefix' => 'Data '], '/app/hrd/employees', 'list', 'employees', ['hr.employees'], [], false),
-                    $this->item('attendance', 'Presensi & Cuti', '/app/hrd/attendance', 'list', 'timesheets', ['hr.employees']),
+                    $this->item('attendance', 'Presensi & Cuti', '/app/hrd/attendance', 'list', 'timesheet_entries', ['hr.employees']),
                     $this->item('payroll', 'Payroll', '/app/hrd/payroll', 'list', 'employees', ['hr.payroll']),
                 ],
             ],

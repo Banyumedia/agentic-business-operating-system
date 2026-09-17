@@ -6,8 +6,10 @@ use App\Contracts\CompanyContext;
 use App\Contracts\EntityRepository;
 use App\Livewire\CommandPalette;
 use App\Services\CompanySettingsStore;
+use App\Services\DynamicMenuRegistry;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
+use InvalidArgumentException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -63,20 +65,147 @@ class CommandPaletteDataSearchTest extends TestCase
             ->assertSee('Pasien');
     }
 
-    public function test_search_result_hrefs_are_real_routes_that_do_not_404(): void
+    public function test_search_result_urls_are_real_routes_that_return_200(): void
     {
         app(CompanyContext::class)->setCurrent('bengkel-arka');
         app(EntityRepository::class)->for('bengkel-arka', 'contacts')->save(['name' => 'Sparepart Unik Utama']);
 
         $component = Livewire::test(CommandPalette::class)->set('search', 'Sparepart Unik Utama');
-        $html = $component->html();
 
-        $this->assertStringNotContainsString('href="#"', $html);
+        // Diambil dari viewData langsung, bukan parsing <a> pertama di HTML -
+        // urutan DOM tidak menjamin baris mana yang sedang diverifikasi.
+        $dataResults = array_values(array_filter(
+            $component->viewData('results'),
+            fn (array $result): bool => $result['type'] === 'Data',
+        ));
 
-        preg_match('/href="([^"]+)"/', $html, $matches);
-        $this->assertNotEmpty($matches, 'Hasil pencarian harus memiliki href.');
+        $this->assertNotEmpty($dataResults, 'Baris kontak unik harus muncul sebagai hasil Data.');
 
-        $this->get($matches[1].'?company=bengkel-arka')->assertOk();
+        $result = $dataResults[0];
+        $this->assertSame('Sparepart Unik Utama', $result['title']);
+        $this->assertSame('Pelanggan', $result['module']);
+        $this->assertSame('/app/contacts', $result['url']);
+        $this->assertNotSame('#', $result['url']);
+        $this->assertStringNotContainsString('href="#"', $component->html());
+
+        $this->get($result['url'].'?company=bengkel-arka')->assertOk();
+    }
+
+    public function test_hrd_attendance_route_renders_successfully_with_the_canonical_schema(): void
+    {
+        // T-F13R poin 1/2: registry sebelumnya merujuk entity 'timesheets'
+        // yang tidak punya schema - route ini melempar InvalidArgumentException
+        // sebelum diperbaiki. Company `bengkel-arka` di sini memakai preset
+        // `bengkel` (hr.employees aktif) dan datasource JSON yang diisolasi
+        // oleh setUp(), bukan fixture demo asli.
+        $this->get('/app/hrd/attendance?company=bengkel-arka')->assertOk();
+    }
+
+    public function test_search_finds_a_unique_timesheet_entry_and_its_result_url_returns_200(): void
+    {
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+        app(EntityRepository::class)->for('bengkel-arka', 'timesheet_entries')->save([
+            'employee_id' => 1,
+            'work_date' => '2026-09-10',
+            'hours' => 8,
+            'note' => 'Catatan Lembur Unik Sembilan',
+        ]);
+
+        $results = Livewire::test(CommandPalette::class)
+            ->set('search', 'Catatan Lembur Unik Sembilan')
+            ->viewData('results');
+
+        $dataResults = array_values(array_filter($results, fn (array $result): bool => $result['type'] === 'Data'));
+        $this->assertNotEmpty($dataResults, 'Baris timesheet unik harus muncul sebagai hasil Data.');
+
+        $result = $dataResults[0];
+        // Judul memakai titleField() schema (kolom string pertama selain
+        // name/title, di sini 'work_date') - bukan field yang dicocokkan
+        // pencarian; ini konsisten dengan SchemaPresenter, bukan defect baru.
+        $this->assertSame('2026-09-10', $result['title']);
+        $this->assertSame('HRD', $result['module']);
+        $this->assertSame('/app/hrd/attendance', $result['url']);
+
+        $this->get($result['url'].'?company=bengkel-arka')->assertOk();
+    }
+
+    public function test_missing_schema_from_a_broken_registry_entry_fails_visibly(): void
+    {
+        // Simulasi langsung "registry rusak" (kelas defect T-F13R yang baru
+        // diperbaiki di DynamicMenuRegistry): satu item menu merujuk entity
+        // tanpa schema. Sebelum perbaikan poin 4, ini ditelan jadi hasil
+        // kosong; sekarang harus melempar InvalidArgumentException yang
+        // sama seperti dilempar EntitySchema::load().
+        $brokenRegistry = new class extends DynamicMenuRegistry
+        {
+            public function __construct() {}
+
+            public function visibleModules(): array
+            {
+                return [['slug' => 'ghost', 'name' => 'Ghost', 'icon' => 'circle', 'route' => '/app/ghost']];
+            }
+
+            public function menusFor(?string $module): array
+            {
+                return [[
+                    'label' => 'Ghost',
+                    'icon' => 'circle',
+                    'route' => '/app/ghost',
+                    'screen' => 'list',
+                    'entity' => 'ghost_entity_tanpa_schema',
+                    'term' => null,
+                ]];
+            }
+        };
+        $this->app->instance(DynamicMenuRegistry::class, $brokenRegistry);
+
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Schema entitas tidak ditemukan');
+
+        Livewire::test(CommandPalette::class)->set('search', 'apapun');
+    }
+
+    public function test_corrupt_entity_data_fails_visibly_instead_of_returning_empty_results(): void
+    {
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+        app(EntityRepository::class)->for('bengkel-arka', 'contacts')->save(['name' => 'Sebelum Rusak']);
+
+        // Merusak file entity yang aktif dicari (bukan entity registry yang
+        // salah - itu sudah diperbaiki). Pencarian tidak boleh menelan error
+        // ini menjadi "tidak ada hasil": harus tetap gagal terlihat.
+        file_put_contents($this->jsonPath.'/bengkel-arka/contacts.json', '{rusak');
+
+        $this->expectException(\JsonException::class);
+
+        Livewire::test(CommandPalette::class)->set('search', 'apapun');
+    }
+
+    public function test_stale_component_only_reflects_the_currently_active_company_after_switch(): void
+    {
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+        app(EntityRepository::class)->for('bengkel-arka', 'contacts')->save(['name' => 'Milik Bengkel Unik Stale']);
+
+        app(CompanyContext::class)->setCurrent('klinik-sehat');
+        app(EntityRepository::class)->for('klinik-sehat', 'contacts')->save(['name' => 'Milik Klinik Unik Stale']);
+
+        // Component "hidup" saat company A (bengkel) aktif...
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+        $component = Livewire::test(CommandPalette::class);
+
+        // ...lalu company aktif berpindah ke B (klinik) setelah component
+        // sudah mount - tanpa remount. `searchEntityData()` tidak menyimpan
+        // company di properti Livewire manapun, jadi tidak ada state basi
+        // untuk dibocorkan; `EntityRepository::for()` tetap jadi lapis kedua
+        // yang menolak company yang tidak cocok dengan context aktif.
+        app(CompanyContext::class)->setCurrent('klinik-sehat');
+
+        $results = $component->set('search', 'Unik Stale')->viewData('results');
+        $titles = array_column(array_filter($results, fn (array $result): bool => $result['type'] === 'Data'), 'title');
+
+        $this->assertContains('Milik Klinik Unik Stale', $titles);
+        $this->assertNotContains('Milik Bengkel Unik Stale', $titles);
     }
 
     public function test_data_results_are_scoped_to_the_active_company_only(): void

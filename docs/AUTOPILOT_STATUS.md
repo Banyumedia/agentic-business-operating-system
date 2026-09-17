@@ -1,7 +1,7 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-17 (T-F13 universal search dari repository selesai; T-F14 berikutnya)
-**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F13 DONE; next READY T-F14
+**Updated:** 2026-09-17 (T-F13R koreksi QA universal search selesai; T-F14 berikutnya)
+**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F13 + T-F13R DONE; next READY T-F14
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
@@ -211,9 +211,33 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 **Tidak ada task berjalan.** Writer berikutnya mengambil T-F14.
 
+## Detail Task Selesai (T-F13R)
+
+### T-F13R — DONE (2026-09-17)
+
+- **Latar:** QA independen menemukan defect fungsional pada T-F13 yang sudah dicatat sejak awal tapi belum diperbaiki (lihat "Remaining risk (a)" pada catatan T-F13 di bawah), plus jalur error-handling yang menyamarkan kegagalan nyata sebagai "tidak ada hasil".
+- **(1) Registry diperbaiki:** dua item `DynamicMenuRegistry` (`projects/timesheet`, `hrd/attendance`) yang merujuk entity `'timesheets'` (tanpa schema) diubah ke `'timesheet_entries'` (schema kanonik yang sudah ada sejak T-F2). Tidak ada schema/alias baru dibuat.
+- **(2) Route `/app/hrd/attendance` dibuktikan render 200** lewat test acceptance baru (`test_hrd_attendance_route_renders_successfully_with_the_canonical_schema`) memakai datasource JSON terisolasi (`storage_path('framework/testing/palette-...')`), bukan fixture demo asli.
+- **(3) Pencarian timesheet dibuktikan end-to-end:** baris unik ditambah ke `timesheet_entries`, diverifikasi kembali sebagai `type=Data` dengan `title`/`module`/`url` tepat dari `viewData('results')` langsung (bukan `preg_match` pada `<a>` pertama di HTML — pola lama diganti di seluruh file test, termasuk test href yang sudah ada), lalu `url` hasil di-GET dan `assertOk()`.
+- **(4) `catch (Throwable)` generik dihapus dari `searchEntityData()`:** `EntitySchema::load()` dan `EntityRepository::query()` sekarang dibiarkan melempar apa adanya. Schema hilang (`InvalidArgumentException`), JSON company rusak (`JsonException`), atau kegagalan repository lain sekarang menggagalkan request secara terlihat, bukan diam-diam jadi hasil kosong. Satu-satunya `catch` yang tersisa di jalur ini adalah `CompanyContext::current()` melempar `LogicException` saat company belum dipilih sama sekali (kondisi normal, kontrak jelas, bukan korupsi). Dibuktikan negatif oleh dua test baru: schema hilang dari registry palsu, dan file JSON entity yang dirusak langsung — keduanya sekarang melempar exception yang sama seperti dilempar layer di bawahnya, tidak ditangkap.
+- **(5) Negative test tenant stale-component ditambah:** `CommandPalette` di-mount saat company A aktif, data unik dibuat di A dan B, company aktif dipindah ke B **setelah** component hidup (tanpa remount), lalu `search` di-update pada component yang sama — hasil hanya menampilkan data B. Component tidak menyimpan company di properti manapun sehingga tidak ada state basi untuk dibocorkan; `EntityRepository::for()` tetap lapis kedua yang menolak company yang tidak cocok dengan context aktif saat ini.
+- **(6) Komentar performa diperbaiki:** dokumentasi lama menyatakan `MAX_PER_ENTITY`/`MAX_DATA_RESULTS` mencegah "memindai berlebihan" — salah, karena `JsonEntityRepository::query()` selalu membaca seluruh isi file entity sebelum memfilter/memotong. Komentar baru menyatakan jujur bahwa kedua konstanta ini membatasi jumlah **hasil yang ditampilkan**, bukan jumlah baris yang dipindai. `JsonEntityRepository` tidak diubah/dioptimasi (di luar scope), tidak ada dependency/search engine ditambahkan.
+- **(7) Batas hasil didokumentasikan jujur sebagai 16, bukan 8:** menu dan data adalah dua kuota terpisah (masing-masing dengan konstanta sendiri, `MAX_MENU_RESULTS = 8` baru ditambah menggantikan angka `8` yang sebelumnya hardcoded inline, dan `MAX_DATA_RESULTS = 8`), sehingga total tampilan bisa mencapai 16 baris. Ini bukan perubahan UX baru — perilaku render tidak berubah dari T-F13, hanya nama konstanta dan komentar yang sekarang jujur soal jumlahnya.
+- **Files:** `app/Services/DynamicMenuRegistry.php`, `app/Livewire/CommandPalette.php`, `tests/Feature/CommandPaletteDataSearchTest.php`, `docs/EXECUTION_PLAN.md`, `docs/AUTOPILOT_STATUS.md`.
+- **Evidence:** focused `CommandPaletteDataSearchTest` 12/12 (27 assertions); focused registry/sidebar/route regresi (`DynamicMenuRegistryTest`, `ModuleSidebarTest`, `ListScreenTest`, `LobbyNavigationTest`) 34/34 (220 assertions); full `php artisan test` **294/294 (1226 assertions)**; `vendor/bin/pint --test` passed (97 files, tidak ada file baru); `npm run build` passed (Vite ~1.2s, tidak ada Blade/CSS/JS yang berubah); `git diff --check` clean; `git status --short` sebelum staging hanya menunjukkan 3 file yang memang jadi target task ini (tidak ada perubahan asing dari writer paralel lain).
+- **Self-review sebelum commit:** tenant isolation diverifikasi lewat test stale-component (poin 5) dan test scoped-company yang sudah ada; fail-closed/error visibility diverifikasi lewat dua test negatif baru (poin 4); D-31 (grep nama industri = 0 pada file yang disentuh) dan D-42 (tidak ada `DB::`/Eloquent/model/migration bisnis ditambahkan — hanya edit `EntityRepository`/`DynamicMenuRegistry` yang sudah ada) tetap terjaga; test baru menulis lewat `datasource.json_path` terisolasi, tidak menyentuh `storage/app/json/{bengkel-arka,klinik-sehat,salon-ayu}` asli; URL hasil pencarian (`/app/contacts`, `/app/hrd/attendance`) dibuktikan benar-benar route yang bisa dibuka via `$this->get(...)->assertOk()`, bukan string tidak kosong.
+- **Remaining risk:** (a) href hasil data tetap mengarah ke halaman list module, bukan baris spesifik — jujur sesuai arsitektur Fase 2 saat ini, tidak berubah dari T-F13, akan berubah bila pola layar detail-per-baris ditambahkan; (b) Scout (U-07) tetap menyusul Fase 3 sesuai rencana awal T-F13; (c) test `test_missing_schema_from_a_broken_registry_entry_fails_visibly` memakai anonymous subclass `DynamicMenuRegistry` untuk mensimulasikan registry rusak — pola ini sengaja dipilih supaya test tidak bergantung pada defect nyata di registry produksi (yang sekarang sudah bersih), sehingga test ini tetap relevan sebagai regresi meskipun registry sudah benar.
+
 ## Detail Task Selesai (T-F13)
 
-### T-F13 — DONE (2026-09-17)
+### T-F13 — DONE (2026-09-17, dikoreksi oleh T-F13R)
+
+> **Catatan koreksi:** task ini sempat diturunkan ke status `PARTIAL` secara
+> implisit setelah QA independen menemukan defect registry `timesheets` dan
+> `catch (Throwable)` generik yang menyamarkannya (lihat "Remaining risk (a)"
+> di bawah). Kedua defect itu sudah diperbaiki oleh **T-F13R** (lihat detail
+> di atas); catatan asli di bawah ini dipertahankan sebagai riwayat, bukan
+> kondisi kode saat ini.
 
 - **Latar:** `CommandPalette` sejak T-F8 hanya mencari MENU statis dari `DynamicMenuRegistry`, belum data sungguhan -- tidak memenuhi acceptance "Universal Search dari repository" (U-07).
 - **`searchEntityData()` (baru):** memakai `EntityRepository::query(['_search' => ..., '_per_page' => ...])` untuk setiap entity yang benar-benar tampil di menu company aktif (dari `registry->visibleModules()`/`menusFor()`) - bukan memindai seluruh 15 schema. Kapabilitas yang mati untuk company otomatis tidak tersentuh karena registry sudah menegakkan zero-bloat/D-31 lebih dulu.
@@ -373,7 +397,7 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 **T-F14 — Uji anti-hardcode otomatis (`NoIndustryHardcodeTest`, `NoLiteralTermsTest`, `RenderAllPresetsTest`).**
 
-T-F14 adalah barrier konvergensi: depends T-F7..T-F13 + T-F11R (semuanya `DONE`).
+T-F14 adalah barrier konvergensi: depends T-F7..T-F13 + T-F13R (semuanya `DONE`).
 Selalu serial (lihat `EXECUTION_PLAN.md` section Matriks Grup Paralel). Setelah T-F14,
 T-F15 (bukti `laundry.json`) lalu berhenti di gate `HUMAN:UI-LOCK`.
 
