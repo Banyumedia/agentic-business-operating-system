@@ -5,10 +5,12 @@ use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Livewire\Dashboard;
 use App\Livewire\DummyModule;
 use App\Livewire\Lobby;
+use App\Livewire\Onboarding;
 use App\Livewire\Settings;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', Lobby::class)->name('lobby');
+Route::get('/onboarding', Onboarding::class)->name('onboarding');
 Route::middleware(EnsureCompanyContext::class)->group(function (): void {
     Route::get('/app/dashboard', Dashboard::class)->name('app.dashboard');
     Route::get('/app/settings', Settings::class)->name('app.settings');

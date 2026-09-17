@@ -53,7 +53,144 @@
             @if ($tab['id'] !== $activeTab) x-cloak @endif
             class="py-8 focus:outline-none"
         >
-            @if ($tab['id'] === 'theme')
+            @if ($tab['id'] === 'profile')
+                <div class="mb-6">
+                    <h2 class="text-xl font-semibold text-[var(--erp-text-primary)]">Profil usaha & pajak</h2>
+                    <p class="mt-1 text-sm text-[var(--erp-text-secondary)]">Ringkasan identitas usaha yang tersimpan.</p>
+                </div>
+
+                @if ($businessSummary)
+                    <dl class="grid gap-4 rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] p-6 sm:grid-cols-2">
+                        <div>
+                            <dt class="text-sm text-[var(--erp-text-secondary)]">Nama usaha</dt>
+                            <dd class="mt-1 font-semibold text-[var(--erp-text-primary)]">{{ $businessSummary['name'] }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-[var(--erp-text-secondary)]">Preset aktif</dt>
+                            <dd class="mt-1 font-semibold text-[var(--erp-text-primary)]">{{ $businessSummary['preset'] }}</dd>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <dt class="text-sm text-[var(--erp-text-secondary)]">Status PPN</dt>
+                            @if ($businessSummary['taxable'])
+                                <dd class="mt-1 font-semibold text-[var(--erp-text-primary)]">PKP (memungut PPN)</dd>
+                            @else
+                                <dd class="mt-1 font-semibold text-[var(--erp-text-primary)]">Non-PKP (tidak memungut PPN)</dd>
+                            @endif
+                        </div>
+                    </dl>
+                @else
+                    <p class="rounded-[var(--erp-radius-sm)] bg-[var(--erp-info-soft)] p-3 text-sm text-[var(--erp-text-primary)]">
+                        Identitas usaha belum lengkap. Lengkapi lewat onboarding.
+                    </p>
+                @endif
+            @elseif ($tab['id'] === 'features')
+                <div class="space-y-10">
+                    <div>
+                        <div class="mb-4">
+                            <h2 class="text-xl font-semibold text-[var(--erp-text-primary)]">Fitur bisnis</h2>
+                            <p class="mt-1 text-sm text-[var(--erp-text-secondary)]">Pilih preset yang paling sesuai dengan cara kerja usaha ini.</p>
+                        </div>
+
+                        @if ($featuresNotice)
+                            <p class="mb-4 text-sm text-[var(--erp-success)]" aria-live="polite">{{ $featuresNotice }}</p>
+                        @endif
+                        @if ($featuresFailure)
+                            <p class="mb-4 text-sm text-[var(--erp-danger)]" role="alert">{{ $featuresFailure }}</p>
+                        @endif
+
+                        <label for="preset-select" class="block text-sm font-medium text-[var(--erp-text-secondary)]">Preset bisnis</label>
+                        <select
+                            id="preset-select"
+                            wire:change="updatePreset($event.target.value)"
+                            @disabled(! $canManageTheme)
+                            class="mt-2 min-h-11 w-full max-w-md rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] px-3 text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                        >
+                            @foreach ($presets as $presetOption)
+                                <option value="{{ $presetOption['key'] }}" @selected($presetOption['key'] === $selectedPreset)>{{ $presetOption['name'] }}</option>
+                            @endforeach
+                        </select>
+
+                        @unless ($canManageTheme)
+                            <p class="mt-3 rounded-[var(--erp-radius-sm)] bg-[var(--erp-info-soft)] p-3 text-sm text-[var(--erp-text-primary)]">
+                                Hanya owner usaha yang dapat mengganti preset bisnis.
+                            </p>
+                        @endunless
+                    </div>
+
+                    <div>
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-[var(--erp-text-primary)]">Istilah</h3>
+                            <p class="mt-1 text-sm text-[var(--erp-text-secondary)]">Sesuaikan label yang tampil di seluruh layar, mis. "Kontak" menjadi "Pasien".</p>
+                        </div>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            @foreach ($terminologyPairs as $singular => $plural)
+                                <div>
+                                    <label for="term-{{ $singular }}" class="block text-sm font-medium text-[var(--erp-text-secondary)]">{{ ucfirst($singular) }} / {{ ucfirst($plural) }}</label>
+                                    <div class="mt-2 flex gap-2">
+                                        <input
+                                            type="text"
+                                            id="term-{{ $singular }}"
+                                            wire:model="terminologyForm.{{ $singular }}"
+                                            value="{{ $terminologyForm[$singular] ?? '' }}"
+                                            @disabled(! $canManageTheme)
+                                            class="min-h-11 flex-1 rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] px-3 text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                                        >
+                                        @if ($canManageTheme)
+                                            <button
+                                                type="button"
+                                                wire:click="updateTerminology('{{ $singular }}')"
+                                                class="min-h-11 rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] px-3 text-sm font-medium text-[var(--erp-text-primary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                                            >
+                                                Simpan
+                                            </button>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-[var(--erp-text-primary)]">Alur</h3>
+                            <p class="mt-1 text-sm text-[var(--erp-text-secondary)]">Tahapan dan perpindahan yang berlaku untuk preset aktif. Bagian ini bersifat tampilan saja.</p>
+                        </div>
+
+                        @forelse ($workflows as $entity => $workflow)
+                            <div class="mb-6 rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] p-6">
+                                <h4 class="font-semibold text-[var(--erp-text-primary)]">{{ $entity }}</h4>
+                                <ul class="mt-3 space-y-2 text-sm text-[var(--erp-text-secondary)]">
+                                    @foreach ($workflow['stages'] as $stage)
+                                        <li>
+                                            <span class="font-medium text-[var(--erp-text-primary)]">{{ $stage['label'] }}</span>
+                                            @if (in_array($stage['code'], $workflow['terminal'], true))
+                                                <span class="ml-2 rounded-full bg-[var(--erp-accent-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--erp-accent)]">Tahap akhir</span>
+                                            @endif
+                                        </li>
+                                    @endforeach
+                                </ul>
+                                <ul class="mt-4 space-y-2 text-sm text-[var(--erp-text-secondary)]">
+                                    @foreach ($workflow['transitions'] as $transition)
+                                        <li>
+                                            <span class="font-medium text-[var(--erp-text-primary)]">{{ $transition['from'] }} → {{ $transition['to'] }}</span>
+                                            <span class="ml-2 text-[var(--erp-text-muted)]">({{ implode(', ', $transition['roles']) }})</span>
+                                            @if ($transition['requires_note'] ?? false)
+                                                <span class="ml-2 rounded-full bg-[var(--erp-warning-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--erp-warning)]">Wajib catatan</span>
+                                            @endif
+                                            @if ($transition['requires_approval'] ?? false)
+                                                <span class="ml-2 rounded-full bg-[var(--erp-info-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--erp-info)]">Wajib persetujuan</span>
+                                            @endif
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @empty
+                            <p class="text-sm text-[var(--erp-text-secondary)]">Preset ini belum mendeklarasikan alur.</p>
+                        @endforelse
+                    </div>
+                </div>
+            @elseif ($tab['id'] === 'theme')
                 <div class="mb-6">
                     <h2 class="text-xl font-semibold text-[var(--erp-text-primary)]">Skema warna usaha</h2>
                     <p class="mt-1 text-sm text-[var(--erp-text-secondary)]">

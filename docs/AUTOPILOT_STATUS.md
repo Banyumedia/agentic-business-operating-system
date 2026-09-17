@@ -1,7 +1,7 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-17 (T-F11R QA finansial selesai; T-F12 berikutnya)
-**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F11R DONE; next READY T-F12
+**Updated:** 2026-09-17 (T-F12 tab kapabilitas Settings + onboarding selesai; T-F13 berikutnya)
+**Mode:** FASE 2 BERJALAN - T-07 + T-F1..T-F12 DONE; next READY T-F13
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
@@ -98,7 +98,7 @@ Merge tetap serial — satu per satu. Cek `docs/KIRO_SKILL.md` §Worker Registry
 | PHP | 8.3.30 | `php -v` |
 | Livewire | 4.4 | `composer.json` |
 | Tailwind | 4.3 (CSS-first `@theme`) | `package.json` |
-| Test suite | **266 passed, 1146 assertions** | `php artisan test` |
+| Test suite | **282 passed, 1199 assertions** | `php artisan test` |
 | Style | **Pint clean, seluruh repo** | `vendor/bin/pint --test` |
 | Build | Vite OK | `npm run build` |
 | Business migrations | none (hanya `users/cache/jobs`) | `ls database/migrations` |
@@ -207,8 +207,24 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 
 ## Task Aktif
 
-**Tidak ada task berjalan.** Writer berikutnya mengambil T-F12 atau T-F13
-(keduanya READY dan boleh paralel di worktree terpisah).
+**Tidak ada task berjalan.** Writer berikutnya mengambil T-F13.
+
+## Detail Task Selesai (T-F12)
+
+### T-F12 — DONE (2026-09-17)
+
+- **`SettingsTabRegistry`:** dipakai apa adanya (sudah ada di worktree dari sesi sebelumnya). `Settings.php` tidak lagi mendeklarasikan `$tabs` statis; tab dan visibilitasnya diselesaikan lewat `visibleTo($role)` setiap `mount()`, konsisten dengan pola `DynamicMenuRegistry`. Role yang belum diketahui (`null`/lainnya) diperlakukan sebagai `staff` (paling terbatas), bukan tanpa tab sama sekali — analog `canManageTheme`.
+- **Zero-bloat role-aware:** staff tidak melihat tab "Tim & Akses" sama sekali di DOM (bukan disabled) — dibuktikan test string HTML tidak memuat `id="tab-team"` untuk staff, dan memuatnya untuk owner.
+- **Tab Fitur Bisnis:** dropdown preset dibaca dari `PresetSource::all()`; test membuktikan dropdown menampilkan preset palsu yang di-mock lewat container binding, dan bahwa `Settings.php`/`settings.blade.php` tidak memuat literal `'bengkel'`/`'klinik'`/`'salon'` (grep otomatis di test).
+- **Sub-bagian Istilah:** form 10 pasangan kunci kamus (`INDUSTRY_PRESETS.md` §3). `updateTerminology()` menulis singular+plural sekaligus ke `settings.json['terminology']` lewat `CompanySettingsStore::update()`; guard identik `selectTheme()` (revalidasi company aktif dari context, revalidasi `company_role === owner` dari session, 403/404 fail-closed, tanpa tulisan diam-diam saat ditolak). Karena `TerminologyResolver`/`FeatureResolver` sudah cache-per-request via `CompanyPresetResolver::flushCache()` yang dipanggil `CompanySettingsStore::update()`, label baru langsung terlihat di render Livewire berikutnya tanpa reload penuh.
+- **Sub-bagian Alur:** read-only, menampilkan stage + transisi (`from -> to`, roles, badge "Wajib catatan"/"Wajib persetujuan", badge "Tahap akhir") dari `workflows` preset aktif (`PresetSource::find()`), tanpa menyentuh `WorkflowEngine.php`.
+- **Tab Profil:** ringkasan baca-saja (nama, preset, status PPN) dari `BusinessIdentityStore` — dibungkus try/catch agar identitas usaha yang belum lengkap tidak merusak seluruh halaman Pengaturan (tab lain tetap harus bisa dirender untuk fixture demo yang datanya minim).
+- **`Onboarding.php` (baru):** form nama usaha (wajib, ditolak bila kosong/whitespace) + dropdown preset dari `PresetSource`. Submit sukses menulis `business_identity.json` (`id`, `name`, `preset`, `tax_mode: "non_taxable"` — default aman D-44, **bukan** `taxable`) dan `settings.json` awal valid lewat `CompanySettingsStore`, di bawah slug unik (`Str::slug` + increment `-2`, `-3`, ... bila folder sudah ada). Preset tak dikenal ditolak tanpa menulis apa pun.
+- **Batas D-41 didokumentasikan (bukan bug):** folder company baru dari onboarding **tidak** otomatis reachable lewat `?company=` karena `JsonCompanyContext` fail-closed di luar tiga company demo allowlist `config/datasource.php` — allowlist ini **tidak diubah**. Dicatat di komentar kelas `Onboarding.php` dan dibuktikan test negatif (`/app/dashboard?company={slug-baru}` → 404).
+- **Regresi ditemukan & diperbaiki sebelum lolos:** `SettingsTabRegistry::visibleTo()` menerima `session('company_role')` mentah; test lama (`ModuleSidebarTest`) memanggil rute Settings tanpa `company_role` di session, sehingga role `null` kehilangan **semua** tab (termasuk Tema) — `settings deep links...` gagal karena `id="tab-features"` hilang total. Diperbaiki dengan menormalkan role ke `staff` di `Settings::mount()` sebelum memanggil registry, bukan mengubah kontrak registry.
+- **Files:** `app/Livewire/Settings.php`, `app/Services/SettingsTabRegistry.php` (dipakai, tidak diubah), `resources/views/livewire/settings.blade.php`, `app/Livewire/Onboarding.php`, `resources/views/livewire/onboarding.blade.php`, `routes/web.php`, `tests/Feature/{SettingsCapabilityTabsTest,OnboardingTest}.php`.
+- **Evidence:** focused `SettingsCapabilityTabsTest` 10/10 (35 assertions), `OnboardingTest` 6/6 (18 assertions), `SettingsThemeTest` + `ModuleSidebarTest` (regresi) tetap hijau; full `php artisan test` **282/282 (1199 assertions)**; `vendor/bin/pint --test` passed (96 files); `npm run build` passed (Vite 1.22 s); `git diff --check` clean; scan D-31 pada file yang disentuh task ini → 0 nama industri; tidak ada migration/model Eloquent baru; tidak ada `href="#"` baru.
+- **Remaining risk:** (a) tab Karyawan AI, Penggunaan & Paket, dan Tim & Akses masih placeholder kontrak (di luar scope T-F12 — bukan bagian acceptance task ini, hanya tab Profil/Fitur Bisnis/Istilah/Alur yang diisi); (b) tab Profil hanya baca-saja (ubah nama/alamat/mode pajak menyusul task terpisah); (c) onboarding belum terhubung ke auth/`users.current_company_id` (Fase 3) sehingga company baru murni catatan data sampai auth tersedia — sesuai D-41 di atas; (d) wawancara AI via WA (D-40) tetap menyusul setelah node API Hermes (T-17b).
 
 ## Detail Task Selesai (T-F11)
 
