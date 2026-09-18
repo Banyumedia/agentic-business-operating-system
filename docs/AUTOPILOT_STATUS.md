@@ -51,7 +51,7 @@ dijalankan otomatis saat login Windows oleh PM2. **Tidak usah** menjalankan
   (3 bug ditemukan & diperbaiki saat final-gate: company_id hilang di
   production_order_lines/D-26, kontrak HasWorkflow salah, kolom items salah)
 - T-25 (Keputusan Tier B: manufacturing.production_order) → `e946477`
-- T-26 (Halaman publik "Cocok untuk bisnis apa?") → Selesai (Commit lokal)
+- T-26 (Halaman publik "Cocok untuk bisnis apa?") → `5a0ba6d` (+ `a2d34c2` docs sync)
 - T-24d (Preset gelombang 4: Barbershop, Kedai Kopi, Fotografi) → `c193f8e`
 - T-27e (Kendali pengiriman data ke AI) → `4f5f491`
 - T-23 (Build + smoke tenant dogfood) → `776840e`
@@ -133,8 +133,7 @@ membagi ~110 file uncommitted menjadi 4 commit bertema sesuai dependency
 riil, bukan `git add -A`.
 
 ## Pekerjaan Aktif
-Tidak ada (Sistem berhenti: Tidak ada task berstatus READY setelah T-26)
+Tidak ada (Sistem berhenti: Tidak ada task berstatus READY setelah T-26). Menunggu instruksi HUMAN atau add-on komersial (Fase 6b).
 
 ## READY Berikutnya
-
 - Tidak ada task READY (Tunggu perintah/Fase berikutnya)
