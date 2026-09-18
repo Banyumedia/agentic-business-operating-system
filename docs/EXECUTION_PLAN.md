@@ -326,7 +326,7 @@ billing, (b) **tidak** menambah nama industri ke kode (D-31), (c) tunduk Tier B
 |---|---|---|
 | **T-28** Cabang/lokasi tambahan (D-58) | T-00a, T-16 | Multi-company sudah ada (D-06/D-41); membangun: `companies.parent_company_id`, penagihan per cabang (`company_memberships` per child), pelaporan gabungan owner-scoped |
 | **T-32** e-Faktur / Coretax (PKP) | T-11, T-13e | Integrasi eksternal; hanya relevan bila `tax_mode=taxable` (D-44) |
-| **T-35** Loyalty pelanggan (poin/voucher) | T-13, T-13e | **READY** — disahkan Bos sebagai `addon.loyalty` (D-59, 2026-09-19). Aturan poin per company (mode nominal/item/keduanya), expiry opsional per company, tersimpan sebagai data (`loyalty_rules`), bukan hardcode. |
+| **T-35** Loyalty pelanggan (poin/voucher) | T-13, T-13e | **DONE** `692df40` — `addon.loyalty` (D-59). Aturan poin per company (mode nominal/item/keduanya), expiry opsional per company, tersimpan sebagai data (`loyalty_rules`), bukan hardcode. |
 | **T-33** Integrasi marketplace/ojol | T-13e, T-19b | Pola sama dengan webhook NalarPesan: idempoten via `external_ref` (D-04) |
 | **T-30** Payroll lanjutan (BPJS/PPh21) | T-13f | Perluasan `hr.payroll`, bukan kapabilitas baru |
 | **T-29** Nomor WA disediakan platform | T-10b | **D-55**: default tetap nomor klien; ini jalur tambahan, bukan pengganti |

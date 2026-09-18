@@ -1,6 +1,6 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-19 (final-gate Hermes: T-24c DONE; sisa task tertahan gate HUMAN)
+**Updated:** 2026-09-19 (Maraton Serial: T-35 loyalty DONE; tidak ada task READY lagi)
 **Mode:** FASE 4 AKTIF - Gate UI-LOCK sudah dibuka.
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
@@ -170,11 +170,26 @@ Tidak ada — T-29 s/d T-34 DONE (final-gate Hermes).
 - T-34 (Storage terkelola) → `8d8b01e`. Kapabilitas `addon.managed_storage`,
   kelas `CompanyDiskResolver` — disk/kuota switching lewat FeatureResolver,
   tidak hardcode nama provider.
+- T-35 (Loyalty pelanggan) → `692df40`. Kapabilitas `addon.loyalty` (opt-in
+  per company), `loyalty_rules` (mode nominal/per_item/both, expiry_months
+  nullable) + `loyalty_points` (ledger, `expires_at` nullable) — keduanya
+  `company_id` wajib (D-26). `LoyaltyPointsCalculator` membaca rasio/mode
+  dari data company, tidak hardcode rumus. Disahkan Bos sebagai D-59
+  (2026-09-19). 6 test: capability off default → 0 poin, rasio nominal
+  company-specific, per-item, both mode akumulasi, expiry opsional per
+  company, isolasi tenant.
 
-**Verifikasi final-gate Fase 6b (Hermes, setelah audit & perbaikan):**
-`php artisan test` → **501 passed, 1948 assertions**; `pint --test` →
-**clean 377 files**; `npm run build` → sukses; grep D-31 (nama industri di
+**Verifikasi final-gate Fase 6b (Hermes, setelah T-35 + audit):**
+`php artisan test` → **507 passed, 1966 assertions**; `pint --test` →
+**clean 385 files**; `npm run build` → sukses; grep D-31 (nama industri di
 file addon baru) → 0 hasil.
 
+**Catatan temuan proses:** fixture demo `storage/app/json/bengkel-arka/*.json`
+sempat terhapus dari disk (bukan oleh commit, kemungkinan side-effect proses
+lain yang menulis ke folder JSON nyata alih-alih storage terisolasi test) —
+dipulihkan via `git checkout`. Test suite kembali hijau setelahnya.
+
 ## READY Berikutnya
-- T-35 (Loyalty pelanggan) → **BLOCKED**. Loyalty butuh tabel baru (`loyalty_points`/`loyalty_vouchers`) + kapabilitas generik `addon.loyalty` — apakah Bos mengesahkan ini sebagai kapabilitas resmi generik (D-32), dan struktur poin seperti apa (per-transaksi nominal? per-item? expiry policy)? Mohon instruksi lebih lanjut.
+Tidak ada task READY tersisa di `EXECUTION_PLAN.md` §Fase 6b. Katalog D-56
+sudah dibangun seluruhnya (T-28..T-35). Langkah lanjutan menunggu instruksi
+Bos (add-on baru, ekspansi preset, atau prioritas lain).
