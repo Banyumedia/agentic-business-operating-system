@@ -1,6 +1,6 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-18 (T-13c DONE `7231b5d`: resources + bookings + booking_incidents + BookingService anti-overlap + workflow effects; next READY T-13d)
+**Updated:** 2026-09-18 (T-13d DONE `89d64d6`: items + item_batches + stock_movements + bom_lines + StockService FEFO/BOM; next READY T-13e)
 **Mode:** FASE 3a AKTIF - Gate UI-LOCK sudah dibuka.
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
@@ -444,16 +444,32 @@ Fase 3+ telah dibuka oleh HUMAN:UI-LOCK dari Bos.
 
 ## Next READY
 
-**Tidak ada task `READY` lagi. Fase 2 selesai (T-07 -> T-F1..T-F15 semua `DONE`).**
+**T-13e (`pos_shifts`, `orders`, `order_lines` + `OrderService`)** sesuai urutan FK Fase 3c.
 
-Baris berikutnya di `EXECUTION_PLAN.md` (Fase 3a dst.) semuanya `BLOCKED` di
-belakang gate `⛔ HUMAN:UI-LOCK` - lihat section Matriks Grup Paralel. Sesuai
-Stop Line `HERMES.md`: *"after Fase 2 (T-07 -> T-F1 ... T-F15), stop. Fase 3+
-is behind HUMAN:UI-LOCK."* Ini persetujuan visual + alur produk (lihat Bos
-melihat aplikasi utuh berjalan untuk `bengkel`, `klinik`, `salon`, `laundry`),
-bukan sesuatu yang bisa diputuskan lewat test/lint/build. **Autopilot berhenti
-di sini menunggu konfirmasi Bos** bahwa Fase 2 `LOCKED` sebelum Fase 3
-(fondasi tenant database nyata, migration, adapter Eloquent) boleh dimulai.
+Dependensi sudah `DONE` (`T-13`, `T-13c`, `T-13d`, `T-11`), sehingga state
+berikutnya di `EXECUTION_PLAN.md` dipromosikan ke `READY`.
+
+## Detail Task Selesai (T-13d)
+
+### T-13d — DONE (2026-09-18)
+
+- **Implemented:** migration serial terpisah untuk `items`, `item_batches`, `stock_movements`, `bom_lines`; model Eloquent (`Item`, `ItemBatch`, `StockMovement`, `BomLine`); `StockService` dengan `addStock`, `deductStock` (FEFO), dan `produce` (BOM consume+produce).
+- **Fail-closed:** `deductStock` melempar exception jika stok tidak cukup; `produce` melempar exception bila BOM kosong; pencatatan movement selalu `company_id`-scoped.
+- **Acceptance tests:** `tests/Feature/StockServiceTest.php` mencakup FEFO 3 batch, kekurangan stok (negative), BOM produce mengurangi komponen + menambah produk, serta isolasi tenant A/B.
+- **Files:**
+  - `database/migrations/2026_09_18_042831_create_items_table.php`
+  - `database/migrations/2026_09_18_042832_create_item_batches_table.php`
+  - `database/migrations/2026_09_18_042833_create_stock_movements_table.php`
+  - `database/migrations/2026_09_18_042834_create_bom_lines_table.php`
+  - `app/Models/{Item,ItemBatch,StockMovement,BomLine}.php`
+  - `app/Services/StockService.php`
+  - `tests/Feature/StockServiceTest.php`
+- **Evidence:**
+  - `php artisan migrate:fresh --seed` ✅
+  - `php artisan test --filter=StockServiceTest` → **5 passed (14 assertions)** ✅
+  - `php artisan test` → **359 passed (1524 assertions)** ✅
+  - `php vendor/bin/pint --test` → **PASS (193 files)** ✅
+- **Risk tersisa:** integrasi pemakaian `StockService` dari workflow effect `stock.reserve/deduct` akan tervalidasi lebih lanjut pada task turunan yang menyentuh order/produksi.
 
 ## Perubahan D-31 (2026-09-16, setelah review ke-3)
 
