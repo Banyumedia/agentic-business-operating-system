@@ -133,7 +133,7 @@ membagi ~110 file uncommitted menjadi 4 commit bertema sesuai dependency
 riil, bukan `git add -A`.
 
 ## Pekerjaan Aktif
-Tidak ada — T-28 DONE.
+Tidak ada — T-29 s/d T-34 DONE (final-gate Hermes).
 
 ## Pekerjaan Selesai (tambahan)
 - T-28 (Cabang/lokasi tambahan, D-58) → `451653e` (part 1: parent_company_id
@@ -145,10 +145,36 @@ Tidak ada — T-28 DONE.
   Bug ditemukan & diperbaiki sebelum commit: `EloquentCompanySettingsStore`
   tidak ter-bind di test (pola sama seperti insiden AdminImpersonationTest);
   file scratch `test-debug.php` dibersihkan dari repo root.
+- Hardening D-50(f) (payload AI TenantBot) → `45b682f`. Mengembalikan field
+  whitelist eksplisit (bukan `toArray()`) + guard owner eksplisit di endpoint
+  opt-in yang sempat dilonggarkan.
+- T-29 (Nomor WA disediakan platform) → `a4932e4`. Kapabilitas
+  `addon.platform_wa_number`, kolom `is_platform_provided` di `hermes_profiles`.
+- T-30 (Payroll lanjutan: BPJS/PPh21) → `59f2822`. Kapabilitas
+  `addon.payroll_advanced`, masuk `SENSITIVE_CAPABILITIES` (D-50f), kolom
+  BPJS/PPh21 di `payrolls`.
+- T-31 (Domain & struk ber-merek sendiri) → `26a53fd`. Kapabilitas
+  `addon.custom_domain`, kolom `custom_domain` di `companies`.
+- T-32 (e-Faktur/Coretax) → `59cb26e`.
+  Model `OrderEFaktur` + interface stub `EFakturGatewayContract` (TANPA
+  panggilan API eksternal nyata, sesuai batasan prompt — perlu kredensial
+  Coretax berbayar, butuh approval Bos terpisah). **Bug D-26 ditemukan &
+  diperbaiki sebelum commit**: migration asli claude-cli tidak menyertakan
+  `company_id` di `order_e_fakturs` — ditambahkan + test negatif isolasi
+  tenant baru ditulis Hermes (tidak ada di draft asli).
+- T-33 (Integrasi marketplace/ojol) → `c8be643`. Kapabilitas
+  `addon.marketplace_sync`, interface stub `MarketplaceOrderAdapterContract`
+  mengikuti pola `NalarPesanWebhookController` (T-19b), idempotency scoped
+  per company_id. Test negatif tambahan ditulis Hermes: external_id sama
+  di 2 company menghasilkan order terpisah (tidak collide).
+- T-34 (Storage terkelola) → `8d8b01e`. Kapabilitas `addon.managed_storage`,
+  kelas `CompanyDiskResolver` — disk/kuota switching lewat FeatureResolver,
+  tidak hardcode nama provider.
+
+**Verifikasi final-gate Fase 6b (Hermes, setelah audit & perbaikan):**
+`php artisan test` → **501 passed, 1948 assertions**; `pint --test` →
+**clean 377 files**; `npm run build` → sukses; grep D-31 (nama industri di
+file addon baru) → 0 hasil.
 
 ## READY Berikutnya
-- Tidak ada task READY baru. Menunggu instruksi Bos untuk add-on Fase 6b
-  berikutnya (katalog D-56: e-Faktur/Coretax, loyalty [butuh D-32], marketplace,
-  payroll BPJS/PPh21, WA platform, domain custom, storage terkelola).
-
-**Pengecekan Rutin (Sesi Baru):** Agent memeriksa ulang antrean task di `EXECUTION_PLAN.md`. Sesuai matriks Fase 6b, T-28 sudah `DONE`. Tidak ada task `READY` baru karena task add-on selanjutnya belum diberi ID task tetap dan diinstruksikan pembangunannya oleh Bos. Eksekusi berhenti (BLOCKED) pada gate instruksi Bos.
+- T-35 (Loyalty pelanggan) → **BLOCKED**. Loyalty butuh tabel baru (`loyalty_points`/`loyalty_vouchers`) + kapabilitas generik `addon.loyalty` — apakah Bos mengesahkan ini sebagai kapabilitas resmi generik (D-32), dan struktur poin seperti apa (per-transaksi nominal? per-item? expiry policy)? Mohon instruksi lebih lanjut.
