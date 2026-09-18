@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['name', 'slug', 'owner_user_id', 'business_preset', 'theme', 'is_active', 'privacy_accepted_at', 'privacy_accepted_by_user_id', 'privacy_policy_version'])]
+#[Fillable(['name', 'slug', 'owner_user_id', 'parent_company_id', 'business_preset', 'theme', 'is_active', 'privacy_accepted_at', 'privacy_accepted_by_user_id', 'privacy_policy_version'])]
 class Company extends Model
 {
     protected static function booted(): void
@@ -94,6 +94,22 @@ class Company extends Model
     public function settings(): HasMany
     {
         return $this->hasMany(ModuleSetting::class);
+    }
+
+    /**
+     * The parent company of this branch.
+     */
+    public function parentCompany(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'parent_company_id');
+    }
+
+    /**
+     * The branch companies of this parent.
+     */
+    public function branches(): HasMany
+    {
+        return $this->hasMany(Company::class, 'parent_company_id');
     }
 
     /**
