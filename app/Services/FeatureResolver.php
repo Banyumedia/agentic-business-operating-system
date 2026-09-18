@@ -16,6 +16,7 @@ class FeatureResolver
         'quotations', 'milestone_billing', 'approval_flow', 'timesheet',
         'finance.cashbook', 'finance.accounting', 'hr.employees', 'hr.payroll',
         'system.ai_agent', 'pharmacy.prescription', 'construction.retention',
+        'addon.branches',
     ];
 
     /** @var list<string> */
@@ -102,6 +103,15 @@ class FeatureResolver
         foreach ($this->overrides($settings) as $key => $enabled) {
             // Override also constrained by plan
             $effective[$key] = $enabled && (! $isPlanActive || in_array($key, $planAllowed, true));
+        }
+
+        if (request()->is('*/group-report')) {
+            \Log::info('Effective addon.branches', [
+                'effective' => $effective['addon.branches'],
+                'planAllowed' => $planAllowed,
+                'overrides' => $this->overrides($settings),
+                'isPlanActive' => $isPlanActive,
+            ]);
         }
 
         foreach (self::SENSITIVE_CAPABILITIES as $capability) {

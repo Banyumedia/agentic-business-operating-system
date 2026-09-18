@@ -25,9 +25,12 @@ Route::middleware('guest')->group(function (): void {
     Route::get('/login', Login::class)->name('login');
 });
 
+use App\Http\Controllers\App\GroupReportController;
+
 Route::middleware(['auth', SetCurrentCompany::class, EnsureCompanyAccess::class])->group(function (): void {
     Route::middleware(EnsureCompanyContext::class)->group(function (): void {
         Route::get('/app/dashboard', Dashboard::class)->name('app.dashboard');
+        Route::get('/app/group-report', [GroupReportController::class, 'show'])->name('app.group_report');
         Route::get('/app/settings', Settings::class)->name('app.settings');
         Route::get('/app/settings/{tab}', Settings::class)
             ->whereIn('tab', ['profile', 'theme', 'features', 'assistant', 'usage', 'team', 'export'])

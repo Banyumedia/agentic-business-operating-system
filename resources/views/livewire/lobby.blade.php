@@ -50,6 +50,8 @@
             >
                 Pengaturan perusahaan
             </a>
+
+            <livewire:branch-switcher />
         </div>
     </div>
 </div>
