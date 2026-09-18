@@ -14,7 +14,10 @@ return new class extends Migration
             $table->foreignId('business_identity_id')->constrained('business_identities');
             $table->foreignId('shift_id')->nullable()->constrained('pos_shifts')->nullOnDelete();
             $table->unsignedBigInteger('contact_id')->nullable();
-            $table->foreignId('resource_id')->nullable()->constrained('resources')->nullOnDelete();
+            // resource_id FK ditambahkan di migration terpisah setelah tabel
+            // `resources` ada (2026_09_18_035954) supaya urutan migration
+            // portable di MySQL strict FK maupun SQLite (B-01, T-21b).
+            $table->unsignedBigInteger('resource_id')->nullable();
             $table->unsignedBigInteger('prescription_id')->nullable();
 
             $table->string('order_no', 64);
