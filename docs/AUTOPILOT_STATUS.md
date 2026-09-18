@@ -1,6 +1,6 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-18 (T-08 SIAP DIREVIEW)
+**Updated:** 2026-09-18 (T-08c SIAP DIREVIEW)
 **Mode:** FASE 3a AKTIF - Gate UI-LOCK sudah dibuka.
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
@@ -208,6 +208,11 @@ item OPEN; tandai task `BLOCKED` lalu ambil task READY lain yang independen.
 - **Remaining risk:** enam preset D-01 + `custom` sengaja tetap dibuat pada T-08/Fase 3 di path kanonik; implementasi Fase 2 berikutnya hanya tiga preset demo T-F4.
 
 ## Task Aktif
+
+**T-08c DONE (2026-09-18) - SIAP DIREVIEW**
+* Adapter Eloquent untuk TerminologyResolver ternyata tidak membutuhkan kode baru karena arsitekturnya sudah menggunakan `CompanyPresetResolver` yang memanggil `EloquentCompanySettingsStore` dan `EloquentPresetSource` (T-08b).
+* Dibuat integration test `TerminologyResolverEloquentTest` untuk memverifikasi fungsionalitas dengan `DATA_SOURCE=eloquent`.
+* Test memvalidasi fallback ke preset (pharmacy -> Pasien, rental -> Penyewa) dan override company.
 
 **T-08b DONE (2026-09-18) - SIAP DIREVIEW**
 
