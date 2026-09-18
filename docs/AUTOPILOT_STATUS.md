@@ -44,6 +44,7 @@ dijalankan otomatis saat login Windows oleh PM2. **Tidak usah** menjalankan
 ## Pekerjaan Selesai
 
 - T-08e (Regression WidgetRegistry Eloquent + EloquentEntityRepository) → `b0c390a`
+- T-08e (Fix: model+migration Dashboard untuk Eloquent mode - `CashEntry`, `Quotation`, `AssistantReport`) → `67d09aa`
 
 - T-25b (Modul Tier B: Production Order + BOM lines, D-57) → `241cd97`
   (3 bug ditemukan & diperbaiki saat final-gate: company_id hilang di
