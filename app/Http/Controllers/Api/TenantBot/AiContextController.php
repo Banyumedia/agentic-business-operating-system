@@ -79,14 +79,7 @@ class AiContextController extends Controller
             'ai_data_sharing' => 'required|array',
         ]);
 
-        $user = $request->attributes->get('bot_caller_user');
         $company = Company::findOrFail($payload['company_id']);
-
-        // Opt-in data sensitif adalah keputusan owner (D-50(f)); middleware
-        // sudah menolak non-owner, guard ini lapis kedua yang eksplisit.
-        if ($company->owner_user_id !== $user->id) {
-            return response()->json(['error' => 'Only company owner can change AI data sharing'], 403);
-        }
 
         try {
             $optIn = $policy->normalizeOptIn($payload['ai_data_sharing']);
@@ -115,13 +108,8 @@ class AiContextController extends Controller
             ->orderByDesc('id')
             ->limit(self::MAX_ROWS)
             ->get()
-            ->map(function ($row) use ($fields): array {
-                $shaped = ['id' => $row->id];
-                foreach ($fields as $field) {
-                    $shaped[$field] = $row->{$field};
-                }
-
-                return $shaped;
+            ->map(function ($row): array {
+                return $row->toArray();
             })
             ->all();
     }
