@@ -324,7 +324,7 @@ billing, (b) **tidak** menambah nama industri ke kode (D-31), (c) tunduk Tier B
 
 | Add-on (D-56) | Bergantung pada | Catatan teknis |
 |---|---|---|
-| Cabang/lokasi tambahan | T-00a, T-16 | Multi-company sudah ada (D-06/D-41); yang perlu dibangun: penagihan per cabang + pelaporan gabungan |
+| **T-28** Cabang/lokasi tambahan (D-58) | T-00a, T-16 | Multi-company sudah ada (D-06/D-41); membangun: `companies.parent_company_id`, penagihan per cabang (`company_memberships` per child), pelaporan gabungan owner-scoped |
 | e-Faktur / Coretax (PKP) | T-11, T-13e | Integrasi eksternal; hanya relevan bila `tax_mode=taxable` (D-44) |
 | Loyalty pelanggan (poin/voucher) | T-13, T-13e | Kapabilitas generik baru → **butuh keputusan D-32** sebelum dibangun |
 | Integrasi marketplace/ojol | T-13e, T-19b | Pola sama dengan webhook NalarPesan: idempoten via `external_ref` (D-04) |

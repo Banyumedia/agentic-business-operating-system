@@ -89,6 +89,8 @@ Status: `LOCKED` = keputusan final Bos. `OPEN` = menunggu diskusi lanjutan.
 
 | D-57 | **Modul Tier B Tambahan: manufacturing.production_order** | Dipilih langsung oleh Bos (2026-09-18) untuk task T-25. Memungkinkan industri manufaktur yang membutuhkan BOM multi-level dan pencatatan WIP. |
 
+| D-58 | **Add-on pertama Fase 6b: Cabang/Lokasi Tambahan** | Dipilih langsung oleh Bos (2026-09-18) sebagai add-on pertama dari katalog D-56 yang dibangun. Desain: `companies.parent_company_id` self-referencing FK (cabang = child company yang berbagi `owner_user_id`); billing per cabang via `company_memberships` terpisah per row (tidak menggandakan skema); laporan gabungan lintas cabang dibatasi ke company dalam grup kepemilikan yang sama (root + children), diakses hanya oleh owner. Diaktifkan lewat kapabilitas (D-52), bukan flag industri (D-31). |
+
 ## Keputusan OPEN
 
 Tidak ada. D-43 dijawab Bos (palet A). Q-01..Q-08 dijawab Bos 2026-09-16 dan dipromosikan menjadi D-34..D-41
