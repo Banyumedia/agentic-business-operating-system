@@ -43,6 +43,8 @@ dijalankan otomatis saat login Windows oleh PM2. **Tidak usah** menjalankan
 
 ## Pekerjaan Selesai
 
+- T-08e (Regression WidgetRegistry Eloquent + EloquentEntityRepository) → `b0c390a`
+
 - T-25b (Modul Tier B: Production Order + BOM lines, D-57) → `241cd97`
   (3 bug ditemukan & diperbaiki saat final-gate: company_id hilang di
   production_order_lines/D-26, kontrak HasWorkflow salah, kolom items salah)
@@ -131,6 +133,6 @@ riil, bukan `git add -A`.
 Tidak ada (Sistem berhenti: Tidak ada task berstatus READY)
 
 ## READY Berikutnya
-- **T-08e** (Regression WidgetRegistry Eloquent) [BLOCKED: T-13c/EntityRepository belum diimplementasikan di Eloquent]
+
 - **T-17c** (Panel Super Admin minimal) [BLOCKED: HUMAN:UI-LOCK]
 - **T-26** (Halaman publik "Cocok untuk bisnis apa?") [BLOCKED: HUMAN:UI-LOCK]
