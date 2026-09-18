@@ -158,4 +158,136 @@ class AiContextControllerTest extends TestCase
         $this->assertArrayHasKey('patient_contact_id', $response->json('data.prescriptions.0'));
         $this->assertArrayHasKey('doctor_name', $response->json('data.prescriptions.0'));
     }
+
+    public function test_non_owner_cannot_change_ai_data_sharing_opt_in(): void
+    {
+        config(['datasource.driver' => 'eloquent']);
+
+        $owner = User::factory()->create();
+        $notOwner = User::factory()->create();
+        $company = Company::factory()->create([
+            'owner_user_id' => $owner->id,
+            'business_preset' => 'pharmacy',
+            'privacy_accepted_at' => now(),
+            'privacy_accepted_by_user_id' => $owner->id,
+            'privacy_policy_version' => '1.0',
+        ]);
+
+        // Bot caller diautentikasi sebagai user yang BUKAN owner - HermesProfile
+        // dan wa_number milik $notOwner, tapi hanya $owner yang boleh mengubah
+        // opt-in data sensitif perusahaan ini (D-50f lapis kedua).
+        $profile = HermesProfile::factory()->create([
+            'owner_user_id' => $notOwner->id,
+            'webhook_secret_reference' => 'test-token',
+        ]);
+        $profile->companies()->attach($company->id);
+        $notOwner->update(['wa_number' => '9998887776']);
+
+        ModuleSetting::create([
+            'company_id' => $company->id,
+            'module_name' => 'features',
+            'settings_json' => [
+                'approval_flow' => true,
+                'system.ai_agent' => true,
+                'pharmacy.prescription' => true,
+            ],
+        ]);
+
+        $response = $this->putJson('/api/bot/tenant/context/opt-in', [
+            'company_id' => $company->id,
+            'ai_data_sharing' => [
+                'pharmacy.prescription' => true,
+            ],
+        ], [
+            'Authorization' => 'Bearer test-token',
+            'X-Caller-Wa-Number' => '9998887776',
+        ]);
+
+        $response->assertStatus(403);
+
+        // Fail-closed dibuktikan: opt-in tetap mati walau request ditolak.
+        $policy = new AiDataSharingPolicy;
+        $this->assertFalse($policy->optIn($company->refresh())['pharmacy.prescription']);
+    }
+
+    public function test_opt_in_rejects_unknown_capability_key(): void
+    {
+        config(['datasource.driver' => 'eloquent']);
+
+        $owner = User::factory()->create();
+        $company = Company::factory()->create([
+            'owner_user_id' => $owner->id,
+            'business_preset' => 'pharmacy',
+            'privacy_accepted_at' => now(),
+            'privacy_accepted_by_user_id' => $owner->id,
+            'privacy_policy_version' => '1.0',
+        ]);
+
+        $this->setupBotAccess($company, $owner);
+
+        ModuleSetting::create([
+            'company_id' => $company->id,
+            'module_name' => 'features',
+            'settings_json' => [
+                'approval_flow' => true,
+                'system.ai_agent' => true,
+                'pharmacy.prescription' => true,
+            ],
+        ]);
+
+        $response = $this->putJson('/api/bot/tenant/context/opt-in', [
+            'company_id' => $company->id,
+            'ai_data_sharing' => [
+                'not_a_real_capability' => true,
+            ],
+        ], [
+            'Authorization' => 'Bearer test-token',
+            'X-Caller-Wa-Number' => '1234567890',
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_opt_in_rejects_non_boolean_value_to_prevent_type_coercion_bypass(): void
+    {
+        config(['datasource.driver' => 'eloquent']);
+
+        $owner = User::factory()->create();
+        $company = Company::factory()->create([
+            'owner_user_id' => $owner->id,
+            'business_preset' => 'pharmacy',
+            'privacy_accepted_at' => now(),
+            'privacy_accepted_by_user_id' => $owner->id,
+            'privacy_policy_version' => '1.0',
+        ]);
+
+        $this->setupBotAccess($company, $owner);
+
+        ModuleSetting::create([
+            'company_id' => $company->id,
+            'module_name' => 'features',
+            'settings_json' => [
+                'approval_flow' => true,
+                'system.ai_agent' => true,
+                'pharmacy.prescription' => true,
+            ],
+        ]);
+
+        // "1"/1 tidak boleh diterima sebagai pengganti true - mencegah bypass
+        // lewat type coercion PHP yang bisa membuka data sensitif tanpa sengaja.
+        $response = $this->putJson('/api/bot/tenant/context/opt-in', [
+            'company_id' => $company->id,
+            'ai_data_sharing' => [
+                'pharmacy.prescription' => '1',
+            ],
+        ], [
+            'Authorization' => 'Bearer test-token',
+            'X-Caller-Wa-Number' => '1234567890',
+        ]);
+
+        $response->assertStatus(422);
+
+        $policy = new AiDataSharingPolicy;
+        $this->assertFalse($policy->optIn($company->refresh())['pharmacy.prescription']);
+    }
 }
