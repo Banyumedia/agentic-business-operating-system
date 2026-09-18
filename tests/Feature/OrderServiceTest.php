@@ -2,12 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\CompanyContext;
 use App\Models\BusinessIdentity;
+use App\Models\ChartOfAccount;
 use App\Models\Company;
 use App\Models\Order;
 use App\Models\Resource;
+use App\Models\User;
+use App\Services\HermesNodeClient;
 use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
 use Tests\TestCase;
 
 class OrderServiceTest extends TestCase
@@ -30,6 +35,11 @@ class OrderServiceTest extends TestCase
 
         $identityA = BusinessIdentity::factory()->create(['company_id' => $companyA->id, 'tax_rate' => 11, 'price_includes_tax' => false]);
         $identityB = BusinessIdentity::factory()->create(['company_id' => $companyB->id, 'tax_rate' => 11, 'price_includes_tax' => false]);
+
+        $mockContext = Mockery::mock(CompanyContext::class);
+        $mockContext->shouldReceive('current')->andReturn((string) $companyA->id, (string) $companyB->id);
+        $mockContext->shouldReceive('preset')->andReturn('bengkel');
+        $this->app->instance(CompanyContext::class, $mockContext);
 
         $orderA = $this->service->createOrder([
             'company_id' => $companyA->id,
@@ -55,6 +65,11 @@ class OrderServiceTest extends TestCase
             'tax_rate' => 11,
             'price_includes_tax' => false,
         ]);
+
+        $mockContext = Mockery::mock(CompanyContext::class);
+        $mockContext->shouldReceive('current')->andReturn((string) $company->id);
+        $mockContext->shouldReceive('preset')->andReturn('bengkel');
+        $this->app->instance(CompanyContext::class, $mockContext);
 
         $order = $this->service->createOrder([
             'company_id' => $company->id,
@@ -84,6 +99,11 @@ class OrderServiceTest extends TestCase
             'tax_rate' => 11,
             'price_includes_tax' => true,
         ]);
+
+        $mockContext = Mockery::mock(CompanyContext::class);
+        $mockContext->shouldReceive('current')->andReturn((string) $company->id);
+        $mockContext->shouldReceive('preset')->andReturn('bengkel');
+        $this->app->instance(CompanyContext::class, $mockContext);
 
         $order = $this->service->createOrder([
             'company_id' => $company->id,
@@ -151,5 +171,63 @@ class OrderServiceTest extends TestCase
 
         $this->service->fireLine($line);
         $this->assertNotNull($line->refresh()->fired_at);
+    }
+
+    public function test_order_paid_triggers_journal_post_effect()
+    {
+        $company = Company::factory()->create();
+        $identity = BusinessIdentity::factory()->create(['company_id' => $company->id]);
+
+        $mockContext = Mockery::mock(CompanyContext::class);
+        $mockContext->shouldReceive('current')->andReturn((string) $company->id);
+        $mockContext->shouldReceive('preset')->andReturn('bengkel');
+        $this->app->instance(CompanyContext::class, $mockContext);
+
+        $mockHermes = Mockery::mock(HermesNodeClient::class);
+        $mockHermes->shouldReceive('sendWhatsAppMessage')->andReturn(true);
+        $this->app->instance(HermesNodeClient::class, $mockHermes);
+
+        $service = app(OrderService::class);
+
+        ChartOfAccount::create(['id' => 1, 'company_id' => $company->id, 'account_code' => '1000', 'name' => 'Kas', 'type' => 'asset', 'is_active' => true]);
+        ChartOfAccount::create(['id' => 2, 'company_id' => $company->id, 'account_code' => '4000', 'name' => 'Pendapatan', 'type' => 'revenue', 'is_active' => true]);
+
+        $user = User::factory()->create([
+            'current_company_id' => $company->id,
+            'wa_number' => '6281234567890',
+            'wa_is_verified' => true,
+        ]);
+        $company->update(['owner_user_id' => $user->id]);
+
+        $order = $service->createOrder([
+            'company_id' => $company->id,
+            'business_identity_id' => $identity->id,
+            'order_no' => 'ORD-JOURNAL-1',
+            'stage' => 'siap_diambil',
+            'lines' => [
+                [
+                    'description' => 'Item 1',
+                    'qty' => 1,
+                    'unit_price' => 100000,
+                ],
+            ],
+        ]);
+
+        $result = $service->payOrder($order, 'cash', 'staff');
+
+        $this->assertEquals('transitioned', $result['status']);
+        $this->assertEquals('siap_diambil', $result['from']);
+        $this->assertEquals('selesai', $result['to']);
+        $this->assertEquals('selesai', $order->refresh()->stage);
+
+        $journalEffectResult = null;
+        foreach ($result['effects'] as $effect) {
+            if (($effect['effect'] ?? '') === 'journal.post') {
+                $journalEffectResult = $effect;
+                break;
+            }
+        }
+
+        $this->assertNotNull($journalEffectResult, 'Efek journal.post tidak ditemukan dalam hasil workflow.');
     }
 }

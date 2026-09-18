@@ -39,7 +39,7 @@ class OrderService
                 'resource_id' => $data['resource_id'] ?? null,
                 'prescription_id' => $data['prescription_id'] ?? null,
                 'order_no' => $data['order_no'] ?? uniqid('ORD-'),
-                'stage' => 'open',
+                'stage' => $data['stage'] ?? $this->initialOrderStage(),
                 'source' => $data['source'] ?? 'pos',
                 'external_ref' => $data['external_ref'] ?? null,
             ]);
@@ -108,10 +108,16 @@ class OrderService
         return $line;
     }
 
-    public function payOrder(Order $order, string $paymentMethod, string $actorRole, ?array $journalHeader = null, ?array $journalLines = null): array
-    {
-        return DB::transaction(function () use ($order, $paymentMethod, $actorRole, $journalHeader, $journalLines) {
-            $transitionResult = $this->workflowEngine->transition($order, 'paid', $actorRole);
+    public function payOrder(
+        Order $order,
+        string $paymentMethod,
+        string $actorRole,
+        ?array $journalHeader = null,
+        ?array $journalLines = null,
+        ?string $targetStage = 'selesai'
+    ): array {
+        return DB::transaction(function () use ($order, $paymentMethod, $actorRole, $journalHeader, $journalLines, $targetStage) {
+            $transitionResult = $this->workflowEngine->transition($order, $targetStage ?? 'selesai', $actorRole);
 
             $order->update([
                 'payment_method' => $paymentMethod,
@@ -128,5 +134,21 @@ class OrderService
 
             return $transitionResult;
         });
+    }
+
+    private function initialOrderStage(): string
+    {
+        try {
+            $stages = $this->workflowEngine->stages('orders');
+            $code = $stages[0]['code'] ?? null;
+
+            if (is_string($code) && $code !== '') {
+                return $code;
+            }
+        } catch (Throwable) {
+            // Fallback untuk konteks non-HTTP (mis. unit test service tanpa active_company).
+        }
+
+        return 'open';
     }
 }

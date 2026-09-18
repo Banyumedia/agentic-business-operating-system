@@ -11,6 +11,7 @@ use App\Services\Workflow\Effects\ApprovalRequest;
 use App\Services\Workflow\Effects\BookingsDepositCollect;
 use App\Services\Workflow\Effects\BookingsDepositSettle;
 use App\Services\Workflow\Effects\BookingsLateFeeCompute;
+use App\Services\Workflow\Effects\JournalPost;
 use App\Services\Workflow\Effects\NotifyOwnerWa;
 use App\Services\Workflow\Effects\WorkflowEffect;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -33,6 +34,7 @@ class WorkflowEngine
         BookingsDepositCollect $bookingsDepositCollect,
         BookingsDepositSettle $bookingsDepositSettle,
         BookingsLateFeeCompute $bookingsLateFeeCompute,
+        JournalPost $journalPost,
     ) {
         $this->effects = [
             $approvalRequest->key() => $approvalRequest,
@@ -40,6 +42,7 @@ class WorkflowEngine
             $bookingsDepositCollect->key() => $bookingsDepositCollect,
             $bookingsDepositSettle->key() => $bookingsDepositSettle,
             $bookingsLateFeeCompute->key() => $bookingsLateFeeCompute,
+            $journalPost->key() => $journalPost,
         ];
     }
 

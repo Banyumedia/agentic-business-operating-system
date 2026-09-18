@@ -43,7 +43,7 @@
                 {"from": "pengerjaan", "to": "qc", "roles": ["owner", "staff"]},
                 {"from": "qc", "to": "pengerjaan", "roles": ["owner", "staff"], "requires_note": true},
                 {"from": "qc", "to": "siap_diambil", "roles": ["owner", "staff"]},
-                {"from": "siap_diambil", "to": "selesai", "roles": ["owner", "staff"], "effects": ["notify.owner_wa"]},
+                {"from": "siap_diambil", "to": "selesai", "roles": ["owner", "staff"], "effects": ["notify.owner_wa", "journal.post"]},
                 {"from": "*", "to": "dibatalkan", "roles": ["owner"], "requires_approval": true}
             ],
             "terminal": ["selesai", "dibatalkan"]
