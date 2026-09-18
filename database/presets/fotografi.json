@@ -1,0 +1,83 @@
+{
+  "key": "fotografi",
+  "name": "Jasa Fotografi",
+  "tier": "A",
+  "capabilities": {
+    "contacts": true,
+    "scheduling": true,
+    "bookings": true,
+    "bookings.deposit": true,
+    "projects": true,
+    "milestone_billing": true,
+    "finance.cashbook": true,
+    "hr.employees": true,
+    "system.ai_agent": true,
+    "approval_flow": true
+  },
+  "terminology": {
+    "contact": "Klien",
+    "contacts": "Klien",
+    "project": "Sesi Foto",
+    "projects": "Sesi Foto",
+    "booking": "Jadwal",
+    "bookings": "Jadwal",
+    "staff": "Fotografer",
+    "staffs": "Fotografer"
+  },
+  "workflows": {
+    "bookings": {
+      "stages": [
+        { "code": "dijadwalkan", "label": "Dijadwalkan" },
+        { "code": "berlangsung", "label": "Pemotretan" },
+        { "code": "editing", "label": "Editing" },
+        { "code": "selesai", "label": "Diserahkan" },
+        { "code": "dibatalkan", "label": "Dibatalkan" }
+      ],
+      "transitions": [
+        { "from": "dijadwalkan", "to": "berlangsung", "roles": ["owner", "staff"] },
+        { "from": "berlangsung", "to": "editing", "roles": ["owner", "staff"] },
+        { "from": "editing", "to": "selesai", "roles": ["owner", "staff"] },
+        { "from": "editing", "to": "berlangsung", "roles": ["owner", "staff"], "requires_note": true },
+        { "from": "*", "to": "dibatalkan", "roles": ["owner"], "requires_approval": true }
+      ],
+      "terminal": ["selesai", "dibatalkan"]
+    },
+    "projects": {
+      "stages": [
+        { "code": "persiapan", "label": "Persiapan" },
+        { "code": "produksi", "label": "Pemotretan" },
+        { "code": "post_produksi", "label": "Editing" },
+        { "code": "review", "label": "Review Klien" },
+        { "code": "selesai", "label": "Final Delivery" },
+        { "code": "dibatalkan", "label": "Dibatalkan" }
+      ],
+      "transitions": [
+        { "from": "persiapan", "to": "produksi", "roles": ["owner", "staff"] },
+        { "from": "produksi", "to": "post_produksi", "roles": ["owner", "staff"] },
+        { "from": "post_produksi", "to": "review", "roles": ["owner", "staff"] },
+        { "from": "review", "to": "selesai", "roles": ["owner", "staff"] },
+        { "from": "review", "to": "post_produksi", "roles": ["owner", "staff"], "requires_note": true },
+        { "from": "*", "to": "dibatalkan", "roles": ["owner"], "requires_approval": true }
+      ],
+      "terminal": ["selesai", "dibatalkan"]
+    }
+  },
+  "dashboard": {
+    "industry_zone": [
+      { "widget": "upcoming_schedule" },
+      { "widget": "projects_progress" },
+      { "widget": "kpi_cashflow" }
+    ]
+  },
+  "menus": {
+    "order": [
+      "dashboard",
+      "bookings",
+      "projects",
+      "contacts",
+      "employees",
+      "accounting",
+      "settings"
+    ]
+  }
+}

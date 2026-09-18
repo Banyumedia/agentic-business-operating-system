@@ -26,7 +26,7 @@ class PresetCompositionTest extends TestCase
 
     public function test_new_presets_are_rendered_without_hardcoding()
     {
-        $presets = ['bengkel', 'laundry', 'kursus', 'kos_coworking', 'katering', 'bakery_preorder', 'travel_umroh', 'gym', 'praktek_dokter', 'cuci_mobil'];
+        $presets = ['bengkel', 'laundry', 'kursus', 'kos_coworking', 'katering', 'bakery_preorder', 'travel_umroh', 'gym', 'praktek_dokter', 'cuci_mobil', 'barbershop', 'kedai_kopi', 'fotografi'];
 
         $user = User::factory()->create();
 

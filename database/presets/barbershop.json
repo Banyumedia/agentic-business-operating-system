@@ -1,0 +1,63 @@
+{
+  "key": "barbershop",
+  "name": "Barbershop",
+  "tier": "A",
+  "capabilities": {
+    "contacts": true,
+    "scheduling": true,
+    "bookings": true,
+    "inventory": true,
+    "pos": true,
+    "finance.cashbook": true,
+    "hr.employees": true,
+    "system.ai_agent": true,
+    "approval_flow": true
+  },
+  "terminology": {
+    "contact": "Pelanggan",
+    "contacts": "Pelanggan",
+    "staff": "Kapster",
+    "staffs": "Kapster",
+    "resource": "Kursi",
+    "resources": "Kursi",
+    "booking": "Antrean",
+    "bookings": "Antrean",
+    "item": "Produk",
+    "items": "Produk"
+  },
+  "workflows": {
+    "bookings": {
+      "stages": [
+        { "code": "dijadwalkan", "label": "Menunggu" },
+        { "code": "dilayani", "label": "Dicukur" },
+        { "code": "selesai", "label": "Selesai" },
+        { "code": "dibatalkan", "label": "Dibatalkan" }
+      ],
+      "transitions": [
+        { "from": "dijadwalkan", "to": "dilayani", "roles": ["owner", "staff"] },
+        { "from": "dilayani", "to": "selesai", "roles": ["owner", "staff"] },
+        { "from": "*", "to": "dibatalkan", "roles": ["owner", "staff"] }
+      ],
+      "terminal": ["selesai", "dibatalkan"]
+    }
+  },
+  "dashboard": {
+    "industry_zone": [
+      { "widget": "upcoming_schedule" },
+      { "widget": "kpi_revenue" },
+      { "widget": "low_stock" }
+    ]
+  },
+  "menus": {
+    "order": [
+      "dashboard",
+      "bookings",
+      "pos",
+      "contacts",
+      "inventory",
+      "employees",
+      "accounting",
+      "settings"
+    ]
+  }
+}

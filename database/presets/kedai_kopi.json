@@ -1,0 +1,65 @@
+{
+  "key": "kedai_kopi",
+  "name": "Kedai Kopi",
+  "tier": "A",
+  "capabilities": {
+    "contacts": true,
+    "inventory": true,
+    "inventory.bom": true,
+    "pos": true,
+    "pos.tables": true,
+    "finance.cashbook": true,
+    "hr.employees": true,
+    "approval_flow": true,
+    "system.ai_agent": true
+  },
+  "terminology": {
+    "contact": "Pelanggan",
+    "contacts": "Pelanggan",
+    "staff": "Barista",
+    "staffs": "Barista",
+    "item": "Menu",
+    "items": "Menu",
+    "order": "Pesanan",
+    "orders": "Pesanan",
+    "resource": "Meja",
+    "resources": "Meja"
+  },
+  "workflows": {
+    "orders": {
+      "stages": [
+        { "code": "dipesan", "label": "Dipesan" },
+        { "code": "diproses", "label": "DirRacik" },
+        { "code": "disajikan", "label": "Disajikan" },
+        { "code": "selesai", "label": "Selesai" },
+        { "code": "dibatalkan", "label": "Dibatalkan" }
+      ],
+      "transitions": [
+        { "from": "dipesan", "to": "diproses", "roles": ["owner", "staff"] },
+        { "from": "diproses", "to": "disajikan", "roles": ["owner", "staff"] },
+        { "from": "disajikan", "to": "selesai", "roles": ["owner", "staff"] },
+        { "from": "*", "to": "dibatalkan", "roles": ["owner"], "requires_approval": true, "requires_note": true }
+      ],
+      "terminal": ["selesai", "dibatalkan"]
+    }
+  },
+  "dashboard": {
+    "industry_zone": [
+      { "widget": "kpi_revenue" },
+      { "widget": "kpi_cashflow" },
+      { "widget": "low_stock" }
+    ]
+  },
+  "menus": {
+    "order": [
+      "dashboard",
+      "pos",
+      "orders",
+      "inventory",
+      "contacts",
+      "employees",
+      "accounting",
+      "settings"
+    ]
+  }
+}
