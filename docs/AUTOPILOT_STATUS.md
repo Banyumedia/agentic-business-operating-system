@@ -43,6 +43,7 @@ dijalankan otomatis saat login Windows oleh PM2. **Tidak usah** menjalankan
 
 ## Pekerjaan Selesai
 
+- T-17c (Panel Super Admin minimal + Login As beraudit) → `671d804`
 - T-08e (Regression WidgetRegistry Eloquent + EloquentEntityRepository) → `b0c390a`
 - T-08e (Fix: model+migration Dashboard untuk Eloquent mode - `CashEntry`, `Quotation`, `AssistantReport`) → `67d09aa`
 
@@ -135,5 +136,4 @@ Tidak ada (Sistem berhenti: Tidak ada task berstatus READY)
 
 ## READY Berikutnya
 
-- **T-17c** (Panel Super Admin minimal) [BLOCKED: HUMAN:UI-LOCK]
 - **T-26** (Halaman publik "Cocok untuk bisnis apa?") [BLOCKED: HUMAN:UI-LOCK]
