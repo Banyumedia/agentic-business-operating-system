@@ -15,11 +15,14 @@ Route::middleware([AuthenticateMasterBot::class])->group(function () {
     Route::post('/bot/master/topup', [MasterBotController::class, 'createTopupInvoice']);
 });
 
+use App\Http\Controllers\Api\TenantBot\AiContextController;
 use App\Http\Controllers\Api\TenantBot\CapabilitiesController;
 use App\Http\Controllers\Api\TenantBot\TenantBotController;
 use App\Http\Middleware\AuthenticateTenantBot;
 
 Route::middleware([AuthenticateTenantBot::class])->group(function () {
+    Route::get('/bot/tenant/context', [AiContextController::class, 'show']);
+    Route::put('/bot/tenant/context/opt-in', [AiContextController::class, 'update']);
     Route::get('/bot/tenant/capabilities', [CapabilitiesController::class, 'index']);
     Route::put('/bot/tenant/settings', [TenantBotController::class, 'updateSettings']);
     Route::post('/bot/tenant/contacts', [TenantBotController::class, 'createContact']);

@@ -43,6 +43,7 @@ dijalankan otomatis saat login Windows oleh PM2. **Tidak usah** menjalankan
 
 ## Pekerjaan Selesai
 
+- T-27e (Kendali pengiriman data ke AI) → `4f5f491`
 - T-23 (Build + smoke tenant dogfood) → `776840e`
 - T-20 (Scout + Universal Search) → `b1da91d`
 - T-27d (Hak subjek data: hapus per pelanggan) → sudah selesai di phase sebelumnya
