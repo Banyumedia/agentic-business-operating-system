@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Laravel\Scout\Searchable;
 
 class Invoice extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable;
 
     protected $guarded = ['id'];
 
@@ -19,6 +20,16 @@ class Invoice extends Model
             'period_start' => 'date',
             'period_end' => 'date',
             'paid_at' => 'datetime',
+        ];
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'company_id' => $this->company_id,
+            'order_id' => $this->order_id,
+            'payment_status' => $this->payment_status,
         ];
     }
 

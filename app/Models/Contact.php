@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Scout\Searchable;
 
 class Contact extends Model
 {
-    use HasAttachments, HasFactory;
+    use HasAttachments, HasFactory, Searchable;
 
     protected $fillable = [
         'company_id',
@@ -32,6 +33,17 @@ class Contact extends Model
         'email' => 'encrypted',
         'attributes' => 'encrypted:array',
     ];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'company_id' => $this->company_id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'phone' => $this->phone,
+        ];
+    }
 
     /**
      * @return BelongsTo<Company, $this>

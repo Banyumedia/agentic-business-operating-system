@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Scout\Searchable;
 
 class Item extends Model
 {
+    use Searchable;
+
     protected $fillable = [
         'company_id',
         'sku',
@@ -30,6 +33,16 @@ class Item extends Model
         'is_active' => 'boolean',
         'attributes' => 'array',
     ];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'company_id' => $this->company_id,
+            'sku' => $this->sku,
+            'name' => $this->name,
+        ];
+    }
 
     public function company(): BelongsTo
     {

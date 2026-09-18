@@ -6,10 +6,11 @@ use App\Contracts\HasWorkflow;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Laravel\Scout\Searchable;
 
 class Deal extends Model implements HasWorkflow
 {
-    use HasFactory;
+    use HasFactory, Searchable;
 
     protected $fillable = [
         'company_id',
@@ -27,6 +28,15 @@ class Deal extends Model implements HasWorkflow
         'expected_close_date' => 'date',
         'attributes' => 'array',
     ];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'company_id' => $this->company_id,
+            'title' => $this->title,
+        ];
+    }
 
     /**
      * @return BelongsTo<Company, $this>
