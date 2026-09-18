@@ -52,24 +52,35 @@
                 {
                     "from": "dipesan",
                     "to": "diproses",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "diproses",
                     "to": "disajikan",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "disajikan",
                     "to": "selesai",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "*",
                     "to": "dibatalkan",
                     "requires_approval": true,
                     "requires_note": true,
-                    "roles": ["owner"]
+                    "roles": [
+                        "owner"
+                    ]
                 }
             ]
         }
@@ -98,5 +109,6 @@
             "accounting",
             "settings"
         ]
-    }
+    },
+    "description": "Solusi kasir (POS) restoran dan kafe, dengan manajemen meja, cetak dapur, dan rekap shift kasir."
 }

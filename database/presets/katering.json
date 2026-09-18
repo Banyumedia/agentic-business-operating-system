@@ -23,28 +23,87 @@
     "workflows": {
         "orders": {
             "stages": [
-                {"code": "dipesan", "label": "Dipesan"},
-                {"code": "dimasak", "label": "Dimasak"},
-                {"code": "dikirim", "label": "Dikirim"},
-                {"code": "selesai", "label": "Selesai"},
-                {"code": "batal", "label": "Batal"}
+                {
+                    "code": "dipesan",
+                    "label": "Dipesan"
+                },
+                {
+                    "code": "dimasak",
+                    "label": "Dimasak"
+                },
+                {
+                    "code": "dikirim",
+                    "label": "Dikirim"
+                },
+                {
+                    "code": "selesai",
+                    "label": "Selesai"
+                },
+                {
+                    "code": "batal",
+                    "label": "Batal"
+                }
             ],
             "transitions": [
-                {"from": "dipesan", "to": "dimasak", "roles": ["owner", "staff"]},
-                {"from": "dimasak", "to": "dikirim", "roles": ["owner", "staff"]},
-                {"from": "dikirim", "to": "selesai", "roles": ["owner", "staff"]},
-                {"from": "*", "to": "batal", "roles": ["owner"], "requires_approval": true}
+                {
+                    "from": "dipesan",
+                    "to": "dimasak",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "dimasak",
+                    "to": "dikirim",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "dikirim",
+                    "to": "selesai",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "*",
+                    "to": "batal",
+                    "roles": [
+                        "owner"
+                    ],
+                    "requires_approval": true
+                }
             ],
-            "terminal": ["selesai", "batal"]
+            "terminal": [
+                "selesai",
+                "batal"
+            ]
         }
     },
     "dashboard": {
         "industry_zone": [
-            {"widget": "upcoming_schedule"},
-            {"widget": "kpi_cashflow"}
+            {
+                "widget": "upcoming_schedule"
+            },
+            {
+                "widget": "kpi_cashflow"
+            }
         ]
     },
     "menus": {
-        "order": ["dashboard", "orders", "contacts", "inventory", "employees", "accounting", "settings"]
-    }
+        "order": [
+            "dashboard",
+            "orders",
+            "contacts",
+            "inventory",
+            "employees",
+            "accounting",
+            "settings"
+        ]
+    },
+    "description": "Sistem katering harian dan acara khusus, kelola pesanan, jadwal produksi, dan pengiriman dengan akurat."
 }

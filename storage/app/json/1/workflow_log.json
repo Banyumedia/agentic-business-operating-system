@@ -1,0 +1,536 @@
+[
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "clinic",
+        "entity": "bookings",
+        "record_id": 1,
+        "from": "draft",
+        "to": "confirmed",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [
+            {
+                "effect": "bookings.deposit.collect",
+                "status": "failed",
+                "reason": "Deposit amount is zero or negative"
+            }
+        ],
+        "occurred_at": "2026-09-18T14:58:38+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "laundry",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "terima",
+        "to": "proses",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-18T14:58:45+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "bengkel",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "siap_diambil",
+        "to": "selesai",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [
+            {
+                "effect": "notify.owner_wa",
+                "status": "sent",
+                "wa_number": "6281234567890"
+            },
+            {
+                "effect": "journal.post",
+                "status": "posted",
+                "journal_id": 1,
+                "amount": 100000
+            }
+        ],
+        "occurred_at": "2026-09-18T14:58:49+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "agency",
+        "entity": "projects",
+        "record_id": 1,
+        "from": "briefing",
+        "to": "produksi",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-18T14:58:51+00:00"
+    },
+    {
+        "event": "approval_requested",
+        "company": "1",
+        "preset": "agency",
+        "entity": "projects",
+        "record_id": 1,
+        "from": "produksi",
+        "to": "dibatalkan",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [
+            {
+                "effect": "approval.request",
+                "status": "pending",
+                "ticket_id": "1"
+            }
+        ],
+        "occurred_at": "2026-09-18T14:58:51+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "clinic",
+        "entity": "bookings",
+        "record_id": 1,
+        "from": "draft",
+        "to": "confirmed",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [
+            {
+                "effect": "bookings.deposit.collect",
+                "status": "failed",
+                "reason": "Deposit amount is zero or negative"
+            }
+        ],
+        "occurred_at": "2026-09-18T15:04:31+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "laundry",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "terima",
+        "to": "proses",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-18T15:04:38+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "bengkel",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "siap_diambil",
+        "to": "selesai",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [
+            {
+                "effect": "notify.owner_wa",
+                "status": "sent",
+                "wa_number": "6281234567890"
+            },
+            {
+                "effect": "journal.post",
+                "status": "posted",
+                "journal_id": 1,
+                "amount": 100000
+            }
+        ],
+        "occurred_at": "2026-09-18T15:04:42+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "agency",
+        "entity": "projects",
+        "record_id": 1,
+        "from": "briefing",
+        "to": "produksi",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-18T15:04:45+00:00"
+    },
+    {
+        "event": "approval_requested",
+        "company": "1",
+        "preset": "agency",
+        "entity": "projects",
+        "record_id": 1,
+        "from": "produksi",
+        "to": "dibatalkan",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [
+            {
+                "effect": "approval.request",
+                "status": "pending",
+                "ticket_id": "1"
+            }
+        ],
+        "occurred_at": "2026-09-18T15:04:45+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "clinic",
+        "entity": "bookings",
+        "record_id": 1,
+        "from": "draft",
+        "to": "confirmed",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [
+            {
+                "effect": "bookings.deposit.collect",
+                "status": "failed",
+                "reason": "Deposit amount is zero or negative"
+            }
+        ],
+        "occurred_at": "2026-09-18T15:05:24+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "laundry",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "terima",
+        "to": "proses",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-18T15:05:31+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "bengkel",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "siap_diambil",
+        "to": "selesai",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [
+            {
+                "effect": "notify.owner_wa",
+                "status": "sent",
+                "wa_number": "6281234567890"
+            },
+            {
+                "effect": "journal.post",
+                "status": "posted",
+                "journal_id": 1,
+                "amount": 100000
+            }
+        ],
+        "occurred_at": "2026-09-18T15:05:35+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "agency",
+        "entity": "projects",
+        "record_id": 1,
+        "from": "briefing",
+        "to": "produksi",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-18T15:05:38+00:00"
+    },
+    {
+        "event": "approval_requested",
+        "company": "1",
+        "preset": "agency",
+        "entity": "projects",
+        "record_id": 1,
+        "from": "produksi",
+        "to": "dibatalkan",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [
+            {
+                "effect": "approval.request",
+                "status": "pending",
+                "ticket_id": "1"
+            }
+        ],
+        "occurred_at": "2026-09-18T15:05:38+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "clinic",
+        "entity": "bookings",
+        "record_id": 1,
+        "from": "draft",
+        "to": "confirmed",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [
+            {
+                "effect": "bookings.deposit.collect",
+                "status": "failed",
+                "reason": "Deposit amount is zero or negative"
+            }
+        ],
+        "occurred_at": "2026-09-18T15:06:22+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "laundry",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "terima",
+        "to": "proses",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-18T15:06:29+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "bengkel",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "siap_diambil",
+        "to": "selesai",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [
+            {
+                "effect": "notify.owner_wa",
+                "status": "sent",
+                "wa_number": "6281234567890"
+            },
+            {
+                "effect": "journal.post",
+                "status": "posted",
+                "journal_id": 1,
+                "amount": 100000
+            }
+        ],
+        "occurred_at": "2026-09-18T15:06:33+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "agency",
+        "entity": "projects",
+        "record_id": 1,
+        "from": "briefing",
+        "to": "produksi",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-18T15:06:36+00:00"
+    },
+    {
+        "event": "approval_requested",
+        "company": "1",
+        "preset": "agency",
+        "entity": "projects",
+        "record_id": 1,
+        "from": "produksi",
+        "to": "dibatalkan",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [
+            {
+                "effect": "approval.request",
+                "status": "pending",
+                "ticket_id": "1"
+            }
+        ],
+        "occurred_at": "2026-09-18T15:06:36+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "clinic",
+        "entity": "bookings",
+        "record_id": 1,
+        "from": "draft",
+        "to": "confirmed",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [
+            {
+                "effect": "bookings.deposit.collect",
+                "status": "failed",
+                "reason": "Deposit amount is zero or negative"
+            }
+        ],
+        "occurred_at": "2026-09-18T15:07:11+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "laundry",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "terima",
+        "to": "proses",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-18T15:07:17+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "bengkel",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "siap_diambil",
+        "to": "selesai",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [
+            {
+                "effect": "notify.owner_wa",
+                "status": "sent",
+                "wa_number": "6281234567890"
+            },
+            {
+                "effect": "journal.post",
+                "status": "posted",
+                "journal_id": 1,
+                "amount": 100000
+            }
+        ],
+        "occurred_at": "2026-09-18T15:07:22+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "agency",
+        "entity": "projects",
+        "record_id": 1,
+        "from": "briefing",
+        "to": "produksi",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-18T15:07:25+00:00"
+    },
+    {
+        "event": "approval_requested",
+        "company": "1",
+        "preset": "agency",
+        "entity": "projects",
+        "record_id": 1,
+        "from": "produksi",
+        "to": "dibatalkan",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [
+            {
+                "effect": "approval.request",
+                "status": "pending",
+                "ticket_id": "1"
+            }
+        ],
+        "occurred_at": "2026-09-18T15:07:25+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "clinic",
+        "entity": "bookings",
+        "record_id": 1,
+        "from": "draft",
+        "to": "confirmed",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [
+            {
+                "effect": "bookings.deposit.collect",
+                "status": "failed",
+                "reason": "Deposit amount is zero or negative"
+            }
+        ],
+        "occurred_at": "2026-09-18T15:08:04+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "laundry",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "terima",
+        "to": "proses",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-18T15:08:11+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "bengkel",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "siap_diambil",
+        "to": "selesai",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [
+            {
+                "effect": "notify.owner_wa",
+                "status": "sent",
+                "wa_number": "6281234567890"
+            },
+            {
+                "effect": "journal.post",
+                "status": "posted",
+                "journal_id": 1,
+                "amount": 100000
+            }
+        ],
+        "occurred_at": "2026-09-18T15:08:15+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "agency",
+        "entity": "projects",
+        "record_id": 1,
+        "from": "briefing",
+        "to": "produksi",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-18T15:08:18+00:00"
+    },
+    {
+        "event": "approval_requested",
+        "company": "1",
+        "preset": "agency",
+        "entity": "projects",
+        "record_id": 1,
+        "from": "produksi",
+        "to": "dibatalkan",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [
+            {
+                "effect": "approval.request",
+                "status": "pending",
+                "ticket_id": "1"
+            }
+        ],
+        "occurred_at": "2026-09-18T15:08:18+00:00"
+    }
+]

@@ -19,26 +19,75 @@
     "workflows": {
         "bookings": {
             "stages": [
-                {"code": "terjadwal", "label": "Terjadwal"},
-                {"code": "hadir", "label": "Hadir"},
-                {"code": "absen", "label": "Absen"},
-                {"code": "batal", "label": "Batal"}
+                {
+                    "code": "terjadwal",
+                    "label": "Terjadwal"
+                },
+                {
+                    "code": "hadir",
+                    "label": "Hadir"
+                },
+                {
+                    "code": "absen",
+                    "label": "Absen"
+                },
+                {
+                    "code": "batal",
+                    "label": "Batal"
+                }
             ],
             "transitions": [
-                {"from": "terjadwal", "to": "hadir", "roles": ["owner", "staff"]},
-                {"from": "terjadwal", "to": "absen", "roles": ["owner", "staff"]},
-                {"from": "*", "to": "batal", "roles": ["owner"]}
+                {
+                    "from": "terjadwal",
+                    "to": "hadir",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "terjadwal",
+                    "to": "absen",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "*",
+                    "to": "batal",
+                    "roles": [
+                        "owner"
+                    ]
+                }
             ],
-            "terminal": ["hadir", "absen", "batal"]
+            "terminal": [
+                "hadir",
+                "absen",
+                "batal"
+            ]
         }
     },
     "dashboard": {
         "industry_zone": [
-            {"widget": "upcoming_schedule"},
-            {"widget": "kpi_cashflow"}
+            {
+                "widget": "upcoming_schedule"
+            },
+            {
+                "widget": "kpi_cashflow"
+            }
         ]
     },
     "menus": {
-        "order": ["dashboard", "bookings", "contacts", "pos", "employees", "accounting", "settings"]
-    }
+        "order": [
+            "dashboard",
+            "bookings",
+            "contacts",
+            "pos",
+            "employees",
+            "accounting",
+            "settings"
+        ]
+    },
+    "description": "Manajemen keanggotaan (membership), kelas terjadwal, dan penagihan bulanan otomatis untuk pusat kebugaran."
 }

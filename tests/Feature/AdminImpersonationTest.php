@@ -36,7 +36,7 @@ class AdminImpersonationTest extends TestCase
 
         $response = $this->actingAs($admin)->get('/admin');
         $response->assertStatus(200);
-        $response->assertSee('Super Admin Dashboard');
+        $response->assertSee('Panel Super Admin');
     }
 
     public function test_admin_impersonation_creates_session_record_and_banner_appears()

@@ -312,7 +312,7 @@ dan buka tiket D-32/D-33 ke Bos.**
 | T-24d | Preset gelombang 4: sisa Tier A dari §7 (prioritas ditentukan Bos berdasarkan permintaan pasar) | T-24c | `HUMAN:PRIORITY` | Batch ≤6 preset per PR; setiap batch memperbarui tabel §6/§7 dan `PRESET_COVERAGE.md` (dibuat di T-24). | `DONE c193f8e` |
 | T-25 | **Keputusan Tier B berikutnya** (bukan kode) | T-24b | `HUMAN:DECISION` | Bos memilih 0–2 dari: `manufacturing.production_order` (BOM multi-level + WIP, §7.8) dan `finance.loan_schedule` (angsuran/koperasi, §7.9). Hasil dicatat sebagai D-57 di `00-DECISIONS.md` dengan spesifikasi tabel di `DATA_MODEL.md`. Tanpa keputusan → tidak ada task kode. | `DONE` |
 | T-25b | Implementasi modul Tier B terpilih | T-25 | — | Mengikuti pola T-14b: tabel (`production_orders`, `production_order_lines`) + workflow effect + widget; **dibungkus flag** (`manufacturing.production_order`) sehingga preset yang tidak memakainya tidak berubah (regression T-24* tetap hijau). | `DONE` |
-| T-26 | Halaman publik "Cocok untuk bisnis apa?" | T-24b, T-22 | `HUMAN:UI-LOCK` (copy) | Route publik `/industri` membaca daftar preset + `description` dari `business_presets` (bukan hardcode); tiap preset punya CTA onboarding 1-klik. Grep nama industri literal di Blade = 0. | `BLOCKED` |
+| T-26 | Halaman publik "Cocok untuk bisnis apa?" | T-24b, T-22 | `HUMAN:UI-LOCK` (copy) | Route publik `/industri` membaca daftar preset + `description` dari `business_presets` (bukan hardcode); tiap preset punya CTA onboarding 1-klik. Grep nama industri literal di Blade = 0. | `DONE` |
 
 ### Fase 6b: Add-on Komersial (D-56) — dibangun sesuai permintaan pasar
 

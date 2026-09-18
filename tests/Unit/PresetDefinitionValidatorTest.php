@@ -163,6 +163,7 @@ class PresetDefinitionValidatorTest extends TestCase
             'key' => 'service_demo',
             'name' => 'Layanan Demo',
             'tier' => 'A',
+            'description' => 'Demo desc',
             'capabilities' => [
                 'contacts' => true,
                 'approval_flow' => true,

@@ -22,26 +22,73 @@
     "workflows": {
         "bookings": {
             "stages": [
-                {"code": "booked", "label": "Dipesan"},
-                {"code": "aktif", "label": "Aktif"},
-                {"code": "selesai", "label": "Selesai"},
-                {"code": "batal", "label": "Dibatalkan"}
+                {
+                    "code": "booked",
+                    "label": "Dipesan"
+                },
+                {
+                    "code": "aktif",
+                    "label": "Aktif"
+                },
+                {
+                    "code": "selesai",
+                    "label": "Selesai"
+                },
+                {
+                    "code": "batal",
+                    "label": "Dibatalkan"
+                }
             ],
             "transitions": [
-                {"from": "booked", "to": "aktif", "roles": ["owner", "staff"]},
-                {"from": "aktif", "to": "selesai", "roles": ["owner", "staff"]},
-                {"from": "*", "to": "batal", "roles": ["owner"], "requires_approval": true}
+                {
+                    "from": "booked",
+                    "to": "aktif",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "aktif",
+                    "to": "selesai",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "*",
+                    "to": "batal",
+                    "roles": [
+                        "owner"
+                    ],
+                    "requires_approval": true
+                }
             ],
-            "terminal": ["selesai", "batal"]
+            "terminal": [
+                "selesai",
+                "batal"
+            ]
         }
     },
     "dashboard": {
         "industry_zone": [
-            {"widget": "upcoming_schedule"},
-            {"widget": "kpi_cashflow"}
+            {
+                "widget": "upcoming_schedule"
+            },
+            {
+                "widget": "kpi_cashflow"
+            }
         ]
     },
     "menus": {
-        "order": ["dashboard", "bookings", "contacts", "accounting", "settings"]
-    }
+        "order": [
+            "dashboard",
+            "bookings",
+            "contacts",
+            "accounting",
+            "settings"
+        ]
+    },
+    "description": "Manajemen tagihan bulanan dan penyewaan ruang fleksibel untuk kos, apartemen, dan coworking space."
 }

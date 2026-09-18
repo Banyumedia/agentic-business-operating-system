@@ -69,7 +69,7 @@ class PresetDefinitionValidator
         $definition = $this->objectMap($definition, 'Preset');
         $this->assertExactKeys(
             $definition,
-            ['key', 'name', 'tier', 'capabilities', 'terminology', 'workflows', 'dashboard', 'menus'],
+            ['key', 'name', 'tier', 'description', 'capabilities', 'terminology', 'workflows', 'dashboard', 'menus'],
             'preset',
         );
         $this->assertIdentifier($definition['key'], 'Key preset');

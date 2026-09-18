@@ -55,34 +55,51 @@
                 {
                     "from": "dipesan",
                     "to": "disiapkan",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "disiapkan",
                     "to": "disewa",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "disewa",
                     "to": "kembali",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "kembali",
                     "to": "disewa",
                     "requires_note": true,
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "kembali",
                     "to": "selesai",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "*",
                     "to": "dibatalkan",
                     "requires_approval": true,
-                    "roles": ["owner"]
+                    "roles": [
+                        "owner"
+                    ]
                 }
             ]
         }
@@ -109,5 +126,6 @@
             "accounting",
             "settings"
         ]
-    }
+    },
+    "description": "Sistem penyewaan barang dan kendaraan, hitung durasi, denda keterlambatan, dan pemeliharaan aset."
 }

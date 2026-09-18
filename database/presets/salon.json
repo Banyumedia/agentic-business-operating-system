@@ -26,29 +26,91 @@
     "workflows": {
         "bookings": {
             "stages": [
-                {"code": "dijadwalkan", "label": "Dijadwalkan"},
-                {"code": "check_in", "label": "Check-in"},
-                {"code": "dilayani", "label": "Dilayani"},
-                {"code": "selesai", "label": "Selesai"},
-                {"code": "dibatalkan", "label": "Dibatalkan"}
+                {
+                    "code": "dijadwalkan",
+                    "label": "Dijadwalkan"
+                },
+                {
+                    "code": "check_in",
+                    "label": "Check-in"
+                },
+                {
+                    "code": "dilayani",
+                    "label": "Dilayani"
+                },
+                {
+                    "code": "selesai",
+                    "label": "Selesai"
+                },
+                {
+                    "code": "dibatalkan",
+                    "label": "Dibatalkan"
+                }
             ],
             "transitions": [
-                {"from": "dijadwalkan", "to": "check_in", "roles": ["owner", "staff"]},
-                {"from": "check_in", "to": "dilayani", "roles": ["owner", "staff"]},
-                {"from": "dilayani", "to": "selesai", "roles": ["owner", "staff"]},
-                {"from": "*", "to": "dibatalkan", "roles": ["owner", "staff"]}
+                {
+                    "from": "dijadwalkan",
+                    "to": "check_in",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "check_in",
+                    "to": "dilayani",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "dilayani",
+                    "to": "selesai",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "*",
+                    "to": "dibatalkan",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                }
             ],
-            "terminal": ["selesai", "dibatalkan"]
+            "terminal": [
+                "selesai",
+                "dibatalkan"
+            ]
         }
     },
     "dashboard": {
         "industry_zone": [
-            {"widget": "upcoming_schedule"},
-            {"widget": "low_stock"},
-            {"widget": "kpi_cashflow"}
+            {
+                "widget": "upcoming_schedule"
+            },
+            {
+                "widget": "low_stock"
+            },
+            {
+                "widget": "kpi_cashflow"
+            }
         ]
     },
     "menus": {
-        "order": ["dashboard", "bookings", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
-    }
+        "order": [
+            "dashboard",
+            "bookings",
+            "contacts",
+            "inventory",
+            "pos",
+            "employees",
+            "accounting",
+            "settings"
+        ]
+    },
+    "description": "Sistem reservasi, pengelolaan staf, dan kasir untuk salon kecantikan dan perawatan tubuh."
 }

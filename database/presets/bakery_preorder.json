@@ -23,29 +23,90 @@
     "workflows": {
         "orders": {
             "stages": [
-                {"code": "baru", "label": "Baru"},
-                {"code": "diproses", "label": "Diproses"},
-                {"code": "siap", "label": "Siap"},
-                {"code": "diambil", "label": "Diambil"},
-                {"code": "batal", "label": "Batal"}
+                {
+                    "code": "baru",
+                    "label": "Baru"
+                },
+                {
+                    "code": "diproses",
+                    "label": "Diproses"
+                },
+                {
+                    "code": "siap",
+                    "label": "Siap"
+                },
+                {
+                    "code": "diambil",
+                    "label": "Diambil"
+                },
+                {
+                    "code": "batal",
+                    "label": "Batal"
+                }
             ],
             "transitions": [
-                {"from": "baru", "to": "diproses", "roles": ["owner", "staff"]},
-                {"from": "diproses", "to": "siap", "roles": ["owner", "staff"]},
-                {"from": "siap", "to": "diambil", "roles": ["owner", "staff"]},
-                {"from": "*", "to": "batal", "roles": ["owner"], "requires_approval": true}
+                {
+                    "from": "baru",
+                    "to": "diproses",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "diproses",
+                    "to": "siap",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "siap",
+                    "to": "diambil",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "*",
+                    "to": "batal",
+                    "roles": [
+                        "owner"
+                    ],
+                    "requires_approval": true
+                }
             ],
-            "terminal": ["diambil", "batal"]
+            "terminal": [
+                "diambil",
+                "batal"
+            ]
         }
     },
     "dashboard": {
         "industry_zone": [
-            {"widget": "upcoming_schedule"},
-            {"widget": "low_stock"},
-            {"widget": "kpi_cashflow"}
+            {
+                "widget": "upcoming_schedule"
+            },
+            {
+                "widget": "low_stock"
+            },
+            {
+                "widget": "kpi_cashflow"
+            }
         ]
     },
     "menus": {
-        "order": ["dashboard", "orders", "contacts", "inventory", "employees", "accounting", "settings"]
-    }
+        "order": [
+            "dashboard",
+            "orders",
+            "contacts",
+            "inventory",
+            "employees",
+            "accounting",
+            "settings"
+        ]
+    },
+    "description": "Sistem manajemen pre-order kue dan roti, dengan pelacakan jadwal produksi dan serah terima."
 }

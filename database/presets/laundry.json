@@ -24,30 +24,102 @@
     "workflows": {
         "orders": {
             "stages": [
-                {"code": "terima", "label": "Diterima"},
-                {"code": "proses", "label": "Diproses"},
-                {"code": "siap_diambil", "label": "Siap Diambil"},
-                {"code": "diambil", "label": "Diambil"},
-                {"code": "dibatalkan", "label": "Dibatalkan"}
+                {
+                    "code": "terima",
+                    "label": "Diterima"
+                },
+                {
+                    "code": "proses",
+                    "label": "Diproses"
+                },
+                {
+                    "code": "siap_diambil",
+                    "label": "Siap Diambil"
+                },
+                {
+                    "code": "diambil",
+                    "label": "Diambil"
+                },
+                {
+                    "code": "dibatalkan",
+                    "label": "Dibatalkan"
+                }
             ],
             "transitions": [
-                {"from": "terima", "to": "proses", "roles": ["owner", "staff"]},
-                {"from": "proses", "to": "terima", "roles": ["owner", "staff"], "requires_note": true},
-                {"from": "proses", "to": "siap_diambil", "roles": ["owner", "staff"]},
-                {"from": "siap_diambil", "to": "diambil", "roles": ["owner", "staff"], "effects": ["notify.owner_wa"]},
-                {"from": "*", "to": "dibatalkan", "roles": ["owner"], "requires_approval": true}
+                {
+                    "from": "terima",
+                    "to": "proses",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "proses",
+                    "to": "terima",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ],
+                    "requires_note": true
+                },
+                {
+                    "from": "proses",
+                    "to": "siap_diambil",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "siap_diambil",
+                    "to": "diambil",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ],
+                    "effects": [
+                        "notify.owner_wa"
+                    ]
+                },
+                {
+                    "from": "*",
+                    "to": "dibatalkan",
+                    "roles": [
+                        "owner"
+                    ],
+                    "requires_approval": true
+                }
             ],
-            "terminal": ["diambil", "dibatalkan"]
+            "terminal": [
+                "diambil",
+                "dibatalkan"
+            ]
         }
     },
     "dashboard": {
         "industry_zone": [
-            {"widget": "low_stock"},
-            {"widget": "kpi_cashflow"},
-            {"widget": "pending_approvals"}
+            {
+                "widget": "low_stock"
+            },
+            {
+                "widget": "kpi_cashflow"
+            },
+            {
+                "widget": "pending_approvals"
+            }
         ]
     },
     "menus": {
-        "order": ["dashboard", "pos", "contacts", "inventory", "hrd", "accounting", "settings"]
-    }
+        "order": [
+            "dashboard",
+            "pos",
+            "contacts",
+            "inventory",
+            "hrd",
+            "accounting",
+            "settings"
+        ]
+    },
+    "description": "Kelola status pencucian, pembayaran, dan notifikasi otomatis selesai untuk usaha laundry."
 }

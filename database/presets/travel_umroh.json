@@ -20,28 +20,86 @@
     "workflows": {
         "deals": {
             "stages": [
-                {"code": "lead", "label": "Tertarik"},
-                {"code": "dokumen", "label": "Pemberkasan"},
-                {"code": "bayar", "label": "Pembayaran"},
-                {"code": "berangkat", "label": "Berangkat"},
-                {"code": "batal", "label": "Batal"}
+                {
+                    "code": "lead",
+                    "label": "Tertarik"
+                },
+                {
+                    "code": "dokumen",
+                    "label": "Pemberkasan"
+                },
+                {
+                    "code": "bayar",
+                    "label": "Pembayaran"
+                },
+                {
+                    "code": "berangkat",
+                    "label": "Berangkat"
+                },
+                {
+                    "code": "batal",
+                    "label": "Batal"
+                }
             ],
             "transitions": [
-                {"from": "lead", "to": "dokumen", "roles": ["owner", "staff"]},
-                {"from": "dokumen", "to": "bayar", "roles": ["owner", "staff"]},
-                {"from": "bayar", "to": "berangkat", "roles": ["owner", "staff"]},
-                {"from": "*", "to": "batal", "roles": ["owner"], "requires_approval": true}
+                {
+                    "from": "lead",
+                    "to": "dokumen",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "dokumen",
+                    "to": "bayar",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "bayar",
+                    "to": "berangkat",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "*",
+                    "to": "batal",
+                    "roles": [
+                        "owner"
+                    ],
+                    "requires_approval": true
+                }
             ],
-            "terminal": ["berangkat", "batal"]
+            "terminal": [
+                "berangkat",
+                "batal"
+            ]
         }
     },
     "dashboard": {
         "industry_zone": [
-            {"widget": "deals_pipeline"},
-            {"widget": "kpi_cashflow"}
+            {
+                "widget": "deals_pipeline"
+            },
+            {
+                "widget": "kpi_cashflow"
+            }
         ]
     },
     "menus": {
-        "order": ["dashboard", "contacts", "deals", "employees", "accounting", "settings"]
-    }
+        "order": [
+            "dashboard",
+            "contacts",
+            "deals",
+            "employees",
+            "accounting",
+            "settings"
+        ]
+    },
+    "description": "Kelola pendaftaran jemaah, kelengkapan dokumen, dan pembayaran bertahap untuk biro perjalanan umroh."
 }

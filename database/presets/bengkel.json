@@ -28,36 +28,138 @@
     "workflows": {
         "orders": {
             "stages": [
-                {"code": "masuk", "label": "Masuk"},
-                {"code": "pemeriksaan", "label": "Pemeriksaan"},
-                {"code": "pengerjaan", "label": "Pengerjaan"},
-                {"code": "qc", "label": "QC"},
-                {"code": "siap_diambil", "label": "Siap Diambil"},
-                {"code": "selesai", "label": "Selesai"},
-                {"code": "dibatalkan", "label": "Dibatalkan"}
+                {
+                    "code": "masuk",
+                    "label": "Masuk"
+                },
+                {
+                    "code": "pemeriksaan",
+                    "label": "Pemeriksaan"
+                },
+                {
+                    "code": "pengerjaan",
+                    "label": "Pengerjaan"
+                },
+                {
+                    "code": "qc",
+                    "label": "QC"
+                },
+                {
+                    "code": "siap_diambil",
+                    "label": "Siap Diambil"
+                },
+                {
+                    "code": "selesai",
+                    "label": "Selesai"
+                },
+                {
+                    "code": "dibatalkan",
+                    "label": "Dibatalkan"
+                }
             ],
             "transitions": [
-                {"from": "masuk", "to": "pemeriksaan", "roles": ["owner", "staff"]},
-                {"from": "masuk", "to": "pengerjaan", "roles": ["owner", "staff"]},
-                {"from": "pemeriksaan", "to": "pengerjaan", "roles": ["owner", "staff"]},
-                {"from": "pengerjaan", "to": "qc", "roles": ["owner", "staff"]},
-                {"from": "qc", "to": "pengerjaan", "roles": ["owner", "staff"], "requires_note": true},
-                {"from": "qc", "to": "siap_diambil", "roles": ["owner", "staff"]},
-                {"from": "siap_diambil", "to": "selesai", "roles": ["owner", "staff"], "effects": ["notify.owner_wa", "journal.post"]},
-                {"from": "*", "to": "dibatalkan", "roles": ["owner"], "requires_approval": true}
+                {
+                    "from": "masuk",
+                    "to": "pemeriksaan",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "masuk",
+                    "to": "pengerjaan",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "pemeriksaan",
+                    "to": "pengerjaan",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "pengerjaan",
+                    "to": "qc",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "qc",
+                    "to": "pengerjaan",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ],
+                    "requires_note": true
+                },
+                {
+                    "from": "qc",
+                    "to": "siap_diambil",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "siap_diambil",
+                    "to": "selesai",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ],
+                    "effects": [
+                        "notify.owner_wa",
+                        "journal.post"
+                    ]
+                },
+                {
+                    "from": "*",
+                    "to": "dibatalkan",
+                    "roles": [
+                        "owner"
+                    ],
+                    "requires_approval": true
+                }
             ],
-            "terminal": ["selesai", "dibatalkan"]
+            "terminal": [
+                "selesai",
+                "dibatalkan"
+            ]
         }
     },
     "dashboard": {
         "industry_zone": [
-            {"widget": "upcoming_schedule"},
-            {"widget": "low_stock"},
-            {"widget": "kpi_cashflow"},
-            {"widget": "pending_approvals"}
+            {
+                "widget": "upcoming_schedule"
+            },
+            {
+                "widget": "low_stock"
+            },
+            {
+                "widget": "kpi_cashflow"
+            },
+            {
+                "widget": "pending_approvals"
+            }
         ]
     },
     "menus": {
-        "order": ["dashboard", "orders", "contacts", "inventory", "employees", "accounting", "settings"]
-    }
+        "order": [
+            "dashboard",
+            "orders",
+            "contacts",
+            "inventory",
+            "employees",
+            "accounting",
+            "settings"
+        ]
+    },
+    "description": "Kelola pekerjaan perbaikan, estimasi biaya suku cadang, dan riwayat kendaraan dengan sistem terintegrasi."
 }

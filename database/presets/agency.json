@@ -58,41 +58,62 @@
                 {
                     "from": "briefing",
                     "to": "produksi",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "produksi",
                     "to": "review",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "review",
                     "to": "revisi",
                     "requires_note": true,
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "review",
                     "to": "final",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "revisi",
                     "to": "review",
                     "requires_note": true,
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "final",
                     "to": "selesai",
-                    "effects": ["notify.owner_wa"],
-                    "roles": ["owner"]
+                    "effects": [
+                        "notify.owner_wa"
+                    ],
+                    "roles": [
+                        "owner"
+                    ]
                 },
                 {
                     "from": "*",
                     "to": "dibatalkan",
                     "requires_approval": true,
-                    "roles": ["owner"]
+                    "roles": [
+                        "owner"
+                    ]
                 }
             ]
         }
@@ -118,5 +139,6 @@
             "accounting",
             "settings"
         ]
-    }
+    },
+    "description": "Solusi operasional untuk agensi kreatif dengan manajemen proyek, penagihan berbasis progres, dan timesheet terintegrasi."
 }

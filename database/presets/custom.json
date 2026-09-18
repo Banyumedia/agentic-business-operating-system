@@ -40,18 +40,26 @@
                 {
                     "from": "baru",
                     "to": "diproses",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "diproses",
                     "to": "selesai",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "*",
                     "to": "dibatalkan",
                     "requires_approval": true,
-                    "roles": ["owner"]
+                    "roles": [
+                        "owner"
+                    ]
                 }
             ]
         }
@@ -70,5 +78,6 @@
             "accounting",
             "settings"
         ]
-    }
+    },
+    "description": "Bebas kustomisasi kapabilitas, terminologi, dan alur kerja sesuai dengan model bisnis spesifik Anda."
 }

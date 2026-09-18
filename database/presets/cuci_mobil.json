@@ -19,25 +19,72 @@
     "workflows": {
         "orders": {
             "stages": [
-                {"code": "masuk", "label": "Masuk"},
-                {"code": "dicuci", "label": "Dicuci / Detailing"},
-                {"code": "selesai", "label": "Selesai"},
-                {"code": "batal", "label": "Batal"}
+                {
+                    "code": "masuk",
+                    "label": "Masuk"
+                },
+                {
+                    "code": "dicuci",
+                    "label": "Dicuci / Detailing"
+                },
+                {
+                    "code": "selesai",
+                    "label": "Selesai"
+                },
+                {
+                    "code": "batal",
+                    "label": "Batal"
+                }
             ],
             "transitions": [
-                {"from": "masuk", "to": "dicuci", "roles": ["owner", "staff"]},
-                {"from": "dicuci", "to": "selesai", "roles": ["owner", "staff"]},
-                {"from": "*", "to": "batal", "roles": ["owner"]}
+                {
+                    "from": "masuk",
+                    "to": "dicuci",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "dicuci",
+                    "to": "selesai",
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
+                },
+                {
+                    "from": "*",
+                    "to": "batal",
+                    "roles": [
+                        "owner"
+                    ]
+                }
             ],
-            "terminal": ["selesai", "batal"]
+            "terminal": [
+                "selesai",
+                "batal"
+            ]
         }
     },
     "dashboard": {
         "industry_zone": [
-            {"widget": "kpi_cashflow"}
+            {
+                "widget": "kpi_cashflow"
+            }
         ]
     },
     "menus": {
-        "order": ["dashboard", "orders", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
-    }
+        "order": [
+            "dashboard",
+            "orders",
+            "contacts",
+            "inventory",
+            "pos",
+            "employees",
+            "accounting",
+            "settings"
+        ]
+    },
+    "description": "Sistem antrean cepat, tiket masuk, dan manajemen kas untuk cuci mobil dan motor."
 }

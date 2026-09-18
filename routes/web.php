@@ -13,10 +13,12 @@ use App\Livewire\Dashboard;
 use App\Livewire\DummyModule;
 use App\Livewire\Lobby;
 use App\Livewire\Onboarding;
+use App\Livewire\Public\IndustryList;
 use App\Livewire\Settings;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', Lobby::class)->name('lobby');
+Route::get('/industri', IndustryList::class)->name('industri');
 Route::get('/onboarding', Onboarding::class)->name('onboarding');
 
 Route::middleware('guest')->group(function (): void {

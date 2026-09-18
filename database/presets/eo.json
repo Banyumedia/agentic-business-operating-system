@@ -56,28 +56,41 @@
                 {
                     "from": "konsep",
                     "to": "persiapan",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "persiapan",
                     "to": "pelaksanaan",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "pelaksanaan",
                     "to": "evaluasi",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "evaluasi",
                     "to": "selesai",
-                    "roles": ["owner"]
+                    "roles": [
+                        "owner"
+                    ]
                 },
                 {
                     "from": "*",
                     "to": "dibatalkan",
                     "requires_approval": true,
-                    "roles": ["owner"]
+                    "roles": [
+                        "owner"
+                    ]
                 }
             ]
         }
@@ -107,5 +120,6 @@
             "accounting",
             "settings"
         ]
-    }
+    },
+    "description": "Manajemen acara dan event organizer. Kelola vendor, tiket, dan penagihan klien dari tahap awal hingga acara selesai."
 }

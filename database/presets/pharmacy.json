@@ -52,28 +52,42 @@
                 {
                     "from": "antre",
                     "to": "racik",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "antre",
                     "to": "penyerahan",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "racik",
                     "to": "penyerahan",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "penyerahan",
                     "to": "selesai",
-                    "roles": ["owner", "staff"]
+                    "roles": [
+                        "owner",
+                        "staff"
+                    ]
                 },
                 {
                     "from": "*",
                     "to": "dibatalkan",
                     "requires_approval": true,
-                    "roles": ["owner"]
+                    "roles": [
+                        "owner"
+                    ]
                 }
             ]
         }
@@ -104,5 +118,6 @@
             "accounting",
             "settings"
         ]
-    }
+    },
+    "description": "Solusi apotek dengan manajemen stok obat, resep, dan kontrol tanggal kedaluwarsa."
 }
