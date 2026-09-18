@@ -44,6 +44,18 @@ class AiDataSharingPolicy
                 'served_at',
             ],
         ],
+        'addon.payroll_advanced' => [
+            'entity' => 'payrolls',
+            'fields' => [
+                'employee_id',
+                'gross_salary',
+                'deductions',
+                'bpjs_kesehatan',
+                'bpjs_ketenagakerjaan',
+                'pph21',
+                'net_salary',
+            ],
+        ],
     ];
 
     /** @return list<string> */
