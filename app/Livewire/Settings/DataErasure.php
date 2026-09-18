@@ -87,7 +87,7 @@ class DataErasure extends Component
 
                 // Hapus rekam medis (Prescriptions)
                 Prescription::where('company_id', $companyId)
-                    ->where('contact_id', $contactId)
+                    ->where('patient_contact_id', $contactId)
                     ->delete();
 
                 // Hapus contact

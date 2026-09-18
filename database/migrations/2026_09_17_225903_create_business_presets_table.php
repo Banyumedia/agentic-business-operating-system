@@ -11,7 +11,10 @@ return new class extends Migration
         Schema::create('business_presets', function (Blueprint $table) {
             $table->string('key')->primary();
             $table->string('name');
-            $table->string('tier', 1);
+            // Nilai nyata berupa label tier ("starter", "professional", dst),
+            // bukan kode 1 huruf - varchar(1) truncate silent di SQLite tapi
+            // MySQL strict mode menolaknya (1406). B-01/T-21b.
+            $table->string('tier', 32);
             $table->json('definition');
             $table->timestamps();
         });
