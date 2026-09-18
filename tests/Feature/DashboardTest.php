@@ -35,7 +35,7 @@ class DashboardTest extends TestCase
             $response
                 ->assertOk()
                 ->assertSee('Ringkasan hari ini')
-                ->assertSee('Laporan Karyawan AI')
+                ->assertSee('Laporan AI')
                 ->assertSee($dashboard['assistant_report']['summary']);
         }
     }
