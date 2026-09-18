@@ -1,0 +1,33 @@
+<?php
+
+namespace Database\Factories;
+
+use App\Models\HermesNode;
+use App\Models\HermesProfile;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
+
+/**
+ * @extends Factory<HermesProfile>
+ */
+class HermesProfileFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'owner_user_id' => User::factory(),
+            'node_id' => HermesNode::factory(),
+            'type' => 'primary',
+            'label' => 'Primary Bot',
+            'instance_id' => Str::uuid()->toString(),
+            'webhook_secret_reference' => 'secret/hermes/webhook-'.Str::random(8),
+            'status' => 'connected',
+        ];
+    }
+}

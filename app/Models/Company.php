@@ -11,12 +11,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['name', 'slug', 'owner_user_id', 'business_preset', 'theme', 'is_active'])]
+#[Fillable(['name', 'slug', 'owner_user_id', 'business_preset', 'theme', 'is_active', 'privacy_accepted_at', 'privacy_accepted_by_user_id', 'privacy_policy_version'])]
 class Company extends Model
 {
     /** @use HasFactory<CompanyFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**
      * Get the attributes that should be cast.
@@ -27,6 +28,7 @@ class Company extends Model
     {
         return [
             'is_active' => 'boolean',
+            'privacy_accepted_at' => 'datetime',
         ];
     }
 
@@ -47,11 +49,35 @@ class Company extends Model
     }
 
     /**
+     * The memberships associated with this company.
+     */
+    /**
+     * The memberships associated with this company.
+     */
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(CompanyMembership::class);
+    }
+
+    /**
+     * The invoices associated with this company.
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /**
      * The default business identity for this company.
      */
     public function defaultIdentity(): HasOne
     {
         return $this->hasOne(BusinessIdentity::class)->where('is_default', true);
+    }
+
+    public function settings(): HasMany
+    {
+        return $this->hasMany(ModuleSetting::class);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasAttachments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Contact extends Model
 {
-    use HasFactory;
+    use HasAttachments, HasFactory;
 
     protected $fillable = [
         'company_id',
@@ -17,6 +18,7 @@ class Contact extends Model
         'type',
         'name',
         'wa_number',
+        'phone',
         'email',
         'source',
         'tags',
@@ -25,7 +27,10 @@ class Contact extends Model
 
     protected $casts = [
         'tags' => 'array',
-        'attributes' => 'array',
+        'name' => 'encrypted',
+        'wa_number' => 'encrypted',
+        'email' => 'encrypted',
+        'attributes' => 'encrypted:array',
     ];
 
     /**

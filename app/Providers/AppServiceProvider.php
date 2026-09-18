@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Contracts\CompanyContext;
+use App\Contracts\HermesNodeClient;
 use App\Services\CompanyPresetResolver;
 use App\Services\FeatureResolver;
+use App\Services\Hermes\FakeHermesNodeClient;
 use App\Services\TerminologyResolver;
 use App\Services\ThemeRegistry;
 use Illuminate\Support\Facades\Blade;
@@ -25,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(CompanyPresetResolver::class);
         $this->app->scoped(FeatureResolver::class);
         $this->app->scoped(TerminologyResolver::class);
+        $this->app->singleton(HermesNodeClient::class, FakeHermesNodeClient::class);
     }
 
     /**
