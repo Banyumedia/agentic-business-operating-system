@@ -45,6 +45,7 @@ dijalankan otomatis saat login Windows oleh PM2. **Tidak usah** menjalankan
 
 - T-23 (Build + smoke tenant dogfood) → `776840e`
 - T-20 (Scout + Universal Search) → `b1da91d`
+- T-27d (Hak subjek data: hapus per pelanggan) → sudah selesai di phase sebelumnya
 - T-00a (Fase 3: Migration `users`, `companies`, `business_identities`, `module_settings`) → `65cda86`
 - T-00b (Fase 3: Seeder Admin/Demo) → `f1c01e6`
 - T-00c (Fase 3: Session `company_id` guard) → `26e834b`
@@ -83,6 +84,7 @@ dijalankan otomatis saat login Windows oleh PM2. **Tidak usah** menjalankan
   praktek_dokter, cuci_mobil) → `33cbbd0`
 - T-22 (audit white-label: composer package rename, label UI) → `d33779f`
 - T-12b, T-27d (UI ekspor data & hak hapus data pelanggan) → `7aefe92`
+- T-27e (Kendali pengiriman data ke AI) → PENDING_COMMIT
 - T-21 (Full regression sebagai final-gate independen: `php artisan test`
   461 passed/1794 assertions, `pint --test` clean 318 files, `npm run build`
   OK, `migrate:fresh --seed` OK) → diverifikasi ulang oleh Hermes (final
@@ -121,8 +123,9 @@ membagi ~110 file uncommitted menjadi 4 commit bertema sesuai dependency
 riil, bukan `git add -A`.
 
 ## Pekerjaan Aktif
-Tidak ada (Menunggu gate)
+Tidak ada (Sistem berhenti: Tidak ada task berstatus READY)
 
 ## READY Berikutnya
-- T-24d (Preset gelombang 4) [BLOCKED: HUMAN:PRIORITY]
-- T-25 (Keputusan Tier B berikutnya) [BLOCKED: HUMAN:DECISION]
+- **BLOCKED: HUMAN:COMMIT** (Ada perubahan uncommitted untuk T-27e yang butuh review/commit)
+- **T-24d** (Preset gelombang 4) [BLOCKED: HUMAN:PRIORITY]
+- **T-25** (Keputusan Tier B berikutnya) [BLOCKED: HUMAN:DECISION]
