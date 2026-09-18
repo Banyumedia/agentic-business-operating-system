@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Payroll extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'company_id',
+        'employee_id',
+        'period_month',
+        'gross_salary',
+        'deductions',
+        'net_salary',
+        'status',
+        'paid_at',
+    ];
+
+    protected $casts = [
+        'gross_salary' => 'decimal:2',
+        'deductions' => 'decimal:2',
+        'net_salary' => 'decimal:2',
+        'paid_at' => 'datetime',
+    ];
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class);
+    }
+}
