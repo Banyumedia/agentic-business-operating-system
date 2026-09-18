@@ -28,7 +28,7 @@ diperluas (tangga dunning, D-49), **Fase 4b T-27..T-27e** (kepatuhan PDP,
 D-50 — memblokir penjualan preset klinik/apotek), Fase 6b (katalog add-on,
 D-56).
 
-**Yang belum berubah:** T-20 diblokir (membutuhkan instalasi paket composer yang tertahan approval gate). UI-LOCK belum
+**Yang belum berubah:** UI-LOCK belum
 diberikan Bos. Fase 2 (frontend-first D-42) tidak terpengaruh review ini.
 ## Akses Pratinjau Jarak Jauh (untuk review dari HP)
 
@@ -43,6 +43,8 @@ dijalankan otomatis saat login Windows oleh PM2. **Tidak usah** menjalankan
 
 ## Pekerjaan Selesai
 
+- T-23 (Build + smoke tenant dogfood) → `776840e`
+- T-20 (Scout + Universal Search) → `b1da91d`
 - T-00a (Fase 3: Migration `users`, `companies`, `business_identities`, `module_settings`) → `65cda86`
 - T-00b (Fase 3: Seeder Admin/Demo) → `f1c01e6`
 - T-00c (Fase 3: Session `company_id` guard) → `26e834b`
@@ -122,7 +124,5 @@ riil, bukan `git add -A`.
 Tidak ada (Menunggu gate)
 
 ## READY Berikutnya
-- T-20 (Scout + Universal Search) [BLOCKED: HUMAN:APPROVAL (composer require)]
-- T-23 (Build + smoke tenant dogfood) [BLOCKED: HUMAN:DEPLOY]
 - T-24d (Preset gelombang 4) [BLOCKED: HUMAN:PRIORITY]
 - T-25 (Keputusan Tier B berikutnya) [BLOCKED: HUMAN:DECISION]
