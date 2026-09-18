@@ -5,10 +5,12 @@ namespace App\Services\Workflow;
 use App\Contracts\CompanyContext;
 use App\Contracts\HasWorkflow;
 use App\Contracts\PresetSource;
+use App\Models\WorkflowTransitionLog;
 use App\Services\Workflow\Effects\ApprovalRequest;
 use App\Services\Workflow\Effects\NotifyOwnerWa;
 use App\Services\Workflow\Effects\WorkflowEffect;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
 use Throwable;
@@ -85,27 +87,66 @@ class WorkflowEngine
             'note' => $note,
         ];
 
-        if (($transition['requires_approval'] ?? false) === true) {
-            $effectResults = [$this->executeEffect('approval.request', $context)];
-            $this->log->append($snapshot['company'], $this->logEntry('approval_requested', $context, $effectResults));
+        return DB::transaction(function () use ($transition, $context, $snapshot, $to, $model) {
+            if (($transition['requires_approval'] ?? false) === true) {
+                $effectResults = [$this->executeEffect('approval.request', $context)];
+                $this->log->append($snapshot['company'], $this->logEntry('approval_requested', $context, $effectResults));
 
-            return $this->result('pending_approval', $snapshot['stage'], $to, $effectResults);
-        }
+                if ($this->usesEloquentLog()) {
+                    $this->writeToDbLog('approval_requested', $context, $effectResults);
+                }
 
-        $effectResults = [];
-        foreach ($transition['effects'] ?? [] as $effect) {
-            $effectResults[] = $this->executeEffect($effect, $context);
-        }
+                return $this->result('pending_approval', $snapshot['stage'], $to, $effectResults);
+            }
 
-        $model->setWorkflowStage($to);
-        try {
-            $this->log->append($snapshot['company'], $this->logEntry('transitioned', $context, $effectResults));
-        } catch (Throwable $exception) {
-            $model->setWorkflowStage($snapshot['stage']);
-            throw $exception;
-        }
+            $effectResults = [];
+            foreach ($transition['effects'] ?? [] as $effect) {
+                $effectResults[] = $this->executeEffect($effect, $context);
+            }
 
-        return $this->result('transitioned', $snapshot['stage'], $to, $effectResults);
+            $model->setWorkflowStage($to);
+            try {
+                $this->log->append($snapshot['company'], $this->logEntry('transitioned', $context, $effectResults));
+                if ($this->usesEloquentLog()) {
+                    $this->writeToDbLog('transitioned', $context, $effectResults);
+                }
+            } catch (Throwable $exception) {
+                $model->setWorkflowStage($snapshot['stage']);
+                throw $exception;
+            }
+
+            return $this->result('transitioned', $snapshot['stage'], $to, $effectResults);
+        });
+    }
+
+    /**
+     * Logging ke tabel DB (workflow_transitions_log) hanya berlaku saat
+     * DATA_SOURCE=eloquent (D-42: Fase 2 murni JSON, tidak boleh butuh tabel
+     * DB untuk entitas bisnis). Log JSON (JsonWorkflowLog) tetap berjalan
+     * di kedua mode sebagai audit trail utama.
+     */
+    private function usesEloquentLog(): bool
+    {
+        return config('datasource.driver') === 'eloquent';
+    }
+
+    private function writeToDbLog(string $event, array $context, array $effectResults): void
+    {
+        WorkflowTransitionLog::create([
+            'company_id' => $context['company'],
+            'entity_type' => $context['entity'],
+            'entity_id' => $context['record_id'],
+            'from_stage' => $context['from'],
+            'to_stage' => $context['to'],
+            'actor_user_id' => auth()->id() ?? '1', // System may be null or set explicitly in context if needed later
+            'effects_result' => [
+                'event' => $event,
+                'note' => $context['note'],
+                'actor_role' => $context['actor_role'],
+                'results' => $effectResults,
+            ],
+            'created_at' => now(),
+        ]);
     }
 
     /** @return array{company: string, preset: string, entity: string, id: string|int, stage: string} */
