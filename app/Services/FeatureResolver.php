@@ -105,15 +105,6 @@ class FeatureResolver
             $effective[$key] = $enabled && (! $isPlanActive || in_array($key, $planAllowed, true));
         }
 
-        if (request()->is('*/group-report')) {
-            \Log::info('Effective addon.branches', [
-                'effective' => $effective['addon.branches'],
-                'planAllowed' => $planAllowed,
-                'overrides' => $this->overrides($settings),
-                'isPlanActive' => $isPlanActive,
-            ]);
-        }
-
         foreach (self::SENSITIVE_CAPABILITIES as $capability) {
             if ($effective[$capability] && ! $this->hasPrivacyConsent()) {
                 $effective[$capability] = false;
