@@ -1,6 +1,6 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-18 (T-13e DONE `9503b08`: pos_shifts + orders + order_lines + OrderService tax/idempotency/workflow; next READY T-13f)
+**Updated:** 2026-09-18 (T-13f DONE `01a627d`; hotfix workflow/journal order `a2b0a32`; queue berikutnya masih `BLOCKED` di plan)
 **Mode:** FASE 3a AKTIF - Gate UI-LOCK sudah dibuka.
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
@@ -444,10 +444,40 @@ Fase 3+ telah dibuka oleh HUMAN:UI-LOCK dari Bos.
 
 ## Next READY
 
-**T-13f (`employees`, `payrolls`, `ai_reminders`)** sesuai urutan FK Fase 3c.
+Saat ini **tidak ada baris `READY`** di `docs/EXECUTION_PLAN.md`; setelah T-13f,
+antrian yang tersisa masih berstatus `BLOCKED` (`T-10`, `T-10a`, `T-10b`, `T-12`,
+`T-14`, `T-14b`, dst). Lanjutkan hanya setelah blocker pada plan dibuka.
 
-Dependensi task ini sudah terpenuhi (`T-00a` DONE) dan urutan serial setelah
-T-13e kini terbuka.
+## Detail Task Selesai (T-13f)
+
+### T-13f — DONE (2026-09-18)
+
+- **Implemented:** migration serial `employees`, `payrolls`, `ai_reminders`; model
+  Eloquent `Employee`, `Payroll`, `AiReminder`; factory untuk ketiga model; dan
+  acceptance test `PayrollTest` untuk isolasi tenant + unique periode payroll.
+- **Constraint utama:** `payrolls` memakai unique gabungan
+  `(company_id, employee_id, period_month)`.
+- **Files:**
+  - `database/migrations/2026_09_18_051531_create_employees_table.php`
+  - `database/migrations/2026_09_18_051535_create_payrolls_table.php`
+  - `database/migrations/2026_09_18_051539_create_ai_reminders_table.php`
+  - `app/Models/{Employee,Payroll,AiReminder}.php`
+  - `database/factories/{EmployeeFactory,PayrollFactory,AiReminderFactory}.php`
+  - `tests/Feature/PayrollTest.php`
+- **Evidence:**
+  - `php artisan migrate:fresh --seed` ✅
+  - `php artisan test --filter=Payroll` → **2 passed (8 assertions)** ✅
+  - `php artisan test` → **367 passed (1553 assertions)** ✅
+  - `php vendor/bin/pint --test` → **PASS (212 files)** ✅
+
+## Hotfix Pasca T-13e
+
+- **Commit:** `a2b0a32`
+- **Scope:** menyelaraskan transisi pembayaran order dengan workflow preset,
+  mengembalikan alur `orders` preset bengkel agar tidak menambah stage liar
+  (`open`), menambahkan efek `journal.post` dan implementasi efek
+  `JournalPost`, serta memperkuat test `OrderServiceTest` untuk alur
+  `siap_diambil -> selesai`.
 
 ## Detail Task Selesai (T-13e)
 
