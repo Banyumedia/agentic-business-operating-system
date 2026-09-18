@@ -87,6 +87,8 @@ Status: `LOCKED` = keputusan final Bos. `OPEN` = menunggu diskusi lanjutan.
 
 ---
 
+| D-57 | **Modul Tier B Tambahan: manufacturing.production_order** | Dipilih oleh Bos pada 2026-09-18 via prompt CLI untuk task T-25. Memungkinkan industri manufaktur yang membutuhkan BOM multi-level dan pencatatan WIP. |
+
 ## Keputusan OPEN
 
 Tidak ada. D-43 dijawab Bos (palet A). Q-01..Q-08 dijawab Bos 2026-09-16 dan dipromosikan menjadi D-34..D-41

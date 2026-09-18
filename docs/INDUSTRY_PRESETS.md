@@ -68,10 +68,11 @@ Kapabilitas **tidak boleh** menyebut nama industri.
 |---|---|---|---|
 | `pharmacy.prescription` | Resep & Obat Keras | Regulasi: golongan obat, verifikasi apoteker, SIP dokter | Apotek, klinik, RS kecil, toko obat hewan |
 | `construction.retention` | Retensi & Opname Fisik | Perhitungan retensi tertahan, rilis 3–6 bulan setelah FHO, BA opname | Kontraktor sipil, MEP, interior, developer |
+| `manufacturing.production_order` | Order Produksi & WIP | BOM multi-level, alokasi Work in Progress, realisasi bahan | Pabrik, garmen, perakitan, kitchen besar |
 
 Kapabilitas Tier B **bergantung** pada Tier A: `pharmacy.prescription` butuh
 `inventory.batch_expiry` + `pos` + `contacts`; `construction.retention` butuh
-`projects.progress_billing` + `milestone_billing`.
+`projects.progress_billing` + `milestone_billing`; `manufacturing.production_order` butuh `inventory.bom` + `finance.accounting`.
 
 ---
 
