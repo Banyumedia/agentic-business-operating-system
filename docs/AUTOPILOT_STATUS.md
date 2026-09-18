@@ -1,6 +1,6 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-18 (T-13b DONE `35c1fa7`: projects/milestones/assignments/vendors/timesheet; T-08e tetap BLOCKED)
+**Updated:** 2026-09-18 (T-11 DONE `27d604f`: chart_of_accounts + accounting_journals + accounting_journal_lines + JournalService + TaxRateService; T-08e tetap BLOCKED)
 **Mode:** FASE 3a AKTIF - Gate UI-LOCK sudah dibuka.
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
