@@ -1,6 +1,6 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-18 (T-11 DONE `27d604f`: chart_of_accounts + accounting_journals + accounting_journal_lines + JournalService + TaxRateService; T-08e tetap BLOCKED)
+**Updated:** 2026-09-18 (T-13c DONE `7231b5d`: resources + bookings + booking_incidents + BookingService anti-overlap + workflow effects; next READY T-13d)
 **Mode:** FASE 3a AKTIF - Gate UI-LOCK sudah dibuka.
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
@@ -98,7 +98,7 @@ Merge tetap serial — satu per satu. Cek `docs/KIRO_SKILL.md` §Worker Registry
 | PHP | 8.3.30 | `php -v` |
 | Livewire | 4.4 | `composer.json` |
 | Tailwind | 4.3 (CSS-first `@theme`) | `package.json` |
-| Test suite | **282 passed, 1199 assertions** | `php artisan test` |
+| Test suite | **354 passed, 1510 assertions** | `php artisan test` |
 | Style | **Pint clean, seluruh repo** | `vendor/bin/pint --test` |
 | Build | Vite OK | `npm run build` |
 | Business migrations | none (hanya `users/cache/jobs`) | `ls database/migrations` |
