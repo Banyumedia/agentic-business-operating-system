@@ -26,7 +26,7 @@ class DogfoodTenantSeeder extends Seeder
                 ['business_preset' => $preset, 'owner_user_id' => $owner->id],
                 [
                     'name' => ucfirst($preset).' Dogfood',
-                    'slug' => $preset.'-dogfood'
+                    'slug' => $preset.'-dogfood',
                 ]
             );
         }
