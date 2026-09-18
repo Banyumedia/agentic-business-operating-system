@@ -43,6 +43,10 @@ dijalankan otomatis saat login Windows oleh PM2. **Tidak usah** menjalankan
 
 ## Pekerjaan Selesai
 
+- T-25b (Modul Tier B: Production Order + BOM lines, D-57) → `241cd97`
+  (3 bug ditemukan & diperbaiki saat final-gate: company_id hilang di
+  production_order_lines/D-26, kontrak HasWorkflow salah, kolom items salah)
+- T-25 (Keputusan Tier B: manufacturing.production_order) → `e946477`
 - T-24d (Preset gelombang 4: Barbershop, Kedai Kopi, Fotografi) → `c193f8e`
 - T-27e (Kendali pengiriman data ke AI) → `4f5f491`
 - T-23 (Build + smoke tenant dogfood) → `776840e`
@@ -129,4 +133,4 @@ Tidak ada (Sistem berhenti: Tidak ada task berstatus READY)
 ## READY Berikutnya
 - **T-08e** (Regression WidgetRegistry Eloquent) [BLOCKED: T-13c/EntityRepository belum diimplementasikan di Eloquent]
 - **T-17c** (Panel Super Admin minimal) [BLOCKED: HUMAN:UI-LOCK]
-- **T-25** (Keputusan Tier B berikutnya) [BLOCKED: HUMAN:DECISION]
+- **T-26** (Halaman publik "Cocok untuk bisnis apa?") [BLOCKED: HUMAN:UI-LOCK]
