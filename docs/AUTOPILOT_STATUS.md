@@ -133,14 +133,23 @@ membagi ~110 file uncommitted menjadi 4 commit bertema sesuai dependency
 riil, bukan `git add -A`.
 
 ## Pekerjaan Aktif
-- T-28 (Cabang/lokasi tambahan, D-58) — PARTIAL. Bagian 1 committed `451653e`
-  (`companies.parent_company_id` self-FK, relasi `parentCompany()`/`branches()`,
-  test `CompanyBranchTest`). Sisa scope: billing per cabang, `GroupReportService`
-  laporan gabungan owner-scoped, kapabilitas D-52, UI switch cabang, test negatif
-  isolasi tenant lintas grup.
+Tidak ada — T-28 DONE.
+
+## Pekerjaan Selesai (tambahan)
+- T-28 (Cabang/lokasi tambahan, D-58) → `451653e` (part 1: parent_company_id
+  self-FK) + `fed2bf2` (part 2: GroupReportController owner-only + gate
+  addon.branches, GroupReportService agregat root+branches exclude unrelated,
+  BranchSwitcher reject unowned company, test negatif isolasi tenant lengkap).
+  Verifikasi final-gate: `php artisan test` → 490 passed/1920 assertions
+  (2x stable run); `pint --test` → clean 359 files; `npm run build` → 1.16s.
+  Bug ditemukan & diperbaiki sebelum commit: `EloquentCompanySettingsStore`
+  tidak ter-bind di test (pola sama seperti insiden AdminImpersonationTest);
+  file scratch `test-debug.php` dibersihkan dari repo root.
 
 ## READY Berikutnya
-- T-28 lanjutan (sisa scope di atas)
+- Tidak ada task READY baru. Menunggu instruksi Bos untuk add-on Fase 6b
+  berikutnya (katalog D-56: e-Faktur/Coretax, loyalty [butuh D-32], marketplace,
+  payroll BPJS/PPh21, WA platform, domain custom, storage terkelola).
 
 **Catatan koreksi (final-gate Hermes):** Klaim sebelumnya "Gate HUMAN:COMMIT
 mencegah git commit" tidak akurat — gate itu **sudah dibuka sejak 2026-09-16**
