@@ -8,6 +8,9 @@ use App\Contracts\PresetSource;
 use App\Models\WorkflowDefinition;
 use App\Models\WorkflowTransitionLog;
 use App\Services\Workflow\Effects\ApprovalRequest;
+use App\Services\Workflow\Effects\BookingsDepositCollect;
+use App\Services\Workflow\Effects\BookingsDepositSettle;
+use App\Services\Workflow\Effects\BookingsLateFeeCompute;
 use App\Services\Workflow\Effects\NotifyOwnerWa;
 use App\Services\Workflow\Effects\WorkflowEffect;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -27,10 +30,16 @@ class WorkflowEngine
         private readonly JsonWorkflowLog $log,
         ApprovalRequest $approvalRequest,
         NotifyOwnerWa $notifyOwnerWa,
+        BookingsDepositCollect $bookingsDepositCollect,
+        BookingsDepositSettle $bookingsDepositSettle,
+        BookingsLateFeeCompute $bookingsLateFeeCompute,
     ) {
         $this->effects = [
             $approvalRequest->key() => $approvalRequest,
             $notifyOwnerWa->key() => $notifyOwnerWa,
+            $bookingsDepositCollect->key() => $bookingsDepositCollect,
+            $bookingsDepositSettle->key() => $bookingsDepositSettle,
+            $bookingsLateFeeCompute->key() => $bookingsLateFeeCompute,
         ];
     }
 
