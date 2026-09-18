@@ -4,7 +4,11 @@ namespace App\Livewire;
 
 use App\Contracts\CompanySettingsStore;
 use App\Contracts\PresetSource;
+use App\Models\Company;
+use App\Models\CompanyMembership;
+use App\Services\PlanCapabilityGate;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -23,9 +27,13 @@ use Livewire\Component;
  */
 class Onboarding extends Component
 {
+    private const PRIVACY_POLICY_VERSION = '2026-09-18';
+
     public string $name = '';
 
     public string $preset = '';
+
+    public bool $acceptPrivacyPolicy = false;
 
     public ?string $createdSlug = null;
 
@@ -57,6 +65,12 @@ class Onboarding extends Component
             return;
         }
 
+        if (! $this->acceptPrivacyPolicy) {
+            $this->failure = 'Anda wajib menyetujui kebijakan privasi terlebih dahulu.';
+
+            return;
+        }
+
         try {
             $slug = $this->uniqueSlug($name);
         } catch (InvalidArgumentException $exception) {
@@ -82,14 +96,73 @@ class Onboarding extends Component
         // sama dipakai owner mengedit tema/istilah/preset nanti.
         $settingsStore->update($slug, fn (array $settings): array => $settings);
 
+        $owner = auth()->user();
+        if ($owner) {
+            $company = Company::updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'name' => $name,
+                    'owner_user_id' => $owner->id,
+                    'business_preset' => $this->preset,
+                    'theme' => 'a',
+                    'is_active' => true,
+                ],
+            );
+
+            $company->forceFill([
+                'privacy_accepted_at' => Carbon::now(),
+                'privacy_accepted_by_user_id' => $owner->id,
+                'privacy_policy_version' => self::PRIVACY_POLICY_VERSION,
+            ])->save();
+        }
+
         $this->createdSlug = $slug;
         $this->name = '';
+        $this->acceptPrivacyPolicy = false;
     }
 
-    public function render(PresetSource $presets): View
+    public function render(PresetSource $presets, PlanCapabilityGate $planGate): View
     {
+        // Onboarding doesn't have an active company yet, so it can't evaluate plan capabilities via PlanCapabilityGate
+        // We evaluate plan capabilities manually here for the onboarding form
+        $planAllowed = [];
+        $isPlanActive = false;
+
+        $user = auth()->user();
+        if ($user) {
+            // Find user's active primary membership plan (this is simplified as we don't know the exact company context yet,
+            // but for D-52 "saat onboarding" this is needed)
+            $membership = CompanyMembership::with('plan')
+                ->whereHas('company', fn ($q) => $q->where('owner_user_id', $user->id))
+                ->where('status', 'active')
+                ->first();
+
+            if ($membership && $membership->plan && is_array($membership->plan->features)) {
+                $planAllowed = $membership->plan->features;
+                $isPlanActive = true;
+            }
+        }
+
+        $presetOptions = array_map(function (array $p) use ($isPlanActive, $planAllowed) {
+            $missing = [];
+            if ($isPlanActive) {
+                foreach (array_keys(array_filter($p['capabilities'])) as $cap) {
+                    if (! in_array($cap, $planAllowed, true)) {
+                        $missing[] = $cap;
+                    }
+                }
+            }
+
+            return [
+                'key' => $p['key'],
+                'name' => $p['name'],
+                'missing' => $missing,
+            ];
+        }, $presets->all());
+
         return view('livewire.onboarding', [
-            'presets' => $presets->all(),
+            'presets' => $presetOptions,
+            'privacyPolicyVersion' => self::PRIVACY_POLICY_VERSION,
         ])->layout('layouts.app');
     }
 

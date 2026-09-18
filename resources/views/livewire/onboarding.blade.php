@@ -42,10 +42,29 @@
                     class="mt-2 min-h-11 w-full rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] px-3 text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
                 >
                     @foreach ($presets as $presetOption)
-                        <option value="{{ $presetOption['key'] }}">{{ $presetOption['name'] }}</option>
+                        <option value="{{ $presetOption['key'] }}">
+                            {{ $presetOption['name'] }}
+                            @if (!empty($presetOption['missing']))
+                                (perlu paket lebih tinggi: {{ implode(', ', $presetOption['missing']) }})
+                            @endif
+                        </option>
                     @endforeach
                 </select>
                 <p class="mt-2 text-sm text-[var(--erp-text-secondary)]">Tidak masalah bila belum pas. Anda dapat menggantinya nanti.</p>
+            </div>
+
+            <div class="rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] p-4">
+                <label for="onboarding-privacy" class="flex cursor-pointer items-start gap-3 text-sm text-[var(--erp-text-primary)]">
+                    <input
+                        id="onboarding-privacy"
+                        type="checkbox"
+                        wire:model="acceptPrivacyPolicy"
+                        class="mt-1 size-4 rounded border-[var(--erp-border)] text-[var(--erp-accent)] focus:ring-[var(--erp-focus)]"
+                    >
+                    <span>
+                        Saya menyetujui kebijakan privasi Agentic BOS versi {{ $privacyPolicyVersion }} untuk pemrosesan data usaha.
+                    </span>
+                </label>
             </div>
 
             <button

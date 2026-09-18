@@ -7,6 +7,8 @@ use App\Contracts\CompanySettingsStore;
 use App\Contracts\PresetSource;
 use App\Models\BusinessPreset;
 use App\Models\Company;
+use App\Models\CompanyMembership;
+use App\Models\MembershipPlan;
 use App\Models\ModuleSetting;
 use App\Models\User;
 use App\Services\Eloquent\EloquentCompanyContext;
@@ -45,6 +47,21 @@ class EloquentFeatureResolverTest extends TestCase
             'tier' => 'A',
             'definition' => [
                 'capabilities' => ['contacts' => false, 'projects' => true, 'bookings' => true],
+            ],
+        ]);
+
+        BusinessPreset::create([
+            'key' => 'preset_sensitive',
+            'name' => 'Preset Sensitive',
+            'tier' => 'B',
+            'definition' => [
+                'tier' => 'B',
+                'capabilities' => [
+                    'contacts' => true,
+                    'pos' => true,
+                    'inventory.batch_expiry' => true,
+                    'pharmacy.prescription' => true,
+                ],
             ],
         ]);
     }
@@ -159,5 +176,83 @@ class EloquentFeatureResolverTest extends TestCase
 
         $this->assertFalse($resolver->enabled('contacts'));
         $this->assertTrue($resolver->enabled('bookings'));
+    }
+
+    public function test_capabilities_are_gated_by_membership_plan()
+    {
+        $user = User::factory()->create();
+        $company = Company::factory()->create([
+            'owner_user_id' => $user->id,
+            'business_preset' => 'preset_a', // wants contacts
+        ]);
+
+        ModuleSetting::create([
+            'company_id' => $company->id,
+            'module_name' => 'features',
+            'settings_json' => ['pos' => true], // wants pos
+        ]);
+
+        $plan = MembershipPlan::factory()->create([
+            'features' => ['contacts', 'projects'], // does not allow pos
+        ]);
+
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($user);
+        app(CompanyContext::class)->setCurrent((string) $company->id);
+
+        $resolver = app(FeatureResolver::class);
+
+        // Allowed by both preset and plan
+        $this->assertTrue($resolver->enabled('contacts'));
+
+        // Wanted by override but disallowed by plan
+        $this->assertFalse($resolver->enabled('pos'));
+
+        // Allowed by plan but not wanted by preset/override
+        $this->assertFalse($resolver->enabled('projects'));
+    }
+
+    public function test_sensitive_capability_is_disabled_without_privacy_consent(): void
+    {
+        $user = User::factory()->create();
+        $company = Company::factory()->create([
+            'owner_user_id' => $user->id,
+            'business_preset' => 'preset_sensitive',
+            'privacy_accepted_at' => null,
+            'privacy_accepted_by_user_id' => null,
+            'privacy_policy_version' => null,
+        ]);
+
+        $this->actingAs($user);
+        app(CompanyContext::class)->setCurrent((string) $company->id);
+
+        $resolver = app(FeatureResolver::class);
+
+        $this->assertFalse($resolver->enabled('pharmacy.prescription'));
+        $this->assertTrue($resolver->enabled('contacts'));
+    }
+
+    public function test_sensitive_capability_is_enabled_after_privacy_consent_is_recorded(): void
+    {
+        $user = User::factory()->create();
+        $company = Company::factory()->create([
+            'owner_user_id' => $user->id,
+            'business_preset' => 'preset_sensitive',
+            'privacy_accepted_at' => now(),
+            'privacy_accepted_by_user_id' => $user->id,
+            'privacy_policy_version' => '2026-09-18',
+        ]);
+
+        $this->actingAs($user);
+        app(CompanyContext::class)->setCurrent((string) $company->id);
+
+        $resolver = app(FeatureResolver::class);
+
+        $this->assertTrue($resolver->enabled('pharmacy.prescription'));
     }
 }
