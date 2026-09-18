@@ -964,6 +964,38 @@ CREATE TABLE retentions (
 );
 ```
 
+
+### 10.3 `production_orders` & `production_order_lines` (Tier B: Manufaktur D-57)
+Membutuhkan kapabilitas `inventory.bom`, `inventory.batch_expiry`, `finance.accounting`. Berbeda dengan pesanan POS, ini mencatat WIP (Work in Progress) dan multi-level BOM.
+```sql
+CREATE TABLE production_orders (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    company_id BIGINT UNSIGNED NOT NULL,
+    external_ref VARCHAR(128) NULL,
+    item_id BIGINT UNSIGNED NOT NULL,      -- produk jadi yang akan dibuat
+    target_qty DECIMAL(10,3) NOT NULL,
+    stage VARCHAR(32) NOT NULL DEFAULT 'draft',
+    started_at DATETIME NULL,
+    completed_at DATETIME NULL,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    UNIQUE (company_id, external_ref),
+    FOREIGN KEY (company_id) REFERENCES companies(id),
+    FOREIGN KEY (item_id) REFERENCES items(id)
+);
+
+CREATE TABLE production_order_lines (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    production_order_id BIGINT UNSIGNED NOT NULL,
+    component_item_id BIGINT UNSIGNED NOT NULL, -- bahan baku/sub-assembly
+    planned_qty DECIMAL(10,3) NOT NULL,
+    actual_qty DECIMAL(10,3) NULL,
+    cost_per_unit DECIMAL(15,2) NULL,
+    FOREIGN KEY (production_order_id) REFERENCES production_orders(id),
+    FOREIGN KEY (component_item_id) REFERENCES items(id)
+);
+```
+
 ---
 
 ## 11. Tabel Baru — Komersial SaaS & Membership (Align D-05)
