@@ -134,8 +134,8 @@ class WorkflowEngineTest extends TestCase
         $this->assertNotEmpty($result['effects'][0]['ticket_id']);
         $this->assertSame('approval_requested', $this->workflowLog()[0]['event']);
         $this->assertDatabaseHas('approval_tickets', [
-            'entity_type' => 'orders',
-            'entity_id' => '15',
+            'action_type' => 'workflow.transition',
+            'subject_id' => '15',
             'status' => 'pending',
             'company_id' => '9999',
         ]);

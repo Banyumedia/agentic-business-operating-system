@@ -8,24 +8,25 @@ class WorkflowTransitionLog extends Model
 {
     protected $table = 'workflow_transitions_log';
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = [
         'company_id',
-        'entity_type',
+        'entity',
         'entity_id',
         'from_stage',
         'to_stage',
         'actor_user_id',
-        'effects_result',
-        'created_at',
+        'approval_ticket_id',
+        'note',
+        'effects_run',
+        'changed_by_type',
     ];
 
     protected function casts(): array
     {
         return [
-            'effects_result' => 'array',
-            'created_at' => 'datetime',
+            'effects_run' => 'array',
         ];
     }
 }

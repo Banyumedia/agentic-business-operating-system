@@ -13,16 +13,14 @@ return new class extends Migration
     {
         Schema::create('workflow_definitions', function (Blueprint $table) {
             $table->id();
-            $table->string('company_id', 36)->index();
-            $table->string('entity_type', 100);
-            $table->string('from_stage', 50);
-            $table->string('to_stage', 50);
-            $table->boolean('requires_approval')->default(false);
-            $table->string('required_role', 50)->nullable();
-            $table->json('effects')->nullable();
+            $table->foreignId('company_id')->constrained()->cascadeOnDelete();
+            $table->string('entity', 64);
+            $table->unsignedInteger('version')->default(1);
+            $table->json('definition');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->unique(['company_id', 'entity_type', 'from_stage', 'to_stage'], 'idx_workflow_def_unique');
+            $table->unique(['company_id', 'entity', 'version'], 'uq_workflow_company_entity_version');
         });
     }
 

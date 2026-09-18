@@ -8,19 +8,18 @@ class WorkflowDefinition extends Model
 {
     protected $fillable = [
         'company_id',
-        'entity_type',
-        'from_stage',
-        'to_stage',
-        'requires_approval',
-        'required_role',
-        'effects',
+        'entity',
+        'version',
+        'definition',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'requires_approval' => 'boolean',
-            'effects' => 'array',
+            'version' => 'integer',
+            'is_active' => 'boolean',
+            'definition' => 'array',
         ];
     }
 }

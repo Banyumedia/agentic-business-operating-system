@@ -5,6 +5,7 @@ namespace App\Services\Workflow;
 use App\Contracts\CompanyContext;
 use App\Contracts\HasWorkflow;
 use App\Contracts\PresetSource;
+use App\Models\WorkflowDefinition;
 use App\Models\WorkflowTransitionLog;
 use App\Services\Workflow\Effects\ApprovalRequest;
 use App\Services\Workflow\Effects\NotifyOwnerWa;
@@ -132,20 +133,31 @@ class WorkflowEngine
 
     private function writeToDbLog(string $event, array $context, array $effectResults): void
     {
+        $ticketId = null;
+        if ($event === 'approval_requested') {
+            foreach ($effectResults as $result) {
+                if (($result['effect'] ?? '') === 'approval.request' && ! empty($result['ticket_id'])) {
+                    $ticketId = $result['ticket_id'];
+                    break;
+                }
+            }
+        }
+
         WorkflowTransitionLog::create([
             'company_id' => $context['company'],
-            'entity_type' => $context['entity'],
+            'entity' => $context['entity'],
             'entity_id' => $context['record_id'],
             'from_stage' => $context['from'],
             'to_stage' => $context['to'],
             'actor_user_id' => auth()->id() ?? '1', // System may be null or set explicitly in context if needed later
-            'effects_result' => [
+            'approval_ticket_id' => $ticketId,
+            'note' => $context['note'],
+            'effects_run' => [
                 'event' => $event,
-                'note' => $context['note'],
                 'actor_role' => $context['actor_role'],
                 'results' => $effectResults,
             ],
-            'created_at' => now(),
+            'changed_by_type' => 'user', // Default per D-47, impersonation logic will override this later
         ]);
     }
 
@@ -192,6 +204,19 @@ class WorkflowEngine
     {
         $this->assertEntity($entity);
         $presetKey ??= $this->companyContext->preset();
+
+        if (config('datasource.driver') === 'eloquent') {
+            $companyId = $this->companyContext->current();
+            $definitionRecord = WorkflowDefinition::where('company_id', $companyId)
+                ->where('entity', $entity)
+                ->where('is_active', true)
+                ->first();
+
+            if ($definitionRecord !== null) {
+                return $definitionRecord->definition;
+            }
+        }
+
         $preset = $this->presetSource->find($presetKey);
         if ($preset === null) {
             throw new InvalidArgumentException("Preset company tidak tersedia: {$presetKey}");
