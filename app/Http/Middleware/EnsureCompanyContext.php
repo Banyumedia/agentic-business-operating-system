@@ -20,8 +20,8 @@ class EnsureCompanyContext
             app(CompanyContext::class)->current();
         } catch (InvalidArgumentException) {
             abort(404);
-        } catch (LogicException) {
-            abort(403);
+        } catch (LogicException $e) {
+            abort(403, 'Context Error: '.$e->getMessage());
         }
 
         return $next($request);

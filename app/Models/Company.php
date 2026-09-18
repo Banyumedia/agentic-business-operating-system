@@ -16,6 +16,22 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['name', 'slug', 'owner_user_id', 'business_preset', 'theme', 'is_active', 'privacy_accepted_at', 'privacy_accepted_by_user_id', 'privacy_policy_version'])]
 class Company extends Model
 {
+    protected static function booted(): void
+    {
+        static::saving(function ($model) {
+            if (session()->has('admin_impersonation_id')) {
+                $session = AdminImpersonationSession::where('session_id', session('admin_impersonation_id'))->first();
+                if ($session) {
+                    $model->changed_by_type = 'admin_impersonation';
+                    $model->admin_user_id = $session->admin_user_id;
+                }
+            } else {
+                $model->changed_by_type = null;
+                $model->admin_user_id = null;
+            }
+        });
+    }
+
     /** @use HasFactory<CompanyFactory> */
     use HasFactory, SoftDeletes;
 

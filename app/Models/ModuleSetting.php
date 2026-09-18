@@ -7,6 +7,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ModuleSetting extends Model
 {
+    protected static function booted(): void
+    {
+        static::saving(function ($model) {
+            if (session()->has('admin_impersonation_id')) {
+                $session = AdminImpersonationSession::where('session_id', session('admin_impersonation_id'))->first();
+                if ($session) {
+                    $model->changed_by_type = 'admin_impersonation';
+                    $model->admin_user_id = $session->admin_user_id;
+                }
+            } else {
+                $model->changed_by_type = null;
+                $model->admin_user_id = null;
+            }
+        });
+    }
+
     /**
      * The attributes that are mass assignable.
      *
