@@ -28,7 +28,7 @@ diperluas (tangga dunning, D-49), **Fase 4b T-27..T-27e** (kepatuhan PDP,
 D-50 — memblokir penjualan preset klinik/apotek), Fase 6b (katalog add-on,
 D-56).
 
-**Yang belum berubah:** T-20 tetap task READY berikutnya. UI-LOCK belum
+**Yang belum berubah:** T-20 diblokir (membutuhkan instalasi paket composer yang tertahan approval gate). UI-LOCK belum
 diberikan Bos. Fase 2 (frontend-first D-42) tidak terpengaruh review ini.
 ## Akses Pratinjau Jarak Jauh (untuk review dari HP)
 
@@ -85,6 +85,32 @@ dijalankan otomatis saat login Windows oleh PM2. **Tidak usah** menjalankan
   461 passed/1794 assertions, `pint --test` clean 318 files, `npm run build`
   OK, `migrate:fresh --seed` OK) → diverifikasi ulang oleh Hermes (final
   gate), bukan hanya klaim runner.
+- T-21b (Paritas MySQL, B-01) → `b2ba595`, `de9684c`. Dijalankan
+  `DB_CONNECTION=mysql` di Laragon MySQL 8.4.3 lokal
+  (`agentic_bos_parity` db). `migrate:fresh --seed` PASS setelah 4 fix nyata
+  yang lolos di SQLite tapi ditolak MySQL strict mode:
+  1) `orders.resource_id` FK dideklarasi sebelum tabel `resources` ada -
+     dipisah ke migration baru setelahnya;
+  2) `invoices.company_membership_id` FK sama pola - dipisah serupa;
+  3) index composite `contacts(company_id, wa_number)` bentrok dengan
+     konversi kolom ke `TEXT` (enkripsi) - MySQL menolak index di
+     BLOB/TEXT tanpa key length - index di-drop lalu diganti index
+     `company_id` saja;
+  4) `business_presets.tier` dideklarasi `varchar(1)` padahal diisi label
+     penuh (`"professional"`) - SQLite truncate diam-diam, MySQL error 1406
+     - diperbesar ke `varchar(32)`.
+  Ditemukan juga bug kode nyata (bukan schema): `DataErasure::erase()`
+  query `Prescription::where('contact_id', ...)` padahal kolom asli
+  `patient_contact_id` - silent no-op di SQLite karena tabel kosong,
+  meledak di MySQL sebagai kolom tak dikenal. Diperbaiki di commit sama.
+  **Catatan terpisah (bukan blocker T-21b):** full `php artisan test` di
+  MySQL menyisakan 3-4 test flaky (`OrderServiceTest`,
+  `TokenLedgerServiceTest`, `EloquentFeatureResolverTest`, `DataExportTest`)
+  akibat beberapa test hardcode `id => 1/2` untuk `ChartOfAccount` yang
+  bentrok saat berjalan berurutan dengan test lain di kelas berbeda -
+  seluruhnya PASS saat dijalankan isolated per-class. Ini pre-existing
+  test-design smell, dicatat untuk perbaikan terpisah, tidak menghalangi
+  T-21b DONE.
 
 **Catatan final-gate:** Claude CLI (executor) menyelesaikan pekerjaan di atas
 namun tidak sempat commit sendiri (approval hook lokal gagal dieksekusi).
@@ -96,7 +122,7 @@ riil, bukan `git add -A`.
 Tidak ada (Menunggu gate)
 
 ## READY Berikutnya
-- T-21b (Paritas MySQL) [BLOCKED: HUMAN:SECRET]
+- T-20 (Scout + Universal Search) [BLOCKED: HUMAN:APPROVAL (composer require)]
 - T-23 (Build + smoke tenant dogfood) [BLOCKED: HUMAN:DEPLOY]
 - T-24d (Preset gelombang 4) [BLOCKED: HUMAN:PRIORITY]
 - T-25 (Keputusan Tier B berikutnya) [BLOCKED: HUMAN:DECISION]
