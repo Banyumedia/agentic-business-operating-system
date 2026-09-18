@@ -16,12 +16,15 @@ class FeatureResolver
         'quotations', 'milestone_billing', 'approval_flow', 'timesheet',
         'finance.cashbook', 'finance.accounting', 'hr.employees', 'hr.payroll',
         'system.ai_agent', 'pharmacy.prescription', 'construction.retention',
-        'addon.branches',
+        'addon.branches', 'addon.platform_wa_number', 'addon.payroll_advanced',
+        'addon.custom_domain', 'addon.efaktur', 'addon.marketplace_sync',
+        'addon.managed_storage',
     ];
 
     /** @var list<string> */
     public const SENSITIVE_CAPABILITIES = [
         'pharmacy.prescription',
+        'addon.payroll_advanced',
     ];
 
     /** @var array<string, list<string>> */

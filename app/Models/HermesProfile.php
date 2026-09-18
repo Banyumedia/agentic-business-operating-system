@@ -18,6 +18,7 @@ class HermesProfile extends Model
     protected function casts(): array
     {
         return [
+            'is_platform_provided' => 'boolean',
             'last_ping_at' => 'datetime',
         ];
     }
