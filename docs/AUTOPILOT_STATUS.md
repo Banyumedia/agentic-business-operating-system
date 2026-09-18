@@ -133,10 +133,17 @@ membagi ~110 file uncommitted menjadi 4 commit bertema sesuai dependency
 riil, bukan `git add -A`.
 
 ## Pekerjaan Aktif
-Tidak ada (Sistem berhenti: Tidak ada task berstatus READY di EXECUTION_PLAN.md).
+- T-28 (Cabang/lokasi tambahan, D-58) — PARTIAL. Bagian 1 committed `451653e`
+  (`companies.parent_company_id` self-FK, relasi `parentCompany()`/`branches()`,
+  test `CompanyBranchTest`). Sisa scope: billing per cabang, `GroupReportService`
+  laporan gabungan owner-scoped, kapabilitas D-52, UI switch cabang, test negatif
+  isolasi tenant lintas grup.
 
 ## READY Berikutnya
-- Tidak ada task READY. Menunggu perintah Bos atau pembuatan task baru untuk Fase 6b (add-on komersial).
-- Blocker: Habisnya antrean task READY di EXECUTION_PLAN.md.
+- T-28 lanjutan (sisa scope di atas)
 
-**Catatan eksekusi:** Agent memeriksa antrean T-26 sudah selesai dan tidak ada task baru (T-27 selesai sebelumnya). Sesuai prosedur A & B, karena `Tidak ada task READY`, agent stop.
+**Catatan koreksi (final-gate Hermes):** Klaim sebelumnya "Gate HUMAN:COMMIT
+mencegah git commit" tidak akurat — gate itu **sudah dibuka sejak 2026-09-16**
+(EXECUTION_PLAN.md §0.1). Hermes menjalankan verifikasi ulang (test+pint,
+semua PASS: 483 passed/1903 assertions, pint clean 352 files) lalu commit
+langsung sebagai `451653e`.
