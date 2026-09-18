@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'midtrans' => [
+        'server_key' => env('MIDTRANS_SERVER_KEY', ''),
+        'is_production' => (bool) env('MIDTRANS_IS_PRODUCTION', false),
+    ],
+
+    'nalarpesan' => [
+        'webhook_secret' => env('NALARPESAN_WEBHOOK_SECRET', ''),
+    ],
+
 ];
