@@ -1,0 +1,47 @@
+{
+    "key": "travel_umroh",
+    "name": "Travel Umroh",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "deals": true,
+        "milestone_billing": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Jamaah",
+        "contacts": "Jamaah",
+        "deal": "Pendaftaran",
+        "deals": "Pendaftaran"
+    },
+    "workflows": {
+        "deals": {
+            "stages": [
+                {"code": "lead", "label": "Tertarik"},
+                {"code": "dokumen", "label": "Pemberkasan"},
+                {"code": "bayar", "label": "Pembayaran"},
+                {"code": "berangkat", "label": "Berangkat"},
+                {"code": "batal", "label": "Batal"}
+            ],
+            "transitions": [
+                {"from": "lead", "to": "dokumen", "roles": ["owner", "staff"]},
+                {"from": "dokumen", "to": "bayar", "roles": ["owner", "staff"]},
+                {"from": "bayar", "to": "berangkat", "roles": ["owner", "staff"]},
+                {"from": "*", "to": "batal", "roles": ["owner"], "requires_approval": true}
+            ],
+            "terminal": ["berangkat", "batal"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "deals_pipeline"},
+            {"widget": "kpi_cashflow"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "contacts", "deals", "employees", "accounting", "settings"]
+    }
+}

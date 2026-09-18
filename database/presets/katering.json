@@ -1,0 +1,50 @@
+{
+    "key": "katering",
+    "name": "Katering",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "inventory": true,
+        "inventory.bom": true,
+        "pos": true,
+        "milestone_billing": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "order": "Pesanan",
+        "orders": "Pesanan",
+        "item": "Menu/Bahan",
+        "items": "Menu/Bahan"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {"code": "dipesan", "label": "Dipesan"},
+                {"code": "dimasak", "label": "Dimasak"},
+                {"code": "dikirim", "label": "Dikirim"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "batal", "label": "Batal"}
+            ],
+            "transitions": [
+                {"from": "dipesan", "to": "dimasak", "roles": ["owner", "staff"]},
+                {"from": "dimasak", "to": "dikirim", "roles": ["owner", "staff"]},
+                {"from": "dikirim", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "*", "to": "batal", "roles": ["owner"], "requires_approval": true}
+            ],
+            "terminal": ["selesai", "batal"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "kpi_cashflow"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "orders", "contacts", "inventory", "employees", "accounting", "settings"]
+    }
+}

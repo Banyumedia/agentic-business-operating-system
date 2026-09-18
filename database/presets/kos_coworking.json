@@ -1,0 +1,47 @@
+{
+    "key": "kos_coworking",
+    "name": "Kos / Coworking",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "bookings": true,
+        "bookings.deposit": true,
+        "milestone_billing": true,
+        "finance.cashbook": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Penghuni",
+        "contacts": "Penghuni",
+        "booking": "Sewa",
+        "bookings": "Sewa",
+        "resource": "Kamar/Meja",
+        "resources": "Kamar/Meja"
+    },
+    "workflows": {
+        "bookings": {
+            "stages": [
+                {"code": "booked", "label": "Dipesan"},
+                {"code": "aktif", "label": "Aktif"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "batal", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "booked", "to": "aktif", "roles": ["owner", "staff"]},
+                {"from": "aktif", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "*", "to": "batal", "roles": ["owner"], "requires_approval": true}
+            ],
+            "terminal": ["selesai", "batal"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "kpi_cashflow"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "bookings", "contacts", "accounting", "settings"]
+    }
+}

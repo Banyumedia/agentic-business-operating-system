@@ -1,0 +1,43 @@
+{
+    "key": "cuci_mobil",
+    "name": "Cuci Mobil / Detailing",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "pos": true,
+        "inventory": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "order": "Nota",
+        "orders": "Nota"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {"code": "masuk", "label": "Masuk"},
+                {"code": "dicuci", "label": "Dicuci / Detailing"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "batal", "label": "Batal"}
+            ],
+            "transitions": [
+                {"from": "masuk", "to": "dicuci", "roles": ["owner", "staff"]},
+                {"from": "dicuci", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "*", "to": "batal", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "batal"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "kpi_cashflow"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "orders", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
+    }
+}

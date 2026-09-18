@@ -1,0 +1,51 @@
+{
+    "key": "bakery_preorder",
+    "name": "Bakery (Pre-Order)",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "inventory": true,
+        "inventory.bom": true,
+        "inventory.batch_expiry": true,
+        "pos": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "order": "PO",
+        "orders": "PO",
+        "item": "Bahan/Kue",
+        "items": "Bahan/Kue"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {"code": "baru", "label": "Baru"},
+                {"code": "diproses", "label": "Diproses"},
+                {"code": "siap", "label": "Siap"},
+                {"code": "diambil", "label": "Diambil"},
+                {"code": "batal", "label": "Batal"}
+            ],
+            "transitions": [
+                {"from": "baru", "to": "diproses", "roles": ["owner", "staff"]},
+                {"from": "diproses", "to": "siap", "roles": ["owner", "staff"]},
+                {"from": "siap", "to": "diambil", "roles": ["owner", "staff"]},
+                {"from": "*", "to": "batal", "roles": ["owner"], "requires_approval": true}
+            ],
+            "terminal": ["diambil", "batal"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "orders", "contacts", "inventory", "employees", "accounting", "settings"]
+    }
+}

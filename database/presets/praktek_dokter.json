@@ -1,0 +1,52 @@
+{
+    "key": "praktek_dokter",
+    "name": "Praktek Dokter Pribadi",
+    "tier": "B",
+    "capabilities": {
+        "contacts": true,
+        "scheduling": true,
+        "bookings": true,
+        "inventory": true,
+        "inventory.batch_expiry": true,
+        "pharmacy.prescription": true,
+        "pos": true,
+        "finance.cashbook": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pasien",
+        "contacts": "Pasien",
+        "booking": "Antrean",
+        "bookings": "Antrean",
+        "staff": "Dokter/Asisten",
+        "staffs": "Dokter/Asisten"
+    },
+    "workflows": {
+        "bookings": {
+            "stages": [
+                {"code": "menunggu", "label": "Menunggu"},
+                {"code": "diperiksa", "label": "Diperiksa"},
+                {"code": "bayar", "label": "Pembayaran"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "batal", "label": "Batal"}
+            ],
+            "transitions": [
+                {"from": "menunggu", "to": "diperiksa", "roles": ["owner", "staff"]},
+                {"from": "diperiksa", "to": "bayar", "roles": ["owner", "staff"]},
+                {"from": "bayar", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "*", "to": "batal", "roles": ["owner"], "requires_approval": true}
+            ],
+            "terminal": ["selesai", "batal"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "kpi_cashflow"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "bookings", "contacts", "pharmacy", "inventory", "pos", "accounting", "settings"]
+    }
+}

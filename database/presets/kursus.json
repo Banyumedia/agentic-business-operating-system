@@ -1,0 +1,47 @@
+{
+    "key": "kursus",
+    "name": "Kursus / Bimbel",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "scheduling": true,
+        "bookings": true,
+        "milestone_billing": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Siswa",
+        "contacts": "Siswa",
+        "booking": "Kelas",
+        "bookings": "Kelas",
+        "staff": "Pengajar",
+        "staffs": "Pengajar"
+    },
+    "workflows": {
+        "bookings": {
+            "stages": [
+                {"code": "dijadwalkan", "label": "Dijadwalkan"},
+                {"code": "berjalan", "label": "Sedang Berjalan"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "batal", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "dijadwalkan", "to": "berjalan", "roles": ["owner", "staff"]},
+                {"from": "berjalan", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "*", "to": "batal", "roles": ["owner"], "requires_approval": true}
+            ],
+            "terminal": ["selesai", "batal"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "kpi_cashflow"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "bookings", "contacts", "employees", "accounting", "settings"]
+    }
+}
