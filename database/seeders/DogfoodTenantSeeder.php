@@ -24,7 +24,10 @@ class DogfoodTenantSeeder extends Seeder
         foreach ($presets as $preset) {
             Company::firstOrCreate(
                 ['business_preset' => $preset, 'owner_user_id' => $owner->id],
-                ['name' => ucfirst($preset).' Dogfood']
+                [
+                    'name' => ucfirst($preset).' Dogfood',
+                    'slug' => $preset.'-dogfood'
+                ]
             );
         }
     }
