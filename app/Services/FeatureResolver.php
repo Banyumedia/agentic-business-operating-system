@@ -18,7 +18,7 @@ class FeatureResolver
         'system.ai_agent', 'pharmacy.prescription', 'construction.retention',
         'addon.branches', 'addon.platform_wa_number', 'addon.payroll_advanced',
         'addon.custom_domain', 'addon.efaktur', 'addon.marketplace_sync',
-        'addon.managed_storage',
+        'addon.managed_storage', 'addon.loyalty',
     ];
 
     /** @var list<string> */
