@@ -1,6 +1,6 @@
 # Agentic BOS Autopilot Status
 
-**Updated:** 2026-09-18 (T-13d DONE `89d64d6`: items + item_batches + stock_movements + bom_lines + StockService FEFO/BOM; next READY T-13e)
+**Updated:** 2026-09-18 (T-13e DONE `9503b08`: pos_shifts + orders + order_lines + OrderService tax/idempotency/workflow; next READY T-13f)
 **Mode:** FASE 3a AKTIF - Gate UI-LOCK sudah dibuka.
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
@@ -444,10 +444,31 @@ Fase 3+ telah dibuka oleh HUMAN:UI-LOCK dari Bos.
 
 ## Next READY
 
-**T-13e (`pos_shifts`, `orders`, `order_lines` + `OrderService`)** sesuai urutan FK Fase 3c.
+**T-13f (`employees`, `payrolls`, `ai_reminders`)** sesuai urutan FK Fase 3c.
 
-Dependensi sudah `DONE` (`T-13`, `T-13c`, `T-13d`, `T-11`), sehingga state
-berikutnya di `EXECUTION_PLAN.md` dipromosikan ke `READY`.
+Dependensi task ini sudah terpenuhi (`T-00a` DONE) dan urutan serial setelah
+T-13e kini terbuka.
+
+## Detail Task Selesai (T-13e)
+
+### T-13e — DONE (2026-09-18)
+
+- **Implemented:** migration serial untuk `pos_shifts`, `orders`, `order_lines`; model Eloquent `PosShift`, `Order`, `OrderLine`; `OrderService` untuk create/sync line, hitung tax via `TaxRateService`, idempotensi `external_ref`, `fired_at` untuk alur `pos.tables`, dan transisi stage `paid` via `WorkflowEngine` + integrasi `JournalService`.
+- **Fail-closed:** replay webhook `external_ref` mengembalikan order yang sama (no-op, tidak duplikasi); posting jurnal gagal melempar exception; transisi stage tetap lewat engine, bukan hardcode flow industri.
+- **Acceptance tests:** `tests/Feature/OrderServiceTest.php` mencakup tax exclusive, tax inclusive, idempotensi webhook, alur `resource_id` + `fired_at`, dan tenant isolation A/B.
+- **Files:**
+  - `database/migrations/2026_09_18_000000_create_pos_shifts_table.php`
+  - `database/migrations/2026_09_18_000001_create_orders_table.php`
+  - `database/migrations/2026_09_18_000002_create_order_lines_table.php`
+  - `app/Models/{PosShift,Order,OrderLine}.php`
+  - `app/Services/OrderService.php`
+  - `tests/Feature/OrderServiceTest.php`
+- **Evidence:**
+  - `php artisan migrate:fresh --seed` ✅
+  - `php artisan test --filter=OrderServiceTest` → **5 passed (17 assertions)** ✅
+  - `php artisan test` → **364 passed (1541 assertions)** ✅
+  - `php vendor/bin/pint --test` → **PASS (201 files)** ✅
+- **Catatan audit manual:** menghapus file scaffold duplikat `2026_09_18_051050_create_pos_shifts_table.php` dan menyesuaikan `workflowEntity()` Order menjadi `orders` agar konsisten dengan registry workflow.
 
 ## Detail Task Selesai (T-13d)
 
