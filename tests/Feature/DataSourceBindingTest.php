@@ -29,15 +29,25 @@ class DataSourceBindingTest extends TestCase
         }
     }
 
-    public function test_eloquent_driver_fails_clearly_until_phase_three_implementations_exist(): void
+    public function test_eloquent_driver_binds_every_contract_to_its_eloquent_implementation(): void
     {
         config(['datasource.driver' => 'eloquent']);
         (new DataSourceServiceProvider($this->app))->register();
 
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('DATA_SOURCE=eloquent belum tersedia sebelum Fase 3');
+        $expected = [
+            EntityRepository::class => 'App\Services\Eloquent\EloquentEntityRepository',
+            PresetSource::class => 'App\Services\Preset\EloquentPresetSource',
+            CompanyContext::class => 'App\Services\Eloquent\EloquentCompanyContext',
+        ];
 
-        $this->app->make(EntityRepository::class);
+        foreach ($expected as $contract => $implementation) {
+            $this->assertTrue($this->app->bound($contract));
+
+            $binding = $this->app->getBindings()[$contract]['concrete'];
+            $concrete = (new \ReflectionFunction($binding))->getStaticVariables()['concrete'];
+
+            $this->assertSame($implementation, $concrete);
+        }
     }
 
     public function test_unknown_driver_is_rejected(): void

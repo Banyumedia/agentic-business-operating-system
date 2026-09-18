@@ -13,18 +13,18 @@ class DataSourceServiceProvider extends ServiceProvider
 {
     /** @var array<class-string, class-string> */
     private const JSON_BINDINGS = [
-        EntityRepository::class => 'App\\Services\\Json\\JsonEntityRepository',
-        PresetSource::class => 'App\\Services\\Json\\JsonPresetSource',
-        CompanyContext::class => 'App\\Services\\Json\\JsonCompanyContext',
-        CompanySettingsStore::class => 'App\\Services\\Json\\JsonCompanySettingsStore',
+        EntityRepository::class => 'App\Services\Json\JsonEntityRepository',
+        PresetSource::class => 'App\Services\Json\JsonPresetSource',
+        CompanyContext::class => 'App\Services\Json\JsonCompanyContext',
+        CompanySettingsStore::class => 'App\Services\Json\JsonCompanySettingsStore',
     ];
 
     /** @var array<class-string, class-string> */
     private const ELOQUENT_BINDINGS = [
-        EntityRepository::class => 'App\\Services\\Eloquent\\EloquentEntityRepository',
-        PresetSource::class => 'App\\Services\\Preset\\EloquentPresetSource',
-        CompanyContext::class => 'App\\Services\\Eloquent\\EloquentCompanyContext',
-        CompanySettingsStore::class => 'App\\Services\\Eloquent\\EloquentCompanySettingsStore',
+        EntityRepository::class => 'App\Services\Eloquent\EloquentEntityRepository',
+        PresetSource::class => 'App\Services\Preset\EloquentPresetSource',
+        CompanyContext::class => 'App\Services\Eloquent\EloquentCompanyContext',
+        CompanySettingsStore::class => 'App\Services\Eloquent\EloquentCompanySettingsStore',
     ];
 
     public function register(): void
@@ -45,16 +45,6 @@ class DataSourceServiceProvider extends ServiceProvider
 
         if ($driver === 'eloquent') {
             foreach (self::ELOQUENT_BINDINGS as $contract => $implementation) {
-                if ($contract === EntityRepository::class) {
-                    $this->app->bind($contract, function () use ($implementation): never {
-                        throw new LogicException(
-                            "DATA_SOURCE=eloquent belum tersedia sebelum Fase 3: $implementation",
-                        );
-                    });
-
-                    continue;
-                }
-
                 if ($contract === CompanyContext::class || $contract === CompanySettingsStore::class) {
                     $this->app->scoped($contract, $implementation);
                 } else {
