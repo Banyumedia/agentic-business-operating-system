@@ -235,6 +235,8 @@
                 <p class="mt-5 text-sm text-[var(--erp-text-secondary)]" aria-live="polite" wire:loading wire:target="selectTheme">
                     Menyimpan tema usaha…
                 </p>
+            @elseif ($tab['id'] === 'export')
+                @livewire(\App\Livewire\Settings\DataExport::class)
             @else
                 <div class="rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] p-6">
                     <h2 class="text-lg font-semibold text-[var(--erp-text-primary)]">

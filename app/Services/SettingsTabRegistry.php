@@ -21,6 +21,8 @@ class SettingsTabRegistry
             ['id' => 'assistant', 'label' => 'Karyawan AI', 'roles' => ['owner', 'staff']],
             ['id' => 'usage', 'label' => 'Penggunaan & Paket', 'roles' => ['owner', 'staff']],
             ['id' => 'team', 'label' => 'Tim & Akses', 'roles' => ['owner']],
+            ['id' => 'export', 'label' => 'Ekspor Data', 'roles' => ['owner']],
+            ['id' => 'erasure', 'label' => 'Penghapusan Pelanggan', 'roles' => ['owner']],
         ];
     }
 
