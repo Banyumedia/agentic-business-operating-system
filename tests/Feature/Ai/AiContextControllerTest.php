@@ -157,8 +157,8 @@ class AiContextControllerTest extends TestCase
 
         $this->assertArrayHasKey('patient_contact_id', $response->json('data.prescriptions.0'));
         $this->assertArrayHasKey('doctor_name', $response->json('data.prescriptions.0'));
-        $this->assertArrayHasKey('created_at', $response->json('data.prescriptions.0'));
-        $this->assertArrayHasKey('company_id', $response->json('data.prescriptions.0'));
+        $this->assertArrayNotHasKey('created_at', $response->json('data.prescriptions.0'));
+        $this->assertArrayNotHasKey('company_id', $response->json('data.prescriptions.0'));
     }
 
     public function test_non_owner_cannot_change_ai_data_sharing_opt_in(): void
