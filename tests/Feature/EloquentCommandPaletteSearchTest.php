@@ -25,14 +25,14 @@ class EloquentCommandPaletteSearchTest extends TestCase
         $companyB = Company::factory()->create();
 
         // Target hits for Company A
-        Contact::factory()->create(['company_id' => $companyA->id, 'name' => 'Alice Appleseed']);
+        Contact::factory()->create(['company_id' => $companyA->id, 'name' => 'Alice Appleseed', 'email' => 'alice@example.com']);
         Project::factory()->create(['company_id' => $companyA->id, 'name' => 'Alpha Project']);
 
         // Noise hits for Company A (doesn't match 'Al')
-        Contact::factory()->create(['company_id' => $companyA->id, 'name' => 'Bob Builder']);
+        Contact::factory()->create(['company_id' => $companyA->id, 'name' => 'Bob Builder', 'email' => 'bob@example.com']);
 
         // Hits for Company B (matches 'Al' but wrong company)
-        Contact::factory()->create(['company_id' => $companyB->id, 'name' => 'Albert Einstein']);
+        Contact::factory()->create(['company_id' => $companyB->id, 'name' => 'Albert Einstein', 'email' => 'albert@example.com']);
 
         $mockContext = Mockery::mock(CompanyContext::class);
         $mockContext->shouldReceive('current')->andReturn((string) $companyA->id);
