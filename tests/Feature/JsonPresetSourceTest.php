@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Contracts\PresetSource;
 use App\Services\Json\JsonPresetSource;
 use App\Services\Preset\PresetDefinitionValidator;
+use App\Services\Workflow\WorkflowEngine;
 use InvalidArgumentException;
 use JsonException;
 use RuntimeException;
@@ -67,6 +68,36 @@ class JsonPresetSourceTest extends TestCase
             $laundry['transitions'],
         );
         $this->assertSame(['diambil', 'dibatalkan'], $laundry['terminal']);
+    }
+
+    public function test_every_committed_workflow_effect_is_runtime_registered_and_capability_backed(): void
+    {
+        $engine = app(WorkflowEngine::class);
+
+        foreach (app(PresetSource::class)->all() as $preset) {
+            foreach ($preset['workflows'] as $entity => $workflow) {
+                foreach ($workflow['transitions'] as $transition) {
+                    $effects = ($transition['requires_approval'] ?? false) === true
+                        ? ['approval.request', ...($transition['effects'] ?? [])]
+                        : ($transition['effects'] ?? []);
+
+                    foreach ($effects as $effect) {
+                        $this->assertTrue(
+                            $engine->supportsEffect($effect),
+                            "Efek tidak terdaftar di runtime: {$preset['key']}.{$entity} -> {$effect}"
+                        );
+
+                        $capability = $engine->requiredCapability($effect);
+                        if ($capability !== null) {
+                            $this->assertTrue(
+                                ($preset['capabilities'][$capability] ?? false) === true,
+                                "Efek {$effect} butuh capability {$capability}: {$preset['key']}.{$entity}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public function test_source_rejects_a_filename_that_does_not_match_the_definition_key(): void

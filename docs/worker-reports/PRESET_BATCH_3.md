@@ -1,7 +1,7 @@
 # Laporan Worker — Preset Batch 3 (Fase 6 Ekspansi)
 
-Status: selesai, sudah commit lokal (belum push).
-Basis: HEAD `b8fc35c`.
+Status: koreksi audit selesai; commit koreksi lihat `git log`.
+Basis yang diaudit: commit Kiro `f8fb5ea`.
 Jumlah preset sebelum batch ini: 34. Setelah batch ini: **40**.
 
 ## Preset yang ditambahkan
@@ -34,7 +34,20 @@ tests/Feature/JsonPresetSourceTest.php        (daftar preset kanonik 34 -> 40)
 docs/worker-reports/PRESET_BATCH_3.md         (baru)
 ```
 
-**Nol baris diff di `app/` dan `resources/`.**
+## Koreksi audit runtime
+
+Audit lanjutan membuktikan empat key efek dapat lolos test hardcoded meski
+tidak memiliki handler di `WorkflowEngine`: `stock.reserve`, `stock.deduct`,
+`invoice.create_dp`, dan `invoice.create_final`. Key tersebut dihapus dari
+preset sampai kontrak input, idempotensi, dan model reservasi/invoice bisnis
+diputuskan serta diimplementasikan. Alias deposit lama dan pemanggilan handler
+deposit tanpa kontrak input runtime juga dihapus dari preset sampai mutasinya
+benar-benar aman. `notify.owner_wa` dikeluarkan dari workflow preset sampai ada
+outbox/idempotensi yang mencegah pengiriman ganda saat penulisan log gagal.
+
+`WorkflowEngine` sekarang melakukan preflight seluruh efek terhadap registry
+dan capability efektif tenant sebelum efek pertama, stage, atau log berubah.
+Validator dan test komposisi membaca registry runtime yang sama.
 
 ## Dua guard baru di test batch ini
 
@@ -50,14 +63,13 @@ verifikasi. Keduanya sekarang dijaga otomatis:
    mengikuti preseden `cleaning_service` yang juga bookings + projects +
    timesheet.
 
-2. `test_batch_workflow_effects_are_backed_by_an_active_capability` — efek
-   transisi yang capability-nya mati tidak punya tempat bekerja. Guard ini
-   menangkap `it_support` yang memakai `invoice.create_final` tanpa
-   `milestone_billing` maupun `pos`. Dikoreksi dengan menyalakan
-   `milestone_billing` (kontrak maintenance ditagih per termin).
+2. `test_batch_workflow_effects_are_registered_and_capability_backed_at_runtime`
+   — setiap efek wajib mempunyai handler runtime nyata dan capability induk
+   aktif. Guard lintas-preset di `JsonPresetSourceTest` mencegah vocabulary
+   validator kembali berbeda dari registry eksekusi.
 
-Keduanya ditemukan oleh test, bukan oleh review manual, dan keduanya diperbaiki
-di sisi **data preset** — bukan dengan melonggarkan test atau mengubah kode.
+Koreksi diterapkan pada data preset dan runtime; test hardcoded lama tidak lagi
+menjadi sumber kebenaran effect handler.
 
 ## Temuan pada preset lama (tidak saya sentuh)
 
@@ -93,26 +105,28 @@ menu bisa dibaca langsung dari `test_every_active_capability_has_a_navigable_hom
    organizer (`eo`), sablon kaos (`percetakan`), bengkel AC (`service_ac`).
    Gadai/pegadaian di-skip karena ranah kepatuhan, bukan komposisi preset.
 
-## Verifikasi (output asli)
+## Verifikasi koreksi audit (output asli)
 
 ```
-php artisan test --filter="PresetCompositionBatch3Test|JsonPresetSourceTest"
-→ {"tool":"phpunit","result":"passed","tests":15,"passed":15,"assertions":424,"duration_ms":794}
+APP_CONFIG_CACHE=storage/framework/cache/phpunit-config.php php artisan test
+→ Tests: 550 passed (3008 assertions)
 
-php artisan test
-→ {"tool":"phpunit","result":"passed","tests":543,"passed":543,"assertions":2965,"duration_ms":27899}
+php vendor/bin/pint --test
+→ PASS, 388 files
 
-vendor/bin/pint --test
-→ {"tool":"pint","result":"passed"}
+npm run build
+→ built in 926ms
+
+validasi json
+→ JSON valid: 40 preset
 ```
 
-`storage/app/json/1/workflow_log.json` termodifikasi sebagai efek samping test
-run dan **sengaja tidak di-stage**.
+`storage/app/json/1/workflow_log.json` dipulihkan ke HEAD setelah test dan tidak
+di-stage. Artefak operasional asing `caddy_check.json` tidak disentuh.
 
 ## Sisa risiko
 
 - Preset batch ini belum punya company demo, jadi belum pernah dirender
   end-to-end lewat HTTP. Pembuktian rendering nyata menunggu seed company.
-- `docs/EXECUTION_PLAN.md`, `docs/AUTOPILOT_STATUS.md`, dan
-  `docs/PRESET_COVERAGE.md` tidak disentuh — ketiganya domain final-gate
-  reviewer. Angka di `PRESET_COVERAGE.md` masih 28 dan perlu disegarkan ke 40.
+- Otomatisasi reservasi/pengurangan stok serta invoice DP/final tidak diklaim
+  tersedia sampai handler transaksional dan idempoten benar-benar dibangun.

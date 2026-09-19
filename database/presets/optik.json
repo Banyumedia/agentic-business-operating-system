@@ -36,8 +36,8 @@
             ],
             "transitions": [
                 {"from": "pemeriksaan", "to": "pesan_lensa", "roles": ["owner", "staff"]},
-                {"from": "pesan_lensa", "to": "perakitan", "roles": ["owner", "staff"], "effects": ["stock.reserve"]},
-                {"from": "perakitan", "to": "siap_diambil", "roles": ["owner", "staff"], "effects": ["stock.deduct", "notify.owner_wa"]},
+                {"from": "pesan_lensa", "to": "perakitan", "roles": ["owner", "staff"]},
+                {"from": "perakitan", "to": "siap_diambil", "roles": ["owner", "staff"]},
                 {"from": "siap_diambil", "to": "selesai", "roles": ["owner", "staff"]},
                 {"from": "perakitan", "to": "pesan_lensa", "roles": ["owner", "staff"], "requires_note": true},
                 {"from": "*", "to": "dibatalkan", "roles": ["owner"]}

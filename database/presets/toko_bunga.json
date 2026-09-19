@@ -33,9 +33,9 @@
                 {"code": "dibatalkan", "label": "Dibatalkan"}
             ],
             "transitions": [
-                {"from": "pesanan", "to": "dirangkai", "roles": ["owner", "staff"], "effects": ["stock.reserve"]},
-                {"from": "dirangkai", "to": "dikirim", "roles": ["owner", "staff"], "effects": ["stock.deduct"]},
-                {"from": "dikirim", "to": "selesai", "roles": ["owner", "staff"], "effects": ["notify.owner_wa"]},
+                {"from": "pesanan", "to": "dirangkai", "roles": ["owner", "staff"]},
+                {"from": "dirangkai", "to": "dikirim", "roles": ["owner", "staff"]},
+                {"from": "dikirim", "to": "selesai", "roles": ["owner", "staff"]},
                 {"from": "dirangkai", "to": "pesanan", "roles": ["owner", "staff"], "requires_note": true},
                 {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
             ],

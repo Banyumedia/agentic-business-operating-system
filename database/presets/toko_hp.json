@@ -36,8 +36,8 @@
             ],
             "transitions": [
                 {"from": "diterima", "to": "diperiksa", "roles": ["owner", "staff"]},
-                {"from": "diperiksa", "to": "dikerjakan", "roles": ["owner", "staff"], "effects": ["stock.reserve"]},
-                {"from": "dikerjakan", "to": "siap_diambil", "roles": ["owner", "staff"], "effects": ["stock.deduct", "notify.owner_wa"]},
+                {"from": "diperiksa", "to": "dikerjakan", "roles": ["owner", "staff"]},
+                {"from": "dikerjakan", "to": "siap_diambil", "roles": ["owner", "staff"]},
                 {"from": "siap_diambil", "to": "selesai", "roles": ["owner", "staff"]},
                 {"from": "dikerjakan", "to": "diperiksa", "roles": ["owner", "staff"], "requires_note": true},
                 {"from": "*", "to": "dibatalkan", "roles": ["owner"]}

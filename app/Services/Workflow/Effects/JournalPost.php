@@ -2,8 +2,10 @@
 
 namespace App\Services\Workflow\Effects;
 
+use App\Models\ChartOfAccount;
 use App\Models\Order;
 use App\Services\Accounting\JournalService;
+use RuntimeException;
 
 class JournalPost implements WorkflowEffect
 {
@@ -16,9 +18,16 @@ class JournalPost implements WorkflowEffect
 
     public function execute(array $context): array
     {
+        $record = $context['record'] ?? null;
+        if (config('datasource.driver') !== 'eloquent'
+            || ($context['entity'] ?? null) !== 'orders'
+            || ! $record instanceof Order) {
+            throw new RuntimeException('Journal effect requires an Order workflow record.');
+        }
+
         $order = Order::query()
             ->where('company_id', $context['company'])
-            ->whereKey($context['record_id'])
+            ->whereKey($record->getKey())
             ->first();
 
         if (! $order) {
@@ -38,6 +47,14 @@ class JournalPost implements WorkflowEffect
             ];
         }
 
+        $accounts = ChartOfAccount::query()
+            ->where('company_id', $context['company'])
+            ->whereIn('account_code', ['1000', '4000'])
+            ->pluck('id', 'account_code');
+        if (! isset($accounts['1000'], $accounts['4000'])) {
+            throw new RuntimeException('Akun kas atau pendapatan belum dikonfigurasi.');
+        }
+
         $journal = $this->journalService->post([
             'company_id' => (int) $context['company'],
             'journal_number' => sprintf('ORD-%s-%s', $order->id, now()->format('YmdHis')),
@@ -46,13 +63,13 @@ class JournalPost implements WorkflowEffect
             'description' => 'Auto journal dari pembayaran order',
         ], [
             [
-                'account_id' => 1,
+                'account_id' => (int) $accounts['1000'],
                 'debit' => $amount,
                 'credit' => 0,
                 'description' => 'Kas dari pembayaran order '.$order->order_no,
             ],
             [
-                'account_id' => 2,
+                'account_id' => (int) $accounts['4000'],
                 'debit' => 0,
                 'credit' => $amount,
                 'description' => 'Pendapatan order '.$order->order_no,

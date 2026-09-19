@@ -660,7 +660,7 @@ CREATE TABLE bookings (
     rate_amount DECIMAL(18,2) NULL,
     deposit_amount DECIMAL(18,2) NOT NULL DEFAULT 0,      -- bookings.deposit
     late_fee_per_unit DECIMAL(18,2) NOT NULL DEFAULT 0,   -- bookings.deposit
-    late_fee_total DECIMAL(18,2) NOT NULL DEFAULT 0,      -- dihitung efek late_fee.compute
+    late_fee_total DECIMAL(18,2) NOT NULL DEFAULT 0,      -- dihitung efek bookings.late_fee.compute
     pic_user_id BIGINT UNSIGNED NULL,
     attributes JSON NULL,                -- renter_identity, notes, dll
     created_at TIMESTAMP NULL,
@@ -735,7 +735,7 @@ CREATE TABLE item_batches (
     CONSTRAINT fk_batches_item FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
 );
 ```
-FEFO: efek `stock.deduct` mengambil dari batch dengan `expires_on` terdekat dulu.
+FEFO: `StockService::deduct()` mengambil dari batch dengan `expires_on` terdekat dulu; key workflow `stock.deduct` masih deferred.
 
 ### 7.3 `stock_movements`
 ```sql

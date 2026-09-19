@@ -4,7 +4,8 @@
     "tier": "A",
     "capabilities": {
         "contacts": true,
-        "finance.cashbook": true
+        "finance.cashbook": true,
+        "approval_flow": true
     },
     "terminology": {
         "contact": "Kontak",

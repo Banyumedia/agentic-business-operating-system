@@ -41,8 +41,8 @@
             "transitions": [
                 {"from": "survei", "to": "konsep", "roles": ["owner", "staff"]},
                 {"from": "konsep", "to": "gambar_kerja", "roles": ["owner", "staff"]},
-                {"from": "gambar_kerja", "to": "pelaksanaan", "roles": ["owner"], "effects": ["invoice.create_dp"]},
-                {"from": "pelaksanaan", "to": "selesai", "roles": ["owner"], "effects": ["invoice.create_final"]},
+                {"from": "gambar_kerja", "to": "pelaksanaan", "roles": ["owner"]},
+                {"from": "pelaksanaan", "to": "selesai", "roles": ["owner"]},
                 {"from": "gambar_kerja", "to": "konsep", "roles": ["owner", "staff"], "requires_note": true},
                 {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
             ],

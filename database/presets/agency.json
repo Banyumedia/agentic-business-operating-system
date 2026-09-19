@@ -8,7 +8,8 @@
         "projects.progress_billing": true,
         "milestone_billing": true,
         "timesheet": true,
-        "finance.cashbook": true
+        "finance.cashbook": true,
+        "approval_flow": true
     },
     "terminology": {
         "contact": "Klien",
@@ -100,9 +101,6 @@
                 {
                     "from": "final",
                     "to": "selesai",
-                    "effects": [
-                        "notify.owner_wa"
-                    ],
                     "roles": [
                         "owner"
                     ]

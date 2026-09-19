@@ -7,6 +7,7 @@ use App\Contracts\PresetSource;
 use App\Services\DynamicMenuRegistry;
 use App\Services\FeatureResolver;
 use App\Services\Preset\PresetDefinitionValidator;
+use App\Services\Workflow\WorkflowEngine;
 use Tests\TestCase;
 
 /**
@@ -118,20 +119,10 @@ class PresetCompositionBatch3Test extends TestCase
         }
     }
 
-    public function test_batch_workflow_effects_are_backed_by_an_active_capability(): void
+    public function test_batch_workflow_effects_are_registered_and_capability_backed_at_runtime(): void
     {
-        // Efek transisi memakai modul lain; kalau capability-nya mati, efek itu
-        // tidak pernah punya tempat bekerja dan alur jadi menyesatkan.
-        $requires = [
-            'stock.reserve' => 'inventory',
-            'stock.deduct' => 'inventory',
-            'invoice.create_dp' => 'milestone_billing',
-            'invoice.create_final' => 'milestone_billing',
-            'deposit.collect' => 'bookings.deposit',
-            'deposit.settle' => 'bookings.deposit',
-            'journal.post' => 'finance.accounting',
-            'approval.request' => 'approval_flow',
-        ];
+        $engine = app(WorkflowEngine::class);
+        $checked = 0;
 
         foreach (self::BATCH as $slug) {
             $definition = $this->definition($slug);
@@ -139,28 +130,25 @@ class PresetCompositionBatch3Test extends TestCase
             foreach ($definition['workflows'] as $entity => $workflow) {
                 foreach ($workflow['transitions'] as $transition) {
                     foreach ($transition['effects'] ?? [] as $effect) {
-                        if (! isset($requires[$effect])) {
-                            continue;
-                        }
-
-                        $capability = $requires[$effect];
-                        $enabled = ($definition['capabilities'][$capability] ?? false) === true;
-
-                        // Penagihan boleh bersandar pada kasir kalau preset
-                        // tidak memakai termin proyek.
-                        if (! $enabled && str_starts_with($effect, 'invoice.')) {
-                            $enabled = ($definition['capabilities']['pos'] ?? false) === true;
-                            $capability .= ' atau pos';
-                        }
-
+                        $checked++;
                         $this->assertTrue(
-                            $enabled,
-                            "Efek {$effect} butuh capability {$capability} aktif: {$slug}.{$entity}"
+                            $engine->supportsEffect($effect),
+                            "Efek tidak terdaftar di runtime: {$slug}.{$entity} -> {$effect}"
                         );
+
+                        $capability = $engine->requiredCapability($effect);
+                        if ($capability !== null) {
+                            $this->assertTrue(
+                                ($definition['capabilities'][$capability] ?? false) === true,
+                                "Efek {$effect} butuh capability {$capability} aktif: {$slug}.{$entity}"
+                            );
+                        }
                     }
                 }
             }
         }
+
+        $this->assertSame(0, $checked, 'Batch 3 tidak boleh mengaktifkan effect sebelum kontrak runtime aman tersedia.');
     }
 
     public function test_every_active_capability_has_a_navigable_home(): void

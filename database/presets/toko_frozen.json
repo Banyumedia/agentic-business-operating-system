@@ -32,8 +32,8 @@
                 {"code": "dibatalkan", "label": "Dibatalkan"}
             ],
             "transitions": [
-                {"from": "pesanan", "to": "disiapkan", "roles": ["owner", "staff"], "effects": ["stock.reserve"]},
-                {"from": "disiapkan", "to": "dikirim", "roles": ["owner", "staff"], "effects": ["stock.deduct"]},
+                {"from": "pesanan", "to": "disiapkan", "roles": ["owner", "staff"]},
+                {"from": "disiapkan", "to": "dikirim", "roles": ["owner", "staff"]},
                 {"from": "dikirim", "to": "selesai", "roles": ["owner", "staff"]},
                 {"from": "disiapkan", "to": "pesanan", "roles": ["owner", "staff"], "requires_note": true},
                 {"from": "*", "to": "dibatalkan", "roles": ["owner"]}

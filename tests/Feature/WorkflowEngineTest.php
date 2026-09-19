@@ -4,10 +4,14 @@ namespace Tests\Feature;
 
 use App\Contracts\CompanyContext;
 use App\Contracts\HasWorkflow;
+use App\Contracts\PresetSource;
 use App\Models\Company;
 use App\Models\User;
+use App\Services\FeatureResolver;
 use App\Services\HermesNodeClient;
 use App\Services\Workflow\ArrayWorkflowRecord;
+use App\Services\Workflow\Effects\BookingsLateFeeCompute;
+use App\Services\Workflow\Effects\NotifyOwnerWa;
 use App\Services\Workflow\JsonWorkflowLog;
 use App\Services\Workflow\WorkflowEngine;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -155,33 +159,39 @@ class WorkflowEngineTest extends TestCase
             ->with('9999', '628123456789', Mockery::pattern('/Transisi workflow: Entity orders.*selesai/'));
         $this->app->instance(HermesNodeClient::class, $mockClient);
 
-        $record = new WorkflowRecord('9999', 'orders', 16, 'siap_diambil');
+        $result = app(NotifyOwnerWa::class)->execute([
+            'company' => '9999',
+            'entity' => 'orders',
+            'record_id' => 16,
+            'to' => 'selesai',
+            'actor_role' => 'staff',
+        ]);
 
-        $result = app(WorkflowEngine::class)->transition($record, 'selesai', 'staff');
-
-        $this->assertSame('selesai', $record->workflowStage());
         $this->assertSame([
             'effect' => 'notify.owner_wa',
             'status' => 'sent',
             'wa_number' => '628123456789',
-        ], $result['effects'][0]);
-        $this->assertSame($result['effects'], $this->workflowLog()[0]['effects']);
+        ], $result);
+        $this->assertSame([], $this->workflowLog());
     }
 
     public function test_notify_owner_wa_effect_fails_closed_when_owner_not_verified(): void
     {
         User::first()->update(['wa_is_verified' => false]);
 
-        $record = new WorkflowRecord('9999', 'orders', 16, 'siap_diambil');
-
         try {
-            app(WorkflowEngine::class)->transition($record, 'selesai', 'staff');
-            $this->fail('Transition should fail when WA is not verified');
+            app(NotifyOwnerWa::class)->execute([
+                'company' => '9999',
+                'entity' => 'orders',
+                'record_id' => 16,
+                'to' => 'selesai',
+                'actor_role' => 'staff',
+            ]);
+            $this->fail('Notification should fail when WA is not verified');
         } catch (RuntimeException $e) {
             $this->assertStringContainsString('Owner WA number is not verified', $e->getMessage());
         }
 
-        $this->assertSame('siap_diambil', $record->workflowStage(), 'In-memory state should be rolled back');
         $this->assertCount(0, $this->workflowLog(), 'Log should not be appended on failure');
         $this->assertDatabaseMissing('workflow_transitions_log', [
             'entity_id' => '16',
@@ -196,19 +206,121 @@ class WorkflowEngineTest extends TestCase
             ->andThrow(new RuntimeException('Hermes API Down'));
         $this->app->instance(HermesNodeClient::class, $mockClient);
 
-        $record = new WorkflowRecord('9999', 'orders', 16, 'siap_diambil');
-
         try {
-            app(WorkflowEngine::class)->transition($record, 'selesai', 'staff');
-            $this->fail('Transition should fail when WA delivery fails');
+            app(NotifyOwnerWa::class)->execute([
+                'company' => '9999',
+                'entity' => 'orders',
+                'record_id' => 16,
+                'to' => 'selesai',
+                'actor_role' => 'staff',
+            ]);
+            $this->fail('Notification should fail when WA delivery fails');
         } catch (RuntimeException $e) {
             $this->assertStringContainsString('WA Delivery failed', $e->getMessage());
         }
 
-        $this->assertSame('siap_diambil', $record->workflowStage(), 'In-memory state should be rolled back');
         $this->assertCount(0, $this->workflowLog(), 'Log should not be appended on failure');
         $this->assertDatabaseMissing('workflow_transitions_log', [
             'entity_id' => '16',
+        ]);
+    }
+
+    public function test_effect_capability_is_checked_before_any_effect_stage_or_log_mutation(): void
+    {
+        $features = Mockery::mock(FeatureResolver::class);
+        $features->shouldReceive('enabled')
+            ->once()
+            ->with('approval_flow')
+            ->andReturnFalse();
+        $this->app->instance(FeatureResolver::class, $features);
+
+        $source = Mockery::mock(PresetSource::class);
+        $source->shouldReceive('find')->once()->with('bengkel')->andReturn([
+            'workflows' => [
+                'orders' => [
+                    'stages' => [
+                        ['code' => 'siap_diambil', 'label' => 'Siap Diambil'],
+                        ['code' => 'selesai', 'label' => 'Selesai'],
+                    ],
+                    'terminal' => ['selesai'],
+                    'transitions' => [[
+                        'from' => 'siap_diambil',
+                        'to' => 'selesai',
+                        'roles' => ['staff'],
+                        'requires_approval' => true,
+                    ]],
+                ],
+            ],
+        ]);
+        $this->app->instance(PresetSource::class, $source);
+
+        $mockClient = Mockery::mock(HermesNodeClient::class);
+        $mockClient->shouldNotReceive('sendWhatsAppMessage');
+        $this->app->instance(HermesNodeClient::class, $mockClient);
+
+        $record = new WorkflowRecord('9999', 'orders', 160, 'siap_diambil');
+
+        try {
+            app(WorkflowEngine::class)->transition($record, 'selesai', 'staff');
+            $this->fail('Effect di luar capability efektif harus ditolak sebelum effect lain berjalan.');
+        } catch (AuthorizationException $exception) {
+            $this->assertStringContainsString('approval_flow', $exception->getMessage());
+        }
+
+        $this->assertSame('siap_diambil', $record->workflowStage());
+        $this->assertSame([], $this->workflowLog());
+        $this->assertDatabaseMissing('workflow_transitions_log', [
+            'entity_id' => '160',
+        ]);
+    }
+
+    public function test_non_success_effect_result_does_not_change_stage_or_write_log(): void
+    {
+        $features = Mockery::mock(FeatureResolver::class);
+        $features->shouldReceive('enabled')->once()->with('bookings.deposit')->andReturnTrue();
+        $this->app->instance(FeatureResolver::class, $features);
+
+        $source = Mockery::mock(PresetSource::class);
+        $source->shouldReceive('find')->once()->with('bengkel')->andReturn([
+            'workflows' => [
+                'orders' => [
+                    'stages' => [
+                        ['code' => 'siap_diambil', 'label' => 'Siap Diambil'],
+                        ['code' => 'selesai', 'label' => 'Selesai'],
+                    ],
+                    'terminal' => ['selesai'],
+                    'transitions' => [[
+                        'from' => 'siap_diambil',
+                        'to' => 'selesai',
+                        'roles' => ['staff'],
+                        'effects' => ['bookings.late_fee.compute'],
+                    ]],
+                ],
+            ],
+        ]);
+        $this->app->instance(PresetSource::class, $source);
+
+        $failedEffect = Mockery::mock(BookingsLateFeeCompute::class);
+        $failedEffect->shouldReceive('key')->once()->andReturn('bookings.late_fee.compute');
+        $failedEffect->shouldReceive('execute')->once()->andReturn([
+            'effect' => 'bookings.late_fee.compute',
+            'status' => 'skipped',
+        ]);
+        $this->app->instance(BookingsLateFeeCompute::class, $failedEffect);
+
+        $record = new WorkflowRecord('9999', 'orders', 161, 'siap_diambil');
+
+        try {
+            app(WorkflowEngine::class)->transition($record, 'selesai', 'staff');
+            $this->fail('Effect gagal harus membatalkan transisi.');
+        } catch (LogicException $exception) {
+            $this->assertStringContainsString('bookings.late_fee.compute', $exception->getMessage());
+        }
+
+        $this->assertSame('siap_diambil', $record->workflowStage());
+        $this->assertSame([], $this->workflowLog());
+        $this->assertDatabaseMissing('workflow_transitions_log', [
+            'entity_id' => '161',
         ]);
     }
 

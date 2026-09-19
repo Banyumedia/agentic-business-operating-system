@@ -31,7 +31,7 @@
             "transitions": [
                 {"from": "diterima", "to": "dicuci", "roles": ["owner", "staff"]},
                 {"from": "dicuci", "to": "siap_diambil", "roles": ["owner", "staff"]},
-                {"from": "siap_diambil", "to": "diambil", "roles": ["owner", "staff"], "effects": ["notify.owner_wa"]},
+                {"from": "siap_diambil", "to": "diambil", "roles": ["owner", "staff"]},
                 {"from": "dicuci", "to": "diterima", "roles": ["owner", "staff"], "requires_note": true},
                 {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
             ],

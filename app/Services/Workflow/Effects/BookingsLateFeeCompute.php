@@ -15,12 +15,16 @@ class BookingsLateFeeCompute implements WorkflowEffect
 
     public function execute(array $context): array
     {
-        $bookingId = $context['record_id'] ?? null;
-        if (! $bookingId) {
-            throw new RuntimeException('Booking ID is missing in context.');
+        $record = $context['record'] ?? null;
+        $companyId = $context['company'] ?? null;
+        if (($context['entity'] ?? null) !== 'bookings' || ! $record instanceof Booking || ! $companyId) {
+            throw new RuntimeException('Booking record or company is missing in context.');
         }
 
-        $booking = Booking::find($bookingId);
+        $booking = Booking::query()
+            ->whereKey($record->getKey())
+            ->where('company_id', $companyId)
+            ->first();
         if (! $booking) {
             throw new RuntimeException('Booking not found.');
         }

@@ -113,10 +113,6 @@
                     "roles": [
                         "owner",
                         "staff"
-                    ],
-                    "effects": [
-                        "notify.owner_wa",
-                        "journal.post"
                     ]
                 },
                 {

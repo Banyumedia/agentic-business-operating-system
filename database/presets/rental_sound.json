@@ -36,9 +36,9 @@
                 {"code": "dibatalkan", "label": "Dibatalkan"}
             ],
             "transitions": [
-                {"from": "dipesan", "to": "disiapkan", "roles": ["owner", "staff"], "effects": ["deposit.collect"]},
+                {"from": "dipesan", "to": "disiapkan", "roles": ["owner", "staff"]},
                 {"from": "disiapkan", "to": "terpasang", "roles": ["owner", "staff"]},
-                {"from": "terpasang", "to": "selesai", "roles": ["owner", "staff"], "effects": ["deposit.settle"]},
+                {"from": "terpasang", "to": "selesai", "roles": ["owner", "staff"]},
                 {"from": "disiapkan", "to": "dipesan", "roles": ["owner", "staff"], "requires_note": true},
                 {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
             ],

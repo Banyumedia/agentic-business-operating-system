@@ -8,7 +8,8 @@
         "inventory": true,
         "inventory.batch_expiry": true,
         "pharmacy.prescription": true,
-        "finance.cashbook": true
+        "finance.cashbook": true,
+        "approval_flow": true
     },
     "terminology": {
         "contact": "Pasien",

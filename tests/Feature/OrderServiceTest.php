@@ -9,9 +9,12 @@ use App\Models\Company;
 use App\Models\Order;
 use App\Models\Resource;
 use App\Models\User;
+use App\Models\WorkflowDefinition;
+use App\Services\FeatureResolver;
 use App\Services\HermesNodeClient;
 use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Mockery;
 use Tests\TestCase;
 
@@ -187,10 +190,38 @@ class OrderServiceTest extends TestCase
         $mockHermes->shouldReceive('sendWhatsAppMessage')->andReturn(true);
         $this->app->instance(HermesNodeClient::class, $mockHermes);
 
+        $features = Mockery::mock(FeatureResolver::class);
+        $features->shouldReceive('enabled')->once()->with('finance.cashbook')->andReturnTrue();
+        $this->app->instance(FeatureResolver::class, $features);
+
+        Config::set('datasource.driver', 'eloquent');
+        WorkflowDefinition::create([
+            'company_id' => $company->id,
+            'entity' => 'orders',
+            'version' => 1,
+            'is_active' => true,
+            'definition' => [
+                'stages' => [
+                    ['code' => 'siap_diambil', 'label' => 'Siap Diambil'],
+                    ['code' => 'selesai', 'label' => 'Selesai'],
+                ],
+                'terminal' => ['selesai'],
+                'transitions' => [[
+                    'from' => 'siap_diambil',
+                    'to' => 'selesai',
+                    'roles' => ['staff'],
+                    'effects' => ['journal.post'],
+                ]],
+            ],
+        ]);
+
         $service = app(OrderService::class);
 
-        ChartOfAccount::create(['id' => 1, 'company_id' => $company->id, 'account_code' => '1000', 'name' => 'Kas', 'type' => 'asset', 'is_active' => true]);
-        ChartOfAccount::create(['id' => 2, 'company_id' => $company->id, 'account_code' => '4000', 'name' => 'Pendapatan', 'type' => 'revenue', 'is_active' => true]);
+        $foreignCompany = Company::factory()->create();
+        ChartOfAccount::create(['company_id' => $foreignCompany->id, 'account_code' => '1000', 'name' => 'Kas Asing', 'type' => 'asset', 'is_active' => true]);
+        ChartOfAccount::create(['company_id' => $foreignCompany->id, 'account_code' => '4000', 'name' => 'Pendapatan Asing', 'type' => 'revenue', 'is_active' => true]);
+        $cashAccount = ChartOfAccount::create(['company_id' => $company->id, 'account_code' => '1000', 'name' => 'Kas', 'type' => 'asset', 'is_active' => true]);
+        $revenueAccount = ChartOfAccount::create(['company_id' => $company->id, 'account_code' => '4000', 'name' => 'Pendapatan', 'type' => 'revenue', 'is_active' => true]);
 
         $user = User::factory()->create([
             'current_company_id' => $company->id,
@@ -229,5 +260,17 @@ class OrderServiceTest extends TestCase
         }
 
         $this->assertNotNull($journalEffectResult, 'Efek journal.post tidak ditemukan dalam hasil workflow.');
+        $this->assertDatabaseHas('accounting_journal_lines', [
+            'company_id' => $company->id,
+            'account_id' => $cashAccount->id,
+        ]);
+        $this->assertDatabaseHas('accounting_journal_lines', [
+            'company_id' => $company->id,
+            'account_id' => $revenueAccount->id,
+        ]);
+        $this->assertDatabaseMissing('accounting_journal_lines', [
+            'company_id' => $company->id,
+            'account_id' => 1,
+        ]);
     }
 }

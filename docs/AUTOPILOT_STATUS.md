@@ -6,6 +6,18 @@
 **Canonical workspace:** `D:\PROJECTS\agentic-bos`
 **Git:** branch `main`, HEAD lihat `git rev-parse --short HEAD`; **remote belum dikonfigurasi**.
 
+## Koreksi audit preset batch 3 — DONE
+
+Scope: menutup audit commit Kiro `f8fb5ea` (1 HIGH, 2 MEDIUM).
+
+1. Registry effect runtime kini menjadi satu sumber validator preset; seluruh 40 preset memiliki regression test terhadap registry dan capability requirement.
+2. Effect stok/invoice/deposit/notifikasi tanpa kontrak eksekusi atomik dihapus dari preset terdampak; katalog effect didokumentasikan sesuai registry runtime.
+3. Capability efektif tenant dipreflight sebelum effect, stage, atau log berubah; negative regression membuktikan fail-closed tanpa mutasi parsial.
+4. `PRESET_COVERAGE.md` disinkronkan ke 40 preset (`37` Tier A, `3` Tier B).
+5. Evidence: full isolated `550 passed / 3,008 assertions`; Pint `388 files PASS`; build PASS; `40` JSON valid.
+6. Fixture `storage/app/json/1/workflow_log.json` dipulihkan; artefak asing `caddy_check.json` tidak disentuh/di-stage.
+7. **Next:** berhenti di gate `HUMAN:UI-LOCK`; tidak push/deploy.
+
 > Agent yang resume: baca file ini, lalu `EXECUTION_PLAN.md` §0 untuk definisi
 > `READY` dan command verifikasi. Jangan pakai angka/SHA dari ingatan sesi.
 
@@ -148,7 +160,7 @@ dan di-commit sebagai `2b04d35`; proses writer Claude/Kiro CLI dihentikan sebelu
    tidak dihapus saat gagal agar request paralel tidak dapat menghapus tiket
    yang sudah dilog, dan retry tidak membuat duplikat; `pending_approvals` tetap
    tenant-scoped dan fail-closed untuk prepared/consumed/expired/tenant lain;
-4. copy `cuci_sepatu` sesuai effect `notify.owner_wa`;
+4. copy `cuci_sepatu` tetap data-only; effect notifikasi ditunda sampai outbox/idempotensi tersedia;
 5. `manufacturing.production_order` sinkron sebagai Tier B dengan dependency
    `inventory.bom` + `inventory.batch_expiry` + `finance.accounting` sesuai
    D-57;

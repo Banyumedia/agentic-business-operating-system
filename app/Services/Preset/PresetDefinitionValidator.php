@@ -2,6 +2,7 @@
 
 namespace App\Services\Preset;
 
+use App\Services\Workflow\WorkflowEngine;
 use InvalidArgumentException;
 use stdClass;
 
@@ -47,12 +48,6 @@ class PresetDefinitionValidator
         'resources_status', 'bookings_due_today', 'overdue_returns', 'open_bills',
         'expiring_batches', 'low_stock', 'prescription_queue', 'timesheet_summary',
         'vendor_settlement', 'pending_approvals',
-    ];
-
-    private const EFFECTS = [
-        'invoice.create_dp', 'invoice.create_final', 'deposit.collect',
-        'deposit.settle', 'late_fee.compute', 'stock.reserve', 'stock.deduct',
-        'journal.post', 'notify.owner_wa', 'approval.request',
     ];
 
     private const CAPABILITY_DEPENDENCIES = [
@@ -230,9 +225,18 @@ class PresetDefinitionValidator
             if (! is_array($effects) || ! array_is_list($effects)) {
                 throw new InvalidArgumentException("Effects transisi harus list: {$entity}");
             }
+            if (count($effects) > 1) {
+                throw new InvalidArgumentException("Transisi hanya boleh memiliki satu effect: {$entity}");
+            }
+            if (($transition['requires_approval'] ?? false) === true && $effects !== []) {
+                throw new InvalidArgumentException("Transisi approval tidak boleh memiliki effect langsung: {$entity}");
+            }
             foreach ($effects as $effect) {
-                if (! is_string($effect) || ! in_array($effect, self::EFFECTS, true)) {
+                if (! is_string($effect) || ! array_key_exists($effect, WorkflowEngine::EFFECT_CAPABILITIES)) {
                     throw new InvalidArgumentException('Efek tidak terdaftar: '.(is_scalar($effect) ? $effect : gettype($effect)));
+                }
+                if ($effect === 'approval.request') {
+                    throw new InvalidArgumentException("Gunakan requires_approval untuk approval: {$entity}");
                 }
             }
 

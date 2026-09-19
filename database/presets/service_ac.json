@@ -35,7 +35,7 @@
             ],
             "transitions": [
                 {"from": "dijadwalkan", "to": "dikerjakan", "roles": ["owner", "staff"]},
-                {"from": "dikerjakan", "to": "selesai", "roles": ["owner", "staff"], "effects": ["notify.owner_wa"]},
+                {"from": "dikerjakan", "to": "selesai", "roles": ["owner", "staff"]},
                 {"from": "dikerjakan", "to": "dijadwalkan", "roles": ["owner", "staff"], "requires_note": true},
                 {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
             ],

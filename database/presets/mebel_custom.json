@@ -43,10 +43,10 @@
                 {"code": "dibatalkan", "label": "Dibatalkan"}
             ],
             "transitions": [
-                {"from": "penawaran", "to": "produksi", "roles": ["owner"], "effects": ["invoice.create_dp", "stock.reserve"]},
-                {"from": "produksi", "to": "finishing", "roles": ["owner", "staff"], "effects": ["stock.deduct"]},
+                {"from": "penawaran", "to": "produksi", "roles": ["owner"]},
+                {"from": "produksi", "to": "finishing", "roles": ["owner", "staff"]},
                 {"from": "finishing", "to": "pengiriman", "roles": ["owner", "staff"]},
-                {"from": "pengiriman", "to": "selesai", "roles": ["owner"], "effects": ["invoice.create_final"]},
+                {"from": "pengiriman", "to": "selesai", "roles": ["owner"]},
                 {"from": "finishing", "to": "produksi", "roles": ["owner", "staff"], "requires_note": true},
                 {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
             ],

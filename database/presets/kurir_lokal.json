@@ -31,7 +31,7 @@
             "transitions": [
                 {"from": "diterima", "to": "dijemput", "roles": ["owner", "staff"]},
                 {"from": "dijemput", "to": "diantar", "roles": ["owner", "staff"]},
-                {"from": "diantar", "to": "selesai", "roles": ["owner", "staff"], "effects": ["notify.owner_wa"]},
+                {"from": "diantar", "to": "selesai", "roles": ["owner", "staff"]},
                 {"from": "diantar", "to": "dijemput", "roles": ["owner", "staff"], "requires_note": true},
                 {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
             ],

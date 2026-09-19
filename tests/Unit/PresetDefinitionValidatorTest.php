@@ -86,6 +86,22 @@ class PresetDefinitionValidatorTest extends TestCase
 
                 return $definition;
             }, 'Effects transisi harus list: orders'],
+            'multiple effects' => [static function (array $definition): array {
+                $definition['workflows']['orders']['transitions'][0]['effects'] = ['notify.owner_wa', 'journal.post'];
+
+                return $definition;
+            }, 'Transisi hanya boleh memiliki satu effect: orders'],
+            'approval as direct effect' => [static function (array $definition): array {
+                $definition['workflows']['orders']['transitions'][0]['effects'] = ['approval.request'];
+
+                return $definition;
+            }, 'Gunakan requires_approval untuk approval: orders'],
+            'approval with direct effect' => [static function (array $definition): array {
+                $definition['workflows']['orders']['transitions'][0]['requires_approval'] = true;
+                $definition['workflows']['orders']['transitions'][0]['effects'] = ['notify.owner_wa'];
+
+                return $definition;
+            }, 'Transisi approval tidak boleh memiliki effect langsung: orders'],
             'widget props shape' => [static function (array $definition): array {
                 $definition['dashboard']['industry_zone'][0]['props'] = null;
 

@@ -35,7 +35,7 @@
                 {"from": "diukur", "to": "dipotong", "roles": ["owner", "staff"]},
                 {"from": "dipotong", "to": "dijahit", "roles": ["owner", "staff"]},
                 {"from": "dijahit", "to": "fitting", "roles": ["owner", "staff"]},
-                {"from": "fitting", "to": "selesai", "roles": ["owner", "staff"], "effects": ["notify.owner_wa"]},
+                {"from": "fitting", "to": "selesai", "roles": ["owner", "staff"]},
                 {"from": "fitting", "to": "dijahit", "roles": ["owner", "staff"], "requires_note": true},
                 {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
             ],

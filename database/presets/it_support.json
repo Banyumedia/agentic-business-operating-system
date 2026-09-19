@@ -49,9 +49,9 @@
             ],
             "transitions": [
                 {"from": "tiket_masuk", "to": "dijadwalkan", "roles": ["owner", "staff"]},
-                {"from": "dijadwalkan", "to": "penanganan", "roles": ["owner", "staff"], "effects": ["stock.reserve"]},
-                {"from": "penanganan", "to": "verifikasi", "roles": ["owner", "staff"], "effects": ["stock.deduct"]},
-                {"from": "verifikasi", "to": "selesai", "roles": ["owner"], "effects": ["invoice.create_final"]},
+                {"from": "dijadwalkan", "to": "penanganan", "roles": ["owner", "staff"]},
+                {"from": "penanganan", "to": "verifikasi", "roles": ["owner", "staff"]},
+                {"from": "verifikasi", "to": "selesai", "roles": ["owner"]},
                 {"from": "verifikasi", "to": "penanganan", "roles": ["owner", "staff"], "requires_note": true},
                 {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
             ],

@@ -39,8 +39,6 @@ class ProjectWorkflowTest extends TestCase
             'name' => 'Agency B',
             'business_preset' => 'agency',
         ]);
-
-        $this->engine = $this->app->make(WorkflowEngine::class);
     }
 
     public function test_tenant_isolation(): void

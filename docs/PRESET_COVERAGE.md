@@ -7,8 +7,8 @@ workflow, widget, dan menu generik.
 
 ## Ringkasan
 
-- Preset tersedia: **28**.
-- Tier A: **25**.
+- Preset tersedia: **40**.
+- Tier A: **37**.
 - Tier B: **3** (`contractor`, `pharmacy`, `praktek_dokter`).
 - Semua preset divalidasi oleh `PresetDefinitionValidator` saat dibaca melalui
   `PresetSource`.
@@ -42,7 +42,7 @@ Kontrak runtime yang dibuktikan test:
 
 | Tier | Preset |
 |---|---|
-| A | `agency`, `bakery_preorder`, `barbershop`, `bengkel`, `cleaning_service`, `cuci_mobil`, `cuci_sepatu`, `custom`, `eo`, `fnb`, `fotografi`, `gym`, `katering`, `kedai_kopi`, `klinik`, `kos_coworking`, `kursus`, `laundry`, `percetakan`, `rental`, `salon`, `service_ac`, `toko_bangunan`, `travel_umroh`, `warnet_gaming` |
+| A | `agency`, `bakery_preorder`, `barbershop`, `bengkel`, `cleaning_service`, `cuci_mobil`, `cuci_sepatu`, `custom`, `desain_interior`, `eo`, `fnb`, `fotografi`, `gym`, `it_support`, `kantor_hukum`, `katering`, `kedai_kopi`, `klinik`, `kos_coworking`, `kurir_lokal`, `kursus`, `laundry`, `mebel_custom`, `optik`, `penjahit`, `percetakan`, `petshop`, `rental`, `rental_sound`, `salon`, `service_ac`, `toko_bangunan`, `toko_bunga`, `toko_frozen`, `toko_hp`, `travel_umroh`, `warnet_gaming` |
 | B | `contractor`, `pharmacy`, `praktek_dokter` |
 
 ## Capability Tier B Manufaktur

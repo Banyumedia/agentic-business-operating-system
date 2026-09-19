@@ -116,10 +116,10 @@ Skema dikunci; seeder dan endpoint admin memvalidasinya.
       ],
       "transitions": [
         {"from": "draft",     "to": "confirmed", "roles": ["owner","staff"]},
-        {"from": "confirmed", "to": "out",       "roles": ["owner","staff"], "effects": ["deposit.collect"]},
-        {"from": "out",       "to": "returned",  "roles": ["owner","staff"], "effects": ["late_fee.compute","deposit.settle"]},
+        {"from": "confirmed", "to": "out",       "roles": ["owner","staff"]},
+        {"from": "out",       "to": "returned",  "roles": ["owner","staff"], "effects": ["bookings.late_fee.compute"]},
         {"from": "out",       "to": "overdue",   "roles": ["system"]},
-        {"from": "overdue",   "to": "returned",  "roles": ["owner","staff"], "effects": ["late_fee.compute","deposit.settle"]},
+        {"from": "overdue",   "to": "returned",  "roles": ["owner","staff"], "effects": ["bookings.late_fee.compute"]},
         {"from": "*",         "to": "cancelled", "roles": ["owner"], "requires_approval": true}
       ],
       "terminal": ["returned", "cancelled"]
@@ -218,16 +218,17 @@ di kode, dirujuk preset sebagai string.
 
 | Efek | Aksi |
 |---|---|
-| `invoice.create_dp` | Buat invoice termin DP dari `milestone_billing` |
-| `invoice.create_final` | Buat invoice pelunasan |
-| `deposit.collect` | Catat deposit masuk (kas) |
-| `deposit.settle` | Kembalikan deposit − denda/kerusakan |
-| `late_fee.compute` | Hitung denda dari `bookings.deposit` rules |
-| `stock.reserve` | Reservasi stok untuk order |
-| `stock.deduct` | Kurangi stok (FEFO bila `inventory.batch_expiry`) |
+| `bookings.late_fee.compute` | Hitung denda dari aturan booking |
 | `journal.post` | Posting jurnal otomatis dari template (hanya via dokumen sah, D-04) |
-| `notify.owner_wa` | Kirim pesan WA ke owner via Hermes |
 | `approval.request` | Buat tiket approval (D-27) — dipicu otomatis oleh `requires_approval: true` |
+
+`stock.reserve`, `stock.deduct`, `invoice.create_dp`, `invoice.create_final`,
+`bookings.deposit.collect`, `bookings.deposit.settle`, dan `notify.owner_wa` belum menjadi vocabulary
+preset yang sah sampai handler transaksional, idempoten, dan kontrak inputnya
+tersedia. Workflow preset tidak boleh mendeklarasikan key tersebut lebih awal.
+Satu transisi dibatasi ke satu effect sampai outbox/kompensasi lintas-effect
+tersedia. `approval.request` hanya dipicu melalui `requires_approval: true`;
+transisi approval tidak boleh sekaligus mendeklarasikan `effects`.
 
 ---
 

@@ -8,7 +8,8 @@
         "pos.tables": true,
         "inventory": true,
         "hr.employees": true,
-        "finance.cashbook": true
+        "finance.cashbook": true,
+        "approval_flow": true
     },
     "terminology": {
         "contact": "Pelanggan",

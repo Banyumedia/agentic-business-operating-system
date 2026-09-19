@@ -7,14 +7,13 @@ use App\Contracts\HasWorkflow;
 use App\Contracts\PresetSource;
 use App\Models\WorkflowDefinition;
 use App\Models\WorkflowTransitionLog;
+use App\Services\FeatureResolver;
 use App\Services\Workflow\Effects\ApprovalRequest;
-use App\Services\Workflow\Effects\BookingsDepositCollect;
-use App\Services\Workflow\Effects\BookingsDepositSettle;
 use App\Services\Workflow\Effects\BookingsLateFeeCompute;
 use App\Services\Workflow\Effects\JournalPost;
-use App\Services\Workflow\Effects\NotifyOwnerWa;
 use App\Services\Workflow\Effects\WorkflowEffect;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
@@ -22,6 +21,13 @@ use Throwable;
 
 class WorkflowEngine
 {
+    /** @var array<string, string|null> */
+    public const EFFECT_CAPABILITIES = [
+        'approval.request' => 'approval_flow',
+        'bookings.late_fee.compute' => 'bookings.deposit',
+        'journal.post' => 'finance.cashbook',
+    ];
+
     /** @var array<string, WorkflowEffect> */
     private array $effects;
 
@@ -30,20 +36,25 @@ class WorkflowEngine
         private readonly PresetSource $presetSource,
         private readonly JsonWorkflowLog $log,
         private readonly ApprovalRequest $approvalRequest,
-        NotifyOwnerWa $notifyOwnerWa,
-        BookingsDepositCollect $bookingsDepositCollect,
-        BookingsDepositSettle $bookingsDepositSettle,
+        private readonly FeatureResolver $features,
         BookingsLateFeeCompute $bookingsLateFeeCompute,
         JournalPost $journalPost,
     ) {
         $this->effects = [
             $approvalRequest->key() => $approvalRequest,
-            $notifyOwnerWa->key() => $notifyOwnerWa,
-            $bookingsDepositCollect->key() => $bookingsDepositCollect,
-            $bookingsDepositSettle->key() => $bookingsDepositSettle,
             $bookingsLateFeeCompute->key() => $bookingsLateFeeCompute,
             $journalPost->key() => $journalPost,
         ];
+    }
+
+    public function supportsEffect(string $key): bool
+    {
+        return isset($this->effects[$key]);
+    }
+
+    public function requiredCapability(string $key): ?string
+    {
+        return self::EFFECT_CAPABILITIES[$key] ?? null;
     }
 
     /** @return list<array{code: string, label: string}> */
@@ -89,6 +100,19 @@ class WorkflowEngine
             throw new InvalidArgumentException('Transisi ini membutuhkan catatan alasan.');
         }
 
+        $requiresApproval = ($transition['requires_approval'] ?? false) === true;
+        if ($requiresApproval && ($transition['effects'] ?? []) !== []) {
+            throw new LogicException('Transisi approval tidak boleh memiliki effect langsung.');
+        }
+        if (! $requiresApproval && in_array('approval.request', $transition['effects'] ?? [], true)) {
+            throw new LogicException('Effect approval.request hanya boleh dipicu melalui requires_approval.');
+        }
+
+        $effectKeys = $requiresApproval
+            ? ['approval.request']
+            : ($transition['effects'] ?? []);
+        $this->assertEffectsExecutable($effectKeys);
+
         $context = [
             'company' => $snapshot['company'],
             'preset' => $snapshot['preset'],
@@ -100,9 +124,12 @@ class WorkflowEngine
             'note' => $note,
         ];
 
-        return DB::transaction(function () use ($transition, $context, $snapshot, $to, $model) {
-            if (($transition['requires_approval'] ?? false) === true) {
-                $effectResult = $this->executeEffect('approval.request', $context);
+        return DB::transaction(function () use ($requiresApproval, $transition, $context, $snapshot, $to, $model) {
+            $effectModel = $this->lockCurrentModel($model, $snapshot);
+            $effectContext = [...$context, 'record' => $effectModel];
+
+            if ($requiresApproval) {
+                $effectResult = $this->executeEffect('approval.request', $effectContext);
                 $effectResults = [$effectResult];
 
                 if ($this->usesEloquentLog()) {
@@ -113,17 +140,24 @@ class WorkflowEngine
                 // JSON keeps an invisible prepared row on every failure. It is
                 // the recovery journal for safe retry and must never be deleted
                 // by a competing request that may already have committed its log.
-                $this->approvalRequest->commit($context, $effectResult);
+                $this->approvalRequest->commit($effectContext, $effectResult);
 
                 return $this->result('pending_approval', $snapshot['stage'], $to, $effectResults);
             }
 
             $effectResults = [];
             foreach ($transition['effects'] ?? [] as $effect) {
-                $effectResults[] = $this->executeEffect($effect, $context);
+                $effectResult = $this->executeEffect($effect, $effectContext);
+                if (! in_array($effectResult['status'] ?? null, ['success', 'sent', 'posted'], true)) {
+                    throw new LogicException("Efek workflow gagal: {$effect}");
+                }
+                $effectResults[] = $effectResult;
             }
 
-            $model->setWorkflowStage($to);
+            $effectModel->setWorkflowStage($to);
+            if ($model instanceof Model && $effectModel !== $model) {
+                $model->setRawAttributes($effectModel->getAttributes(), true);
+            }
             try {
                 $this->log->append($snapshot['company'], $this->logEntry('transitioned', $context, $effectResults));
                 if ($this->usesEloquentLog()) {
@@ -136,6 +170,26 @@ class WorkflowEngine
 
             return $this->result('transitioned', $snapshot['stage'], $to, $effectResults);
         });
+    }
+
+    /** @param array{company: string, preset: string, entity: string, id: string|int, stage: string} $snapshot */
+    private function lockCurrentModel(HasWorkflow $model, array $snapshot): HasWorkflow
+    {
+        if (config('datasource.driver') !== 'eloquent' || ! $model instanceof Model) {
+            return $model;
+        }
+
+        $locked = $model->newQuery()
+            ->whereKey($model->getKey())
+            ->where('company_id', $snapshot['company'])
+            ->lockForUpdate()
+            ->first();
+
+        if (! $locked instanceof HasWorkflow || $locked->workflowStage() !== $snapshot['stage']) {
+            throw new LogicException('State workflow berubah; muat ulang sebelum mencoba lagi.');
+        }
+
+        return $locked;
     }
 
     /**
@@ -312,6 +366,25 @@ class WorkflowEngine
         }
 
         return $effect->execute($context);
+    }
+
+    /** @param list<string> $keys */
+    private function assertEffectsExecutable(array $keys): void
+    {
+        if (count($keys) > 1) {
+            throw new LogicException('Transisi dengan lebih dari satu effect belum didukung secara atomik.');
+        }
+
+        foreach ($keys as $key) {
+            if (! $this->supportsEffect($key)) {
+                throw new LogicException("Efek workflow belum diimplementasikan: {$key}");
+            }
+
+            $capability = $this->requiredCapability($key);
+            if ($capability !== null && ! $this->features->enabled($capability)) {
+                throw new AuthorizationException("Capability workflow tidak aktif: {$capability}");
+            }
+        }
     }
 
     /**

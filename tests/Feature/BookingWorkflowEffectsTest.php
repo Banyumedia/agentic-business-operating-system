@@ -40,6 +40,10 @@ class BookingWorkflowEffectsTest extends TestCase
             'name' => 'Clinic',
             'tier' => 'pro',
             'definition' => [
+                'capabilities' => [
+                    'bookings' => true,
+                    'bookings.deposit' => true,
+                ],
                 'workflows' => [
                     'bookings' => [
                         'entity' => 'bookings',
@@ -85,7 +89,9 @@ class BookingWorkflowEffectsTest extends TestCase
         // Not late
         $this->booking->update(['actual_ends_at' => $this->booking->ends_at->copy()->subMinutes(10)]);
         $result = $effect->execute([
-            'record_id' => $this->booking->id,
+            'entity' => 'bookings',
+            'record' => $this->booking,
+            'company' => (string) $this->company->id,
         ]);
 
         $this->assertEquals('success', $result['status']);
@@ -99,7 +105,9 @@ class BookingWorkflowEffectsTest extends TestCase
         // Late by 65 minutes (ceil(65/60) = 2 units)
         $this->booking->update(['actual_ends_at' => $this->booking->ends_at->copy()->addMinutes(65)]);
         $result2 = $effect->execute([
-            'record_id' => $this->booking->id,
+            'entity' => 'bookings',
+            'record' => $this->booking,
+            'company' => (string) $this->company->id,
         ]);
 
         $this->assertEquals('success', $result2['status']);
@@ -108,6 +116,21 @@ class BookingWorkflowEffectsTest extends TestCase
 
         $this->booking->refresh();
         $this->assertEquals(100000, $this->booking->late_fee_total);
+    }
+
+    public function test_late_fee_compute_rejects_booking_from_another_company(): void
+    {
+        $effect = app(BookingsLateFeeCompute::class);
+        $foreignCompany = Company::factory()->create();
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Booking not found.');
+
+        $effect->execute([
+            'entity' => 'bookings',
+            'record' => $this->booking,
+            'company' => (string) $foreignCompany->id,
+        ]);
     }
 
     public function test_deposit_collect_gagal_deposit_0_sukses_jika_lebih(): void
@@ -149,7 +172,7 @@ class BookingWorkflowEffectsTest extends TestCase
         $this->assertEquals(150000, $result['settled_amount']);
     }
 
-    public function test_workflow_engine_transition_pada_booking(): void
+    public function test_workflow_engine_rejects_deposit_effect_without_amount_context(): void
     {
         // Define workflow
         WorkflowDefinition::create([
@@ -184,21 +207,18 @@ class BookingWorkflowEffectsTest extends TestCase
         // Re-resolve workflow engine so it gets the mocked context and preset source
         $engine = app(WorkflowEngine::class);
 
-        $result = $engine->transition(
-            $this->booking,
-            'confirmed',
-            'owner'
-        );
-
-        $this->assertEquals('transitioned', $result['status']);
-        $this->assertEquals('draft', $result['from']);
-        $this->assertEquals('confirmed', $result['to']);
-
-        // Assert effects were run
-        $this->assertCount(1, $result['effects']);
-        $this->assertEquals('bookings.deposit.collect', $result['effects'][0]['effect']);
+        try {
+            $engine->transition($this->booking, 'confirmed', 'owner');
+            $this->fail('Deposit tanpa amount context harus membatalkan transisi.');
+        } catch (\LogicException $exception) {
+            $this->assertStringContainsString('bookings.deposit.collect', $exception->getMessage());
+        }
 
         $this->booking->refresh();
-        $this->assertEquals('confirmed', $this->booking->stage);
+        $this->assertEquals('draft', $this->booking->stage);
+        $this->assertDatabaseMissing('workflow_transitions_log', [
+            'entity' => 'bookings',
+            'entity_id' => (string) $this->booking->id,
+        ]);
     }
 }
