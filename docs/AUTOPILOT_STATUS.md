@@ -10,6 +10,28 @@
 
 **Next:** Dashboard live dari HP dikonfirmasi Bos **PASS** pada 2026-09-20. Lanjutkan acceptance owner untuk Settings → Export; setelah seluruh checklist UI-LOCK selesai dan akses admin tersedia, restart service `PM2-AgenticBOS` dan kembalikan Caddy ke upstream permanen 8010 setelah verifikasi.
 
+**Smoke test menyeluruh 2026-09-20 (authenticated owner `bos@nalar.army`, company `Demo Usaha` preset `laundry`, via app 8002):**
+
+| Area | Route | Hasil | Catatan |
+|---|---|---|---|
+| Dashboard | `/app/dashboard` | 200 ✅ | KPI + Laporan AI + widget laundry |
+| Group report | `/app/group-report` | **403** ⚠️ | perlu cek gate (owner seharusnya boleh?) |
+| Settings (semua tab) | `/app/settings*` | 200 ✅ | 9 tab OK |
+| Export action | Livewire `export` | 200 ✅ | ZIP dibuat; downloadUrl null di payload (lihat gap) |
+| Export download | `/app/settings/export/download` | 200 ✅ | ZIP 608B: contacts/invoices/identities/settings |
+| POS | `/app/pos` | **403** ⚠️ | padahal preset laundry mengaktifkan `pos` |
+| Inventory | `/app/inventory` | **403** ⚠️ | preset mengaktifkan `inventory` |
+| HRD | `/app/hrd` | **403** ⚠️ | preset mengaktifkan `hr.employees` |
+| Contacts | `/app/contacts` | 200 ✅ | "Daftar Klien" |
+| Accounting | `/app/accounting` | 200 ✅ | "Buku Kas" |
+| Admin area | `/admin` | 403 ✅ | benar, user bukan platform admin |
+
+**Gap yang tercatat (bukan blocker runtime, untuk backlog):**
+1. Modul `pos`, `inventory`, `hrd` mengembalikan 403 meski capability aktif di preset `laundry` — indikasi `EnsureFeatureEnabled`/route module mapping belum selaras untuk akun owner ini.
+2. `BuildCompanyExport` hanya mengekspor 4 file (contacts, invoices, identities, settings) — belum "seluruh data per-tabel" sesuai teks UI.
+3. `downloadUrl` tidak muncul di response Livewire walau export sukses (kemungkinan typed property serialization) — tautan "Klik di sini untuk mengunduh" mungkin tidak ter-render; download langsung via endpoint tetap 200.
+4. `/app/group-report` 403 untuk owner — perlu verifikasi apakah memang dibatasi.
+
 ## T-DELEG-QA — Adjudikasi internal hasil delegasi UI-LOCK (export authorization)
 
 **State:** `DONE` — konflik verdict reviewer diselesaikan internal tanpa delegasi lanjutan. Blocker valid ditutup dengan patch minimal dan regression test negatif.
