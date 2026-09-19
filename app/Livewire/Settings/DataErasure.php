@@ -40,7 +40,7 @@ class DataErasure extends Component
         // Owner-only server-side (QA-UI-R B.7): visibilitas tab hanya
         // mengontrol menu, bukan aksi. Aksi destruktif revalidasi peran dari
         // kepemilikan terautentikasi, bukan dari state komponen.
-        abort_unless(app(CompanyRoleResolver::class)->isOwnerOfActiveCompany(), 403);
+        abort_unless(app(CompanyRoleResolver::class)->isOwnerOfCompany($companyId), 403);
 
         $contactName = trim($this->contactName);
         if ($contactName === '') {

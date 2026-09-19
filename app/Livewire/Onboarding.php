@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Livewire\Component;
+use Throwable;
 
 /**
  * Onboarding form web (D-40). Wawancara AI via WA menyusul setelah node API
@@ -90,39 +91,36 @@ class Onboarding extends Component
             return;
         }
 
-        $disk = Storage::disk('company-json');
-        $disk->put(
-            "json/{$slug}/business_identity.json",
-            json_encode([
-                'id' => 1,
-                'name' => $name,
-                'preset' => $this->preset,
-                // D-44: default aman non-PKP. Owner mengubah lewat tab Profil
-                // setelah company ini reachable (lihat catatan D-41 di atas).
-                'tax_mode' => 'non_taxable',
-            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL,
-        );
-
-        // settings.json awal kosong tapi valid (object JSON), lewat store yang
-        // sama dipakai owner mengedit tema/istilah/preset nanti.
-        $settingsStore->update($slug, fn (array $settings): array => $settings);
-
-        $company = Company::updateOrCreate(
-            ['slug' => $slug],
-            [
-                'name' => $name,
-                'owner_user_id' => $owner->id,
-                'business_preset' => $this->preset,
-                'theme' => 'a',
-                'is_active' => true,
-            ],
-        );
-
-        $company->forceFill([
+        $company = Company::create([
+            'slug' => $slug,
+            'name' => $name,
+            'owner_user_id' => $owner->id,
+            'business_preset' => $this->preset,
+            'theme' => 'a',
+            'is_active' => true,
             'privacy_accepted_at' => Carbon::now(),
             'privacy_accepted_by_user_id' => $owner->id,
             'privacy_policy_version' => self::PRIVACY_POLICY_VERSION,
-        ])->save();
+        ]);
+
+        $disk = Storage::disk('company-json');
+        try {
+            $disk->put(
+                "json/{$slug}/business_identity.json",
+                json_encode([
+                    'id' => 1,
+                    'name' => $name,
+                    'preset' => $this->preset,
+                    'tax_mode' => 'non_taxable',
+                ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL,
+            );
+            $settingsStore->update($slug, fn (array $settings): array => $settings);
+        } catch (Throwable $exception) {
+            $disk->deleteDirectory("json/{$slug}");
+            $company->forceDelete();
+
+            throw $exception;
+        }
 
         $this->createdSlug = $slug;
         $this->name = '';
@@ -189,7 +187,7 @@ class Onboarding extends Component
         $disk = Storage::disk('company-json');
         $slug = $base;
         $suffix = 2;
-        while ($disk->exists("json/{$slug}/business_identity.json")) {
+        while ($disk->exists("json/{$slug}/business_identity.json") || Company::where('slug', $slug)->exists()) {
             $slug = "{$base}-{$suffix}";
             $suffix++;
         }

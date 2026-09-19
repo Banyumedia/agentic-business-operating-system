@@ -92,6 +92,11 @@ class GroupReportControllerTest extends TestCase
         $root = Company::factory()->create(['owner_user_id' => $owner->id]);
         $branch = Company::factory()->create(['owner_user_id' => $owner->id, 'parent_company_id' => $root->id]);
         $unrelated = Company::factory()->create(['owner_user_id' => $owner->id, 'name' => 'Usaha Lain']);
+        $foreignOwner = User::factory()->create();
+        $foreignBranch = Company::factory()->create([
+            'owner_user_id' => $foreignOwner->id,
+            'parent_company_id' => $root->id,
+        ]);
 
         ModuleSetting::create([
             'company_id' => $root->id,
@@ -115,6 +120,7 @@ class GroupReportControllerTest extends TestCase
 
         Contact::factory()->count(2)->create(['company_id' => $root->id]);
         Contact::factory()->count(3)->create(['company_id' => $unrelated->id]);
+        Contact::factory()->count(4)->create(['company_id' => $foreignBranch->id]);
 
         $owner->update(['current_company_id' => $root->id]);
 

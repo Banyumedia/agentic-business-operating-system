@@ -197,7 +197,8 @@ class ListScreenTest extends TestCase
         $this->assertStringContainsString('x-trap.inert.noscroll', $html);
         $this->assertStringContainsString('opener: document.activeElement', $html);
         $this->assertStringContainsString('$wire.cancelDelete().then(() => target?.focus())', $html);
-        $this->assertStringContainsString('$wire.delete().then(() => target?.focus())', $html);
+        $this->assertStringContainsString('$wire.delete().then(() => $nextTick(', $html);
+        $this->assertStringContainsString("document.querySelector('[data-list-focus-fallback]')?.focus()", $html);
 
         // D-45 tingkat 2: tombol merah inert saat dialog muncul, tanpa ketik "YA".
         $this->assertStringContainsString('x-bind:disabled="! ready"', $html);

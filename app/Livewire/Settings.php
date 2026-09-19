@@ -6,6 +6,7 @@ use App\Contracts\CompanyContext;
 use App\Contracts\CompanySettingsStore;
 use App\Contracts\PresetSource;
 use App\Services\BusinessIdentityStore;
+use App\Services\CompanyRoleResolver;
 use App\Services\SettingsTabRegistry;
 use App\Services\ThemeRegistry;
 use InvalidArgumentException;
@@ -206,7 +207,12 @@ class Settings extends Component
         }
 
         abort_unless($activeCompany === $this->companySlug, 403);
-        abort_unless(session('company_role') === 'owner', 403);
+        // Production revalidates ownership against the exact company on every
+        // Livewire mutation. The fallback only supports DB-less JSON fixtures.
+        $isOwner = auth()->check()
+            ? app(CompanyRoleResolver::class)->isOwnerOfCompany($activeCompany)
+            : app()->environment('testing') && session('company_role') === CompanyRoleResolver::ROLE_OWNER;
+        abort_unless($isOwner, 403);
 
         return $activeCompany;
     }

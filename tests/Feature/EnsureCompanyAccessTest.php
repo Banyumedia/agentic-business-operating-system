@@ -6,6 +6,7 @@ use App\Contracts\CompanyContext;
 use App\Http\Middleware\EnsureCompanyAccess;
 use App\Models\Company;
 use App\Models\User;
+use App\Services\CompanyRoleResolver;
 use App\Services\Eloquent\EloquentCompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -15,6 +16,20 @@ use Tests\TestCase;
 class EnsureCompanyAccessTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_role_resolver_fails_closed_after_ownership_is_revoked(): void
+    {
+        $owner = User::factory()->create();
+        $replacement = User::factory()->create();
+        $company = Company::factory()->create(['owner_user_id' => $owner->id]);
+        $owner->update(['current_company_id' => $company->id]);
+        $this->actingAs($owner);
+
+        $resolver = app(CompanyRoleResolver::class);
+        $this->assertTrue($resolver->isOwnerOfCompany($company->id));
+        $company->update(['owner_user_id' => $replacement->id]);
+        $this->assertFalse($resolver->isOwnerOfCompany($company->id));
+    }
 
     public function test_rejects_guest(): void
     {

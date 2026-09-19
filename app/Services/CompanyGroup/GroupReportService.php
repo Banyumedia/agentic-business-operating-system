@@ -17,8 +17,11 @@ class GroupReportService
         $rootCompanyId = $company->parent_company_id ?? $company->id;
 
         // 2. Collect all company IDs in the group (HQ + all branches)
-        $groupCompanyIds = Company::where('id', $rootCompanyId)
-            ->orWhere('parent_company_id', $rootCompanyId)
+        $groupCompanyIds = Company::where('owner_user_id', $company->owner_user_id)
+            ->where(function ($query) use ($rootCompanyId): void {
+                $query->where('id', $rootCompanyId)
+                    ->orWhere('parent_company_id', $rootCompanyId);
+            })
             ->pluck('id')
             ->toArray();
 

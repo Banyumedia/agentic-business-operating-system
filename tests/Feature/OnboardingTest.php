@@ -183,6 +183,28 @@ class OnboardingTest extends TestCase
         Storage::disk('company-json')->assertExists('json/kedai-kopi-2/business_identity.json');
     }
 
+    public function test_database_only_slug_collision_never_transfers_existing_tenant_ownership(): void
+    {
+        $existingOwner = User::factory()->create();
+        $newOwner = User::factory()->create();
+        Company::factory()->create([
+            'slug' => 'kedai-aman',
+            'name' => 'Kedai Aman Lama',
+            'owner_user_id' => $existingOwner->id,
+        ]);
+        $this->actingAs($newOwner);
+
+        Livewire::test(Onboarding::class)
+            ->set('name', 'Kedai Aman')
+            ->set('preset', 'bengkel')
+            ->set('acceptPrivacyPolicy', true)
+            ->call('submit')
+            ->assertSet('createdSlug', 'kedai-aman-2');
+
+        $this->assertDatabaseHas('companies', ['slug' => 'kedai-aman', 'owner_user_id' => $existingOwner->id]);
+        $this->assertDatabaseHas('companies', ['slug' => 'kedai-aman-2', 'owner_user_id' => $newOwner->id]);
+    }
+
     public function test_unknown_preset_is_rejected_without_writing(): void
     {
         $user = User::factory()->create();

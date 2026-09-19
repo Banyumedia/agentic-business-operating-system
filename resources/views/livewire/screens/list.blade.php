@@ -10,6 +10,7 @@
 
         <button
             type="button"
+            data-list-focus-fallback
             wire:click="create"
             class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
         >
@@ -157,7 +158,7 @@
                     </button>
                     <button
                         type="button"
-                        x-on:click="const target = opener; $wire.delete().then(() => target?.focus())"
+                        x-on:click="const target = opener; $wire.delete().then(() => $nextTick(() => { if (target?.isConnected) { target.focus(); } else { document.querySelector('[data-list-focus-fallback]')?.focus(); } }))"
                         disabled
                         x-bind:disabled="! ready"
                         class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-danger)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-not-allowed disabled:opacity-60"

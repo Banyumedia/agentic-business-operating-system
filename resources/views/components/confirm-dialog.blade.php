@@ -41,6 +41,7 @@
             </label>
             <input
                 id="confirm-dialog-phrase"
+                x-ref="phrase"
                 type="text"
                 inputmode="text"
                 autocapitalize="characters"
@@ -70,7 +71,7 @@
             </button>
             <button
                 type="button"
-                x-on:click="const target = opener; $wire.{{ $confirm }}().then(() => target?.focus())"
+                x-on:click="const target = opener; $wire.{{ $confirm }}().then(() => $nextTick(() => { const phrase = document.getElementById('confirm-dialog-phrase'); if (phrase) { phrase.focus(); } else { target?.focus(); } }))"
                 disabled
                 x-bind:disabled="! ready"
                 class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-danger)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-not-allowed disabled:opacity-60"

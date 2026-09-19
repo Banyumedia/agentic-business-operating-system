@@ -43,4 +43,24 @@ class CompanyRoleResolver
     {
         return $this->roleForActiveCompany() === self::ROLE_OWNER;
     }
+
+    public function isOwnerOfCompany(string|int $companyId): bool
+    {
+        $user = Auth::user();
+        if ($user === null) {
+            return false;
+        }
+
+        $normalizedId = filter_var($companyId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $company = Company::query()
+            ->when(
+                $normalizedId !== false,
+                fn ($query) => $query->whereKey($normalizedId),
+                fn ($query) => $query->where('slug', (string) $companyId),
+            )
+            ->where('owner_user_id', $user->id)
+            ->first();
+
+        return $company !== null && (int) $user->current_company_id === $company->id;
+    }
 }

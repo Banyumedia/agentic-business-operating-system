@@ -611,5 +611,51 @@
         "note": null,
         "effects": [],
         "occurred_at": "2026-09-19T11:59:40+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "laundry",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "terima",
+        "to": "proses",
+        "actor_role": "owner",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-19T12:12:16+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "bengkel",
+        "entity": "orders",
+        "record_id": 1,
+        "from": "siap_diambil",
+        "to": "selesai",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [
+            {
+                "effect": "journal.post",
+                "status": "posted",
+                "journal_id": 1,
+                "amount": 100000
+            }
+        ],
+        "occurred_at": "2026-09-19T12:12:23+00:00"
+    },
+    {
+        "event": "transitioned",
+        "company": "1",
+        "preset": "agency",
+        "entity": "projects",
+        "record_id": 1,
+        "from": "briefing",
+        "to": "produksi",
+        "actor_role": "staff",
+        "note": null,
+        "effects": [],
+        "occurred_at": "2026-09-19T12:12:29+00:00"
     }
 ]
