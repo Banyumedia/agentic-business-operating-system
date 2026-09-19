@@ -8,7 +8,7 @@
 
 **Repo:** tidak ada perubahan source dari recovery data/runtime ini. Folder asing `backup-ahli-keuangan/` tidak disentuh.
 
-**Next:** Bos refresh/click `Coba lagi` pada HP untuk live acceptance `HUMAN:UI-LOCK`; setelah akses admin tersedia, restart service `PM2-AgenticBOS` dan kembalikan Caddy ke upstream permanen 8010 setelah verifikasi.
+**Next:** Dashboard live dari HP dikonfirmasi Bos **PASS** pada 2026-09-20. Lanjutkan acceptance owner untuk Settings → Export; setelah seluruh checklist UI-LOCK selesai dan akses admin tersedia, restart service `PM2-AgenticBOS` dan kembalikan Caddy ke upstream permanen 8010 setelah verifikasi.
 
 ## T-DELEG-QA — Adjudikasi internal hasil delegasi UI-LOCK (export authorization)
 
