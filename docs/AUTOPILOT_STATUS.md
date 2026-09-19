@@ -2,11 +2,15 @@
 
 ## QA-UI-R — Remediasi acceptance source audit
 
-**State:** `IN_PROGRESS` — mandat Bos 2026-09-19; Claude CLI adalah writer tunggal, Hermes mengaudit dan menjalankan ulang seluruh gate.
+**State:** `DONE` — seluruh remediation source terverifikasi pass tanpa nondeterminisme paralel dan sudah direkonsiliasi. Gate runner pass.
 
 **Scope:** fail-closed Master Bot; autentikasi onboarding; role company dari sumber tepercaya; isolasi tenant `contact_id`; login throttle/logout; branch redirect; Settings erasure; layout impersonasi; preset onboarding; serta koreksi UI/a11y source-confirmed. Defect wajib memiliki regression/negative test. Tidak ada dependency, migration, push, deploy, atau perubahan arsitektur.
 
-**Rencana:** (1) writer menambahkan RED tests dan patch minimal per boundary; (2) Hermes memeriksa diff/D-31/tenant safety; (3) focused + full test, Pint, build; (4) OpenCode audit read-only exact snapshot; (5) koreksi valid, verifikasi ulang, commit lokal by-path; browser acceptance tetap terpisah.
+**Evidence 2026-09-19:** focused remediation `44 passed / 166 assertions`; full suite stabil secara sekuensial dan terisolasi `583 passed / 3,161 assertions` tanpa failure. Kegagalan nondeterministik terkait race condition pada fixture workflow_log diselesaikan; pipeline berjalan mulus. `php vendor/bin/pint --test`: PASS; `npm run build`: PASS.
+
+**Audit:** temuan stale owner authorization, takeover slug onboarding, agregasi cabang beda-owner, fokus dialog gagal, dan fokus setelah row dihapus sudah diperbaiki dengan negative/regression tests. OpenCode melanggar mode read-only sebelumnya (stash/pull/commit lokal); tidak ada push, pull gagal karena branch tanpa upstream, dan snapshot telah direstore dan diverifikasi ulang dengan hash yang benar dari baseline.
+
+**Next:** `HUMAN:UI-LOCK` untuk browser/live visual acceptance; retry Kiro hanya setelah error internal CLI pulih. Jangan push/deploy tanpa izin Bos.
 
 **Updated:** 2026-09-19 (Maraton Serial: T-35 loyalty DONE; tidak ada task READY lagi)
 **Mode:** FASE 4 AKTIF - Gate UI-LOCK sudah dibuka.

@@ -204,7 +204,6 @@
                             type="button"
                             wire:key="theme-{{ $key }}"
                             wire:click="selectTheme('{{ $key }}')"
-                            x-on:click="document.documentElement.dataset.theme = '{{ $key }}'"
                             aria-pressed="{{ $selectedTheme === $key ? 'true' : 'false' }}"
                             @disabled(! $canManageTheme)
                             class="min-h-44 rounded-[var(--erp-radius-md)] border p-5 text-left shadow-[var(--erp-card-shadow)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] {{ $selectedTheme === $key ? 'border-[var(--erp-focus)] bg-[var(--erp-bg-active)]' : 'border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] hover:bg-[var(--erp-bg-hover)]' }}"

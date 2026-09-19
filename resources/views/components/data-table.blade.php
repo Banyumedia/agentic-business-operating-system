@@ -114,6 +114,25 @@
             </table>
         </div>
 
+        {{-- Kontrol urutan untuk layar sempit agar sorting tidak desktop-only. --}}
+        <div class="mb-3 grid gap-2 md:hidden" role="group" aria-label="Urutkan data">
+            @foreach ($columns as $column)
+                <button
+                    type="button"
+                    wire:click="sortBy('{{ $column['field'] }}')"
+                    class="inline-flex min-h-11 items-center justify-between rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-inset)] px-3 text-sm text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                >
+                    <span>{{ $column['label'] }}</span>
+                    @if ($sort === $column['field'])
+                        <span aria-hidden="true">{{ $direction === 'desc' ? '▼' : '▲' }}</span>
+                        <span class="sr-only">{{ $direction === 'desc' ? 'menurun' : 'menaik' }}</span>
+                    @else
+                        <span class="text-[var(--erp-text-muted)]" aria-hidden="true">↕</span>
+                    @endif
+                </button>
+            @endforeach
+        </div>
+
         {{-- Kartu untuk layar sempit: tabel padat tidak terbaca di ponsel --}}
         <ul role="list" class="grid gap-3 md:hidden">
             @foreach ($rows as $row)
