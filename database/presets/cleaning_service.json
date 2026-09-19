@@ -1,0 +1,57 @@
+{
+    "key": "cleaning_service",
+    "name": "Jasa Cleaning Service",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "scheduling": true,
+        "bookings": true,
+        "projects": true,
+        "timesheet": true,
+        "quotations": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Klien",
+        "contacts": "Klien",
+        "booking": "Jadwal",
+        "bookings": "Jadwal",
+        "project": "Kontrak",
+        "projects": "Kontrak",
+        "staff": "Petugas",
+        "staffs": "Petugas"
+    },
+    "workflows": {
+        "bookings": {
+            "stages": [
+                {"code": "dijadwalkan", "label": "Dijadwalkan"},
+                {"code": "dikerjakan", "label": "Dikerjakan"},
+                {"code": "diperiksa", "label": "Diperiksa"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "dijadwalkan", "to": "dikerjakan", "roles": ["owner", "staff"]},
+                {"from": "dikerjakan", "to": "diperiksa", "roles": ["owner", "staff"]},
+                {"from": "diperiksa", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "diperiksa", "to": "dikerjakan", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "bookings", "projects", "contacts", "employees", "accounting", "settings"]
+    },
+    "description": "Kontrak kebersihan berulang, penjadwalan petugas per lokasi, jam kerja tim, dan pemeriksaan mutu sebelum ditutup."
+}

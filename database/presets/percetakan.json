@@ -1,0 +1,56 @@
+{
+    "key": "percetakan",
+    "name": "Percetakan / Sablon / Digital Printing",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "quotations": true,
+        "inventory": true,
+        "pos": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Klien",
+        "contacts": "Klien",
+        "item": "Bahan",
+        "items": "Bahan",
+        "order": "Order Cetak",
+        "orders": "Order Cetak",
+        "invoice": "Tagihan",
+        "invoices": "Tagihan"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {"code": "desain", "label": "Desain"},
+                {"code": "proses_cetak", "label": "Proses Cetak"},
+                {"code": "finishing", "label": "Finishing"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "desain", "to": "proses_cetak", "roles": ["owner", "staff"]},
+                {"from": "proses_cetak", "to": "finishing", "roles": ["owner", "staff"]},
+                {"from": "finishing", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "finishing", "to": "proses_cetak", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "proses_cetak", "to": "desain", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "orders", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
+    },
+    "description": "Penawaran ke klien, antrean desain sampai finishing, dan kendali stok bahan cetak dalam satu alur."
+}

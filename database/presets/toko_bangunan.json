@@ -1,0 +1,55 @@
+{
+    "key": "toko_bangunan",
+    "name": "Toko Bangunan & Material",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "inventory": true,
+        "pos": true,
+        "quotations": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "item": "Material",
+        "items": "Material",
+        "order": "Pesanan",
+        "orders": "Pesanan",
+        "vendor": "Supplier",
+        "vendors": "Supplier"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {"code": "pesanan", "label": "Pesanan Masuk"},
+                {"code": "disiapkan", "label": "Disiapkan"},
+                {"code": "dikirim", "label": "Dikirim"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "pesanan", "to": "disiapkan", "roles": ["owner", "staff"], "effects": ["stock.reserve"]},
+                {"from": "disiapkan", "to": "dikirim", "roles": ["owner", "staff"], "effects": ["stock.deduct"]},
+                {"from": "dikirim", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "disiapkan", "to": "pesanan", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "orders", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
+    },
+    "description": "Penawaran harga material, penyiapan dan pengiriman pesanan, serta kendali stok gudang dan supplier."
+}

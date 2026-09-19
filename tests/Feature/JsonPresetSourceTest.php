@@ -22,9 +22,10 @@ class JsonPresetSourceTest extends TestCase
         sort($keys);
 
         $this->assertSame([
-            'agency', 'bakery_preorder', 'barbershop', 'bengkel', 'contractor', 'cuci_mobil', 'custom', 'eo', 'fnb', 'fotografi',
-            'gym', 'katering', 'kedai_kopi', 'klinik', 'kos_coworking', 'kursus', 'laundry', 'pharmacy',
-            'praktek_dokter', 'rental', 'salon', 'travel_umroh',
+            'agency', 'bakery_preorder', 'barbershop', 'bengkel', 'cleaning_service', 'contractor', 'cuci_mobil',
+            'cuci_sepatu', 'custom', 'eo', 'fnb', 'fotografi',
+            'gym', 'katering', 'kedai_kopi', 'klinik', 'kos_coworking', 'kursus', 'laundry', 'percetakan', 'pharmacy',
+            'praktek_dokter', 'rental', 'salon', 'service_ac', 'toko_bangunan', 'travel_umroh', 'warnet_gaming',
         ], $keys);
         $this->assertSame('klinik', $source->find('klinik')['key']);
         $this->assertNull($source->find('unknown'));

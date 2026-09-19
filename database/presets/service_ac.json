@@ -1,0 +1,57 @@
+{
+    "key": "service_ac",
+    "name": "Jasa Service AC & Elektronik",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "scheduling": true,
+        "bookings": true,
+        "inventory": true,
+        "pos": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "booking": "Kunjungan",
+        "bookings": "Kunjungan",
+        "item": "Sparepart",
+        "items": "Sparepart",
+        "order": "Nota Servis",
+        "orders": "Nota Servis",
+        "staff": "Teknisi",
+        "staffs": "Teknisi"
+    },
+    "workflows": {
+        "bookings": {
+            "stages": [
+                {"code": "dijadwalkan", "label": "Dijadwalkan"},
+                {"code": "dikerjakan", "label": "Dikerjakan"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "dijadwalkan", "to": "dikerjakan", "roles": ["owner", "staff"]},
+                {"from": "dikerjakan", "to": "selesai", "roles": ["owner", "staff"], "effects": ["notify.owner_wa"]},
+                {"from": "dikerjakan", "to": "dijadwalkan", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "bookings", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
+    },
+    "description": "Jadwal kunjungan teknisi ke lokasi pelanggan, pemakaian sparepart, dan penagihan setelah pekerjaan selesai."
+}

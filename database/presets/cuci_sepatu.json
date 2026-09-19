@@ -1,0 +1,52 @@
+{
+    "key": "cuci_sepatu",
+    "name": "Jasa Cuci Sepatu",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "inventory": true,
+        "pos": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "item": "Layanan",
+        "items": "Layanan",
+        "order": "Order",
+        "orders": "Order"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {"code": "diterima", "label": "Diterima"},
+                {"code": "dicuci", "label": "Dicuci"},
+                {"code": "siap_diambil", "label": "Siap Diambil"},
+                {"code": "diambil", "label": "Diambil"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "diterima", "to": "dicuci", "roles": ["owner", "staff"]},
+                {"from": "dicuci", "to": "siap_diambil", "roles": ["owner", "staff"]},
+                {"from": "siap_diambil", "to": "diambil", "roles": ["owner", "staff"], "effects": ["notify.owner_wa"]},
+                {"from": "dicuci", "to": "diterima", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["diambil", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "orders", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
+    },
+    "description": "Terima titipan sepatu, pantau tahap pengerjaan, dan beri tahu pelanggan saat pesanan siap diambil."
+}

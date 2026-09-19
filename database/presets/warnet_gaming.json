@@ -1,0 +1,57 @@
+{
+    "key": "warnet_gaming",
+    "name": "Warnet / Rental Konsol",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "scheduling": true,
+        "bookings": true,
+        "inventory": true,
+        "pos": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Member",
+        "contacts": "Member",
+        "resource": "Unit",
+        "resources": "Unit",
+        "booking": "Sesi",
+        "bookings": "Sesi",
+        "item": "Produk",
+        "items": "Produk",
+        "order": "Nota",
+        "orders": "Nota"
+    },
+    "workflows": {
+        "bookings": {
+            "stages": [
+                {"code": "dipesan", "label": "Dipesan"},
+                {"code": "main", "label": "Sedang Main"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "dipesan", "to": "main", "roles": ["owner", "staff"]},
+                {"from": "main", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "main", "to": "dipesan", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "bookings", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
+    },
+    "description": "Sewa unit per jam dengan jadwal sesi, penjualan makanan-minuman di kasir, dan rekap kas harian."
+}
