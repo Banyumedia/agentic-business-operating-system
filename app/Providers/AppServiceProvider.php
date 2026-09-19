@@ -10,6 +10,7 @@ use App\Services\Hermes\FakeHermesNodeClient;
 use App\Services\TerminologyResolver;
 use App\Services\ThemeRegistry;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
@@ -35,6 +36,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
+
         Blade::directive('term', fn (string $expression): string => "<?php echo e(term({$expression})); ?>");
 
         View::composer(['components.layouts.module', 'layouts.app'], function ($view): void {

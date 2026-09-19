@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Contracts\CompanyContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -52,6 +53,21 @@ class Login extends Component
         // Sukses: hitungan gagal dibuka ulang supaya kunci tidak tersisa.
         RateLimiter::clear($throttleKey);
         session()->regenerate();
+
+        // Set konteks company aktif agar middleware /app tidak 403.
+        $user = Auth::user();
+        $companyId = $user->current_company_id;
+        if (! $companyId) {
+            $company = $user->companies()->first();
+            if ($company) {
+                $companyId = $company->id;
+                $user->current_company_id = $companyId;
+                $user->save();
+            }
+        }
+        if ($companyId) {
+            app(CompanyContext::class)->setCurrent((string) $companyId);
+        }
 
         $this->redirectIntended(route('app.dashboard'));
     }
