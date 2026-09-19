@@ -10,9 +10,11 @@ class AuthenticateMasterBot
     public function handle(Request $request, Closure $next)
     {
         $key = $request->header('X-Master-Bot-Key');
-        $secret = env('MASTER_BOT_SECRET', 'fake-master-secret');
+        // Fail-closed: secret kosong/ter-set dari config, tanpa default yang
+        // bisa ditebak. Respon tidak pernah membocorkan apakah key ada.
+        $secret = (string) config('services.master_bot.secret');
 
-        if (! hash_equals($secret, $key ?? '')) {
+        if ($secret === '' || ! hash_equals($secret, (string) ($key ?? ''))) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 

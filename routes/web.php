@@ -19,11 +19,25 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', Lobby::class)->name('lobby');
 Route::get('/industri', IndustryList::class)->name('industri');
-Route::get('/onboarding', Onboarding::class)->name('onboarding');
+
+// Onboarding membuat data usaha - hanya untuk pengguna terautentikasi.
+Route::middleware('auth')->group(function (): void {
+    Route::get('/onboarding', Onboarding::class)->name('onboarding');
+});
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', Login::class)->name('login');
 });
+
+// Logout harus POST + CSRF (QA-UI-R A.5) - GET logout memungkinkan logout
+// lintas situs lewat link/gambar.
+Route::middleware('auth')->post('/logout', function () {
+    auth()->guard()?->logout();
+    session()->invalidate();
+    session()->regenerateToken();
+
+    return redirect(route('login'));
+})->name('logout');
 
 use App\Http\Controllers\App\GroupReportController;
 
@@ -33,7 +47,7 @@ Route::middleware(['auth', SetCurrentCompany::class, EnsureCompanyAccess::class]
         Route::get('/app/group-report', [GroupReportController::class, 'show'])->name('app.group_report');
         Route::get('/app/settings', Settings::class)->name('app.settings');
         Route::get('/app/settings/{tab}', Settings::class)
-            ->whereIn('tab', ['profile', 'theme', 'features', 'assistant', 'usage', 'team', 'export'])
+            ->whereIn('tab', ['profile', 'theme', 'features', 'assistant', 'usage', 'team', 'export', 'erasure'])
             ->name('app.settings.tab');
 
         Route::get('/app/settings/export/download', function () {

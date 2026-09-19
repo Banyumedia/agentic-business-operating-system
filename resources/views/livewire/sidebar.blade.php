@@ -64,5 +64,16 @@
             </svg>
             Pilih modul lain
         </a>
+
+        {{-- Logout POST + CSRF: GET logout tidak aman (bisa dipicu lintas situs). --}}
+        <form method="POST" action="{{ route('logout') }}" x-on:click="if (!desktop) closeSidebar()" class="mt-1">
+            @csrf
+            <button type="submit" class="flex min-h-11 w-full items-center gap-3 rounded-[var(--erp-radius-md)] px-4 py-3 text-sm font-medium text-[var(--erp-sidebar-text)] hover:bg-[var(--erp-sidebar-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l3 3m0 0-3 3m3-3H9" />
+                </svg>
+                Keluar
+            </button>
+        </form>
     </div>
 </aside>

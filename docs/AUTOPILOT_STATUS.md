@@ -1,5 +1,13 @@
 # Agentic BOS Autopilot Status
 
+## QA-UI-R — Remediasi acceptance source audit
+
+**State:** `IN_PROGRESS` — mandat Bos 2026-09-19; Claude CLI adalah writer tunggal, Hermes mengaudit dan menjalankan ulang seluruh gate.
+
+**Scope:** fail-closed Master Bot; autentikasi onboarding; role company dari sumber tepercaya; isolasi tenant `contact_id`; login throttle/logout; branch redirect; Settings erasure; layout impersonasi; preset onboarding; serta koreksi UI/a11y source-confirmed. Defect wajib memiliki regression/negative test. Tidak ada dependency, migration, push, deploy, atau perubahan arsitektur.
+
+**Rencana:** (1) writer menambahkan RED tests dan patch minimal per boundary; (2) Hermes memeriksa diff/D-31/tenant safety; (3) focused + full test, Pint, build; (4) OpenCode audit read-only exact snapshot; (5) koreksi valid, verifikasi ulang, commit lokal by-path; browser acceptance tetap terpisah.
+
 **Updated:** 2026-09-19 (Maraton Serial: T-35 loyalty DONE; tidak ada task READY lagi)
 **Mode:** FASE 4 AKTIF - Gate UI-LOCK sudah dibuka.
 **Arsitektur target:** puluhan jenis bisnis — industri = data, kapabilitas = kode (D-31..D-33)

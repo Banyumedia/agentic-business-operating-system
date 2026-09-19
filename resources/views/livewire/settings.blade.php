@@ -229,14 +229,18 @@
                     </p>
                 @endunless
 
-                <p class="mt-5 text-sm text-[var(--erp-success)]" aria-live="polite" wire:loading.remove wire:target="selectTheme">
-                    Tema aktif: {{ $themes[$selectedTheme]['name'] }}
-                </p>
-                <p class="mt-5 text-sm text-[var(--erp-text-secondary)]" aria-live="polite" wire:loading wire:target="selectTheme">
-                    Menyimpan tema usaha…
-                </p>
+                {{-- Keadaan simpan eksplisit (QA-UI-R C.16): sukses hanya karena
+                    server mengonfirmasi, bukan karena wire:loading berakhir. --}}
+                @if ($themeNotice)
+                    <p class="mt-5 text-sm text-[var(--erp-success)]" role="status" aria-live="polite">{{ $themeNotice }}</p>
+                @endif
+                @if ($themeFailure)
+                    <p class="mt-5 text-sm text-[var(--erp-danger)]" role="alert">{{ $themeFailure }}</p>
+                @endif
             @elseif ($tab['id'] === 'export')
                 @livewire(\App\Livewire\Settings\DataExport::class)
+            @elseif ($tab['id'] === 'erasure')
+                @livewire(\App\Livewire\Settings\DataErasure::class)
             @else
                 <div class="rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] p-6">
                     <h2 class="text-lg font-semibold text-[var(--erp-text-primary)]">

@@ -10,8 +10,23 @@
     <body class="bg-[var(--erp-bg-base)] text-[var(--erp-text-primary)] font-sans antialiased min-h-screen">
 
         @if(session()->has('admin_impersonation_id'))
+            @php
+                // `currentCompany()` tidak ada di kontrak CompanyContext (fatal
+                // error saat banner dirender). Nama company diselesaikan aman:
+                // hanya EloquentCompanyContext yang punya getCompany(), dan
+                // konteks gagal tidak boleh meruntuhkan layout.
+                $bannerCompany = 'Klien';
+                try {
+                    $context = app(\App\Contracts\CompanyContext::class);
+                    $bannerCompany = method_exists($context, 'getCompany')
+                        ? ($context->getCompany()->name ?? 'Klien')
+                        : 'Klien';
+                } catch (\Throwable) {
+                    $bannerCompany = 'Klien';
+                }
+            @endphp
             <div class="bg-yellow-400 text-black text-center py-2 px-4 font-bold flex justify-between items-center z-50 relative sticky top-0">
-                <span>Anda login sebagai {{ app(\App\Contracts\CompanyContext::class)->currentCompany()->name ?? 'Klien' }} - mode Bantuan Admin</span>
+                <span>Anda login sebagai {{ $bannerCompany }} - mode Bantuan Admin</span>
                 <form method="POST" action="{{ route('admin.impersonate.stop') }}" class="inline">
                     @csrf
                     <button type="submit" class="bg-black text-white px-3 py-1 rounded text-sm hover:bg-gray-800">Akhiri Sesi Bantuan</button>

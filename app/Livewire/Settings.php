@@ -63,6 +63,10 @@ class Settings extends Component
 
     public ?string $featuresFailure = null;
 
+    public ?string $themeNotice = null;
+
+    public ?string $themeFailure = null;
+
     public function mount(CompanyContext $companyContext, ?string $tab = null): void
     {
         try {
@@ -102,15 +106,26 @@ class Settings extends Component
 
     public function selectTheme(string $theme, CompanyContext $companyContext): void
     {
+        $this->themeNotice = null;
+        $this->themeFailure = null;
         $this->assertOwnerOfActiveCompany($companyContext);
         abort_unless(ThemeRegistry::has($theme), 404);
 
-        app(CompanySettingsStore::class)->update(
-            $this->companySlug,
-            fn (array $settings): array => [...$settings, 'theme' => $theme],
-        );
+        try {
+            app(CompanySettingsStore::class)->update(
+                $this->companySlug,
+                fn (array $settings): array => [...$settings, 'theme' => $theme],
+            );
+        } catch (Throwable) {
+            // Keadaan eksplisit gagal: tanpa ini, wire:loading yang berakhir
+            // menampilkan baris sukses meskipun simpanan gagal (QA-UI-R C.16).
+            $this->themeFailure = 'Tema gagal tersimpan. Coba lagi.';
+
+            return;
+        }
 
         $this->selectedTheme = $theme;
+        $this->themeNotice = 'Tema usaha tersimpan: '.$theme;
         $this->dispatch('theme-changed', theme: $theme);
     }
 

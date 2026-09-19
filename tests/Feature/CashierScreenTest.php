@@ -136,6 +136,14 @@ class CashierScreenTest extends TestCase
         $component->set('confirmPhrase', 'y')->call('confirmAction')->assertSee('Ketik YA tepat');
         $this->assertSame([], $orders->all());
 
+        // QA-UI-R C.11: validasi frasa muncul DI DALAM dialog dan terikat ke
+        // input frasa via aria-describedby.
+        $dialogHtml = $component->html();
+        $this->assertStringContainsString('aria-describedby="confirm-dialog-feedback"', $dialogHtml);
+        $this->assertStringContainsString('id="confirm-dialog-feedback"', $dialogHtml);
+        $this->assertStringContainsString('role="alert"', $dialogHtml);
+        $this->assertStringContainsString('x-trap.inert.noscroll', $dialogHtml);
+
         // Spasi dan huruf kecil diterima setelah normalisasi.
         $component->set('confirmPhrase', '  ya  ')->call('confirmAction')->assertSet('failure', null);
         $this->assertCount(1, $orders->all());

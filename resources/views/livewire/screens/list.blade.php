@@ -132,10 +132,12 @@
                 aria-modal="true"
                 aria-labelledby="delete-dialog-title"
                 aria-describedby="delete-dialog-description"
-                x-data="{ ready: false }"
+                x-data="{ ready: false, opener: document.activeElement }"
+                x-trap.inert.noscroll="true"
                 x-init="setTimeout(() => ready = true, 400); $nextTick(() => $refs.cancel?.focus())"
-                x-on:keydown.escape.window="$wire.cancelDelete()"
-                class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)]"
+                x-on:keydown.escape.window="const target = opener; $wire.cancelDelete().then(() => target?.focus())"
+                class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)] ring-2 ring-[var(--erp-focus)] ring-offset-4 ring-offset-black/60 focus:outline-none"
+                tabindex="-1"
             >
                 <h2 id="delete-dialog-title" class="text-lg font-semibold text-[var(--erp-text-primary)]">Hapus {{ $term }}?</h2>
 
@@ -148,14 +150,14 @@
                     <button
                         type="button"
                         x-ref="cancel"
-                        wire:click="cancelDelete"
+                        x-on:click="const target = opener; $wire.cancelDelete().then(() => target?.focus())"
                         class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] px-4 text-sm font-semibold text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
                     >
                         Batal
                     </button>
                     <button
                         type="button"
-                        wire:click="delete"
+                        x-on:click="const target = opener; $wire.delete().then(() => target?.focus())"
                         disabled
                         x-bind:disabled="! ready"
                         class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-danger)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-not-allowed disabled:opacity-60"

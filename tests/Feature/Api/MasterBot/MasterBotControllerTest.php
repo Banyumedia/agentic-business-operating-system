@@ -18,7 +18,7 @@ class MasterBotControllerTest extends TestCase
     {
         parent::setUp();
         Config::set('app.env', 'testing');
-        putenv('MASTER_BOT_SECRET=test-master-secret');
+        Config::set('services.master_bot.secret', 'test-master-secret');
     }
 
     public function test_rejects_unauthorized_request(): void
@@ -29,6 +29,36 @@ class MasterBotControllerTest extends TestCase
             'description' => 'Test',
         ]);
 
+        $response->assertStatus(401);
+    }
+
+    public function test_rejects_wrong_key_without_leaking_it(): void
+    {
+        $response = $this->postJson('/api/bot/master/tickets', [
+            'wa_number' => '6281234567890',
+            'subject' => 'Test',
+            'description' => 'Test',
+        ], [
+            'X-Master-Bot-Key' => 'wrong-key',
+        ]);
+
+        $response->assertStatus(401);
+        $this->assertStringNotContainsString('test-master-secret', $response->getContent());
+    }
+
+    public function test_rejects_every_key_when_secret_is_empty_fail_closed(): void
+    {
+        Config::set('services.master_bot.secret', '');
+
+        $response = $this->postJson('/api/bot/master/tickets', [
+            'wa_number' => '6281234567890',
+            'subject' => 'Test',
+            'description' => 'Test',
+        ], [
+            'X-Master-Bot-Key' => 'fake-master-secret',
+        ]);
+
+        // Default lama "fake-master-secret" tidak boleh lolos saat secret kosong.
         $response->assertStatus(401);
     }
 

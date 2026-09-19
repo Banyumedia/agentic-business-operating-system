@@ -62,6 +62,13 @@ class AdminImpersonationTest extends TestCase
         app(CompanyContext::class)->setCurrent($company->id);
         $response = $this->withSession(['admin_impersonation_id' => $sessionId, 'active_company' => $company->id])->get('/app/dashboard');
         $response->assertSee('Sesi Bantuan Impersonasi');
+
+        // Banner layout app (Lobby) tidak lagi memanggil currentCompany()
+        // yang tidak ada di kontrak - nama company dirender aman.
+        $lobby = $this->withSession(['admin_impersonation_id' => $sessionId, 'active_company' => $company->id])->get('/');
+        $lobby->assertOk();
+        $lobby->assertSee('mode Bantuan Admin');
+        $lobby->assertSee($company->name);
     }
 
     public function test_impersonated_writes_to_company_are_logged_with_admin_user_id()

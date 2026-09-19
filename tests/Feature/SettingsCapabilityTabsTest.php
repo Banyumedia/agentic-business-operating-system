@@ -40,6 +40,25 @@ class SettingsCapabilityTabsTest extends TestCase
         $this->assertStringContainsString('id="tab-team"', $ownerHtml);
     }
 
+    public function test_erasure_tab_is_deep_linkable_and_mounted_for_owner_but_absent_for_staff(): void
+    {
+        $ownerHtml = $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'owner'])
+            ->get('/app/settings/erasure')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('id="tab-erasure"', $ownerHtml);
+        $this->assertStringContainsString('Hapus Data', $ownerHtml);
+
+        $staffHtml = $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'staff'])
+            ->get('/app/settings')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringNotContainsString('id="tab-erasure"', $staffHtml);
+        $this->assertStringNotContainsString('Penghapusan Pelanggan', $staffHtml);
+    }
+
     public function test_preset_dropdown_lists_a_fake_preset_from_preset_source_not_hardcoded_names(): void
     {
         $this->app->bind(PresetSource::class, fn () => new class implements PresetSource

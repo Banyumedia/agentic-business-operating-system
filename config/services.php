@@ -44,4 +44,10 @@ return [
         'webhook_secret' => env('NALARPESAN_WEBHOOK_SECRET', ''),
     ],
 
+    'master_bot' => [
+        // Kosong berarti API master bot dimatikan total (fail-closed), bukan
+        // memakai rahasia default yang bisa ditebak.
+        'secret' => env('MASTER_BOT_SECRET', ''),
+    ],
+
 ];

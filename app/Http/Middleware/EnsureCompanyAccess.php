@@ -30,7 +30,8 @@ class EnsureCompanyAccess
         }
 
         // Verify the user belongs to this company (via owner for now, could be via roles table later)
-        $hasAccess = Company::where('id', $companyId)->where('owner_user_id', $user->id)->exists();
+        $ownsCompany = Company::where('id', $companyId)->where('owner_user_id', $user->id)->exists();
+        $hasAccess = $ownsCompany;
         if (! $hasAccess && session()->has('admin_impersonation_id')) {
             $hasAccess = AdminImpersonationSession::where('session_id', session('admin_impersonation_id'))
                 ->where('target_company_id', $companyId)
@@ -41,6 +42,14 @@ class EnsureCompanyAccess
         if (! $hasAccess) {
             abort(403, 'You do not have access to this company.');
         }
+
+        // Writer tepercaya untuk `company_role` (QA-UI-R A.3): sebelumnya tidak
+        // ada penulis sama sekali, jadi seluruh cek owner di Settings/Pipeline
+        // gagal untuk owner sungguhan. Di-set ulang di setiap request /app
+        // setelah akses company tervalidasi, jadi nilai basi tertimpa saat
+        // company aktif berganti. Admin impersonasi bukan owner usaha: admin
+        // memantau, bukan mengubah konfigurasi klien.
+        session(['company_role' => $ownsCompany ? 'owner' : 'staff']);
 
         return $next($request);
     }

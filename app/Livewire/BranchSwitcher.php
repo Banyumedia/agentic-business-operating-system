@@ -47,7 +47,8 @@ class BranchSwitcher extends Component
         if ($branches->contains('id', $companyId)) {
             app(CompanyContext::class)->setCurrent((string) $companyId);
 
-            return $this->redirect('/app', navigate: true);
+            // `/app` bukan rute; dashboard bernama `app.dashboard` (D-24).
+            return $this->redirect(route('app.dashboard'), navigate: true);
         }
     }
 

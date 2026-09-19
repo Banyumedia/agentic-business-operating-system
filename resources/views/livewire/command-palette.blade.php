@@ -2,6 +2,28 @@
     x-data="{
         opener: null,
         previousOverflow: '',
+        activeIndex: -1,
+        resultOptions() {
+            return Array.from(this.$refs.listbox?.querySelectorAll('[role=option]') ?? []);
+        },
+        moveActive(delta) {
+            const options = this.resultOptions();
+            if (options.length === 0) {
+                this.activeIndex = -1;
+                return;
+            }
+
+            this.activeIndex = this.activeIndex < 0
+                ? (delta > 0 ? 0 : options.length - 1)
+                : (this.activeIndex + delta + options.length) % options.length;
+            options[this.activeIndex]?.querySelector('a')?.scrollIntoView({ block: 'nearest' });
+        },
+        activateActive() {
+            this.resultOptions()[this.activeIndex]?.querySelector('a')?.click();
+        },
+        activeDescendant() {
+            return this.resultOptions()[this.activeIndex]?.id ?? null;
+        },
         openPalette() {
             if (this.$refs.dialog.open) return;
             this.opener = document.activeElement;
@@ -51,6 +73,15 @@
                         class="h-14 w-full bg-transparent pl-12 pr-4 text-[var(--erp-text-primary)] placeholder:text-[var(--erp-text-muted)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--erp-focus)] sm:text-lg"
                         placeholder="Cari data atau menu"
                         aria-label="Cari data atau menu"
+                        role="combobox"
+                        aria-expanded="true"
+                        aria-autocomplete="list"
+                        aria-controls="command-palette-listbox"
+                        x-bind:aria-activedescendant="activeDescendant()"
+                        x-on:input="activeIndex = -1"
+                        x-on:keydown.arrow-down.prevent="moveActive(1)"
+                        x-on:keydown.arrow-up.prevent="moveActive(-1)"
+                        x-on:keydown.enter.prevent="activateActive()"
                     >
                 </div>
                 <button
@@ -79,10 +110,10 @@
                         Tidak ditemukan hasil untuk “<span class="text-[var(--erp-text-primary)]">{{ $search }}</span>”.
                     </p>
                 @else
-                    <ul class="space-y-1" role="listbox" aria-label="Hasil pencarian">
+                    <ul x-ref="listbox" class="space-y-1" role="listbox" id="command-palette-listbox" aria-label="Hasil pencarian">
                         @foreach ($results as $result)
-                            <li role="option">
-                                <a href="{{ $result['url'] }}" wire:navigate x-on:click="closePalette()" class="flex min-h-11 items-center gap-3 rounded-[var(--erp-radius-md)] p-3 hover:bg-[var(--erp-bg-inset)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                            <li role="option" id="command-palette-option-{{ $loop->index }}" x-bind:aria-selected="activeIndex === {{ $loop->index }}">
+                                <a href="{{ $result['url'] }}" wire:navigate x-on:mouseenter="activeIndex = {{ $loop->index }}" x-on:focus="activeIndex = {{ $loop->index }}" x-on:click="closePalette()" class="flex min-h-11 items-center gap-3 rounded-[var(--erp-radius-md)] p-3 hover:bg-[var(--erp-bg-inset)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
                                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent-soft)] text-[var(--erp-accent)]" aria-hidden="true">{{ $result['icon'] }}</span>
                                     <span class="min-w-0">
                                         <span class="block truncate font-medium text-[var(--erp-text-primary)]">{{ $result['title'] }}</span>

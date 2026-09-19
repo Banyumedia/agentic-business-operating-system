@@ -41,16 +41,27 @@ class Onboarding extends Component
 
     public function mount(PresetSource $presets): void
     {
+        // `?preset=` hanya diterima bila key ada di PresetSource (item QA-UI-R);
+        // selain itu jatuh ke default aman, tidak pernah 500.
+        $requested = (string) request()->query('preset', '');
         $available = $presets->all();
-        if ($available !== []) {
-            $this->preset = $available[0]['key'];
-        }
+
+        $this->preset = $presets->find($requested) !== null
+            ? $requested
+            : ($available !== [] ? $available[0]['key'] : '');
     }
 
     public function submit(PresetSource $presets, CompanySettingsStore $settingsStore): void
     {
         $this->failure = null;
         $this->createdSlug = null;
+
+        // Re-check autentikasi sebelum tulisan pertama (route sudah memakai
+        // middleware auth, tapi Livewire action tidak otomatis meneruskannya).
+        $owner = auth()->user();
+        if ($owner === null) {
+            abort(403, 'Onboarding hanya untuk pengguna yang terautentikasi.');
+        }
 
         $name = trim($this->name);
         if ($name === '') {
@@ -96,25 +107,22 @@ class Onboarding extends Component
         // sama dipakai owner mengedit tema/istilah/preset nanti.
         $settingsStore->update($slug, fn (array $settings): array => $settings);
 
-        $owner = auth()->user();
-        if ($owner) {
-            $company = Company::updateOrCreate(
-                ['slug' => $slug],
-                [
-                    'name' => $name,
-                    'owner_user_id' => $owner->id,
-                    'business_preset' => $this->preset,
-                    'theme' => 'a',
-                    'is_active' => true,
-                ],
-            );
+        $company = Company::updateOrCreate(
+            ['slug' => $slug],
+            [
+                'name' => $name,
+                'owner_user_id' => $owner->id,
+                'business_preset' => $this->preset,
+                'theme' => 'a',
+                'is_active' => true,
+            ],
+        );
 
-            $company->forceFill([
-                'privacy_accepted_at' => Carbon::now(),
-                'privacy_accepted_by_user_id' => $owner->id,
-                'privacy_policy_version' => self::PRIVACY_POLICY_VERSION,
-            ])->save();
-        }
+        $company->forceFill([
+            'privacy_accepted_at' => Carbon::now(),
+            'privacy_accepted_by_user_id' => $owner->id,
+            'privacy_policy_version' => self::PRIVACY_POLICY_VERSION,
+        ])->save();
 
         $this->createdSlug = $slug;
         $this->name = '';

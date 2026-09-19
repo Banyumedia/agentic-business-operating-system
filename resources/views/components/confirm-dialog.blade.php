@@ -6,6 +6,7 @@
     'confirm',
     'cancel',
     'phraseModel' => null,
+    'invalidPhrase' => null,
 ])
 
 {{--
@@ -47,8 +48,15 @@
                 autocomplete="off"
                 spellcheck="false"
                 wire:model="{{ $phraseModel }}"
+                @if ($invalidPhrase) aria-describedby="confirm-dialog-feedback" @endif
                 class="mt-1 min-h-11 w-full rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-inset)] px-3 py-2 font-[family-name:var(--erp-font-mono)] text-sm uppercase text-[var(--erp-text-primary)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
             />
+            {{-- Validasi frasa dikonfirmasi di dalam dialog dan terikat ke
+                input via aria-describedby - tidak di luar modal yang sudah
+                inert ketika dialog terbuka. --}}
+            @if ($invalidPhrase)
+                <p id="confirm-dialog-feedback" class="mt-2 text-xs text-[var(--erp-danger)]" role="alert">{{ $invalidPhrase }}</p>
+            @endif
         @endif
 
         <div class="mt-5 flex flex-wrap justify-end gap-3">

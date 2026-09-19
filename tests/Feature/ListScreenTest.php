@@ -115,6 +115,22 @@ class ListScreenTest extends TestCase
         $this->assertSame('name', $component->get('sort'));
     }
 
+    public function test_active_sort_is_announced_via_a_polite_live_region(): void
+    {
+        $this->seedRows('bengkel-arka', 'contacts', [['id' => 1, 'name' => 'Satu']]);
+        $component = Livewire::test(ListScreen::class, ['module' => 'contacts']);
+
+        $ascending = $component->call('sortBy', 'name')->html();
+        $this->assertStringContainsString('aria-live="polite"', $ascending);
+        $this->assertStringContainsString('Diurutkan berdasarkan', $ascending);
+        $this->assertStringContainsString('menaik', $ascending);
+        $this->assertStringContainsString('aria-sort="ascending"', $ascending);
+
+        $descending = $component->call('sortBy', 'name')->html();
+        $this->assertStringContainsString('menurun', $descending);
+        $this->assertStringContainsString('aria-sort="descending"', $descending);
+    }
+
     public function test_create_edit_and_delete_persist_through_the_repository(): void
     {
         $this->seedRows('bengkel-arka', 'contacts', [['id' => 1, 'name' => 'Awal']]);
@@ -174,10 +190,17 @@ class ListScreenTest extends TestCase
         $this->assertStringContainsString('role="dialog"', $html);
         $this->assertStringContainsString('aria-modal="true"', $html);
         $this->assertStringContainsString('aria-labelledby="delete-dialog-title"', $html);
+        $this->assertStringContainsString('aria-describedby="delete-dialog-description"', $html);
         $this->assertStringContainsString('Perlu Konfirmasi', $html);
 
+        // QA-UI-R C.11: penahanan fokus + inert latar + restorasi opener.
+        $this->assertStringContainsString('x-trap.inert.noscroll', $html);
+        $this->assertStringContainsString('opener: document.activeElement', $html);
+        $this->assertStringContainsString('$wire.cancelDelete().then(() => target?.focus())', $html);
+        $this->assertStringContainsString('$wire.delete().then(() => target?.focus())', $html);
+
         // D-45 tingkat 2: tombol merah inert saat dialog muncul, tanpa ketik "YA".
-        $this->assertMatchesRegularExpression('/wire:click="delete"[^>]*\sdisabled/', $html);
+        $this->assertStringContainsString('x-bind:disabled="! ready"', $html);
         $this->assertStringNotContainsString('autocapitalize="characters"', $html);
 
         $component->call('cancelDelete');

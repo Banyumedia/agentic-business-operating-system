@@ -29,4 +29,28 @@ class AuthTest extends TestCase
         // Assert we don't get redirected to /login
         $this->assertNotEquals(302, $response->getStatusCode());
     }
+
+    public function test_post_logout_logs_user_out_and_redirects_to_login(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post('/logout');
+
+        $response->assertRedirect(route('login'));
+        $this->assertGuest();
+    }
+
+    public function test_get_logout_route_does_not_exist(): void
+    {
+        $user = User::factory()->create();
+
+        // GET logout tidak boleh dieksekusi - logout lintas situs via link/gambar.
+        // 405 = rute POST-only.
+        $this->actingAs($user)->get('/logout')->assertStatus(405);
+    }
+
+    public function test_logout_requires_authentication(): void
+    {
+        $this->post('/logout')->assertRedirect(route('login'));
+    }
 }

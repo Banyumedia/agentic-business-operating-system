@@ -91,6 +91,39 @@ class CommandPaletteDataSearchTest extends TestCase
         $this->get($result['url'].'?company=bengkel-arka')->assertOk();
     }
 
+    public function test_listbox_options_have_stable_ids_and_combobox_is_linked_to_them(): void
+    {
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+        app(EntityRepository::class)->for('bengkel-arka', 'contacts')->save(['name' => 'Zetta Motor Unik']);
+
+        $html = Livewire::test(CommandPalette::class)
+            ->set('search', 'Zetta Motor Unik')
+            ->html();
+
+        $this->assertStringContainsString('aria-controls="command-palette-listbox"', $html);
+        $this->assertStringContainsString('x-bind:aria-activedescendant="activeDescendant()"', $html);
+        $this->assertStringContainsString('x-on:keydown.arrow-down.prevent="moveActive(1)"', $html);
+        $this->assertStringContainsString('x-on:keydown.arrow-up.prevent="moveActive(-1)"', $html);
+        $this->assertStringContainsString('id="command-palette-listbox"', $html);
+        $this->assertStringContainsString('id="command-palette-option-0"', $html);
+        $this->assertStringContainsString('x-bind:aria-selected="activeIndex === 0"', $html);
+    }
+
+    public function test_empty_searching_and_no_result_states_are_announced(): void
+    {
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+
+        $initial = Livewire::test(CommandPalette::class)->html();
+        $this->assertStringContainsString('aria-live="polite"', $initial);
+        $this->assertStringContainsString('Ketik minimal 2 karakter', $initial);
+
+        $noResult = Livewire::test(CommandPalette::class)
+            ->set('search', 'tidak-akan-ditemukan-ini')
+            ->html();
+        $this->assertStringContainsString('Tidak ditemukan hasil', $noResult);
+        $this->assertStringContainsString('Mencari...', Livewire::test(CommandPalette::class)->html());
+    }
+
     public function test_hrd_attendance_route_renders_successfully_with_the_canonical_schema(): void
     {
         // T-F13R poin 1/2: registry sebelumnya merujuk entity 'timesheets'

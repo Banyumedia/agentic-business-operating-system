@@ -52,7 +52,7 @@ class BranchSwitcherTest extends TestCase
         Livewire::actingAs($user)
             ->test(BranchSwitcher::class)
             ->call('switchBranch', $branch->id)
-            ->assertRedirect('/app');
+            ->assertRedirect(route('app.dashboard'));
 
         $this->assertEquals($branch->id, $user->fresh()->current_company_id);
     }

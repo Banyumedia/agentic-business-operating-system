@@ -81,4 +81,64 @@ class DataErasureTest extends TestCase
             ->assertSet('feedbackType', 'error')
             ->assertSee('Ketik YA');
     }
+
+    public function test_non_owner_is_rejected_without_mutation(): void
+    {
+        $owner = User::factory()->create();
+        $company = Company::factory()->create(['owner_user_id' => $owner->id]);
+
+        $staff = User::factory()->create();
+        $staff->update(['current_company_id' => $company->id]);
+
+        $contact = Contact::factory()->create([
+            'company_id' => $company->id,
+            'name' => 'Budi Santoso',
+        ]);
+
+        $this->actingAs($staff);
+        app(CompanyContext::class)->setCurrent((string) $company->id);
+
+        Livewire::test(DataErasure::class)
+            ->set('contactName', 'Budi Santoso')
+            ->set('confirmationCode', 'YA')
+            ->call('erase')
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('contacts', ['id' => $contact->id]);
+        $this->assertDatabaseMissing('access_logs', [
+            'company_id' => $company->id,
+            'action' => 'erasure',
+        ]);
+    }
+
+    public function test_erasure_tab_is_deep_linkable_and_renders_for_owner(): void
+    {
+        $user = User::factory()->create();
+        $company = Company::factory()->create(['owner_user_id' => $user->id]);
+
+        $this->actingAs($user);
+        app(CompanyContext::class)->setCurrent((string) $company->id);
+
+        $response = $this->get('/app/settings/erasure');
+        $response->assertOk();
+        $this->assertStringContainsString('id="tab-erasure"', $response->getContent());
+        $this->assertStringContainsString('Hapus Data', $response->getContent());
+    }
+
+    public function test_erasure_tab_is_absent_from_staff_dom(): void
+    {
+        $owner = User::factory()->create();
+        $company = Company::factory()->create(['owner_user_id' => $owner->id]);
+
+        // Akses /app milik owner; DOM staf diverifikasi lewat sesi role staff
+        // pada datasource JSON (lihat SettingsCapabilityTabsTest) - di sini
+        // cukup bukti non-owner ditolak penuh lewat middleware.
+        $intruder = User::factory()->create();
+        $intruder->update(['current_company_id' => $company->id]);
+
+        $this->actingAs($intruder);
+        app(CompanyContext::class)->setCurrent((string) $company->id);
+
+        $this->get('/app/settings')->assertStatus(403);
+    }
 }

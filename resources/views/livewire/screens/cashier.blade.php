@@ -162,6 +162,7 @@
             confirm="confirmAction"
             cancel="cancelAction"
             phrase-model="confirmPhrase"
+            :invalid-phrase="$confirmLevel === 'type' && $failure !== null && str_contains($failure, 'Ketik YA') ? $failure : null"
         />
     @endif
 </div>

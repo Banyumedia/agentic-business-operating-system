@@ -10,6 +10,7 @@ use App\Models\Deal;
 use App\Models\Order;
 use App\Models\Prescription;
 use App\Models\Project;
+use App\Services\CompanyRoleResolver;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use LogicException;
@@ -35,6 +36,11 @@ class DataErasure extends Component
         if (! $companyId) {
             return;
         }
+
+        // Owner-only server-side (QA-UI-R B.7): visibilitas tab hanya
+        // mengontrol menu, bukan aksi. Aksi destruktif revalidasi peran dari
+        // kepemilikan terautentikasi, bukan dari state komponen.
+        abort_unless(app(CompanyRoleResolver::class)->isOwnerOfActiveCompany(), 403);
 
         $contactName = trim($this->contactName);
         if ($contactName === '') {
@@ -111,7 +117,8 @@ class DataErasure extends Component
             $this->feedback = $e->getMessage();
             $this->feedbackType = 'error';
         } catch (\Throwable $e) {
-            $this->feedback = 'Terjadi kesalahan sistem saat menghapus data: '.$e->getMessage();
+            report($e);
+            $this->feedback = 'Terjadi kesalahan sistem saat menghapus data.';
             $this->feedbackType = 'error';
         } finally {
             $this->isErasing = false;
@@ -120,6 +127,15 @@ class DataErasure extends Component
 
     public function render()
     {
-        return view('livewire.settings.data-erasure');
+        // Istilah dibaca aman: fixture/preset belum lengkap tidak boleh
+        // meruntuhkan seluruh halaman Pengaturan (pola sama dengan
+        // Settings::refreshTerminologyForm()).
+        try {
+            $contactTerm = strtolower(term('contact'));
+        } catch (\Throwable) {
+            $contactTerm = 'pelanggan';
+        }
+
+        return view('livewire.settings.data-erasure', ['contactTerm' => $contactTerm]);
     }
 }

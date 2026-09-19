@@ -93,6 +93,21 @@ class SettingsThemeTest extends TestCase
         Storage::disk('company-json')->assertMissing('json/bengkel-arka/settings.json');
     }
 
+    public function test_theme_save_has_explicit_success_and_failure_states(): void
+    {
+        $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'owner']);
+
+        // Sukses eksplisit dari server, bukan dari akhir wire:loading.
+        $component = Livewire::test(Settings::class)
+            ->call('selectTheme', 'b')
+            ->assertSet('themeNotice', 'Tema usaha tersimpan: b')
+            ->assertSet('themeFailure', null);
+
+        $html = $component->html();
+        $this->assertStringContainsString('Tema usaha tersimpan: b', $html);
+        $this->assertStringNotContainsString('wire:loading.remove wire:target="selectTheme"', $html);
+    }
+
     public function test_demo_query_can_switch_only_to_an_allowlisted_company(): void
     {
         $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'owner']);

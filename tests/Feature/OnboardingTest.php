@@ -76,13 +76,56 @@ class OnboardingTest extends TestCase
 
     public function test_preset_options_come_from_preset_source_not_hardcoded(): void
     {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
         $this->get('/onboarding')
             ->assertOk()
             ->assertSee('Preset Fixture Onboarding ZZ');
     }
 
+    public function test_guest_is_redirected_from_onboarding_route(): void
+    {
+        $this->get('/onboarding')->assertRedirect(route('login'));
+    }
+
+    public function test_guest_submit_aborts_before_writing_filesystem_or_database(): void
+    {
+        $component = Livewire::test(Onboarding::class);
+        $component->set('name', 'Usaha Tamu')
+            ->set('preset', 'bengkel')
+            ->set('acceptPrivacyPolicy', true)
+            ->call('submit')
+            ->assertStatus(403);
+
+        // Tidak ada folder JSON, tidak ada settings, tidak ada baris company.
+        $this->assertEmpty(Storage::disk('company-json')->allDirectories('json'));
+        $this->assertDatabaseMissing('companies', ['slug' => 'usaha-tamu']);
+    }
+
+    public function test_query_preset_is_accepted_only_when_it_exists_in_preset_source(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Livewire::withQueryParams(['preset' => 'zz_fixture'])
+            ->test(Onboarding::class)
+            ->assertSet('preset', 'zz_fixture');
+
+        Livewire::withQueryParams(['preset' => 'preset-hantu'])
+            ->test(Onboarding::class)
+            ->assertSet('preset', 'bengkel');
+
+        Livewire::withQueryParams([])
+            ->test(Onboarding::class)
+            ->assertSet('preset', 'bengkel');
+    }
+
     public function test_submitting_empty_name_shows_failure_without_writing_a_folder(): void
     {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
         Livewire::test(Onboarding::class)
             ->set('name', '   ')
             ->call('submit')
@@ -91,6 +134,9 @@ class OnboardingTest extends TestCase
 
     public function test_submitting_valid_form_creates_company_folder_with_safe_defaults(): void
     {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
         Livewire::test(Onboarding::class)
             ->set('name', 'Toko Baru Sejahtera')
             ->set('preset', 'bengkel')
@@ -116,6 +162,9 @@ class OnboardingTest extends TestCase
 
     public function test_duplicate_business_name_gets_an_incrementing_unique_slug(): void
     {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
         Livewire::test(Onboarding::class)
             ->set('name', 'Kedai Kopi')
             ->set('preset', 'bengkel')
@@ -136,6 +185,9 @@ class OnboardingTest extends TestCase
 
     public function test_unknown_preset_is_rejected_without_writing(): void
     {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
         Livewire::test(Onboarding::class)
             ->set('name', 'Usaha Tanpa Preset')
             ->set('preset', 'preset-hantu')
@@ -166,6 +218,9 @@ class OnboardingTest extends TestCase
 
     public function test_submit_requires_privacy_consent(): void
     {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
         Livewire::test(Onboarding::class)
             ->set('name', 'Usaha Tanpa Persetujuan')
             ->set('preset', 'bengkel')

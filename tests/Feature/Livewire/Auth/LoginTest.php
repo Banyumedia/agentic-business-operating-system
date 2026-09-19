@@ -18,6 +18,26 @@ class LoginTest extends TestCase
             ->assertStatus(200);
     }
 
+    public function test_labels_are_indonesian_and_uses_guest_layout()
+    {
+        $componentHtml = Livewire::test(Login::class)->html();
+
+        foreach (['Alamat email', 'Kata sandi', 'Ingat saya', '>Masuk<'] as $label) {
+            $this->assertStringContainsString($label, $componentHtml, "Label Indonesia hilang: {$label}");
+        }
+
+        // Heading layout guest hanya dirender lewat request HTTP penuh.
+        $pageHtml = $this->get(route('login'))->assertOk()->getContent();
+        $this->assertStringContainsString('Masuk ke akun', $pageHtml);
+
+        foreach ([$componentHtml, $pageHtml] as $html) {
+            $this->assertStringNotContainsString('Sign in', $html);
+            $this->assertStringNotContainsString('Remember me', $html);
+            $this->assertStringNotContainsString('Email address', $html);
+            $this->assertStringNotContainsString('Password</', $html);
+        }
+    }
+
     public function test_user_can_login()
     {
         $user = User::factory()->create([
@@ -63,5 +83,54 @@ class LoginTest extends TestCase
             ->set('email', 'test@example.com')
             ->call('login')
             ->assertHasErrors(['password' => 'required']);
+    }
+
+    public function test_login_is_rate_limited_after_repeated_failures()
+    {
+        $user = User::factory()->create([
+            'password' => bcrypt('password123'),
+        ]);
+
+        foreach (range(1, 5) as $i) {
+            Livewire::test(Login::class)
+                ->set('email', $user->email)
+                ->set('password', 'wrongpassword')
+                ->call('login')
+                ->assertHasErrors(['email']);
+        }
+
+        // Percobaan ke-6 dengan kredensial BENAR tetap ditolak karena kunci.
+        Livewire::test(Login::class)
+            ->set('email', $user->email)
+            ->set('password', 'password123')
+            ->call('login')
+            ->assertHasErrors(['email'])
+            ->assertNoRedirect();
+
+        $this->assertGuest();
+    }
+
+    public function test_successful_login_clears_the_failure_count_for_that_key()
+    {
+        $user = User::factory()->create([
+            'password' => bcrypt('password123'),
+        ]);
+
+        // Gagal beberapa kali di bawah ambang, lalu sukses: kunci dibuka.
+        foreach (range(1, 3) as $i) {
+            Livewire::test(Login::class)
+                ->set('email', $user->email)
+                ->set('password', 'wrongpassword')
+                ->call('login')
+                ->assertHasErrors(['email']);
+        }
+
+        Livewire::test(Login::class)
+            ->set('email', $user->email)
+            ->set('password', 'password123')
+            ->call('login')
+            ->assertRedirect(route('app.dashboard'));
+
+        $this->assertAuthenticatedAs($user);
     }
 }

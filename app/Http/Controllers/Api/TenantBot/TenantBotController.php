@@ -98,9 +98,20 @@ class TenantBotController extends Controller
             return $errorResponse;
         }
 
+        // Isolasi tenant: contact harus dimiliki company ini sebelum deal
+        // dibuat - ID dari tenant lain tidak boleh menempel di deal kita.
+        $contact = Contact::query()
+            ->where('company_id', $company->id)
+            ->where('id', $payload['contact_id'])
+            ->first();
+
+        if (! $contact) {
+            return response()->json(['error' => 'Contact not found for this company'], 404);
+        }
+
         $deal = Deal::create([
-            'company_id' => $payload['company_id'],
-            'contact_id' => $payload['contact_id'],
+            'company_id' => $company->id,
+            'contact_id' => $contact->id,
             'title' => $payload['title'],
             'amount' => $payload['amount'],
             'stage' => $payload['stage'],

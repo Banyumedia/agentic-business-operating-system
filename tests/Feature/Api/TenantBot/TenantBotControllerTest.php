@@ -6,6 +6,7 @@ use App\Contracts\CompanyContext;
 use App\Contracts\CompanySettingsStore;
 use App\Contracts\PresetSource;
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\HermesProfile;
 use App\Models\User;
 use App\Services\Eloquent\EloquentCompanyContext;
@@ -118,5 +119,88 @@ class TenantBotControllerTest extends TestCase
 
         $response->assertStatus(403);
         $response->assertJson(['error' => 'AI Agent capability is disabled for this company']);
+    }
+
+    public function test_create_deal_rejects_contact_from_another_tenant_without_mutation()
+    {
+        $user = User::factory()->create(['wa_number' => '12345']);
+
+        // Preset klinik punya kapabilitas deals; bengkel tidak.
+        $companyA = Company::factory()->create([
+            'owner_user_id' => $user->id,
+            'business_preset' => 'klinik',
+        ]);
+        $companyB = Company::factory()->create([
+            'owner_user_id' => $user->id,
+            'business_preset' => 'klinik',
+        ]);
+
+        // Contact dimiliki company B; payload menunjuk company A. ID boleh
+        // sama-sama kecil - bentrokan data tenant nyata.
+        $foreignContact = Contact::factory()->create([
+            'company_id' => $companyB->id,
+            'name' => 'Kontak Tenant Lain',
+        ]);
+
+        $profile = HermesProfile::factory()->create([
+            'webhook_secret_reference' => 'secret-token',
+        ]);
+        $profile->companies()->attach($companyA->id);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer secret-token',
+            'X-Caller-Wa-Number' => '12345',
+        ])->postJson('/api/bot/tenant/deals', [
+            'company_id' => $companyA->id,
+            'contact_id' => $foreignContact->id,
+            'title' => 'Deal Ilegal',
+            'amount' => 100000,
+            'stage' => 'baru',
+        ]);
+
+        $response->assertStatus(404);
+        $response->assertJson(['error' => 'Contact not found for this company']);
+
+        $this->assertDatabaseMissing('deals', ['company_id' => $companyA->id]);
+    }
+
+    public function test_create_deal_accepts_contact_owned_by_the_same_company()
+    {
+        $user = User::factory()->create(['wa_number' => '12345']);
+
+        $company = Company::factory()->create([
+            'owner_user_id' => $user->id,
+            'business_preset' => 'klinik',
+        ]);
+
+        $contact = Contact::factory()->create([
+            'company_id' => $company->id,
+            'name' => 'Kontak Milik Sendiri',
+        ]);
+
+        $profile = HermesProfile::factory()->create([
+            'webhook_secret_reference' => 'secret-token',
+        ]);
+        $profile->companies()->attach($company->id);
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer secret-token',
+            'X-Caller-Wa-Number' => '12345',
+        ])->postJson('/api/bot/tenant/deals', [
+            'company_id' => $company->id,
+            'contact_id' => $contact->id,
+            'title' => 'Deal Sah',
+            'amount' => 50000,
+            'stage' => 'baru',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['status' => 'success']);
+
+        $this->assertDatabaseHas('deals', [
+            'company_id' => $company->id,
+            'contact_id' => $contact->id,
+            'title' => 'Deal Sah',
+        ]);
     }
 }

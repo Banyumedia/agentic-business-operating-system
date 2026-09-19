@@ -29,6 +29,18 @@
 @endphp
 
 <div>
+    {{-- Pengumuman urutan aktif untuk pembaca layar: aria-sort hanya
+        tersedia di <th>; nilai diputar di live region saat sortBy berjalan. --}}
+    <p class="sr-only" aria-live="polite" role="status">
+        @php
+            $sortedColumn = collect($columns)->first(fn (array $column): bool => $column['field'] === $sort);
+        @endphp
+        @if ($sortedColumn !== null)
+            Diurutkan berdasarkan {{ $sortedColumn['label'] }},
+            {{ $direction === 'desc' ? 'menurun' : 'menaik' }}.
+        @endif
+    </p>
+
     @if ($rows === [])
         <div role="status" class="flex flex-col items-center justify-center rounded-[var(--erp-radius-lg)] border border-dashed border-[var(--erp-border-strong)] bg-[var(--erp-bg-inset)] px-4 py-16 text-center">
             <div class="mb-4 rounded-full bg-[var(--erp-bg-secondary)] p-3 text-[var(--erp-text-muted)] shadow-sm border border-[var(--erp-border)]">
