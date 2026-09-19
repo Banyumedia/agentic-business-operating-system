@@ -324,14 +324,14 @@ billing, (b) **tidak** menambah nama industri ke kode (D-31), (c) tunduk Tier B
 
 | Add-on (D-56) | Bergantung pada | Catatan teknis |
 |---|---|---|
-| **T-28** Cabang/lokasi tambahan (D-58) | T-00a, T-16 | Multi-company sudah ada (D-06/D-41); membangun: `companies.parent_company_id`, penagihan per cabang (`company_memberships` per child), pelaporan gabungan owner-scoped |
-| **T-32** e-Faktur / Coretax (PKP) | T-11, T-13e | Integrasi eksternal; hanya relevan bila `tax_mode=taxable` (D-44) |
+| **T-28** Cabang/lokasi tambahan (D-58) | T-00a, T-16 | **DONE** `fed2bf2` — Multi-company sudah ada (D-06/D-41); membangun: `companies.parent_company_id`, penagihan per cabang (`company_memberships` per child), pelaporan gabungan owner-scoped |
+| **T-32** e-Faktur / Coretax (PKP) | T-11, T-13e | **DONE** `59cb26e` — Integrasi eksternal; hanya relevan bila `tax_mode=taxable` (D-44) |
 | **T-35** Loyalty pelanggan (poin/voucher) | T-13, T-13e | **DONE** `692df40` — `addon.loyalty` (D-59). Aturan poin per company (mode nominal/item/keduanya), expiry opsional per company, tersimpan sebagai data (`loyalty_rules`), bukan hardcode. |
-| **T-33** Integrasi marketplace/ojol | T-13e, T-19b | Pola sama dengan webhook NalarPesan: idempoten via `external_ref` (D-04) |
-| **T-30** Payroll lanjutan (BPJS/PPh21) | T-13f | Perluasan `hr.payroll`, bukan kapabilitas baru |
-| **T-29** Nomor WA disediakan platform | T-10b | **D-55**: default tetap nomor klien; ini jalur tambahan, bukan pengganti |
-| **T-31** Domain & struk ber-merek sendiri | T-22 | White-label lebih dalam dari D-09 |
-| **T-34** Penyimpanan terkelola (non-BYOS) | T-14 | Alternatif D-22 bagi klien tanpa Google Drive |
+| **T-33** Integrasi marketplace/ojol | T-13e, T-19b | **DONE** `c8be643` — Pola sama dengan webhook NalarPesan: idempoten via `external_ref` (D-04) |
+| **T-30** Payroll lanjutan (BPJS/PPh21) | T-13f | **DONE** `59f2822` — Perluasan `hr.payroll`, bukan kapabilitas baru |
+| **T-29** Nomor WA disediakan platform | T-10b | **DONE** `a4932e4` — **D-55**: default tetap nomor klien; ini jalur tambahan, bukan pengganti |
+| **T-31** Domain & struk ber-merek sendiri | T-22 | **DONE** `26a53fd` — White-label lebih dalam dari D-09 |
+| **T-34** Penyimpanan terkelola (non-BYOS) | T-14 | **DONE** `8d8b01e` — Alternatif D-22 bagi klien tanpa Google Drive |
 
 **Metrik keberhasilan fase:** rasio *preset ditambah* : *diff kode* — target
 ≥ 20 preset baru dengan 0 baris kode domain baru selain T-25b.
