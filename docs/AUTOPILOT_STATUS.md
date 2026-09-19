@@ -1,5 +1,15 @@
 # Agentic BOS Autopilot Status
 
+## LIVE-UI-RECOVERY — Dashboard preset database
+
+**State:** `DONE` — error UI `Dashboard belum dapat dimuat` ditelusuri ke `BusinessPreset` kosong. Dengan izin eksplisit Bos, `BusinessPresetSeeder --force` memuat 40 preset; company aktif `Demo Usaha` sekarang menemukan preset `laundry` beserta 3 widget dashboard.
+
+**Runtime evidence:** login Livewire `200` dengan redirect `/app/dashboard`; dashboard authenticated `200`; judul `Dashboard · Agentic BOS`, `Ringkasan hari ini`, `Laporan AI`, `Stok perlu perhatian`, `Arus kas`, dan `Perlu persetujuan` tampil; pesan fallback tidak ada. Caddy sementara menunjuk app sehat `127.0.0.1:8002`. Service NSSM lama di 8010 belum direstart karena proses LocalSystem memerlukan hak admin.
+
+**Repo:** tidak ada perubahan source dari recovery data/runtime ini. Folder asing `backup-ahli-keuangan/` tidak disentuh.
+
+**Next:** Bos refresh/click `Coba lagi` pada HP untuk live acceptance `HUMAN:UI-LOCK`; setelah akses admin tersedia, restart service `PM2-AgenticBOS` dan kembalikan Caddy ke upstream permanen 8010 setelah verifikasi.
+
 ## T-DELEG-QA — Adjudikasi internal hasil delegasi UI-LOCK (export authorization)
 
 **State:** `DONE` — konflik verdict reviewer diselesaikan internal tanpa delegasi lanjutan. Blocker valid ditutup dengan patch minimal dan regression test negatif.
