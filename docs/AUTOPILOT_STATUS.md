@@ -132,12 +132,12 @@ Hermes menjalankan verifikasi independen penuh (test+pint+build+migrate) lalu
 membagi ~110 file uncommitted menjadi 4 commit bertema sesuai dependency
 riil, bukan `git add -A`.
 
-## Pekerjaan Aktif
+## Koreksi Audit Terakhir
 
 ### T-24dR — Koreksi audit preset batch 1 (`86b169e`)
 
-**State:** `IN_PROGRESS` — koreksi audit diterapkan oleh Hermes sebagai writer tunggal;
-proses writer Claude/Kiro CLI dihentikan sebelum edit.
+**State:** `DONE` — koreksi audit diterapkan oleh Hermes sebagai writer tunggal
+dan di-commit sebagai `2b04d35`; proses writer Claude/Kiro CLI dihentikan sebelum edit.
 
 **Hasil:**
 1. seluruh key menu enam preset dapat di-resolve registry;
@@ -163,15 +163,16 @@ proses writer Claude/Kiro CLI dihentikan sebelum edit.
 **527 passed / 2311 assertions**; Pint **PASS / 386 files**; `npm run build`
 **PASS / 1.02s**; JSON **47 valid**. Audit kelima menemukan gap atomisitas
 approval Eloquent dan expiry lifecycle JSON; keduanya dipatch dan dibuktikan
-dengan integration/idempotency/expiry/forced-rollback/missing-operation-id tests. Re-audit final snapshot terbaru
-sedang berjalan. Fixture test
+dengan integration/idempotency/expiry/forced-rollback/missing-operation-id tests.
+Audit read-only final atas tepat 25 path staged (`f2b7989d…`) **PASS tanpa
+HIGH/MEDIUM**. Fixture test
 `storage/app/json/1/workflow_log.json`
 dipulihkan; lima artefak Caddy/Cloudflare asing tidak disentuh.
 
 ## Pekerjaan Selesai (tambahan)
 - T-24dR (koreksi audit preset batch 1) → menu quotations generik, approval
   widget berbasis `approval_tickets`, capability manufaktur sinkron D-57,
-  coverage docs + behavioral tests lengkap. Commit: commit ini.
+  coverage docs + behavioral tests lengkap. Commit: `2b04d35`.
 - T-28 (Cabang/lokasi tambahan, D-58) → `451653e` (part 1: parent_company_id
   self-FK) + `fed2bf2` (part 2: GroupReportController owner-only + gate
   addon.branches, GroupReportService agregat root+branches exclude unrelated,
