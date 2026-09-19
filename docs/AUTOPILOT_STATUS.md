@@ -26,11 +26,13 @@
 | Accounting | `/app/accounting` | 200 ✅ | "Buku Kas" |
 | Admin area | `/admin` | 403 ✅ | benar, user bukan platform admin |
 
-**Gap yang tercatat (bukan blocker runtime, untuk backlog):**
-1. Modul `pos`, `inventory`, `hrd` mengembalikan 403 meski capability aktif di preset `laundry` — indikasi `EnsureFeatureEnabled`/route module mapping belum selaras untuk akun owner ini.
-2. `BuildCompanyExport` hanya mengekspor 4 file (contacts, invoices, identities, settings) — belum "seluruh data per-tabel" sesuai teks UI.
-3. `downloadUrl` tidak muncul di response Livewire walau export sukses (kemungkinan typed property serialization) — tautan "Klik di sini untuk mengunduh" mungkin tidak ter-render; download langsung via endpoint tetap 200.
-4. `/app/group-report` 403 untuk owner — perlu verifikasi apakah memang dibatasi.
+**Gap yang tercatat — STATUS SETELAH PERBAIKAN 2026-09-20:**
+1. ~~Modul `pos`, `inventory`, `hrd` 403~~ → **FIXED**: akar masalah = `companies.business_preset` tertinggal `eo` (data seed awal), bukan `laundry`. Diperbaiki ke `laundry` → inventory/hrd 200. POS masih 500 karena `BusinessIdentityStore` membaca file JSON `json/1/business_identity.json` yang belum ada → dibuat → POS 200 ("Layar Kasir").
+2. `BuildCompanyExport` hanya mengekspor 4 file — **masih gap** (belum seluruh tabel).
+3. `downloadUrl` tidak muncul di response Livewire — **masih gap** (tautan unduh mungkin tidak ter-render; endpoint download langsung 200).
+4. `/app/group-report` 403 → **BUKAN BUG**: butuh add-on `addon.branches` yang tidak aktif untuk company ini.
+
+**Catatan arsitektur penting:** aplikasi berjalan di **SQLite** (`DB_CONNECTION=sqlite` di .env), BUKAN MySQL. MySQL Laragon yang dinyalakan sebelumnya tidak dipakai aplikasi. CLI tinker dan web server membaca DB sqlite yang sama (`database/database.sqlite`). Jangan keliru mengedit DB MySQL untuk memperbaiki data aplikasi.
 
 ## T-DELEG-QA — Adjudikasi internal hasil delegasi UI-LOCK (export authorization)
 
