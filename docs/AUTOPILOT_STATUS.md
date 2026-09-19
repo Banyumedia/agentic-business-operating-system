@@ -1,5 +1,31 @@
 # Agentic BOS Autopilot Status
 
+## T-DELEG-QA — Adjudikasi internal hasil delegasi UI-LOCK (export authorization)
+
+**State:** `DONE` — konflik verdict reviewer diselesaikan internal tanpa delegasi lanjutan. Blocker valid ditutup dengan patch minimal dan regression test negatif.
+
+**Changed files:**
+1. `routes/web.php` — route `/app/settings/export/download` sekarang fail-closed: tetap menolak admin impersonasi (`403`) dan menolak non-owner (`403`) walaupun `current_company_id`/session aktif.
+2. `tests/Feature/DataExportTest.php` — tambah test `test_non_owner_cannot_download_export_even_when_current_company_is_set`.
+
+**Commit lokal:** `84afb4b` (`fix(security): restrict export download to owner`). Tidak ada push/deploy.
+
+**Evidence:**
+- `php artisan test tests/Feature/DataExportTest.php tests/Feature/AdminImpersonationTest.php` → **PASS 9 tests / 30 assertions**.
+- `php artisan test` → **PASS 583 tests / 3,159 assertions**.
+- `php vendor/laravel/pint/builds/pint --test` → **PASS 389 files**.
+- `npm run build` → **PASS** (`vite build`, 1.35s).
+- `process list` → kosong (tidak ada proses delegasi aktif).
+
+**HUMAN:UI-LOCK checklist (live acceptance yang tersisa):**
+1. Owner login, file export ada → `GET /app/settings/export/download` = **200** (download sukses).
+2. Owner login, file export belum ada → endpoint = **404**.
+3. Staff/non-owner dengan `current_company_id` valid → endpoint = **403**.
+4. Admin dalam mode impersonasi → endpoint = **403**.
+5. Setelah uji, pastikan tidak ada drift repo: `git status --short` harus bersih.
+
+**Next:** menunggu eksekusi dan verdict `HUMAN:UI-LOCK` dari Bos. Jangan push/deploy tanpa izin eksplisit.
+
 ## QA-UI-R — Remediasi acceptance source audit
 
 **State:** `DONE` — seluruh remediation source terverifikasi pass tanpa nondeterminisme paralel dan sudah direkonsiliasi. Gate runner pass.
