@@ -1,0 +1,56 @@
+{
+    "key": "penjahit",
+    "name": "Penjahit / Tailor & Permak",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "inventory": true,
+        "pos": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "item": "Bahan",
+        "items": "Bahan",
+        "order": "Order Jahit",
+        "orders": "Order Jahit",
+        "staff": "Penjahit",
+        "staffs": "Penjahit"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {"code": "diukur", "label": "Diukur"},
+                {"code": "dipotong", "label": "Dipotong"},
+                {"code": "dijahit", "label": "Dijahit"},
+                {"code": "fitting", "label": "Fitting"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "diukur", "to": "dipotong", "roles": ["owner", "staff"]},
+                {"from": "dipotong", "to": "dijahit", "roles": ["owner", "staff"]},
+                {"from": "dijahit", "to": "fitting", "roles": ["owner", "staff"]},
+                {"from": "fitting", "to": "selesai", "roles": ["owner", "staff"], "effects": ["notify.owner_wa"]},
+                {"from": "fitting", "to": "dijahit", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "pos", "contacts", "inventory", "employees", "accounting", "settings"]
+    },
+    "description": "Order jahit dari pengukuran sampai fitting, dengan jalur perbaikan bila hasil fitting belum pas."
+}

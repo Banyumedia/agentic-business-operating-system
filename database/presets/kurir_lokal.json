@@ -1,0 +1,52 @@
+{
+    "key": "kurir_lokal",
+    "name": "Jasa Kurir & Antar Lokal",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "scheduling": true,
+        "pos": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "order": "Kiriman",
+        "orders": "Kiriman",
+        "staff": "Kurir",
+        "staffs": "Kurir"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {"code": "diterima", "label": "Order Diterima"},
+                {"code": "dijemput", "label": "Dijemput"},
+                {"code": "diantar", "label": "Sedang Diantar"},
+                {"code": "selesai", "label": "Terkirim"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "diterima", "to": "dijemput", "roles": ["owner", "staff"]},
+                {"from": "dijemput", "to": "diantar", "roles": ["owner", "staff"]},
+                {"from": "diantar", "to": "selesai", "roles": ["owner", "staff"], "effects": ["notify.owner_wa"]},
+                {"from": "diantar", "to": "dijemput", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "pos", "bookings", "contacts", "employees", "accounting", "settings"]
+    },
+    "description": "Pencatatan kiriman dari penjemputan sampai terkirim, penugasan kurir harian, dan rekap ongkos kirim."
+}

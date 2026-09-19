@@ -1,0 +1,63 @@
+{
+    "key": "desain_interior",
+    "name": "Jasa Desain Interior",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "deals": true,
+        "projects": true,
+        "quotations": true,
+        "milestone_billing": true,
+        "timesheet": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Klien",
+        "contacts": "Klien",
+        "deal": "Prospek",
+        "deals": "Prospek",
+        "project": "Proyek",
+        "projects": "Proyek",
+        "staff": "Desainer",
+        "staffs": "Desainer",
+        "invoice": "Tagihan",
+        "invoices": "Tagihan",
+        "vendor": "Tukang / Vendor",
+        "vendors": "Tukang / Vendor"
+    },
+    "workflows": {
+        "projects": {
+            "stages": [
+                {"code": "survei", "label": "Survei Lokasi"},
+                {"code": "konsep", "label": "Konsep Desain"},
+                {"code": "gambar_kerja", "label": "Gambar Kerja"},
+                {"code": "pelaksanaan", "label": "Pelaksanaan"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "survei", "to": "konsep", "roles": ["owner", "staff"]},
+                {"from": "konsep", "to": "gambar_kerja", "roles": ["owner", "staff"]},
+                {"from": "gambar_kerja", "to": "pelaksanaan", "roles": ["owner"], "effects": ["invoice.create_dp"]},
+                {"from": "pelaksanaan", "to": "selesai", "roles": ["owner"], "effects": ["invoice.create_final"]},
+                {"from": "gambar_kerja", "to": "konsep", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "deals_pipeline"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "contacts", "projects", "employees", "accounting", "settings"]
+    },
+    "description": "Prospek klien sampai serah terima proyek, termin penagihan per tahap, dan jam kerja desainer per proyek."
+}

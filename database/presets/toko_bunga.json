@@ -1,0 +1,57 @@
+{
+    "key": "toko_bunga",
+    "name": "Toko Bunga & Florist",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "scheduling": true,
+        "inventory": true,
+        "inventory.batch_expiry": true,
+        "pos": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "item": "Bunga",
+        "items": "Bunga",
+        "order": "Pesanan",
+        "orders": "Pesanan",
+        "vendor": "Supplier",
+        "vendors": "Supplier"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {"code": "pesanan", "label": "Pesanan Masuk"},
+                {"code": "dirangkai", "label": "Dirangkai"},
+                {"code": "dikirim", "label": "Dikirim"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "pesanan", "to": "dirangkai", "roles": ["owner", "staff"], "effects": ["stock.reserve"]},
+                {"from": "dirangkai", "to": "dikirim", "roles": ["owner", "staff"], "effects": ["stock.deduct"]},
+                {"from": "dikirim", "to": "selesai", "roles": ["owner", "staff"], "effects": ["notify.owner_wa"]},
+                {"from": "dirangkai", "to": "pesanan", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "pos", "bookings", "contacts", "inventory", "employees", "accounting", "settings"]
+    },
+    "description": "Pesanan rangkaian dengan tanggal kirim, stok bunga yang cepat rusak per batch, dan penjualan langsung di toko."
+}
