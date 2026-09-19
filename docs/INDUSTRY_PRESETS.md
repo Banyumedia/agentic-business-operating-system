@@ -72,7 +72,8 @@ Kapabilitas **tidak boleh** menyebut nama industri.
 
 Kapabilitas Tier B **bergantung** pada Tier A: `pharmacy.prescription` butuh
 `inventory.batch_expiry` + `pos` + `contacts`; `construction.retention` butuh
-`projects.progress_billing` + `milestone_billing`; `manufacturing.production_order` butuh `inventory.bom` + `finance.accounting`.
+`projects.progress_billing` + `milestone_billing`; `manufacturing.production_order`
+butuh `inventory.bom` + `inventory.batch_expiry` + `finance.accounting`.
 
 ---
 
@@ -276,6 +277,7 @@ transisi mundur di §2; tabel ini adalah minimum, bukan cabang industri di kode.
 | `system.ai_agent` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Tier B** `pharmacy.prescription` | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | **Tier B** `construction.retention` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| **Tier B** `manufacturing.production_order` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Tier** | A | A | A+B | A | A+B | A | A |
 
 Terminologi per preset (cuplikan): Agency `contact→Klien, deal→Proyek`; F&B
@@ -301,6 +303,12 @@ Bukti bahwa arsitektur ini menutup bisnis di luar 6 awal:
 | Bengkel | `contacts, projects, quotations, inventory, pos, timesheet` | project→Work Order, item→Sparepart, staff→Mekanik |
 | Kursus / Bimbel | `contacts, scheduling, bookings, milestone_billing, hr.employees` | contact→Siswa, booking→Kelas, staff→Pengajar |
 | Kos / Coworking | `contacts, bookings, bookings.deposit, milestone_billing, finance.cashbook` | resource→Kamar/Meja, booking→Sewa, contact→Penghuni |
+| Warnet / Gaming | `contacts, scheduling, bookings, inventory, pos, finance.cashbook, hr.employees, approval_flow, system.ai_agent` | contact→Pelanggan, resource→Unit, booking→Sesi |
+| Cuci Sepatu | `contacts, inventory, pos, finance.cashbook, hr.employees, approval_flow, system.ai_agent` | contact→Pelanggan, item→Layanan, order→Order |
+| Percetakan | `contacts, quotations, inventory, pos, finance.cashbook, hr.employees, approval_flow, system.ai_agent` | contact→Klien, item→Produk Cetak, order→Pesanan |
+| Service AC | `contacts, scheduling, bookings, inventory, pos, finance.cashbook, hr.employees, approval_flow, system.ai_agent` | contact→Pelanggan, staff→Teknisi, booking→Kunjungan |
+| Toko Bangunan | `contacts, inventory, pos, quotations, finance.cashbook, hr.employees, approval_flow, system.ai_agent` | contact→Pelanggan, item→Material, order→Pesanan |
+| Cleaning Service | `contacts, scheduling, bookings, projects, timesheet, quotations, finance.cashbook, hr.employees, approval_flow, system.ai_agent` | contact→Klien, project→Kontrak, booking→Jadwal |
 
 Menambah salah satu = **satu file JSON** + `php artisan db:seed --class=BusinessPresetSeeder`.
 

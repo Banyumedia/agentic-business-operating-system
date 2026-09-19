@@ -29,7 +29,7 @@ class WorkflowEngine
         private readonly CompanyContext $companyContext,
         private readonly PresetSource $presetSource,
         private readonly JsonWorkflowLog $log,
-        ApprovalRequest $approvalRequest,
+        private readonly ApprovalRequest $approvalRequest,
         NotifyOwnerWa $notifyOwnerWa,
         BookingsDepositCollect $bookingsDepositCollect,
         BookingsDepositSettle $bookingsDepositSettle,
@@ -102,12 +102,18 @@ class WorkflowEngine
 
         return DB::transaction(function () use ($transition, $context, $snapshot, $to, $model) {
             if (($transition['requires_approval'] ?? false) === true) {
-                $effectResults = [$this->executeEffect('approval.request', $context)];
-                $this->log->append($snapshot['company'], $this->logEntry('approval_requested', $context, $effectResults));
+                $effectResult = $this->executeEffect('approval.request', $context);
+                $effectResults = [$effectResult];
 
                 if ($this->usesEloquentLog()) {
                     $this->writeToDbLog('approval_requested', $context, $effectResults);
+                } else {
+                    $this->log->append($snapshot['company'], $this->logEntry('approval_requested', $context, $effectResults));
                 }
+                // JSON keeps an invisible prepared row on every failure. It is
+                // the recovery journal for safe retry and must never be deleted
+                // by a competing request that may already have committed its log.
+                $this->approvalRequest->commit($context, $effectResult);
 
                 return $this->result('pending_approval', $snapshot['stage'], $to, $effectResults);
             }
@@ -135,8 +141,9 @@ class WorkflowEngine
     /**
      * Logging ke tabel DB (workflow_transitions_log) hanya berlaku saat
      * DATA_SOURCE=eloquent (D-42: Fase 2 murni JSON, tidak boleh butuh tabel
-     * DB untuk entitas bisnis). Log JSON (JsonWorkflowLog) tetap berjalan
-     * di kedua mode sebagai audit trail utama.
+     * DB untuk entitas bisnis). Approval Eloquent hanya memakai log DB agar
+     * tiket dan audit approval memiliki satu batas transaksi; transisi biasa
+     * tetap mempertahankan audit JSON kompatibel yang sudah ada.
      */
     private function usesEloquentLog(): bool
     {
@@ -153,6 +160,13 @@ class WorkflowEngine
                     break;
                 }
             }
+        }
+
+        if ($ticketId !== null && WorkflowTransitionLog::query()
+            ->where('company_id', $context['company'])
+            ->where('approval_ticket_id', $ticketId)
+            ->exists()) {
+            return;
         }
 
         WorkflowTransitionLog::create([

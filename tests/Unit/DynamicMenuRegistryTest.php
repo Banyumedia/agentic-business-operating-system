@@ -72,6 +72,8 @@ class DynamicMenuRegistryTest extends TestCase
             [, , $module, $submodule] = explode('/', $path);
             $this->assertTrue($this->registry->hasPath($module, $submodule), "Path kanonik tidak terdaftar: $path");
         }
+
+        $this->assertTrue($this->registry->hasPath('quotations', null));
     }
 
     public function test_module_order_is_composed_from_the_active_preset(): void

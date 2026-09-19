@@ -8,6 +8,8 @@ use App\Models\Company;
 use App\Models\User;
 use App\Services\Eloquent\EloquentCompanyContext;
 use App\Services\Eloquent\EloquentCompanySettingsStore;
+use App\Services\FeatureResolver;
+use App\Services\TerminologyResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -26,7 +28,13 @@ class PresetCompositionTest extends TestCase
 
     public function test_new_presets_are_rendered_without_hardcoding()
     {
-        $presets = ['bengkel', 'laundry', 'kursus', 'kos_coworking', 'katering', 'bakery_preorder', 'travel_umroh', 'gym', 'praktek_dokter', 'cuci_mobil', 'barbershop', 'kedai_kopi', 'fotografi'];
+        $presets = [
+            'bengkel', 'laundry', 'kursus', 'kos_coworking', 'katering',
+            'bakery_preorder', 'travel_umroh', 'gym', 'praktek_dokter',
+            'cuci_mobil', 'barbershop', 'kedai_kopi', 'fotografi',
+            'warnet_gaming', 'cuci_sepatu', 'percetakan', 'service_ac',
+            'toko_bangunan', 'cleaning_service',
+        ];
 
         $user = User::factory()->create();
 
@@ -37,9 +45,15 @@ class PresetCompositionTest extends TestCase
             ]);
 
             app(CompanyContext::class)->setCurrent($company->id);
+            app(FeatureResolver::class)->flushCache();
+            app(TerminologyResolver::class)->flushCache();
 
             $response = $this->actingAs($user)->get('/app/dashboard');
             $response->assertStatus(200);
+
+            if ($company->feature('quotations')) {
+                $this->actingAs($user)->get('/app/quotations')->assertStatus(200);
+            }
 
             // Access contacts to test terminology applies
             if ($company->feature('contacts')) {

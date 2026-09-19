@@ -132,7 +132,13 @@ class WorkflowEngineTest extends TestCase
         $this->assertSame('pengerjaan', $record->workflowStage());
         $this->assertSame('approval.request', $result['effects'][0]['effect']);
         $this->assertNotEmpty($result['effects'][0]['ticket_id']);
-        $this->assertSame('approval_requested', $this->workflowLog()[0]['event']);
+        $this->assertSame([], $this->workflowLog());
+        $this->assertDatabaseHas('workflow_transitions_log', [
+            'company_id' => '9999',
+            'entity' => 'orders',
+            'entity_id' => '15',
+            'approval_ticket_id' => $result['effects'][0]['ticket_id'],
+        ]);
         $this->assertDatabaseHas('approval_tickets', [
             'action_type' => 'workflow.transition',
             'subject_id' => '15',
@@ -279,11 +285,26 @@ class WorkflowEngineTest extends TestCase
         }
     }
 
-    public function test_log_rejects_list_entries_and_tenant_label_mismatch(): void
+    public function test_log_rejects_list_entries_tenant_mismatch_and_malformed_effects(): void
     {
         $log = app(JsonWorkflowLog::class);
+        $base = [
+            'event' => 'approval_requested',
+            'company' => '9999',
+            'entity' => 'orders',
+            'record_id' => 22,
+            'from' => 'masuk',
+            'to' => 'pengerjaan',
+        ];
 
-        foreach ([[], ['company' => '8888']] as $entry) {
+        foreach ([
+            [],
+            ['company' => '8888'],
+            [...$base, 'effects' => 'invalid'],
+            [...$base, 'effects' => [[]]],
+            [...$base, 'effects' => [['effect' => 'approval.request']]],
+            [...$base, 'effects' => [['effect' => 'approval.request', 'operation_id' => 'invalid']]],
+        ] as $entry) {
             try {
                 $log->append('9999', $entry);
                 $this->fail('Entry audit yang tidak sah harus ditolak.');

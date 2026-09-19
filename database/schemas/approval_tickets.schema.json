@@ -1,0 +1,118 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "approval_tickets",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "code",
+    "action_type",
+    "payload",
+    "status",
+    "expires_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "operation_id": {
+      "type": "string",
+      "length": 64
+    },
+    "code": {
+      "type": "string",
+      "length": 8
+    },
+    "action_type": {
+      "type": "string",
+      "length": 64
+    },
+    "subject_type": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "subject_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "payload": {
+      "type": "object"
+    },
+    "amount": {
+      "type": "number",
+      "nullable": true,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "requested_by_user_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "approver_user_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "status": {
+      "type": "string",
+      "default": "pending",
+      "length": 16,
+      "enum": ["prepared", "pending", "approved", "rejected", "expired", "consumed"]
+    },
+    "channel": {
+      "type": "string",
+      "default": "whatsapp",
+      "length": 16,
+      "enum": ["whatsapp", "web"]
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "responded_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {},
+  "indexes": [
+    {
+      "fields": [
+        "status"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [
+    {
+      "fields": [
+        "code",
+        "status"
+      ],
+      "company_scoped": true
+    },
+    {
+      "fields": [
+        "operation_id"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "references": {}
+}

@@ -235,9 +235,17 @@ class DynamicMenuRegistry
                 'items' => [
                     $this->item(null, ['term' => 'projects', 'prefix' => 'Daftar '], '/app/projects', 'list', 'projects'),
                     $this->item('billing', 'Termin & Opname', '/app/projects/billing', 'contract', 'invoices', ['projects.progress_billing']),
-                    $this->item('quotations', 'Penawaran', '/app/projects/quotations', 'list', 'quotations', ['quotations']),
+                    $this->item('quotations', 'Penawaran', '/app/projects/quotations', 'list', 'quotations', ['quotations'], [], false),
                     $this->item('timesheet', 'Timesheet', '/app/projects/timesheet', 'list', 'timesheet_entries', ['timesheet']),
                     $this->item('retention', 'Retensi', '/app/projects/retention', 'list', 'project_milestones', ['construction.retention']),
+                ],
+            ],
+            'quotations' => [
+                'title' => 'Penawaran',
+                'icon' => 'file-text',
+                'requires_all' => ['quotations'],
+                'items' => [
+                    $this->item(null, 'Daftar Penawaran', '/app/quotations', 'list', 'quotations'),
                 ],
             ],
             'bookings' => [

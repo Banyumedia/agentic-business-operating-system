@@ -16,6 +16,7 @@ class FeatureResolver
         'quotations', 'milestone_billing', 'approval_flow', 'timesheet',
         'finance.cashbook', 'finance.accounting', 'hr.employees', 'hr.payroll',
         'system.ai_agent', 'pharmacy.prescription', 'construction.retention',
+        'manufacturing.production_order',
         'addon.branches', 'addon.platform_wa_number', 'addon.payroll_advanced',
         'addon.custom_domain', 'addon.efaktur', 'addon.marketplace_sync',
         'addon.managed_storage', 'addon.loyalty',
@@ -32,10 +33,11 @@ class FeatureResolver
         'system.ai_agent' => ['approval_flow'],
         'pharmacy.prescription' => ['inventory.batch_expiry', 'pos', 'contacts'],
         'construction.retention' => ['projects.progress_billing', 'milestone_billing'],
+        'manufacturing.production_order' => ['inventory.bom', 'inventory.batch_expiry', 'finance.accounting'],
     ];
 
     /** @var list<string> */
-    private const TIER_B = ['pharmacy.prescription', 'construction.retention'];
+    private const TIER_B = ['pharmacy.prescription', 'construction.retention', 'manufacturing.production_order'];
 
     public function __construct(
         private readonly CompanyPresetResolver $companyPreset,

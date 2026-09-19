@@ -133,9 +133,45 @@ membagi ~110 file uncommitted menjadi 4 commit bertema sesuai dependency
 riil, bukan `git add -A`.
 
 ## Pekerjaan Aktif
-Tidak ada — T-29 s/d T-34 DONE (final-gate Hermes).
+
+### T-24dR — Koreksi audit preset batch 1 (`86b169e`)
+
+**State:** `IN_PROGRESS` — koreksi audit diterapkan oleh Hermes sebagai writer tunggal;
+proses writer Claude/Kiro CLI dihentikan sebelum edit.
+
+**Hasil:**
+1. seluruh key menu enam preset dapat di-resolve registry;
+2. `quotations` memiliki modul generik `/app/quotations` tanpa bergantung pada `projects`;
+3. `approval.request` mempersist tiket JSON dalam state `prepared` yang tidak
+   terlihat widget, memakai `operation_id` unik per attempt, append log dengan
+   validasi replay kanonis, lalu mengaktifkan tiket menjadi `pending`; prepared
+   tidak dihapus saat gagal agar request paralel tidak dapat menghapus tiket
+   yang sudah dilog, dan retry tidak membuat duplikat; `pending_approvals` tetap
+   tenant-scoped dan fail-closed untuk prepared/consumed/expired/tenant lain;
+4. copy `cuci_sepatu` sesuai effect `notify.owner_wa`;
+5. `manufacturing.production_order` sinkron sebagai Tier B dengan dependency
+   `inventory.bom` + `inventory.batch_expiry` + `finance.accounting` sesuai
+   D-57;
+6. `INDUSTRY_PRESETS.md`, `PRESET_COVERAGE.md`, dan laporan worker diperbarui;
+7. render Eloquent keenam preset, route quotation, seeder, registry, widget JSON
+   dan Eloquent, serta anti-hardcode memiliki coverage behavioral;
+8. approval Eloquent memakai `prepared -> DB audit -> pending` dalam satu
+   transaksi, operation identity idempoten, company row lock, dan expiry
+   lifecycle; audit approval Eloquent tidak lagi dicampur dengan file JSON.
+
+**Evidence:** focused **119 passed / 769 assertions**; full suite terisolasi
+**527 passed / 2311 assertions**; Pint **PASS / 386 files**; `npm run build`
+**PASS / 1.02s**; JSON **47 valid**. Audit kelima menemukan gap atomisitas
+approval Eloquent dan expiry lifecycle JSON; keduanya dipatch dan dibuktikan
+dengan integration/idempotency/expiry/forced-rollback/missing-operation-id tests. Re-audit final snapshot terbaru
+sedang berjalan. Fixture test
+`storage/app/json/1/workflow_log.json`
+dipulihkan; lima artefak Caddy/Cloudflare asing tidak disentuh.
 
 ## Pekerjaan Selesai (tambahan)
+- T-24dR (koreksi audit preset batch 1) → menu quotations generik, approval
+  widget berbasis `approval_tickets`, capability manufaktur sinkron D-57,
+  coverage docs + behavioral tests lengkap. Commit: commit ini.
 - T-28 (Cabang/lokasi tambahan, D-58) → `451653e` (part 1: parent_company_id
   self-FK) + `fed2bf2` (part 2: GroupReportController owner-only + gate
   addon.branches, GroupReportService agregat root+branches exclude unrelated,

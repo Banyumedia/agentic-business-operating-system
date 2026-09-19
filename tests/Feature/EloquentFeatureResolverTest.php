@@ -255,4 +255,43 @@ class EloquentFeatureResolverTest extends TestCase
 
         $this->assertTrue($resolver->enabled('pharmacy.prescription'));
     }
+
+    public function test_manufacturing_capability_fails_closed_when_any_locked_dependency_is_missing(): void
+    {
+        $user = User::factory()->create();
+        $resolver = app(FeatureResolver::class);
+
+        foreach (['inventory.bom', 'inventory.batch_expiry', 'finance.accounting'] as $index => $missing) {
+            $capabilities = [
+                'inventory' => true,
+                'inventory.bom' => true,
+                'inventory.batch_expiry' => true,
+                'finance.accounting' => true,
+                'manufacturing.production_order' => true,
+            ];
+            unset($capabilities[$missing]);
+
+            $presetKey = 'manufacturing_missing_'.$index;
+            BusinessPreset::create([
+                'key' => $presetKey,
+                'name' => 'Preset Tier B '.$index,
+                'tier' => 'B',
+                'definition' => ['tier' => 'B', 'capabilities' => $capabilities],
+            ]);
+            $company = Company::factory()->create([
+                'owner_user_id' => $user->id,
+                'business_preset' => $presetKey,
+            ]);
+
+            app(CompanyContext::class)->setCurrent((string) $company->id);
+            $resolver->flushCache();
+
+            try {
+                $resolver->enabled('manufacturing.production_order');
+                $this->fail("Capability harus fail-closed tanpa {$missing}");
+            } catch (\InvalidArgumentException $exception) {
+                $this->assertStringContainsString("manufacturing.production_order membutuhkan {$missing}", $exception->getMessage());
+            }
+        }
+    }
 }

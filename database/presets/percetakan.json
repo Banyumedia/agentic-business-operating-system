@@ -50,7 +50,7 @@
         ]
     },
     "menus": {
-        "order": ["dashboard", "orders", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
+        "order": ["dashboard", "quotations", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
     },
     "description": "Penawaran ke klien, antrean desain sampai finishing, dan kendali stok bahan cetak dalam satu alur."
 }

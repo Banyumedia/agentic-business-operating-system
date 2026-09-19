@@ -51,7 +51,7 @@
         ]
     },
     "menus": {
-        "order": ["dashboard", "bookings", "projects", "contacts", "employees", "accounting", "settings"]
+        "order": ["dashboard", "bookings", "projects", "quotations", "contacts", "employees", "accounting", "settings"]
     },
     "description": "Kontrak kebersihan berulang, penjadwalan petugas per lokasi, jam kerja tim, dan pemeriksaan mutu sebelum ditutup."
 }

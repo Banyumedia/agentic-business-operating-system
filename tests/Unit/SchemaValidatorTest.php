@@ -17,6 +17,7 @@ class SchemaValidatorTest extends TestCase
             'contacts', 'deals', 'projects', 'project_milestones', 'resources',
             'bookings', 'items', 'item_batches', 'orders', 'order_lines',
             'employees', 'cash_entries', 'invoices', 'quotations', 'timesheet_entries',
+            'approval_tickets',
         ])->mapWithKeys(fn (string $entity): array => [$entity => [$entity]])->all();
     }
 
@@ -183,6 +184,28 @@ class SchemaValidatorTest extends TestCase
             'direction' => 'in',
             'amount' => 99999999999999999,
         ]);
+    }
+
+    public function test_approval_ticket_rejects_unknown_status_and_channel(): void
+    {
+        $valid = [
+            'id' => 1,
+            'code' => '123456',
+            'action_type' => 'workflow.transition',
+            'payload' => [],
+            'status' => 'pending',
+            'channel' => 'whatsapp',
+            'expires_at' => '2026-09-20T06:00:00+07:00',
+        ];
+
+        foreach ([['status', 'totally_invalid'], ['channel', 'carrier_pigeon']] as [$field, $value]) {
+            try {
+                app(SchemaValidator::class)->validate('approval_tickets', [...$valid, $field => $value]);
+                $this->fail("{$field} tiket approval yang tidak dikenal harus ditolak");
+            } catch (InvalidArgumentException $exception) {
+                $this->assertStringContainsString("Nilai field tidak valid: {$field}", $exception->getMessage());
+            }
+        }
     }
 
     public function test_unknown_top_level_field_and_path_traversal_are_rejected(): void

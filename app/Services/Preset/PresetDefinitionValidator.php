@@ -31,6 +31,7 @@ class PresetDefinitionValidator
         'system.ai_agent',
         'pharmacy.prescription',
         'construction.retention',
+        'manufacturing.production_order',
     ];
 
     private const TERMINOLOGY = [
@@ -61,6 +62,7 @@ class PresetDefinitionValidator
     private const TIER_B_DEPENDENCIES = [
         'pharmacy.prescription' => ['inventory.batch_expiry', 'pos', 'contacts'],
         'construction.retention' => ['projects.progress_billing', 'milestone_billing'],
+        'manufacturing.production_order' => ['inventory.bom', 'inventory.batch_expiry', 'finance.accounting'],
     ];
 
     /** @return array<string, mixed> */

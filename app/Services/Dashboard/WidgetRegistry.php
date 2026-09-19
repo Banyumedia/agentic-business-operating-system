@@ -162,13 +162,33 @@ class WidgetRegistry
     /** @return array{key: string, title: string, value: string, meta: string, items: list<array{primary: string, secondary: string}>, tone: string} */
     private function pendingApprovals(): array
     {
-        $rows = $this->rows('quotations');
-        $items = array_map(static fn (array $row): array => [
-            'primary' => (string) ($row['title'] ?? 'Dokumen'),
-            'secondary' => (string) ($row['number'] ?? 'Menunggu tinjauan'),
+        $now = now()->toDateTimeImmutable();
+        $rows = array_values(array_filter(
+            $this->rows('approval_tickets'),
+            static function (array $row) use ($now): bool {
+                if (($row['status'] ?? null) !== 'pending') {
+                    return false;
+                }
+
+                $expiresAt = $row['expires_at'] ?? null;
+                if (! is_string($expiresAt) || $expiresAt === '') {
+                    return false;
+                }
+
+                try {
+                    return new DateTimeImmutable($expiresAt) > $now;
+                } catch (Throwable) {
+                    return false;
+                }
+            },
+        ));
+        usort($rows, static fn (array $left, array $right): int => ($left['expires_at'] ?? '') <=> ($right['expires_at'] ?? ''));
+        $items = array_map(fn (array $row): array => [
+            'primary' => (string) ($row['action_type'] ?? 'Tindakan'),
+            'secondary' => 'Berlaku hingga '.$this->formatDateTime($row['expires_at'] ?? null),
         ], array_slice($rows, 0, 3));
 
-        return $this->card('pending_approvals', 'Perlu persetujuan', (string) count($rows), 'Dokumen menunggu tinjauan', $items, 'warning');
+        return $this->card('pending_approvals', 'Perlu persetujuan', (string) count($rows), 'Tiket aktif menunggu keputusan', $items, 'warning');
     }
 
     /** @return list<array<string, mixed>> */

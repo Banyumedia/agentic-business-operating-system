@@ -49,7 +49,7 @@
         ]
     },
     "menus": {
-        "order": ["dashboard", "orders", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
+        "order": ["dashboard", "quotations", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
     },
     "description": "Penawaran harga material, penyiapan dan pengiriman pesanan, serta kendali stok gudang dan supplier."
 }

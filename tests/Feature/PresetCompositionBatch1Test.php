@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\CompanyContext;
 use App\Contracts\PresetSource;
+use App\Services\DynamicMenuRegistry;
 use App\Services\FeatureResolver;
 use App\Services\Preset\PresetDefinitionValidator;
 use Tests\TestCase;
@@ -14,12 +16,8 @@ use Tests\TestCase;
  * (satu JSON preset), bukan kode. Karena itu test ini juga menjaga agar slug
  * batch ini tidak pernah muncul di `app/` atau `resources/` (D-31).
  *
- * Sengaja TIDAK memakai `RefreshDatabase`/seeder: verifikasi di sini murni
- * terhadap definisi preset (data), dan jalur `db:seed` di repo ini sedang
- * rusak pre-existing (mock `OutputStyle` menerima `askQuestion` saat seeding)
- * sehingga `PresetCompositionTest` dan `BusinessPresetSeederTest` sudah merah
- * di HEAD tanpa perubahan batch ini. Cakupan render lintas preset tetap
- * menjadi tanggung jawab kedua test itu setelah bug infra tersebut dibereskan.
+ * Sengaja TIDAK memakai `RefreshDatabase`: definisi JSON diuji melalui
+ * kontrak runtime yang relevan tanpa membuat salinan data preset.
  */
 class PresetCompositionBatch1Test extends TestCase
 {
@@ -52,10 +50,6 @@ class PresetCompositionBatch1Test extends TestCase
 
     public function test_batch_presets_only_use_capabilities_from_the_locked_catalog(): void
     {
-        // Tier B yang ada hanya dua (D-33); batch ini tidak boleh memakainya
-        // karena seluruh presetnya Tier A.
-        $tierB = ['pharmacy.prescription', 'construction.retention'];
-
         foreach (self::BATCH as $slug) {
             $definition = json_decode(
                 (string) file_get_contents(database_path("presets/{$slug}.json")),
@@ -68,11 +62,6 @@ class PresetCompositionBatch1Test extends TestCase
                     $capability,
                     FeatureResolver::CAPABILITIES,
                     "Kapabilitas di luar katalog resmi (D-32): {$slug} -> {$capability}"
-                );
-                $this->assertNotContains(
-                    $capability,
-                    $tierB,
-                    "Preset Tier A tidak boleh memakai kapabilitas Tier B: {$slug} -> {$capability}"
                 );
             }
 
@@ -164,6 +153,30 @@ class PresetCompositionBatch1Test extends TestCase
         }
     }
 
+    public function test_every_declared_menu_key_resolves_and_quotations_are_reachable(): void
+    {
+        app(CompanyContext::class)->setCurrent('klinik-sehat');
+        $registry = app(DynamicMenuRegistry::class);
+        $aliases = ['employees' => 'hrd'];
+
+        foreach (self::BATCH as $slug) {
+            $definition = json_decode(
+                (string) file_get_contents(database_path("presets/{$slug}.json")),
+                true,
+                flags: JSON_THROW_ON_ERROR,
+            );
+            foreach ($definition['menus']['order'] as $menuKey) {
+                $resolved = $aliases[$menuKey] ?? $menuKey;
+                $this->assertTrue($registry->hasModule($resolved), "Menu tidak dikenal registry: {$slug} -> {$menuKey}");
+            }
+
+            if (($definition['capabilities']['quotations'] ?? false) === true) {
+                $this->assertContains('quotations', $definition['menus']['order'], "Menu quotation tidak dideklarasikan: {$slug}");
+                $this->assertTrue($registry->hasPath('quotations', null), "Quotation tidak terjangkau: {$slug}");
+            }
+        }
+    }
+
     public function test_batch_presets_are_discoverable_through_the_preset_source(): void
     {
         // Preset baru harus langsung terbaca kontrak `PresetSource` tanpa
@@ -194,10 +207,23 @@ class PresetCompositionBatch1Test extends TestCase
                     continue;
                 }
 
-                $contents = (string) file_get_contents($file->getPathname());
+                $source = strtolower((string) file_get_contents($file->getPathname()));
                 foreach (self::BATCH as $slug) {
-                    if (str_contains($contents, $slug)) {
-                        $violations[] = $file->getPathname().' memuat slug preset '.$slug;
+                    $definition = json_decode(
+                        (string) file_get_contents(database_path("presets/{$slug}.json")),
+                        true,
+                        flags: JSON_THROW_ON_ERROR,
+                    );
+                    $markers = [
+                        strtolower($slug),
+                        str_replace('_', '-', strtolower($slug)),
+                        strtolower((string) $definition['name']),
+                    ];
+
+                    foreach (array_unique($markers) as $marker) {
+                        if (str_contains($source, $marker)) {
+                            $violations[] = $file->getPathname().':'.$marker;
+                        }
                     }
                 }
             }

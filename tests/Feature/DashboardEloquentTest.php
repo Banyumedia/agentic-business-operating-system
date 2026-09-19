@@ -4,14 +4,20 @@ namespace Tests\Feature;
 
 use App\Contracts\CompanyContext;
 use App\Contracts\EntityRepository;
+use App\Models\ApprovalTicket;
 use App\Models\AssistantReport;
 use App\Models\Company;
 use App\Models\User;
+use App\Models\WorkflowTransitionLog;
 use App\Providers\DataSourceServiceProvider;
 use App\Services\Dashboard\DashboardComposer;
 use App\Services\Dashboard\WidgetRegistry;
+use App\Services\Workflow\ArrayWorkflowRecord;
+use App\Services\Workflow\WorkflowEngine;
 use Database\Seeders\BusinessPresetSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class DashboardEloquentTest extends TestCase
@@ -106,5 +112,86 @@ class DashboardEloquentTest extends TestCase
 
         $this->assertStringContainsString('08:00', $widget['items'][0]['secondary']);
         $this->assertStringNotContainsString('01:00', $widget['items'][0]['secondary']);
+    }
+
+    public function test_pending_approvals_widget_is_tenant_scoped_and_fail_closed(): void
+    {
+        $user = User::factory()->create();
+        $company = Company::factory()->create(['owner_user_id' => $user->id, 'business_preset' => 'bengkel']);
+        $otherCompany = Company::factory()->create(['owner_user_id' => $user->id, 'business_preset' => 'bengkel']);
+        app(CompanyContext::class)->setCurrent($company->id);
+
+        ApprovalTicket::create(['company_id' => $company->id, 'code' => '111111', 'action_type' => 'payment.release', 'payload' => [], 'status' => 'pending', 'expires_at' => now()->addHour()]);
+        ApprovalTicket::create(['company_id' => $company->id, 'code' => '222222', 'action_type' => 'payment.release', 'payload' => [], 'status' => 'consumed', 'expires_at' => now()->addHour()]);
+        ApprovalTicket::create(['company_id' => $company->id, 'code' => '333333', 'action_type' => 'payment.release', 'payload' => [], 'status' => 'pending', 'expires_at' => now()->subMinute()]);
+        ApprovalTicket::create(['company_id' => $otherCompany->id, 'code' => '444444', 'action_type' => 'payment.release', 'payload' => [], 'status' => 'pending', 'expires_at' => now()->addHour()]);
+
+        $widget = app(WidgetRegistry::class)->compose('pending_approvals');
+
+        $this->assertSame('1', $widget['value']);
+        $this->assertCount(1, $widget['items']);
+    }
+
+    public function test_eloquent_workflow_approval_is_atomic_idempotent_and_expires(): void
+    {
+        $user = User::factory()->create();
+        $company = Company::factory()->create([
+            'owner_user_id' => $user->id,
+            'business_preset' => 'bengkel',
+        ]);
+        $this->actingAs($user);
+        app(CompanyContext::class)->setCurrent($company->id);
+
+        $record = new ArrayWorkflowRecord((string) $company->id, 'orders', [
+            'id' => 88,
+            'stage' => 'pengerjaan',
+        ]);
+        $engine = app(WorkflowEngine::class);
+        $first = $engine->transition($record, 'dibatalkan', 'owner', 'Dibatalkan owner');
+        $retry = $engine->transition($record, 'dibatalkan', 'owner', 'Dibatalkan owner');
+
+        $this->assertSame($first['effects'][0]['operation_id'], $retry['effects'][0]['operation_id']);
+        $this->assertSame($first['effects'][0]['ticket_id'], $retry['effects'][0]['ticket_id']);
+        $this->assertDatabaseCount('approval_tickets', 1);
+        $this->assertDatabaseCount('workflow_transitions_log', 1);
+        $this->assertSame('pending', ApprovalTicket::sole()->status);
+        $this->assertSame(
+            ApprovalTicket::sole()->id,
+            WorkflowTransitionLog::sole()->approval_ticket_id,
+        );
+
+        ApprovalTicket::sole()->update(['expires_at' => now()->subMinute()]);
+        $nextAttempt = $engine->transition($record, 'dibatalkan', 'owner', 'Dibatalkan owner');
+
+        $this->assertNotSame($first['effects'][0]['operation_id'], $nextAttempt['effects'][0]['operation_id']);
+        $this->assertDatabaseCount('approval_tickets', 2);
+        $this->assertDatabaseCount('workflow_transitions_log', 2);
+        $this->assertSame(['expired', 'pending'], ApprovalTicket::query()->orderBy('id')->pluck('status')->all());
+    }
+
+    public function test_eloquent_approval_rolls_back_ticket_when_audit_insert_fails(): void
+    {
+        $user = User::factory()->create();
+        $company = Company::factory()->create([
+            'owner_user_id' => $user->id,
+            'business_preset' => 'bengkel',
+        ]);
+        $this->actingAs($user);
+        app(CompanyContext::class)->setCurrent($company->id);
+        DB::statement("CREATE TRIGGER reject_workflow_audit BEFORE INSERT ON workflow_transitions_log BEGIN SELECT RAISE(FAIL, 'forced audit failure'); END");
+
+        try {
+            app(WorkflowEngine::class)->transition(
+                new ArrayWorkflowRecord((string) $company->id, 'orders', ['id' => 89, 'stage' => 'pengerjaan']),
+                'dibatalkan',
+                'owner',
+            );
+            $this->fail('Kegagalan audit harus menggagalkan approval Eloquent.');
+        } catch (QueryException) {
+            $this->assertDatabaseCount('approval_tickets', 0);
+            $this->assertDatabaseCount('workflow_transitions_log', 0);
+        } finally {
+            DB::statement('DROP TRIGGER IF EXISTS reject_workflow_audit');
+        }
     }
 }

@@ -46,7 +46,7 @@
         ]
     },
     "menus": {
-        "order": ["dashboard", "orders", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
+        "order": ["dashboard", "contacts", "inventory", "pos", "employees", "accounting", "settings"]
     },
-    "description": "Terima titipan sepatu, pantau tahap pengerjaan, dan beri tahu pelanggan saat pesanan siap diambil."
+    "description": "Terima titipan sepatu, pantau tahap pengerjaan, dan beri tahu owner saat pesanan telah diambil."
 }

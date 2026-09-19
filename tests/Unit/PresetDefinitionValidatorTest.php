@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Services\FeatureResolver;
 use App\Services\Preset\PresetDefinitionValidator;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -28,6 +29,32 @@ class PresetDefinitionValidatorTest extends TestCase
         $definition['capabilities']['pharmacy.prescription'] = true;
 
         $this->assertSame($definition, $this->validator->validate($definition));
+    }
+
+    public function test_manufacturing_capability_is_catalogued_as_tier_b_with_locked_dependencies(): void
+    {
+        $definition = $this->validDefinition();
+        $definition['tier'] = 'B';
+        $definition['capabilities']['inventory'] = true;
+        $definition['capabilities']['inventory.bom'] = true;
+        $definition['capabilities']['inventory.batch_expiry'] = true;
+        $definition['capabilities']['finance.accounting'] = true;
+        $definition['capabilities']['manufacturing.production_order'] = true;
+
+        $this->assertContains('manufacturing.production_order', FeatureResolver::CAPABILITIES);
+        $this->assertSame($definition, $this->validator->validate($definition));
+
+        foreach (['inventory.bom', 'inventory.batch_expiry', 'finance.accounting'] as $dependency) {
+            $withoutDependency = $definition;
+            unset($withoutDependency['capabilities'][$dependency]);
+
+            try {
+                $this->validator->validate($withoutDependency);
+                $this->fail("manufacturing.production_order harus membutuhkan {$dependency}");
+            } catch (InvalidArgumentException $exception) {
+                $this->assertStringContainsString("manufacturing.production_order membutuhkan {$dependency}", $exception->getMessage());
+            }
+        }
     }
 
     /** @return array<string, array{callable(array<string, mixed>): array<string, mixed>, string}> */
