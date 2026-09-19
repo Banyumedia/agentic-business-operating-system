@@ -1,0 +1,68 @@
+{
+    "key": "mebel_custom",
+    "name": "Workshop Mebel Custom",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "deals": true,
+        "projects": true,
+        "projects.progress_billing": true,
+        "quotations": true,
+        "milestone_billing": true,
+        "inventory": true,
+        "inventory.bom": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "deal": "Prospek Order",
+        "deals": "Prospek Order",
+        "project": "Order Produksi",
+        "projects": "Order Produksi",
+        "item": "Material & Komponen",
+        "items": "Material & Komponen",
+        "staff": "Tukang",
+        "staffs": "Tukang",
+        "invoice": "Tagihan",
+        "invoices": "Tagihan",
+        "vendor": "Supplier Material",
+        "vendors": "Supplier Material"
+    },
+    "workflows": {
+        "projects": {
+            "stages": [
+                {"code": "penawaran", "label": "Penawaran & Gambar"},
+                {"code": "produksi", "label": "Produksi"},
+                {"code": "finishing", "label": "Finishing"},
+                {"code": "pengiriman", "label": "Pengiriman & Pasang"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "penawaran", "to": "produksi", "roles": ["owner"], "effects": ["invoice.create_dp", "stock.reserve"]},
+                {"from": "produksi", "to": "finishing", "roles": ["owner", "staff"], "effects": ["stock.deduct"]},
+                {"from": "finishing", "to": "pengiriman", "roles": ["owner", "staff"]},
+                {"from": "pengiriman", "to": "selesai", "roles": ["owner"], "effects": ["invoice.create_final"]},
+                {"from": "finishing", "to": "produksi", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "deals_pipeline"},
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "contacts", "projects", "quotations", "inventory", "employees", "accounting", "settings"]
+    },
+    "description": "Penawaran custom dengan rincian material, termin pembayaran per tahap produksi, dan pemakaian bahan dari daftar komponen."
+}

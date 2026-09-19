@@ -1,0 +1,63 @@
+{
+    "key": "petshop",
+    "name": "Petshop & Grooming Hewan",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "scheduling": true,
+        "bookings": true,
+        "inventory": true,
+        "pos": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pemilik Hewan",
+        "contacts": "Pemilik Hewan",
+        "booking": "Jadwal Grooming",
+        "bookings": "Jadwal Grooming",
+        "resource": "Meja & Kandang",
+        "resources": "Meja & Kandang",
+        "item": "Produk & Pakan",
+        "items": "Produk & Pakan",
+        "staff": "Groomer",
+        "staffs": "Groomer",
+        "vendor": "Supplier",
+        "vendors": "Supplier"
+    },
+    "workflows": {
+        "bookings": {
+            "stages": [
+                {"code": "dijadwalkan", "label": "Dijadwalkan"},
+                {"code": "check_in", "label": "Check-in"},
+                {"code": "dikerjakan", "label": "Dikerjakan"},
+                {"code": "siap_dijemput", "label": "Siap Dijemput"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "dijadwalkan", "to": "check_in", "roles": ["owner", "staff"]},
+                {"from": "check_in", "to": "dikerjakan", "roles": ["owner", "staff"], "effects": ["stock.reserve"]},
+                {"from": "dikerjakan", "to": "siap_dijemput", "roles": ["owner", "staff"], "effects": ["stock.deduct", "notify.owner_wa"]},
+                {"from": "siap_dijemput", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "dikerjakan", "to": "check_in", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "bookings", "pos", "contacts", "inventory", "employees", "accounting", "settings"]
+    },
+    "description": "Jadwal grooming per meja dan kandang, riwayat penanganan tiap hewan, serta penjualan pakan dan produk perawatan di kasir."
+}

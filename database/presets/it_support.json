@@ -1,0 +1,73 @@
+{
+    "key": "it_support",
+    "name": "Jasa IT Support & Maintenance",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "deals": true,
+        "scheduling": true,
+        "bookings": true,
+        "projects": true,
+        "inventory": true,
+        "quotations": true,
+        "milestone_billing": true,
+        "timesheet": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Klien",
+        "contacts": "Klien",
+        "deal": "Prospek Kontrak",
+        "deals": "Prospek Kontrak",
+        "project": "Kontrak Maintenance",
+        "projects": "Kontrak Maintenance",
+        "booking": "Tiket Kunjungan",
+        "bookings": "Tiket Kunjungan",
+        "resource": "Tim Lapangan",
+        "resources": "Tim Lapangan",
+        "item": "Perangkat & Sparepart",
+        "items": "Perangkat & Sparepart",
+        "staff": "Teknisi",
+        "staffs": "Teknisi",
+        "invoice": "Tagihan",
+        "invoices": "Tagihan",
+        "vendor": "Vendor Perangkat",
+        "vendors": "Vendor Perangkat"
+    },
+    "workflows": {
+        "bookings": {
+            "stages": [
+                {"code": "tiket_masuk", "label": "Tiket Masuk"},
+                {"code": "dijadwalkan", "label": "Dijadwalkan"},
+                {"code": "penanganan", "label": "Penanganan"},
+                {"code": "verifikasi", "label": "Verifikasi Klien"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "tiket_masuk", "to": "dijadwalkan", "roles": ["owner", "staff"]},
+                {"from": "dijadwalkan", "to": "penanganan", "roles": ["owner", "staff"], "effects": ["stock.reserve"]},
+                {"from": "penanganan", "to": "verifikasi", "roles": ["owner", "staff"], "effects": ["stock.deduct"]},
+                {"from": "verifikasi", "to": "selesai", "roles": ["owner"], "effects": ["invoice.create_final"]},
+                {"from": "verifikasi", "to": "penanganan", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "deals_pipeline"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "bookings", "projects", "quotations", "contacts", "inventory", "employees", "accounting", "settings"]
+    },
+    "description": "Tiket kunjungan berkala per klien, penjadwalan teknisi lapangan, pemakaian sparepart, dan jam kerja yang ditagihkan."
+}

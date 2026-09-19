@@ -1,0 +1,60 @@
+{
+    "key": "toko_hp",
+    "name": "Toko & Service Handphone",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "scheduling": true,
+        "inventory": true,
+        "pos": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "item": "Unit & Sparepart",
+        "items": "Unit & Sparepart",
+        "order": "Order Service",
+        "orders": "Order Service",
+        "staff": "Teknisi",
+        "staffs": "Teknisi",
+        "vendor": "Supplier",
+        "vendors": "Supplier"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {"code": "diterima", "label": "Unit Diterima"},
+                {"code": "diperiksa", "label": "Diperiksa"},
+                {"code": "dikerjakan", "label": "Dikerjakan"},
+                {"code": "siap_diambil", "label": "Siap Diambil"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "diterima", "to": "diperiksa", "roles": ["owner", "staff"]},
+                {"from": "diperiksa", "to": "dikerjakan", "roles": ["owner", "staff"], "effects": ["stock.reserve"]},
+                {"from": "dikerjakan", "to": "siap_diambil", "roles": ["owner", "staff"], "effects": ["stock.deduct", "notify.owner_wa"]},
+                {"from": "siap_diambil", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "dikerjakan", "to": "diperiksa", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "pos", "bookings", "contacts", "inventory", "employees", "accounting", "settings"]
+    },
+    "description": "Terima unit servis dengan estimasi biaya, pantau pengerjaan teknisi, dan jual aksesori atau sparepart lewat kasir yang sama."
+}

@@ -1,0 +1,63 @@
+{
+    "key": "kantor_hukum",
+    "name": "Kantor Hukum & Konsultan Legal",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "deals": true,
+        "projects": true,
+        "quotations": true,
+        "milestone_billing": true,
+        "timesheet": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Klien",
+        "contacts": "Klien",
+        "deal": "Prospek Penanganan",
+        "deals": "Prospek Penanganan",
+        "project": "Perkara",
+        "projects": "Perkara",
+        "staff": "Advokat",
+        "staffs": "Advokat",
+        "invoice": "Tagihan Jasa",
+        "invoices": "Tagihan Jasa",
+        "vendor": "Mitra Eksternal",
+        "vendors": "Mitra Eksternal"
+    },
+    "workflows": {
+        "projects": {
+            "stages": [
+                {"code": "konsultasi", "label": "Konsultasi Awal"},
+                {"code": "penunjukan", "label": "Surat Kuasa"},
+                {"code": "berjalan", "label": "Penanganan Berjalan"},
+                {"code": "penutupan", "label": "Penutupan"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "konsultasi", "to": "penunjukan", "roles": ["owner"]},
+                {"from": "penunjukan", "to": "berjalan", "roles": ["owner"], "effects": ["invoice.create_dp"]},
+                {"from": "berjalan", "to": "penutupan", "roles": ["owner", "staff"]},
+                {"from": "penutupan", "to": "selesai", "roles": ["owner"], "effects": ["invoice.create_final"]},
+                {"from": "penutupan", "to": "berjalan", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "deals_pipeline"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "contacts", "projects", "quotations", "employees", "accounting", "settings"]
+    },
+    "description": "Prospek klien sampai perkara ditutup, penagihan retainer dan termin, serta pencatatan jam kerja advokat per perkara."
+}

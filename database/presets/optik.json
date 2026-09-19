@@ -1,0 +1,60 @@
+{
+    "key": "optik",
+    "name": "Optik & Kacamata",
+    "tier": "A",
+    "capabilities": {
+        "contacts": true,
+        "scheduling": true,
+        "inventory": true,
+        "pos": true,
+        "finance.cashbook": true,
+        "hr.employees": true,
+        "approval_flow": true,
+        "system.ai_agent": true
+    },
+    "terminology": {
+        "contact": "Pelanggan",
+        "contacts": "Pelanggan",
+        "item": "Frame & Lensa",
+        "items": "Frame & Lensa",
+        "order": "Pesanan Kacamata",
+        "orders": "Pesanan Kacamata",
+        "staff": "Refraksionis",
+        "staffs": "Refraksionis",
+        "vendor": "Distributor Lensa",
+        "vendors": "Distributor Lensa"
+    },
+    "workflows": {
+        "orders": {
+            "stages": [
+                {"code": "pemeriksaan", "label": "Pemeriksaan Mata"},
+                {"code": "pesan_lensa", "label": "Pesan Lensa"},
+                {"code": "perakitan", "label": "Perakitan"},
+                {"code": "siap_diambil", "label": "Siap Diambil"},
+                {"code": "selesai", "label": "Selesai"},
+                {"code": "dibatalkan", "label": "Dibatalkan"}
+            ],
+            "transitions": [
+                {"from": "pemeriksaan", "to": "pesan_lensa", "roles": ["owner", "staff"]},
+                {"from": "pesan_lensa", "to": "perakitan", "roles": ["owner", "staff"], "effects": ["stock.reserve"]},
+                {"from": "perakitan", "to": "siap_diambil", "roles": ["owner", "staff"], "effects": ["stock.deduct", "notify.owner_wa"]},
+                {"from": "siap_diambil", "to": "selesai", "roles": ["owner", "staff"]},
+                {"from": "perakitan", "to": "pesan_lensa", "roles": ["owner", "staff"], "requires_note": true},
+                {"from": "*", "to": "dibatalkan", "roles": ["owner"]}
+            ],
+            "terminal": ["selesai", "dibatalkan"]
+        }
+    },
+    "dashboard": {
+        "industry_zone": [
+            {"widget": "upcoming_schedule"},
+            {"widget": "low_stock"},
+            {"widget": "kpi_cashflow"},
+            {"widget": "pending_approvals"}
+        ]
+    },
+    "menus": {
+        "order": ["dashboard", "pos", "bookings", "contacts", "inventory", "employees", "accounting", "settings"]
+    },
+    "description": "Jadwal pemeriksaan mata, pesanan lensa ke distributor sampai perakitan frame, dan penjualan langsung di kasir."
+}
