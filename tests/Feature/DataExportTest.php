@@ -85,4 +85,22 @@ class DataExportTest extends TestCase
         $this->get('/app/settings/export/download')
             ->assertNotFound();
     }
+
+    public function test_non_owner_cannot_download_export_even_when_current_company_is_set(): void
+    {
+        $owner = User::factory()->create();
+        $company = Company::factory()->create([
+            'owner_user_id' => $owner->id,
+            'slug' => 'demo-company',
+        ]);
+
+        $staff = User::factory()->create([
+            'current_company_id' => $company->id,
+        ]);
+
+        $this->actingAs($staff)
+            ->withSession(['active_company' => (string) $company->id])
+            ->get('/app/settings/export/download')
+            ->assertForbidden();
+    }
 }

@@ -54,11 +54,17 @@ Route::middleware(['auth', SetCurrentCompany::class, EnsureCompanyAccess::class]
             if (session()->has('admin_impersonation_id')) {
                 abort(403, 'Admin impersonation tidak dapat mengunduh data klien.');
             }
-            $companyId = app(CompanyContext::class)->current();
-            $path = storage_path('app/exports/'.$companyId.'/export.zip');
+
+            $company = app(CompanyContext::class)->getCompany();
+            if ((int) auth()->id() !== (int) $company->owner_user_id) {
+                abort(403, 'Hanya owner yang dapat mengunduh data usaha.');
+            }
+
+            $path = storage_path('app/exports/'.$company->id.'/export.zip');
             if (file_exists($path)) {
                 return response()->download($path);
             }
+
             abort(404, 'Export not found');
         })->name('settings.export.download');
 
