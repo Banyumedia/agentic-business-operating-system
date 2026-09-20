@@ -37,13 +37,13 @@ class ThemeRegistry
         return [
             'a' => self::definition('A — Slate + Emerald', 'Tenang dan netral untuk semua usaha.', [
                 '--erp-bg-base' => '#0f172a', '--erp-bg-secondary' => '#1e293b', '--erp-bg-elevated' => '#334155', '--erp-bg-inset' => '#020617',
-                '--erp-text-primary' => '#f8fafc', '--erp-text-secondary' => '#cbd5e1', '--erp-text-muted' => '#94a3b8', '--erp-text-inverse' => '#052e16', '--erp-text-link' => '#7dd3fc',
+                '--erp-text-primary' => '#f8fafc', '--erp-text-secondary' => '#cbd5e1', '--erp-text-muted' => '#a5b1c6', '--erp-text-inverse' => '#052e16', '--erp-text-link' => '#7dd3fc',
                 '--erp-accent' => '#34d399', '--erp-accent-hover' => '#6ee7b7', '--erp-accent-soft' => '#022c22', '--erp-focus' => '#34d399',
                 '--erp-success' => '#6ee7b7', '--erp-warning' => '#fbbf24', '--erp-danger' => '#fb7185', '--erp-info' => '#38bdf8',
             ] + $commonDark),
             'b' => self::definition('B — Zinc + Amber', 'Hangat dan tegas untuk operasi harian.', [
                 '--erp-bg-base' => '#18181b', '--erp-bg-secondary' => '#27272a', '--erp-bg-elevated' => '#3f3f46', '--erp-bg-inset' => '#09090b',
-                '--erp-bg-hover' => '#3f3f46', '--erp-bg-active' => '#52525b', '--erp-text-primary' => '#fafafa', '--erp-text-secondary' => '#d4d4d8', '--erp-text-muted' => '#a1a1aa', '--erp-text-inverse' => '#1c1917', '--erp-text-link' => '#fcd34d',
+                '--erp-bg-hover' => '#3f3f46', '--erp-bg-active' => '#52525b', '--erp-text-primary' => '#fafafa', '--erp-text-secondary' => '#d4d4d8', '--erp-text-muted' => '#b1b1b9', '--erp-text-inverse' => '#1c1917', '--erp-text-link' => '#fcd34d',
                 '--erp-border' => '#3f3f46', '--erp-border-strong' => '#52525b', '--erp-border-focus' => '#fbbf24', '--erp-accent' => '#fbbf24', '--erp-accent-hover' => '#fcd34d', '--erp-accent-soft' => '#451a03', '--erp-focus' => '#fbbf24',
                 '--erp-success' => '#34d399', '--erp-success-soft' => '#022c22', '--erp-warning' => '#fde68a', '--erp-warning-soft' => '#422006', '--erp-danger' => '#fb7185', '--erp-danger-soft' => '#4c0519', '--erp-info' => '#38bdf8', '--erp-info-soft' => '#082f49',
                 '--erp-sidebar-bg' => '#09090b', '--erp-sidebar-text' => '#d4d4d8', '--erp-sidebar-active' => '#27272a', '--erp-topbar-bg' => '#18181b',
@@ -57,7 +57,7 @@ class ThemeRegistry
             ] + self::shapeTokens()),
             'd' => self::definition('D — Stone + Terracotta', 'Organik dan ramah untuk pengalaman kreatif.', [
                 '--erp-bg-base' => '#1c1917', '--erp-bg-secondary' => '#292524', '--erp-bg-elevated' => '#44403c', '--erp-bg-inset' => '#0c0a09',
-                '--erp-bg-hover' => '#44403c', '--erp-bg-active' => '#57534e', '--erp-text-primary' => '#fafaf9', '--erp-text-secondary' => '#d6d3d1', '--erp-text-muted' => '#a8a29e', '--erp-text-inverse' => '#1c1917', '--erp-text-link' => '#fdba74',
+                '--erp-bg-hover' => '#44403c', '--erp-bg-active' => '#57534e', '--erp-text-primary' => '#fafaf9', '--erp-text-secondary' => '#d6d3d1', '--erp-text-muted' => '#b8b3af', '--erp-text-inverse' => '#1c1917', '--erp-text-link' => '#fdba74',
                 '--erp-border' => '#44403c', '--erp-border-strong' => '#57534e', '--erp-border-focus' => '#fb923c', '--erp-accent' => '#fb923c', '--erp-accent-hover' => '#fdba74', '--erp-accent-soft' => '#431407', '--erp-focus' => '#fb923c',
                 '--erp-success' => '#34d399', '--erp-success-soft' => '#022c22', '--erp-warning' => '#fbbf24', '--erp-warning-soft' => '#451a03', '--erp-danger' => '#fb7185', '--erp-danger-soft' => '#4c0519', '--erp-info' => '#38bdf8', '--erp-info-soft' => '#082f49',
                 '--erp-sidebar-bg' => '#0c0a09', '--erp-sidebar-text' => '#d6d3d1', '--erp-sidebar-active' => '#292524', '--erp-topbar-bg' => '#1c1917',
