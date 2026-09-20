@@ -19,7 +19,7 @@
             @foreach ($widget['items'] as $item)
                 <li class="group flex items-start justify-between gap-4 rounded-[var(--erp-radius-md)] p-3 transition-colors hover:bg-[var(--erp-bg-inset)]">
                     <span class="text-sm font-medium text-[var(--erp-text-primary)]">{{ $item['primary'] }}</span>
-                    <span class="text-right text-sm text-[var(--erp-text-muted)] group-hover:text-[var(--erp-text-secondary)] transition-colors">{{ $item['secondary'] }}</span>
+                    <span class="text-right text-sm tabular-nums text-[var(--erp-text-muted)] group-hover:text-[var(--erp-text-secondary)] transition-colors">{{ $item['secondary'] }}</span>
                 </li>
             @endforeach
         </ul>
