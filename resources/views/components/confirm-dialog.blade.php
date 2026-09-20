@@ -19,7 +19,7 @@
     tidak ikut menekan tombol di bawahnya. Tekan-dan-tahan dilarang di semua
     tingkat, jadi tidak ada varian itu di sini.
 --}}
-<div class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center">
+<div class="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_srgb,var(--erp-text-primary)_60%,transparent)] p-4 sm:items-center">
     <div
         role="dialog"
         aria-modal="true"
@@ -29,7 +29,7 @@
         x-trap.inert.noscroll="true"
         x-init="setTimeout(() => ready = true, 400); $nextTick(() => $refs.cancel?.focus())"
         x-on:keydown.escape.window="const target = opener; $wire.{{ $cancel }}().then(() => target?.focus())"
-        class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)] ring-2 ring-[var(--erp-focus)] ring-offset-4 ring-offset-black/60 focus:outline-none"
+        class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)] ring-2 ring-[var(--erp-focus)] ring-offset-4 ring-offset-[color-mix(in_srgb,var(--erp-text-primary)_60%,transparent)] focus:outline-none"
         tabindex="-1"
     >
         <h2 id="confirm-dialog-title" class="text-lg font-semibold text-[var(--erp-text-primary)]">{{ $title }}</h2>
