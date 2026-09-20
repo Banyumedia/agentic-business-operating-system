@@ -10,6 +10,14 @@
 
 **Next:** Dashboard live dari HP dikonfirmasi Bos **PASS** pada 2026-09-20. **POS, Inventory, HRD juga PASS dari HP** pada 2026-09-20. **Export owner (buat ZIP + unduh) PASS dari HP** pada 2026-09-20. Sisa checklist: export 404 saat file belum ada, staff/non-owner 403, admin impersonation 403 (butuh akun tambahan). Setelah seluruh checklist UI-LOCK selesai dan akses admin tersedia, restart service `PM2-AgenticBOS` dan kembalikan Caddy ke upstream permanen 8010 setelah verifikasi.
 
+**Skenario negatif export — dieksekusi server-side 2026-09-20 (semua PASS):**
+1. Owner tanpa file export → `/app/settings/export/download` = **404** ✅ (file di-rename sementara lalu di-restore).
+2. Staff/non-owner (user id=3, current_company=1, bukan owner) → endpoint = **403** ✅ (juga 403 di dashboard oleh `EnsureCompanyAccess`).
+3. Admin platform (user id=4, `is_platform_admin=1`) mode impersonasi company 1 → endpoint = **403** ✅, dan banner impersonasi tampil di dashboard ✅.
+4. Akun dummy (`staff-smoke@`, `admin-smoke@`) dan seluruh sesi impersonasi **dihapus** setelah uji; tersisa 2 user asli.
+
+**Seluruh checklist `HUMAN:UI-LOCK` export kini terpenuhi (4/4).** Menunggu Bos menyatakan UI-LOCK lepas, lalu lanjut maraton Fase berikutnya dengan delegasi Claude/OpenCode.
+
 **Smoke test menyeluruh 2026-09-20 (authenticated owner `bos@nalar.army`, company `Demo Usaha` preset `laundry`, via app 8002):**
 
 | Area | Route | Hasil | Catatan |
