@@ -27,6 +27,12 @@
 
 **Catatan:** OpenCode reviewer tidak bisa menjalankan command (izin tool auto-reject) sejak maraton ini; peran QA diverifikasi Hermes dengan membaca diff langsung + final-gate. App live di `127.0.0.1:8002` di-restart untuk memuat hasil I1+I2.
 
+**Batch paywall W1 + W2 DONE & merged (Claude writer, Hermes final-gate):**
+- **W1** halaman paywall (`/app/paywall`): tampil saat kuota habis (D-61) — menjelaskan kuota gratis habis dengan bahasa awam, menampilkan daftar paket dari `membership_plans` dengan harga + kuota (config-driven, bukan hardcode), dan exception `InsufficientTokenQuotaException`/`WaGroupQuotaExceededException` kini di-render ke paywall, bukan error mentah. `PaywallTest` 163 baris.
+- **W2** indikator kuota di Settings → tab "Penggunaan & Paket": sisa token vs kuota, grup WA terpakai vs maksimal, label tier (Gratis/nama paket), dan banner peringatan dini saat saldo menipis (< rasio config, default 20%). Semua angka dari gate/config.
+- Catatan proses: W2 sempat terluncur beberapa proses duplikat (kecelakaan orchestration) — Hermes membersihkan zombie, menyelesaikan integrasi komponen ke tab usage, dan memperbaiki asersi test yang salah (`UsageAndPlan` → `settings.usage-and-plan` kebab-case).
+- **Final gate setelah kedua merge:** `DATA_SOURCE=json php artisan test` → **742 passed / 3,893 assertions**; Pint PASS; build PASS; app 8002 di-restart, smoke `/login` 200, `/app/paywall` & `/app/settings?tab=usage` 302 (auth, benar).
+
 ## UX-MARATHON — Polesan UI/UX 3 lane paralel
 
 **State:** `DONE` — tiga lane Claude paralel selesai, direview OpenCode, final-gate oleh Hermes, di-merge serial ke `main`.
