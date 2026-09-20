@@ -50,6 +50,7 @@
                 <input wire:model="password_confirmation" id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" required
                        aria-invalid="{{ $errors->has('password_confirmation') ? 'true' : 'false' }}"
                        @if ($errors->has('password_confirmation')) aria-describedby="password_confirmation-error" @endif
+                       x-init="$el.getAttribute('aria-invalid') === 'true' && document.querySelector('[aria-invalid=true]') === $el && $el.focus()"
                        class="appearance-none block w-full min-h-11 px-3 py-2 border {{ $errors->has('password_confirmation') ? 'border-[var(--erp-danger)]' : 'border-[var(--erp-border-strong)]' }} rounded-[var(--erp-radius-md)] placeholder:text-[var(--erp-text-muted)] bg-[var(--erp-bg-inset)] text-[var(--erp-text-primary)] focus:outline-none focus:border-[var(--erp-border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] sm:text-sm">
             </div>
             @error('password_confirmation') <span id="password_confirmation-error" class="mt-2 text-sm text-[var(--erp-danger)] block" role="alert">{{ $message }}</span> @enderror
