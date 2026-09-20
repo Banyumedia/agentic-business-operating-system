@@ -57,8 +57,9 @@
                                             <button
                                                 type="button"
                                                 wire:click="move({{ $card['id'] }}, '{{ $transition['to'] }}')"
+                                                wire:loading.attr="disabled"
                                                 title="{{ $transition['label'] }}@if ($transition['requires_note']) (butuh alasan)@endif"
-                                                class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-2 text-xs font-medium text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                                                class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-2 text-xs font-medium text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                                             >
                                                 &rarr; {{ $transition['label'] }}@if ($transition['requires_note'])<span aria-hidden="true"> *</span>@endif
                                                 <span class="sr-only">untuk {{ $card['title'] }}@if ($transition['requires_note']) (butuh alasan)@endif</span>
