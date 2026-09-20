@@ -83,7 +83,7 @@
         dialog beralasan - bukan ketik "YA" (D-45 tingkat 1).
     --}}
     @if ($pendingCard !== null && $pendingStageLabel !== null)
-        <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center">
+        <div class="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_srgb,var(--erp-text-primary)_60%,transparent)] p-4 sm:items-center">
             <div
                 role="dialog"
                 aria-modal="true"
@@ -117,18 +117,21 @@
                     <button
                         type="button"
                         wire:click="cancelMove"
+                        wire:loading.attr="disabled"
                         title="Batal"
-                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] px-4 text-sm font-semibold text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] px-4 text-sm font-semibold text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                     >
                         Batal
                     </button>
                     <button
                         type="button"
                         wire:click="confirmMove"
+                        wire:loading.attr="disabled"
                         title="Simpan alasan &amp; pindahkan"
-                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                     >
-                        Simpan alasan &amp; pindahkan
+                        <span wire:loading.remove>Simpan alasan &amp; pindahkan</span>
+                        <span wire:loading>Memindahkan…</span>
                     </button>
                 </div>
             </div>
