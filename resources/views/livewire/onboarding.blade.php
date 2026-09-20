@@ -123,26 +123,33 @@
                     <button
                         type="button"
                         wire:click="previousStep"
-                        class="min-h-11 flex-1 rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] px-4 font-semibold text-[var(--erp-text-secondary)] transition hover:text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                        wire:loading.attr="disabled"
+                        class="min-h-11 flex-1 rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] px-4 font-semibold text-[var(--erp-text-secondary)] transition hover:text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                     >
                         Kembali
                     </button>
                 @endif
 
                 @if ($step < $totalSteps)
+                    {{-- Disabled saat request Livewire berjalan: double-tap di HP
+                        tidak boleh melewati dua langkah sekaligus. --}}
                     <button
                         type="button"
                         wire:click="nextStep"
-                        class="min-h-11 flex-1 rounded-[var(--erp-radius-sm)] bg-[var(--erp-accent)] px-4 font-semibold text-[var(--erp-text-inverse)] transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                        wire:loading.attr="disabled"
+                        class="min-h-11 flex-1 rounded-[var(--erp-radius-sm)] bg-[var(--erp-accent)] px-4 font-semibold text-[var(--erp-text-inverse)] transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                     >
-                        Lanjut
+                        <span wire:loading.remove>Lanjut</span>
+                        <span wire:loading>Memproses…</span>
                     </button>
                 @else
                     <button
                         type="submit"
-                        class="min-h-11 flex-1 rounded-[var(--erp-radius-sm)] bg-[var(--erp-accent)] px-4 font-semibold text-[var(--erp-text-inverse)] transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                        wire:loading.attr="disabled"
+                        class="min-h-11 flex-1 rounded-[var(--erp-radius-sm)] bg-[var(--erp-accent)] px-4 font-semibold text-[var(--erp-text-inverse)] transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                     >
-                        Buat usaha saya
+                        <span wire:loading.remove>Buat usaha saya</span>
+                        <span wire:loading>Membuat…</span>
                     </button>
                 @endif
             </div>
