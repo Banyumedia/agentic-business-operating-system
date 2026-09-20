@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Contracts\PresetSource;
+use App\Livewire\Onboarding;
 use App\Models\Company;
 use App\Models\User;
+use App\Services\PlanCapabilityGate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -58,9 +60,9 @@ class OnboardingFlowTest extends TestCase
             }
         });
 
-        $gate = $this->mock(\App\Services\PlanCapabilityGate::class);
+        $gate = $this->mock(PlanCapabilityGate::class);
         $gate->shouldReceive('allowedCapabilities')->andReturn([]);
-        $this->app->instance(\App\Services\PlanCapabilityGate::class, $gate);
+        $this->app->instance(PlanCapabilityGate::class, $gate);
     }
 
     public function test_flow_starts_at_step_one_with_progress_indicator(): void
@@ -68,7 +70,7 @@ class OnboardingFlowTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        $component = Livewire::test(\App\Livewire\Onboarding::class);
+        $component = Livewire::test(Onboarding::class);
 
         $component
             ->assertSet('step', 1)
@@ -81,7 +83,7 @@ class OnboardingFlowTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        Livewire::test(\App\Livewire\Onboarding::class)
+        Livewire::test(Onboarding::class)
             ->set('name', '   ')
             ->call('nextStep')
             ->assertSet('step', 1)
@@ -93,7 +95,7 @@ class OnboardingFlowTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        $component = Livewire::test(\App\Livewire\Onboarding::class);
+        $component = Livewire::test(Onboarding::class);
         $component
             ->set('name', 'Usaha Alur Lengkap')
             ->call('nextStep')
@@ -131,7 +133,7 @@ class OnboardingFlowTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        $component = Livewire::test(\App\Livewire\Onboarding::class);
+        $component = Livewire::test(Onboarding::class);
         $component->assertSee('Belum ada preset');
 
         $component
@@ -148,7 +150,7 @@ class OnboardingFlowTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        Livewire::test(\App\Livewire\Onboarding::class)
+        Livewire::test(Onboarding::class)
             ->set('name', 'Usaha Alur Selesai')
             ->set('preset', 'zz_flow_a')
             ->set('acceptPrivacyPolicy', true)
@@ -168,7 +170,7 @@ class OnboardingFlowTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        Livewire::test(\App\Livewire\Onboarding::class)
+        Livewire::test(Onboarding::class)
             ->set('name', 'Usaha Preset Jahat')
             ->set('preset', 'zz_flow_hantu')
             ->set('acceptPrivacyPolicy', true)
