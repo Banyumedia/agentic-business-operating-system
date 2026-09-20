@@ -3,14 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ config('app.name', 'Agentic BOS') }} - Login</title>
+    <title>{{ config('app.name', 'Agentic BOS') }} - {{ $title ?? 'Login' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="h-full font-sans antialiased text-[var(--erp-text-primary)] bg-[var(--erp-bg-base)]">
     <div class="min-h-full flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div class="sm:mx-auto sm:w-full sm:max-w-md">
             <h2 class="mt-6 text-center text-3xl font-extrabold text-[var(--erp-text-primary)]">
-                Masuk ke akun Anda
+                {{ $heading ?? 'Masuk ke akun Anda' }}
             </h2>
         </div>
 

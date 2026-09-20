@@ -11,6 +11,7 @@ use App\Http\Middleware\RequireSuperAdmin;
 use App\Http\Middleware\SetCurrentCompany;
 use App\Livewire\Admin\AdminInvoiceManager;
 use App\Livewire\Auth\Login;
+use App\Livewire\Auth\Register;
 use App\Livewire\Billing\PaymentInstructionPage;
 use App\Livewire\Billing\SubscribePage;
 use App\Livewire\Dashboard;
@@ -32,6 +33,7 @@ Route::middleware('auth')->group(function (): void {
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', Login::class)->name('login');
+    Route::get('/register', Register::class)->name('register');
 });
 
 // Logout harus POST + CSRF (QA-UI-R A.5) - GET logout memungkinkan logout
