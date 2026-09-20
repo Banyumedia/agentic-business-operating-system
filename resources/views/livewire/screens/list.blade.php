@@ -110,8 +110,8 @@
                 </button>
 
                 <p aria-live="polite" class="text-sm text-[var(--erp-text-secondary)]">
-                    Halaman <span class="font-[family-name:var(--erp-font-mono)]">{{ $page }}</span> dari
-                    <span class="font-[family-name:var(--erp-font-mono)]">{{ $lastPage }}</span>
+                    Halaman <span class="font-[family-name:var(--erp-font-mono)] tabular-nums">{{ $page }}</span> dari
+                    <span class="font-[family-name:var(--erp-font-mono)] tabular-nums">{{ $lastPage }}</span>
                 </p>
 
                 <button

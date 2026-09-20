@@ -35,7 +35,7 @@
                                 class="flex min-h-11 w-full items-center justify-between gap-3 rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-base)] px-3 py-2 text-left transition hover:border-[var(--erp-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                             >
                                 <span class="text-sm font-medium text-[var(--erp-text-primary)]">{{ $entry['name'] }}</span>
-                                <span class="font-[family-name:var(--erp-font-mono)] text-xs text-[var(--erp-text-secondary)]">
+                                <span class="font-[family-name:var(--erp-font-mono)] tabular-nums text-xs text-[var(--erp-text-secondary)]">
                                     Rp {{ number_format($entry['price'], 0, ',', '.') }}
                                 </span>
                             </button>
@@ -58,7 +58,7 @@
                         <li class="flex items-start justify-between gap-3 py-3">
                             <div class="min-w-0">
                                 <p class="truncate text-sm font-medium text-[var(--erp-text-primary)]">{{ $line['description'] }}</p>
-                                <p class="mt-0.5 font-[family-name:var(--erp-font-mono)] text-xs text-[var(--erp-text-muted)]">
+                                <p class="mt-0.5 font-[family-name:var(--erp-font-mono)] tabular-nums text-xs text-[var(--erp-text-muted)]">
                                     Rp {{ number_format($line['unit_price'], 0, ',', '.') }}
                                 </p>
 
@@ -70,12 +70,12 @@
                                     step="1"
                                     value="{{ $line['qty'] }}"
                                     wire:change="setQty({{ $index }}, $event.target.value)"
-                                    class="mt-2 min-h-11 w-20 rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-inset)] px-2 py-1 text-right font-[family-name:var(--erp-font-mono)] text-sm text-[var(--erp-text-primary)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                                    class="mt-2 min-h-11 w-20 rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-inset)] px-2 py-1 text-right font-[family-name:var(--erp-font-mono)] tabular-nums text-sm text-[var(--erp-text-primary)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
                                 />
                             </div>
 
                             <div class="flex shrink-0 flex-col items-end gap-2">
-                                <span class="font-[family-name:var(--erp-font-mono)] text-sm text-[var(--erp-text-primary)]">
+                                <span class="font-[family-name:var(--erp-font-mono)] tabular-nums text-sm text-[var(--erp-text-primary)]">
                                     Rp {{ number_format($line['qty'] * $line['unit_price'], 0, ',', '.') }}
                                 </span>
                                 <button
@@ -100,23 +100,23 @@
             <dl class="mt-4 space-y-1 border-t border-[var(--erp-border)] pt-4 text-sm">
                 <div class="flex items-baseline justify-between gap-3">
                     <dt class="text-[var(--erp-text-secondary)]">Subtotal</dt>
-                    <dd class="font-[family-name:var(--erp-font-mono)] text-[var(--erp-text-primary)]">Rp {{ number_format($totals['subtotal'], 0, ',', '.') }}</dd>
+                    <dd class="font-[family-name:var(--erp-font-mono)] tabular-nums text-[var(--erp-text-primary)]">Rp {{ number_format($totals['subtotal'], 0, ',', '.') }}</dd>
                 </div>
 
                 @if ($showsTax)
                     <div class="flex items-baseline justify-between gap-3">
                         <dt class="text-[var(--erp-text-secondary)]">DPP</dt>
-                        <dd class="font-[family-name:var(--erp-font-mono)] text-[var(--erp-text-primary)]">Rp {{ number_format($totals['dpp'], 2, ',', '.') }}</dd>
+                        <dd class="font-[family-name:var(--erp-font-mono)] tabular-nums text-[var(--erp-text-primary)]">Rp {{ number_format($totals['dpp'], 2, ',', '.') }}</dd>
                     </div>
                     <div class="flex items-baseline justify-between gap-3">
                         <dt class="text-[var(--erp-text-secondary)]">PPN</dt>
-                        <dd class="font-[family-name:var(--erp-font-mono)] text-[var(--erp-text-primary)]">Rp {{ number_format($totals['tax'], 2, ',', '.') }}</dd>
+                        <dd class="font-[family-name:var(--erp-font-mono)] tabular-nums text-[var(--erp-text-primary)]">Rp {{ number_format($totals['tax'], 2, ',', '.') }}</dd>
                     </div>
                 @endif
 
                 <div class="flex items-baseline justify-between gap-3 border-t border-[var(--erp-border)] pt-2">
                     <dt class="font-semibold text-[var(--erp-text-primary)]">Total</dt>
-                    <dd class="font-[family-name:var(--erp-font-mono)] text-base font-semibold text-[var(--erp-text-primary)]">Rp {{ number_format($totals['grand_total'], 0, ',', '.') }}</dd>
+                    <dd class="font-[family-name:var(--erp-font-mono)] tabular-nums text-base font-semibold text-[var(--erp-text-primary)]">Rp {{ number_format($totals['grand_total'], 0, ',', '.') }}</dd>
                 </div>
             </dl>
 

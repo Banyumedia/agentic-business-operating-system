@@ -26,13 +26,13 @@
         </p>
     @endif
 
-    <div class="overflow-x-auto pb-2 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="move">
+    <div tabindex="-1" data-pipeline-focus-fallback class="overflow-x-auto pb-2 transition-opacity duration-200" wire:loading.class="opacity-50 pointer-events-none" wire:target="move">
         <ol role="list" class="flex min-w-full gap-4">
             @foreach ($columns as $column)
                 <li class="flex w-72 shrink-0 flex-col rounded-[var(--erp-radius-lg)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)]">
                     <h2 class="flex items-baseline justify-between gap-2 border-b border-[var(--erp-border)] px-4 py-3">
                         <span class="text-sm font-semibold text-[var(--erp-text-primary)]">{{ $column['label'] }}</span>
-                        <span class="font-[family-name:var(--erp-font-mono)] text-xs text-[var(--erp-text-muted)]">{{ count($column['cards']) }}</span>
+                        <span class="font-[family-name:var(--erp-font-mono)] tabular-nums text-xs text-[var(--erp-text-muted)]">{{ count($column['cards']) }}</span>
                     </h2>
 
                     <div class="flex flex-1 flex-col gap-3 p-3">
@@ -90,10 +90,12 @@
                 aria-modal="true"
                 aria-labelledby="move-dialog-title"
                 aria-describedby="move-dialog-description"
-                x-data
-                x-init="$nextTick(() => $refs.note?.focus())"
-                x-on:keydown.escape.window="$wire.cancelMove()"
-                class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)]"
+                x-data="{ ready: false, opener: document.activeElement }"
+                x-trap.inert.noscroll="true"
+                x-init="setTimeout(() => ready = true, 400); $nextTick(() => $refs.note?.focus())"
+                x-on:keydown.escape.window="const target = opener; $wire.cancelMove().then(() => target?.focus())"
+                tabindex="-1"
+                class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
             >
                 <h2 id="move-dialog-title" class="text-lg font-semibold text-[var(--erp-text-primary)]">
                     Pindahkan ke {{ $pendingStageLabel }}?
@@ -117,19 +119,20 @@
                 <div class="mt-5 flex flex-wrap justify-end gap-3">
                     <button
                         type="button"
-                        wire:click="cancelMove"
-                        wire:loading.attr="disabled"
+                        x-on:click="const target = opener; $wire.cancelMove().then(() => target?.focus())"
                         title="Batal"
-                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] px-4 text-sm font-semibold text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
+                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] px-4 text-sm font-semibold text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
                     >
                         Batal
                     </button>
                     <button
                         type="button"
-                        wire:click="confirmMove"
+                        x-on:click="const target = opener; $wire.confirmMove().then(() => $nextTick(() => { if (target?.isConnected) { target.focus(); } else { document.querySelector('[data-pipeline-focus-fallback]')?.focus(); } }))"
+                        disabled
+                        x-bind:disabled="! ready"
                         wire:loading.attr="disabled"
                         title="Simpan alasan &amp; pindahkan"
-                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
+                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <span wire:loading.remove>Simpan alasan &amp; pindahkan</span>
                         <span wire:loading>Memindahkan…</span>

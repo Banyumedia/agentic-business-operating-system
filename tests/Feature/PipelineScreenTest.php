@@ -129,6 +129,14 @@ class PipelineScreenTest extends TestCase
             ->assertSet('pendingStage', 'pengerjaan')
             ->assertSee('role="dialog"', false)
             ->assertSee('Alasan');
+
+        // D-45: dialog modal menahan fokus dan tombol aksinya inert 400 ms.
+        $dialogHtml = $component->html();
+        $this->assertStringContainsString('x-trap.inert.noscroll', $dialogHtml);
+        $this->assertStringContainsString('x-bind:disabled="! ready"', $dialogHtml);
+        $this->assertStringContainsString('opener: document.activeElement', $dialogHtml);
+        $this->assertStringContainsString('target?.focus()', $dialogHtml);
+
         $this->assertSame('qc', $repository->find(2)['stage']);
 
         // Alasan kosong ditolak.
