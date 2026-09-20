@@ -70,4 +70,44 @@ class AccessibilityContractTest extends TestCase
         $this->assertStringContainsString('opener: document.activeElement', $html);
         $this->assertStringContainsString('cancelMove().then(() => opener?.focus())', $html);
     }
+
+    /**
+     * Kontrak layar sempit 360px (I6): grid multi-kolom, sidebar tetap,
+     * dan tabel wajib punya jeda responsif atau pembungkus scroll.
+     * Audit statis supaya regresi kelasnya tertangkap tanpa browser.
+     */
+    public function test_main_screens_have_no_unwrapped_fixed_widths(): void
+    {
+        $views = [
+            'resources/views/livewire/auth/login.blade.php',
+            'resources/views/livewire/onboarding.blade.php',
+            'resources/views/livewire/lobby.blade.php',
+            'resources/views/livewire/dashboard.blade.php',
+            'resources/views/livewire/settings.blade.php',
+            'resources/views/livewire/sidebar.blade.php',
+            'resources/views/livewire/screens/list.blade.php',
+            'resources/views/livewire/screens/ledger.blade.php',
+            'resources/views/livewire/screens/cashier.blade.php',
+            'resources/views/livewire/screens/pipeline.blade.php',
+            'resources/views/livewire/screens/calendar.blade.php',
+        ];
+
+        foreach ($views as $path) {
+            $source = file_get_contents(base_path($path));
+
+            // Grid multi-kolom harus punya prefiks breakpoint (: sebelum nama
+            // kelas); tanpa prefiks berarti grid tetap multi-kolom di 360px.
+            $this->assertDoesNotMatchRegularExpression(
+                '/(?<!:)grid-cols-(?:[2-9]\b|\[[^\]]*\])/',
+                preg_replace('/\s+/', ' ', $source),
+                "{$path}: grid multi-kolom tanpa prefiks breakpoint",
+            );
+
+            // Tabel wajib dibungkus overflow-x-auto (scroll sopan, bukan
+            // overflow halaman).
+            if (str_contains($source, '<table')) {
+                $this->assertStringContainsString('overflow-x-auto', $source, "{$path}: tabel tanpa pembungkus scroll");
+            }
+        }
+    }
 }
