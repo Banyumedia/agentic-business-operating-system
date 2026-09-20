@@ -69,6 +69,13 @@ class Login extends Component
             app(CompanyContext::class)->setCurrent((string) $companyId);
         }
 
+        // User tanpa company (baru daftar, belum onboarding) diarahkan ke
+        // onboarding, bukan dashboard yang bisa 403.
+        if (! $companyId) {
+            $this->redirect(route('onboarding'));
+            return;
+        }
+
         $this->redirectIntended(route('app.dashboard'));
     }
 
