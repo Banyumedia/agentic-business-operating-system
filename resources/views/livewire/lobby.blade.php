@@ -6,7 +6,14 @@
             <p class="mt-3 text-[var(--erp-text-secondary)]">Pilih modul aktif untuk memulai hari.</p>
         </header>
 
-        <nav aria-label="Modul perusahaan" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        @if (count($this->apps) === 0)
+            <div class="mx-auto max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] p-6 text-center shadow-[var(--erp-card-shadow)]">
+                <p class="font-semibold text-[var(--erp-text-primary)]">Belum ada modul aktif</p>
+                <p class="mt-2 text-sm text-[var(--erp-text-muted)]">Modul muncul di sini setelah diaktifkan pada pengaturan fitur bisnis.</p>
+            </div>
+        @endif
+
+        <nav aria-label="Modul perusahaan" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 @if (count($this->apps) === 0) hidden @endif">
             @foreach ($this->apps as $app)
                 <a
                     href="{{ $app['route'] }}"
