@@ -48,7 +48,7 @@
         </div>
     </header>
 
-    <ol role="list" class="grid gap-3 {{ count($days) > 1 ? 'lg:grid-cols-7' : '' }}">
+    <ol role="list" class="grid gap-3 transition-opacity duration-200 {{ count($days) > 1 ? 'lg:grid-cols-7' : '' }}" wire:loading.class="opacity-50 pointer-events-none" wire:target="setView, shift, today">
         @foreach ($days as $day)
             <li class="flex flex-col rounded-[var(--erp-radius-lg)] border bg-[var(--erp-bg-secondary)] {{ $day['is_today'] ? 'border-[var(--erp-accent)]' : 'border-[var(--erp-border)]' }}">
                 <h2 class="flex items-baseline justify-between gap-2 border-b border-[var(--erp-border)] px-3 py-2">
