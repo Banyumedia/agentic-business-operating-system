@@ -112,8 +112,8 @@
                 @else
                     <ul x-ref="listbox" class="space-y-1" role="listbox" id="command-palette-listbox" aria-label="Hasil pencarian">
                         @foreach ($results as $result)
-                            <li role="option" id="command-palette-option-{{ $loop->index }}" x-bind:aria-selected="activeIndex === {{ $loop->index }}">
-                                <a href="{{ $result['url'] }}" wire:navigate x-on:mouseenter="activeIndex = {{ $loop->index }}" x-on:focus="activeIndex = {{ $loop->index }}" x-on:click="closePalette()" class="flex min-h-11 items-center gap-3 rounded-[var(--erp-radius-md)] p-3 hover:bg-[var(--erp-bg-inset)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                            <li role="option" id="command-palette-option-{{ $loop->index }}" x-bind:aria-selected="activeIndex === {{ $loop->index }}" class="rounded-[var(--erp-radius-md)]" x-bind:class="activeIndex === {{ $loop->index }} ? 'bg-[var(--erp-bg-inset)]' : ''">
+                                <a href="{{ $result['url'] }}" wire:navigate x-on:mouseenter="activeIndex = {{ $loop->index }}" x-on:focus="activeIndex = {{ $loop->index }}" x-on:click="closePalette()" class="flex min-h-11 items-center gap-3 rounded-[var(--erp-radius-md)] p-3 hover:bg-[var(--erp-bg-inset)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]" x-bind:aria-current="activeIndex === {{ $loop->index }} ? 'true' : null">
                                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent-soft)] text-[var(--erp-accent)]" aria-hidden="true">
                                         @if ($result['type'] === 'Menu')
                                             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

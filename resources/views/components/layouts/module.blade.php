@@ -9,11 +9,11 @@
 </head>
 <body class="min-h-screen bg-[var(--erp-bg-base)] font-sans text-[var(--erp-text-primary)] antialiased">
     @if(session()->has('admin_impersonation_id'))
-        <div class="bg-yellow-500 text-black px-4 py-2 text-center font-bold sticky top-0 z-[110] flex justify-between items-center">
+        <div class="bg-[var(--erp-warning)] text-[var(--erp-bg-inset)] px-4 py-2 text-center font-bold sticky top-0 z-[110] flex justify-between items-center gap-3">
             <span>⚠️ Anda sedang dalam Sesi Bantuan Impersonasi. Segala perubahan akan dicatat.</span>
-            <form action="{{ route('admin.impersonate.stop') }}" method="POST">
+            <form action="{{ route('admin.impersonate.stop') }}" method="POST" class="shrink-0">
                 @csrf
-                <button type="submit" class="bg-black text-white px-3 py-1 rounded text-sm hover:bg-gray-800">Akhiri Sesi Bantuan</button>
+                <button type="submit" class="min-h-11 px-3 rounded-[var(--erp-radius-sm)] text-sm bg-[var(--erp-bg-inset)] text-[var(--erp-warning)] hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">Akhiri Sesi Bantuan</button>
             </form>
         </div>
     @endif

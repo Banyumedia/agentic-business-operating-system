@@ -1,44 +1,43 @@
 <div>
     <form wire:submit="login" class="space-y-6">
         <div>
-            <label for="email" class="block text-sm font-medium text-slate-700">
+            <label for="email" class="block text-sm font-medium text-[var(--erp-text-primary)]">
                 Alamat email
             </label>
             <div class="mt-1">
                 <input wire:model="email" id="email" name="email" type="email" autocomplete="email" required
-                       class="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 bg-white text-slate-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                       class="appearance-none block w-full min-h-11 px-3 py-2 border border-[var(--erp-border-strong)] rounded-[var(--erp-radius-md)] placeholder:text-[var(--erp-text-muted)] bg-[var(--erp-bg-inset)] text-[var(--erp-text-primary)] focus:outline-none focus:border-[var(--erp-border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] sm:text-sm">
             </div>
-            @error('email') <span class="mt-2 text-sm text-red-600 block" role="alert">{{ $message }}</span> @enderror
+            @error('email') <span class="mt-2 text-sm text-[var(--erp-danger)] block" role="alert">{{ $message }}</span> @enderror
         </div>
 
         <div>
-            <label for="password" class="block text-sm font-medium text-slate-700">
+            <label for="password" class="block text-sm font-medium text-[var(--erp-text-primary)]">
                 Kata sandi
             </label>
             <div class="mt-1">
                 <input wire:model="password" id="password" name="password" type="password" autocomplete="current-password" required
-                       class="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 bg-white text-slate-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                       class="appearance-none block w-full min-h-11 px-3 py-2 border border-[var(--erp-border-strong)] rounded-[var(--erp-radius-md)] placeholder:text-[var(--erp-text-muted)] bg-[var(--erp-bg-inset)] text-[var(--erp-text-primary)] focus:outline-none focus:border-[var(--erp-border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] sm:text-sm">
             </div>
-            @error('password') <span class="mt-2 text-sm text-red-600 block" role="alert">{{ $message }}</span> @enderror
+            @error('password') <span class="mt-2 text-sm text-[var(--erp-danger)] block" role="alert">{{ $message }}</span> @enderror
         </div>
 
         <div class="flex items-center justify-between">
-            <div class="flex items-center">
+            <label for="remember_me" class="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-[var(--erp-text-primary)]">
                 <input wire:model="remember" id="remember_me" name="remember_me" type="checkbox"
-                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded">
-                <label for="remember_me" class="ml-2 block text-sm text-slate-900">
-                    Ingat saya
-                </label>
-            </div>
+                       class="h-5 w-5 rounded border-[var(--erp-border-strong)] bg-[var(--erp-bg-inset)] text-[var(--erp-accent)] focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                Ingat saya
+            </label>
         </div>
 
         <div>
             <button type="submit"
-                    class="w-full flex justify-center min-h-11 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    wire:loading.attr="disabled"
+                    class="w-full flex justify-center min-h-11 items-center py-2 px-4 border border-transparent rounded-[var(--erp-radius-md)] shadow-[var(--erp-card-shadow)] text-sm font-semibold text-[var(--erp-text-inverse)] bg-[var(--erp-accent)] hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--erp-bg-base)] disabled:cursor-wait disabled:opacity-60">
                 <span wire:loading.remove wire:target="login">Masuk</span>
                 <span wire:loading wire:target="login">Memproses…</span>
                 <span wire:loading wire:target="login" class="ml-2" aria-hidden="true">
-                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg class="animate-spin h-5 w-5 text-[var(--erp-text-inverse)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
