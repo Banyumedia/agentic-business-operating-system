@@ -103,4 +103,28 @@ class DataExportTest extends TestCase
             ->get('/app/settings/export/download')
             ->assertForbidden();
     }
+
+    public function test_non_owner_cannot_dispatch_export_from_the_component(): void
+    {
+        Queue::fake();
+
+        $owner = User::factory()->create();
+        $company = Company::factory()->create([
+            'owner_user_id' => $owner->id,
+            'slug' => 'demo-company',
+        ]);
+
+        $staff = User::factory()->create([
+            'current_company_id' => $company->id,
+        ]);
+
+        $this->actingAs($staff);
+        app(CompanyContext::class)->setCurrent((string) $company->id);
+
+        Livewire::test(DataExport::class)
+            ->call('export')
+            ->assertStatus(403);
+
+        Queue::assertNotPushed(BuildCompanyExport::class);
+    }
 }
