@@ -6,9 +6,12 @@
             </label>
             <div class="mt-1">
                 <input wire:model="email" id="email" name="email" type="email" autocomplete="email" required
-                       class="appearance-none block w-full min-h-11 px-3 py-2 border border-[var(--erp-border-strong)] rounded-[var(--erp-radius-md)] placeholder:text-[var(--erp-text-muted)] bg-[var(--erp-bg-inset)] text-[var(--erp-text-primary)] focus:outline-none focus:border-[var(--erp-border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] sm:text-sm">
+                       aria-invalid="{{ $errors->has('email') ? 'true' : 'false' }}"
+                       @if ($errors->has('email')) aria-describedby="email-error" @endif
+                       x-init="$el.getAttribute('aria-invalid') === 'true' && document.querySelector('[aria-invalid=true]') === $el && $el.focus()"
+                       class="appearance-none block w-full min-h-11 px-3 py-2 border {{ $errors->has('email') ? 'border-[var(--erp-danger)]' : 'border-[var(--erp-border-strong)]' }} rounded-[var(--erp-radius-md)] placeholder:text-[var(--erp-text-muted)] bg-[var(--erp-bg-inset)] text-[var(--erp-text-primary)] focus:outline-none focus:border-[var(--erp-border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] sm:text-sm">
             </div>
-            @error('email') <span class="mt-2 text-sm text-[var(--erp-danger)] block" role="alert">{{ $message }}</span> @enderror
+            @error('email') <span id="email-error" class="mt-2 text-sm text-[var(--erp-danger)] block" role="alert">{{ $message }}</span> @enderror
         </div>
 
         <div>
@@ -17,9 +20,12 @@
             </label>
             <div class="mt-1">
                 <input wire:model="password" id="password" name="password" type="password" autocomplete="current-password" required
-                       class="appearance-none block w-full min-h-11 px-3 py-2 border border-[var(--erp-border-strong)] rounded-[var(--erp-radius-md)] placeholder:text-[var(--erp-text-muted)] bg-[var(--erp-bg-inset)] text-[var(--erp-text-primary)] focus:outline-none focus:border-[var(--erp-border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] sm:text-sm">
+                       aria-invalid="{{ $errors->has('password') ? 'true' : 'false' }}"
+                       @if ($errors->has('password')) aria-describedby="password-error" @endif
+                       x-init="$el.getAttribute('aria-invalid') === 'true' && document.querySelector('[aria-invalid=true]') === $el && $el.focus()"
+                       class="appearance-none block w-full min-h-11 px-3 py-2 border {{ $errors->has('password') ? 'border-[var(--erp-danger)]' : 'border-[var(--erp-border-strong)]' }} rounded-[var(--erp-radius-md)] placeholder:text-[var(--erp-text-muted)] bg-[var(--erp-bg-inset)] text-[var(--erp-text-primary)] focus:outline-none focus:border-[var(--erp-border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] sm:text-sm">
             </div>
-            @error('password') <span class="mt-2 text-sm text-[var(--erp-danger)] block" role="alert">{{ $message }}</span> @enderror
+            @error('password') <span id="password-error" class="mt-2 text-sm text-[var(--erp-danger)] block" role="alert">{{ $message }}</span> @enderror
         </div>
 
         <div class="flex items-center justify-between">

@@ -9,6 +9,10 @@
     </head>
     <body class="bg-[var(--erp-bg-base)] text-[var(--erp-text-primary)] font-sans antialiased min-h-screen">
 
+        <a href="#main-content" class="sr-only z-[70] rounded-[var(--erp-radius-sm)] bg-[var(--erp-accent)] px-4 py-2 text-[var(--erp-text-inverse)] focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
+            Lewati ke konten utama
+        </a>
+
         @if(session()->has('admin_impersonation_id'))
             @php
                 // `currentCompany()` tidak ada di kontrak CompanyContext (fatal

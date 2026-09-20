@@ -152,6 +152,19 @@ class ListScreen extends Component
         try {
             $saved = $repository->save($record);
         } catch (InvalidArgumentException $exception) {
+            // Pesan validator selalu menyebut field tepat setelah titik dua
+            // pertama ("Field wajib tidak ada: email", "Tipe field tidak
+            // valid: base_salary harus angka"). Selama fieldnya ada di
+            // form, error dibagikan per-field supaya form-field bisa
+            // menandai aria-invalid; selain itu jatuh ke banner umum
+            // (fail-safe, pesan tetap terlihat).
+            if (preg_match('/^[^:]+: ([\w.-]+)/u', $exception->getMessage(), $match)
+                && array_key_exists($match[1], $this->form)) {
+                $this->addError('form.'.$match[1], $exception->getMessage());
+
+                return;
+            }
+
             $this->failure = $exception->getMessage();
 
             return;

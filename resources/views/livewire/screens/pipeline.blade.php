@@ -90,10 +90,12 @@
                 aria-modal="true"
                 aria-labelledby="move-dialog-title"
                 aria-describedby="move-dialog-description"
-                x-data
+                x-data="{ opener: document.activeElement }"
+                x-trap.inert.noscroll="true"
                 x-init="$nextTick(() => $refs.note?.focus())"
-                x-on:keydown.escape.window="$wire.cancelMove()"
-                class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)]"
+                x-on:keydown.escape.window="$wire.cancelMove().then(() => opener?.focus())"
+                class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                tabindex="-1"
             >
                 <h2 id="move-dialog-title" class="text-lg font-semibold text-[var(--erp-text-primary)]">
                     Pindahkan ke {{ $pendingStageLabel }}?

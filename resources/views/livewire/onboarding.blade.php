@@ -1,4 +1,4 @@
-<div class="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-4 py-12">
+<div id="main-content" class="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-4 py-12">
     <header class="mb-6">
         <p class="text-sm font-semibold text-[var(--erp-accent)]">Mulai pakai Agentic BOS</p>
         <h1 class="mt-1 text-3xl font-bold text-[var(--erp-text-primary)]">Ceritakan sedikit tentang usaha Anda</h1>

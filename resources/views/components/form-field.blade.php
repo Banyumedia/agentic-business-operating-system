@@ -5,9 +5,16 @@
     $extraAttrs = collect($field['attrs'] ?? [])
         ->map(fn ($value, $name) => $name.'="'.e($value).'"')
         ->implode(' ');
+    $invalid = $errors->has($model);
+    $errorId = $fieldId.'-error';
+    // Key berubah saat status validasi berubah supaya morph Livewire
+    // mengganti node dan x-init Alpine berjalan lagi (fokus pindah ke
+    // field pertama yang salah setelah round-trip, bukan hanya saat
+    // halaman dimuat pertama).
+    $key = $fieldId.($invalid ? '-invalid' : '-ok');
 @endphp
 
-<div class="space-y-1.5">
+<div wire:key="{{ $key }}" class="space-y-1.5">
     @if ($field['input'] === 'checkbox')
         <label for="{{ $fieldId }}" class="flex min-h-11 items-center gap-3 text-sm font-medium text-[var(--erp-text-primary)]">
             <input
@@ -32,7 +39,10 @@
                 id="{{ $fieldId }}"
                 wire:model="{{ $model }}"
                 @required($field['required'])
-                class="min-h-11 w-full rounded-[var(--erp-radius-md)] border {{ $errors->has($field['field']) ? 'border-[var(--erp-danger)]' : 'border-[var(--erp-border)]' }} bg-[var(--erp-bg-inset)] px-3 py-2 text-sm text-[var(--erp-text-primary)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                aria-invalid="{{ $invalid ? 'true' : 'false' }}"
+                @if ($invalid) aria-describedby="{{ $errorId }}" @endif
+                x-init="$el.getAttribute('aria-invalid') === 'true' && document.querySelector('[aria-invalid=true]') === $el && $el.focus()"
+                class="min-h-11 w-full rounded-[var(--erp-radius-md)] border {{ $invalid ? 'border-[var(--erp-danger)]' : 'border-[var(--erp-border)]' }} bg-[var(--erp-bg-inset)] px-3 py-2 text-sm text-[var(--erp-text-primary)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
             >
                 <option value="">Pilih {{ $field['label'] }}</option>
                 @foreach ($field['options'] as $option)
@@ -46,12 +56,15 @@
                 wire:model="{{ $model }}"
                 @required($field['required'])
                 {!! $extraAttrs !!}
-                class="min-h-11 w-full rounded-[var(--erp-radius-md)] border {{ $errors->has($field['field']) ? 'border-[var(--erp-danger)]' : 'border-[var(--erp-border)]' }} bg-[var(--erp-bg-inset)] px-3 py-2 text-sm text-[var(--erp-text-primary)] placeholder:text-[var(--erp-text-muted)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] {{ $field['type'] === 'integer' || $field['type'] === 'number' ? 'font-[family-name:var(--erp-font-mono)] text-right' : '' }}"
+                aria-invalid="{{ $invalid ? 'true' : 'false' }}"
+                @if ($invalid) aria-describedby="{{ $errorId }}" @endif
+                x-init="$el.getAttribute('aria-invalid') === 'true' && document.querySelector('[aria-invalid=true]') === $el && $el.focus()"
+                class="min-h-11 w-full rounded-[var(--erp-radius-md)] border {{ $invalid ? 'border-[var(--erp-danger)]' : 'border-[var(--erp-border)]' }} bg-[var(--erp-bg-inset)] px-3 py-2 text-sm text-[var(--erp-text-primary)] placeholder:text-[var(--erp-text-muted)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] {{ $field['type'] === 'integer' || $field['type'] === 'number' ? 'font-[family-name:var(--erp-font-mono)] text-right' : '' }}"
             />
         @endif
 
-        @error($field['field'])
-            <p class="mt-1 text-xs text-[var(--erp-danger)]" role="alert">{{ $message }}</p>
+        @error($model)
+            <p id="{{ $errorId }}" class="mt-1 text-xs text-[var(--erp-danger)]" role="alert">{{ $message }}</p>
         @enderror
     @endif
 </div>

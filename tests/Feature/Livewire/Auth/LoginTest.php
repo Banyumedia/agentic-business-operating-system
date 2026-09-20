@@ -38,6 +38,26 @@ class LoginTest extends TestCase
         }
     }
 
+    public function test_invalid_submit_marks_fields_with_aria_and_error_ids(): void
+    {
+        $component = Livewire::test(Login::class)
+            ->set('email', 'bukan-email')
+            ->set('password', '')
+            ->call('login');
+
+        $html = $component->html();
+        $this->assertStringContainsString('aria-invalid="true"', $html);
+        $this->assertStringContainsString('aria-describedby="email-error"', $html);
+        $this->assertStringContainsString('id="email-error"', $html);
+        $this->assertStringContainsString('id="password-error"', $html);
+
+        // Fokus pindah ke field pertama yang salah (email), bukan hanya warna.
+        $this->assertStringContainsString(
+            "x-init=\"\$el.getAttribute('aria-invalid') === 'true' && document.querySelector('[aria-invalid=true]') === \$el && \$el.focus()\"",
+            $html,
+        );
+    }
+
     public function test_user_can_login()
     {
         $user = User::factory()->create([
