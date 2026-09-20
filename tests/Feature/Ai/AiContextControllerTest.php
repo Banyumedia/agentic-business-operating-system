@@ -6,8 +6,10 @@ use App\Contracts\CompanyContext;
 use App\Contracts\CompanySettingsStore;
 use App\Contracts\PresetSource;
 use App\Models\Company;
+use App\Models\CompanyMembership;
 use App\Models\Contact;
 use App\Models\HermesProfile;
+use App\Models\MembershipPlan;
 use App\Models\ModuleSetting;
 use App\Models\Prescription;
 use App\Models\User;
@@ -108,6 +110,24 @@ class AiContextControllerTest extends TestCase
             'privacy_accepted_at' => now(),
             'privacy_accepted_by_user_id' => $owner->id,
             'privacy_policy_version' => '1.0',
+        ]);
+
+        // Add membership plan with pharmacy.prescription capability and all dependencies
+        $plan = MembershipPlan::factory()->create([
+            'features' => [
+                'approval_flow',
+                'system.ai_agent',
+                'pharmacy.prescription',
+                'inventory.batch_expiry',
+                'pos',
+                'contacts',
+            ],
+        ]);
+
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'active',
         ]);
 
         $this->setupBotAccess($company, $owner);
