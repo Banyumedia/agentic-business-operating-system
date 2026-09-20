@@ -14,6 +14,8 @@
 
 **Iterasi I4 DONE & merged:** audit sisa inkonsistensi — grep warna Tailwind mentah (`text-white`/`bg-black`/`shadow-sm`/dll) di seluruh `resources/views/**` kini **0 match**; scrim modal & confirm-dialog pakai `color-mix` token; semua tombol aksi async (kasir, list, pipeline, kalender, data-table, branch-switcher, erasure) punya `wire:loading.attr="disabled"`. Fail-closed uang/erasure tidak diubah. `welcome.blade.php` (223 baris bawaan Laravel tak terpakai) dihapus. Merged `main` — full suite 607 hijau; app 8002 di-restart, smoke 200.
 
+**Iterasi I5 DONE & merged (test-only, tanpa ubah kode produksi):** alur onboarding Eloquent kini **terbukti ujung-ke-ujung lewat test** — submit owner baru menghasilkan Company + BusinessIdentity + ModuleSetting dalam satu transaksi, `users.current_company_id` ter-set, dashboard 200, dan modul sesuai preset (contacts 200, pos/accounting 403 untuk preset itu). Edge terbukti: atomisitas transaksi (trigger gagal → rollback total) dan dua onboarding oleh owner yang sama menghasilkan slug unik yang masing-masing usable. Tidak ditemukan bug nyata di `Onboarding.php` — test hijau langsung. Merged `main` — full suite **609 passed / 3,290 assertions**.
+
 **Catatan:** OpenCode reviewer tidak bisa menjalankan command (izin tool auto-reject) sejak maraton ini; peran QA diverifikasi Hermes dengan membaca diff langsung + final-gate. App live di `127.0.0.1:8002` di-restart untuk memuat hasil I1+I2.
 
 ## UX-MARATHON — Polesan UI/UX 3 lane paralel
