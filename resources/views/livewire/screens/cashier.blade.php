@@ -31,7 +31,8 @@
                             <button
                                 type="button"
                                 wire:click="addItem({{ $entry['id'] }})"
-                                class="flex min-h-11 w-full items-center justify-between gap-3 rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-base)] px-3 py-2 text-left transition hover:border-[var(--erp-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                                wire:loading.attr="disabled"
+                                class="flex min-h-11 w-full items-center justify-between gap-3 rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-base)] px-3 py-2 text-left transition hover:border-[var(--erp-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                             >
                                 <span class="text-sm font-medium text-[var(--erp-text-primary)]">{{ $entry['name'] }}</span>
                                 <span class="font-[family-name:var(--erp-font-mono)] text-xs text-[var(--erp-text-secondary)]">
@@ -80,7 +81,8 @@
                                 <button
                                     type="button"
                                     wire:click="removeLine({{ $index }})"
-                                    class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-2 text-xs font-medium text-[var(--erp-danger)] hover:bg-[var(--erp-danger-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                                    wire:loading.attr="disabled"
+                                    class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-2 text-xs font-medium text-[var(--erp-danger)] hover:bg-[var(--erp-danger-soft)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                                 >
                                     Hapus<span class="sr-only"> {{ $line['description'] }}</span>
                                 </button>

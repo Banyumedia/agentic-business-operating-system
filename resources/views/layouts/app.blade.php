@@ -25,11 +25,11 @@
                     $bannerCompany = 'Klien';
                 }
             @endphp
-            <div class="bg-yellow-400 text-black text-center py-2 px-4 font-bold flex justify-between items-center z-50 relative sticky top-0">
+            <div class="bg-[var(--erp-warning)] text-[var(--erp-bg-inset)] text-center py-2 px-4 font-bold flex justify-between items-center gap-4 z-50 relative sticky top-0">
                 <span>Anda login sebagai {{ $bannerCompany }} - mode Bantuan Admin</span>
                 <form method="POST" action="{{ route('admin.impersonate.stop') }}" class="inline">
                     @csrf
-                    <button type="submit" class="bg-black text-white px-3 py-1 rounded text-sm hover:bg-gray-800">Akhiri Sesi Bantuan</button>
+                    <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-[var(--erp-radius-sm)] bg-[var(--erp-bg-inset)] px-3 text-sm text-[var(--erp-warning)] hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">Akhiri Sesi Bantuan</button>
                 </form>
             </div>
         @endif

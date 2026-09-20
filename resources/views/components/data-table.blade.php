@@ -43,7 +43,7 @@
 
     @if ($rows === [])
         <div role="status" class="flex flex-col items-center justify-center rounded-[var(--erp-radius-lg)] border border-dashed border-[var(--erp-border-strong)] bg-[var(--erp-bg-inset)] px-4 py-16 text-center">
-            <div class="mb-4 rounded-full bg-[var(--erp-bg-secondary)] p-3 text-[var(--erp-text-muted)] shadow-sm border border-[var(--erp-border)]">
+            <div class="mb-4 rounded-full bg-[var(--erp-bg-secondary)] p-3 text-[var(--erp-text-muted)] shadow-[var(--erp-card-shadow)] border border-[var(--erp-border)]">
                 <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                 </svg>
@@ -69,8 +69,9 @@
                                 <button
                                     type="button"
                                     wire:click="sortBy('{{ $column['field'] }}')"
+                                    wire:loading.attr="disabled"
                                     title="Urutkan berdasarkan {{ $column['label'] }}"
-                                    class="inline-flex min-h-11 items-center gap-1 rounded-[var(--erp-radius-sm)] px-1 uppercase hover:text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                                    class="inline-flex min-h-11 items-center gap-1 rounded-[var(--erp-radius-sm)] px-1 uppercase hover:text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                                 >
                                     {{ $column['label'] }}
                                     @if ($sort === $column['field'])
@@ -99,8 +100,9 @@
                                             <button
                                                 type="button"
                                                 wire:click="{{ $action['method'] }}({{ $row['id'] }})"
+                                                wire:loading.attr="disabled"
                                                 title="{{ $action['label'] }}"
-                                                class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] {{ ($action['variant'] ?? null) === 'danger' ? 'text-[var(--erp-danger)] hover:bg-[var(--erp-danger-soft)]' : 'text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)]' }}"
+                                                class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60 {{ ($action['variant'] ?? null) === 'danger' ? 'text-[var(--erp-danger)] hover:bg-[var(--erp-danger-soft)]' : 'text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)]' }}"
                                             >
                                                 {{ $action['label'] }}<span class="sr-only"> {{ $caption }} baris {{ $row['id'] }}</span>
                                             </button>
@@ -120,7 +122,8 @@
                 <button
                     type="button"
                     wire:click="sortBy('{{ $column['field'] }}')"
-                    class="inline-flex min-h-11 items-center justify-between rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-inset)] px-3 text-sm text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                    wire:loading.attr="disabled"
+                    class="inline-flex min-h-11 items-center justify-between rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-inset)] px-3 text-sm text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                 >
                     <span>{{ $column['label'] }}</span>
                     @if ($sort === $column['field'])
@@ -151,8 +154,9 @@
                                 <button
                                     type="button"
                                     wire:click="{{ $action['method'] }}({{ $row['id'] }})"
+                                    wire:loading.attr="disabled"
                                     title="{{ $action['label'] }}"
-                                    class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] {{ ($action['variant'] ?? null) === 'danger' ? 'text-[var(--erp-danger)] hover:bg-[var(--erp-danger-soft)]' : 'text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)]' }}"
+                                    class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60 {{ ($action['variant'] ?? null) === 'danger' ? 'text-[var(--erp-danger)] hover:bg-[var(--erp-danger-soft)]' : 'text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)]' }}"
                                 >
                                     {{ $action['label'] }}<span class="sr-only"> {{ $caption }} baris {{ $row['id'] }}</span>
                                 </button>

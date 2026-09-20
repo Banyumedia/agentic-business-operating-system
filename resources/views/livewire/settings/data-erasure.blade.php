@@ -41,7 +41,8 @@
                                 <button
                                     type="button"
                                     wire:click="$set('contactId', '{{ $match['id'] }}')"
-                                    class="flex min-h-11 w-full items-baseline justify-between gap-3 px-3 py-2 text-left hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                                    wire:loading.attr="disabled"
+                                    class="flex min-h-11 w-full items-baseline justify-between gap-3 px-3 py-2 text-left hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                                 >
                                     <span class="text-sm text-[var(--erp-text-primary)]">{{ $match['name'] }}</span>
                                     <span class="shrink-0 font-[family-name:var(--erp-font-mono)] text-xs text-[var(--erp-text-secondary)]">#{{ $match['id'] }}</span>

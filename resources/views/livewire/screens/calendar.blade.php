@@ -12,8 +12,9 @@
                     <button
                         type="button"
                         wire:click="setView('{{ $mode }}')"
+                        wire:loading.attr="disabled"
                         aria-pressed="{{ $view === $mode ? 'true' : 'false' }}"
-                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] {{ $view === $mode ? 'bg-[var(--erp-accent)] text-[var(--erp-text-inverse)]' : 'text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)]' }}"
+                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60 {{ $view === $mode ? 'bg-[var(--erp-accent)] text-[var(--erp-text-inverse)]' : 'text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)]' }}"
                     >
                         {{ $modeLabel }}
                     </button>
@@ -24,23 +25,26 @@
                 <button
                     type="button"
                     wire:click="shift(-1)"
+                    wire:loading.attr="disabled"
                     aria-label="Periode sebelumnya"
-                    class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                    class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                 >
                     &larr;
                 </button>
                 <button
                     type="button"
                     wire:click="today"
-                    class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] px-3 text-sm font-medium text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                    wire:loading.attr="disabled"
+                    class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] px-3 text-sm font-medium text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                 >
                     Hari ini
                 </button>
                 <button
                     type="button"
                     wire:click="shift(1)"
+                    wire:loading.attr="disabled"
                     aria-label="Periode berikutnya"
-                    class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                    class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                 >
                     &rarr;
                 </button>
@@ -70,7 +74,7 @@
                         </article>
                     @empty
                         <div role="status" class="flex flex-col items-center justify-center rounded-[var(--erp-radius-md)] border border-dashed border-[var(--erp-border-strong)] bg-[var(--erp-bg-inset)] px-2 py-6 text-center">
-                            <div class="mb-2 rounded-full bg-[var(--erp-bg-secondary)] p-2 text-[var(--erp-text-muted)] shadow-sm border border-[var(--erp-border)]">
+                            <div class="mb-2 rounded-full bg-[var(--erp-bg-secondary)] p-2 text-[var(--erp-text-muted)] shadow-[var(--erp-card-shadow)] border border-[var(--erp-border)]">
                                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                                 </svg>
