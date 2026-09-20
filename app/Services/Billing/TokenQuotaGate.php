@@ -57,6 +57,10 @@ class TokenQuotaGate
 
     /**
      * Get current token balance for company.
+     *
+     * D-60: company tanpa membership aktif memakai saldo awal tier gratis
+     * (= kuota dari config, bukan hardcode). Company dengan membership aktif
+     * memakai saldo membership-nya. Tanpa tabel -> fail-closed (0).
      */
     public function getCurrentTokenBalance(): int
     {
@@ -67,12 +71,19 @@ class TokenQuotaGate
         }
 
         try {
+            // Ambil membership terbaru (status apa pun) untuk membedakan
+            // "tidak punya membership" (tier gratis) vs "punya tapi non-aktif" (0, D-49).
             $membership = CompanyMembership::where('company_id', $companyId)
-                ->where('status', 'active')
                 ->latest('id')
                 ->first();
 
+            // D-60: benar-benar tanpa membership -> saldo awal tier gratis dari config.
             if (! $membership) {
+                return (int) config('billing.free_tier.token_quota', 500);
+            }
+
+            // D-49: membership non-aktif (ai_suspended/read_only/frozen) -> 0, fail-closed.
+            if ($membership->status !== 'active') {
                 return 0;
             }
 

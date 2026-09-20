@@ -140,7 +140,8 @@ class TokenQuotaGateTest extends TestCase
 
     public function test_negative_case_free_tier_token_balance_exhausted(): void
     {
-        // D-60: Negative test - company without paket tries to use AI when token habis → ditolak
+        // D-60: company tanpa paket memakai saldo awal tier gratis dari config (default 500),
+        // sehingga langsung bisa memakai AI. Kuota itu sekaligus batas atasnya.
         $company = Company::factory()->create();
 
         $context = $this->mock(CompanyContext::class);
@@ -148,9 +149,11 @@ class TokenQuotaGateTest extends TestCase
 
         $gate = new TokenQuotaGate($context);
 
-        // Company has no membership, so no token balance recorded
-        $this->assertSame(0, $gate->getCurrentTokenBalance());
-        $this->assertFalse($gate->hasEnoughTokens(1));
+        $expected = (int) config('billing.free_tier.token_quota', 500);
+        $this->assertSame($expected, $gate->getCurrentTokenBalance());
+        $this->assertTrue($gate->hasEnoughTokens(1));
+        // Melebihi saldo awal -> ditolak fail-closed.
+        $this->assertFalse($gate->hasEnoughTokens($expected + 1));
     }
 
     public function test_negative_membership_ai_suspended_returns_zero_quota(): void
