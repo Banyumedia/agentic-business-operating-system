@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Company;
+use App\Models\CompanyMembership;
 use App\Models\Invoice;
 use App\Models\MembershipPlan;
 use App\Models\User;
@@ -287,27 +288,34 @@ class ManualPaymentInvoiceTest extends TestCase
      */
     public function test_company_membership_created_after_payment_confirmation(): void
     {
+        // Invoice harus terikat ke membership (dengan plan) agar konfirmasi tahu
+        // paket yang dibeli. Buat membership non-aktif ber-plan, tautkan ke invoice.
+        $membership = CompanyMembership::factory()->create([
+            'company_id' => $this->company->id,
+            'plan_id' => $this->activePlan->id,
+            'status' => 'cancelled',
+        ]);
+
         $invoice = Invoice::factory()->create([
             'company_id' => $this->company->id,
             'type' => 'subscription',
             'payment_status' => 'pending',
+            'company_membership_id' => $membership->id,
         ]);
 
         $service = app(InvoiceConfirmationService::class);
-
-        // Confirm payment
         $service->confirmPayment($invoice);
 
-        // Verify company has active membership
-        $membership = $this->company->memberships()
+        $this->assertSame('paid', $invoice->fresh()->payment_status);
+
+        // Membership terkait harus aktif kembali setelah pembayaran dikonfirmasi.
+        $active = $this->company->memberships()
             ->where('status', 'active')
             ->latest('id')
             ->first();
 
-        // Note: dalam test ini, membership.plan_id tidak tersedia dari invoice
-        // karena invoice.membership belum di-set saat create
-        // Implementation harus handle case ini dengan graceful fallback
-        // atau fixture test dengan invoice yang punya membership_id
+        $this->assertNotNull($active, 'Membership aktif harus ada setelah konfirmasi pembayaran.');
+        $this->assertSame($this->activePlan->id, $active->plan_id);
     }
 
     /**
