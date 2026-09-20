@@ -40,8 +40,8 @@ class SubscribePage extends Component
     {
         // Ambil tema company
         try {
-            $company = $companyContext->current();
-            $theme = (string) ($settings->read($company->id)['theme'] ?? 'a');
+            $companyId = $companyContext->current();
+            $theme = (string) ($settings->read($companyId)['theme'] ?? 'a');
             $this->theme = $theme;
         } catch (\Throwable) {
             $this->theme = 'a';
@@ -87,8 +87,10 @@ class SubscribePage extends Component
             ]);
         }
 
-        // Ambil company context
-        $company = $companyContext->current();
+        // Ambil company context (current() mengembalikan id string) lalu resolve
+        // ke model Company karena service mengharapkan objek.
+        $companyId = $companyContext->current();
+        $company = Company::findOrFail($companyId);
 
         // Buat invoice dengan InvoiceCreationService
         $service = app(InvoiceCreationService::class);

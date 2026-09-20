@@ -51,9 +51,10 @@ class PaymentInstructionPage extends Component
     public function mount(Invoice $invoice, CompanyContext $companyContext, CompanySettingsStore $settings): void
     {
         // Validasi: invoice milik company yang sedang aktif
-        $company = $companyContext->current();
+        // current() mengembalikan id string — bandingkan sebagai string.
+        $companyId = $companyContext->current();
 
-        if ((int) $invoice->company_id !== (int) $company->id) {
+        if ((string) $invoice->company_id !== (string) $companyId) {
             abort(403, 'Invoice tidak milik perusahaan Anda.');
         }
 
@@ -64,7 +65,7 @@ class PaymentInstructionPage extends Component
 
         // Ambil tema company
         try {
-            $theme = (string) ($settings->read($company->id)['theme'] ?? 'a');
+            $theme = (string) ($settings->read($companyId)['theme'] ?? 'a');
             $this->theme = $theme;
         } catch (\Throwable) {
             $this->theme = 'a';
