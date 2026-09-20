@@ -11,7 +11,7 @@
 
     @if ($reason === 'token_quota')
         <section
-            role="status"
+            role="status" aria-live="polite"
             class="mb-8 rounded-[var(--erp-radius-md)] border border-[var(--erp-warning)] bg-[var(--erp-bg-elevated)] p-4 sm:p-6"
         >
             <h2 class="text-base font-semibold text-[var(--erp-text-primary)]">Kuota token AI habis</h2>
@@ -22,7 +22,7 @@
         </section>
     @elseif ($reason === 'wa_group_quota')
         <section
-            role="status"
+            role="status" aria-live="polite"
             class="mb-8 rounded-[var(--erp-radius-md)] border border-[var(--erp-warning)] bg-[var(--erp-bg-elevated)] p-4 sm:p-6"
         >
             <h2 class="text-base font-semibold text-[var(--erp-text-primary)]">Kuota grup WhatsApp tercapai</h2>
@@ -83,7 +83,7 @@
         </section>
     @else
         <section
-            role="status"
+            role="status" aria-live="polite"
             class="mt-8 rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] p-4 sm:p-6"
         >
             <h2 class="text-base font-semibold text-[var(--erp-text-primary)]">Belum ada paket yang bisa dipilih</h2>
@@ -97,7 +97,7 @@
     <nav class="mt-10 text-sm" aria-label="Navigasi paywall">
         <a
             href="{{ route('app.dashboard') }}"
-            class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] px-4 py-2 font-semibold text-[var(--erp-accent)] underline-offset-4 transition hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+            class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] px-4 py-2 font-semibold text-[var(--erp-accent)] underline underline-offset-4 transition hover:text-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
         >
             Kembali ke dashboard
         </a>
