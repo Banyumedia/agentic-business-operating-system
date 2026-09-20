@@ -5,11 +5,14 @@ namespace App\Livewire;
 use App\Contracts\CompanyContext;
 use App\Contracts\CompanySettingsStore;
 use App\Contracts\PresetSource;
+use App\Models\BusinessIdentity;
 use App\Models\Company;
 use App\Models\CompanyMembership;
+use App\Models\ModuleSetting;
 use App\Services\PlanCapabilityGate;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -139,35 +142,10 @@ class Onboarding extends Component
             return;
         }
 
-        $company = Company::create([
-            'slug' => $slug,
-            'name' => $name,
-            'owner_user_id' => $owner->id,
-            'business_preset' => $this->preset,
-            'theme' => 'a',
-            'is_active' => true,
-            'privacy_accepted_at' => Carbon::now(),
-            'privacy_accepted_by_user_id' => $owner->id,
-            'privacy_policy_version' => self::PRIVACY_POLICY_VERSION,
-        ]);
-
-        $disk = Storage::disk('company-json');
-        try {
-            $disk->put(
-                "json/{$slug}/business_identity.json",
-                json_encode([
-                    'id' => 1,
-                    'name' => $name,
-                    'preset' => $this->preset,
-                    'tax_mode' => 'non_taxable',
-                ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL,
-            );
-            $settingsStore->update($slug, fn (array $settings): array => $settings);
-        } catch (Throwable $exception) {
-            $disk->deleteDirectory("json/{$slug}");
-            $company->forceDelete();
-
-            throw $exception;
+        if (config('datasource.driver') === 'eloquent') {
+            $company = $this->createCompanyInEloquent($name, $slug, $owner->id);
+        } else {
+            $company = $this->createCompanyInJson($name, $slug, $owner->id, $settingsStore);
         }
 
         $this->createdSlug = $slug;
@@ -232,6 +210,84 @@ class Onboarding extends Component
             'privacyPolicyVersion' => self::PRIVACY_POLICY_VERSION,
             'totalSteps' => self::TOTAL_STEPS,
         ])->layout('layouts.app');
+    }
+
+    /**
+     * Jalur Eloquent (D-42 Fase 3): company, identitas usaha default, dan
+     * baris settings ditulis dalam satu transaksi DB supaya kegagalan di
+     * tengah tidak meninggalkan company setengah jadi (fail-closed).
+     */
+    private function createCompanyInEloquent(string $name, string $slug, int $ownerId): Company
+    {
+        return DB::transaction(function () use ($name, $slug, $ownerId): Company {
+            $company = $this->newCompany($name, $slug, $ownerId);
+
+            // D-03/D-44: identitas default non-PKP; `price_includes_tax`
+            // tidak berbahaya untuk usaha non-pajak dan cocok dengan demo JSON.
+            BusinessIdentity::create([
+                'company_id' => $company->id,
+                'legal_name' => $name,
+                'tax_mode' => 'non_taxable',
+                'price_includes_tax' => true,
+                'is_default' => true,
+            ]);
+
+            // D-19/D-25: baris `module_settings` untuk module `features` kosong
+            // (tanpa override) - `FeatureResolver::overrides()` menerima
+            // object kosong, jadi fitur preset terbaca tanpa mekanisme baru.
+            ModuleSetting::create([
+                'company_id' => $company->id,
+                'module_name' => 'features',
+                'settings_json' => [],
+            ]);
+
+            return $company;
+        });
+    }
+
+    /**
+     * Jalur JSON demo (D-41): identitas usaha tetap file per-slug;
+     * kegagalan tulis folder dibersihkan total (company ikut dihapus).
+     */
+    private function createCompanyInJson(string $name, string $slug, int $ownerId, CompanySettingsStore $settingsStore): Company
+    {
+        $company = $this->newCompany($name, $slug, $ownerId);
+
+        $disk = Storage::disk('company-json');
+        try {
+            $disk->put(
+                "json/{$slug}/business_identity.json",
+                json_encode([
+                    'id' => 1,
+                    'name' => $name,
+                    'preset' => $this->preset,
+                    'tax_mode' => 'non_taxable',
+                ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL,
+            );
+            $settingsStore->update($slug, fn (array $settings): array => $settings);
+        } catch (Throwable $exception) {
+            $disk->deleteDirectory("json/{$slug}");
+            $company->forceDelete();
+
+            throw $exception;
+        }
+
+        return $company;
+    }
+
+    private function newCompany(string $name, string $slug, int $ownerId): Company
+    {
+        return Company::create([
+            'slug' => $slug,
+            'name' => $name,
+            'owner_user_id' => $ownerId,
+            'business_preset' => $this->preset,
+            'theme' => 'a',
+            'is_active' => true,
+            'privacy_accepted_at' => Carbon::now(),
+            'privacy_accepted_by_user_id' => $ownerId,
+            'privacy_policy_version' => self::PRIVACY_POLICY_VERSION,
+        ]);
     }
 
     /**
