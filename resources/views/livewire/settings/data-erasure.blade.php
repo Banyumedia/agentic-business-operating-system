@@ -96,10 +96,11 @@
                     </div>
                 </fieldset>
 
-                <div>
+                <div x-data="{ ready: false }" x-init="setTimeout(() => ready = true, 400)">
                     <button
                         type="submit"
                         wire:loading.attr="disabled"
+                        x-bind:disabled="!ready"
                         class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-danger)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <span wire:loading.remove wire:target="erase">Hapus Permanen</span>
