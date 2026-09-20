@@ -32,8 +32,10 @@ class Register extends Component
 
     public function register(Request $request): void
     {
-        // Rate limiting berbasis IP
-        $throttleKey = 'register|'.$request->ip();
+        // Rate limiting berbasis IP + email (menghindari kunci bersama pada
+        // NAT/shared IP kantor, dan mencegah spam pada satu alamat email).
+        $emailKey = strtolower(trim((string) $this->email));
+        $throttleKey = 'register|'.$request->ip().'|'.$emailKey;
 
         if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($throttleKey);
