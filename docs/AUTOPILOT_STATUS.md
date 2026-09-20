@@ -16,6 +16,13 @@
 
 **Iterasi I5 DONE & merged (test-only, tanpa ubah kode produksi):** alur onboarding Eloquent kini **terbukti ujung-ke-ujung lewat test** — submit owner baru menghasilkan Company + BusinessIdentity + ModuleSetting dalam satu transaksi, `users.current_company_id` ter-set, dashboard 200, dan modul sesuai preset (contacts 200, pos/accounting 403 untuk preset itu). Edge terbukti: atomisitas transaksi (trigger gagal → rollback total) dan dua onboarding oleh owner yang sama menghasilkan slug unik yang masing-masing usable. Tidak ditemukan bug nyata di `Onboarding.php` — test hijau langsung. Merged `main` — full suite **609 passed / 3,290 assertions**.
 
+**Batch paralel I6 + P-A + P-B DONE & merged (3 lane paralel, file disjoint):**
+- **I6** aksesibilitas & kontras: kontras WCAG diperbaiki untuk tema a/b/d (muted-on-elevated < 4.5:1 → token `--erp-text-muted` disesuaikan), skip-link + `#main-content`, `aria-current` nav, focus trap + restore opener di dialog, form error kini memindahkan fokus ke field invalid pertama (`aria-invalid` + `aria-describedby` + `role=alert`), kontrak 360px (grid multi-kolom wajib breakpoint, tabel wajib `overflow-x-auto`). Test baru `AccessibilityContractTest` + ekspansi `ThemeContrastTest`.
+- **P-B** settings: hint header umum, `role="status"` pada notices, teks bantu per-tab bahasa awam, copy export/erasure lebih jelas (isi ZIP + anomimisasi dijelaskan), `tabular-nums` di item widget. Otorisasi export/erasure tidak diubah.
+- **P-A** layar operasional: `tabular-nums` pada uang/jumlah, dialog catatan pipeline mendapat perlakuan modal D-45.
+- **Konflik merge** I6 × P-A di `pipeline.blade.php` diselesaikan Hermes (mempertahankan inert-400ms D-45 + restore opener), dan test a11y diperbaiki menerima dua pola setara (`opener?.focus()` / `target?.focus()`) — commit `6dcc4d5`.
+- **Final gate setelah semua merge:** `DATA_SOURCE=json php artisan test` → **676 passed / 3,707 assertions**; Pint PASS; build PASS; diff-check bersih; app 8002 di-restart, smoke `/login` `/` `/app/settings` `/industri` = 200/302 (benar).
+
 **Catatan:** OpenCode reviewer tidak bisa menjalankan command (izin tool auto-reject) sejak maraton ini; peran QA diverifikasi Hermes dengan membaca diff langsung + final-gate. App live di `127.0.0.1:8002` di-restart untuk memuat hasil I1+I2.
 
 ## UX-MARATHON — Polesan UI/UX 3 lane paralel
