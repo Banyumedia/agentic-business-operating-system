@@ -282,7 +282,7 @@ class RegisterTest extends TestCase
             ->set('password', 'SecurePassword123!')
             ->call('login');
 
-        $response->assertRedirect(route('app.dashboard'));
+        $response->assertRedirect(route('onboarding'));
     }
 
     /**

@@ -3,7 +3,9 @@
 namespace Tests\Feature\Livewire\Auth;
 
 use App\Livewire\Auth\Login;
+use App\Models\Company;
 use App\Models\User;
+use App\Providers\DataSourceServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -11,6 +13,14 @@ use Tests\TestCase;
 class LoginTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Login menulis konteks company lewat driver yang dipakai app (Eloquent).
+        config(['datasource.driver' => 'eloquent']);
+        (new DataSourceServiceProvider($this->app))->register();
+    }
 
     public function test_renders_successfully()
     {
@@ -64,11 +74,29 @@ class LoginTest extends TestCase
             'password' => bcrypt('password123'),
         ]);
 
+        // User dengan company diarahkan ke dashboard (company aktif ter-set).
+        Company::factory()->create(['owner_user_id' => $user->id]);
+
         Livewire::test(Login::class)
             ->set('email', $user->email)
             ->set('password', 'password123')
             ->call('login')
             ->assertRedirect(route('app.dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_user_without_company_is_redirected_to_onboarding()
+    {
+        $user = User::factory()->create([
+            'password' => bcrypt('password123'),
+        ]);
+
+        Livewire::test(Login::class)
+            ->set('email', $user->email)
+            ->set('password', 'password123')
+            ->call('login')
+            ->assertRedirect(route('onboarding'));
 
         $this->assertAuthenticatedAs($user);
     }
@@ -135,6 +163,9 @@ class LoginTest extends TestCase
         $user = User::factory()->create([
             'password' => bcrypt('password123'),
         ]);
+
+        // User dengan company diarahkan ke dashboard setelah login sukses.
+        Company::factory()->create(['owner_user_id' => $user->id]);
 
         // Gagal beberapa kali di bawah ambang, lalu sukses: kunci dibuka.
         foreach (range(1, 3) as $i) {
