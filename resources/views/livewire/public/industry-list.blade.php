@@ -6,41 +6,67 @@
             <p class="mt-3 text-[var(--erp-text-secondary)]">Agentic BOS menyediakan preset sistem untuk berbagai model bisnis. Pilih yang sesuai dengan bisnis Anda.</p>
         </header>
 
-        <nav aria-label="Daftar Industri" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            @foreach ($presets as $preset)
-                <div class="group flex flex-col justify-between min-h-32 rounded-[var(--erp-radius-lg)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] p-5 shadow-[var(--erp-card-shadow)] transition hover:-translate-y-0.5 hover:border-[var(--erp-accent)]">
-                    <div class="flex items-center gap-4 mb-4">
-                        <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent-soft)] text-[var(--erp-accent)]" aria-hidden="true">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A1.5 1.5 0 0 1 5.5 4h5A1.5 1.5 0 0 1 12 5.5v5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 10.5v-5ZM12 13.5a1.5 1.5 0 0 1 1.5-1.5h5a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5h-5a1.5 1.5 0 0 1-1.5-1.5v-5ZM14 4h4a2 2 0 0 1 2 2v4M4 16v2a2 2 0 0 0 2 2h2" />
-                            </svg>
-                        </span>
-                        <span>
-                            <span class="block text-lg font-bold">{{ $preset->name }}</span>
-                        </span>
-                    </div>
+        @if ($presets->isEmpty())
+            {{-- Empty state: registry preset kosong, jangan render kartu kosong tanpa penjelasan. --}}
+            <div role="status" class="mx-auto max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] p-8 text-center">
+                <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent-soft)] text-[var(--erp-accent)]" aria-hidden="true">
+                    <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A1.5 1.5 0 0 1 5.5 4h5A1.5 1.5 0 0 1 12 5.5v5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 10.5v-5ZM12 13.5a1.5 1.5 0 0 1 1.5-1.5h5a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5h-5a1.5 1.5 0 0 1-1.5-1.5v-5ZM14 4h4a2 2 0 0 1 2 2v4M4 16v2a2 2 0 0 0 2 2h2" />
+                    </svg>
+                </span>
+                <p class="mt-4 font-semibold">Belum ada jenis usaha yang bisa ditampilkan</p>
+                <p class="mt-2 text-sm text-[var(--erp-text-secondary)]">
+                    Daftar preset sedang disiapkan. Silakan kembali lagi nanti, atau hubungi kami bila Anda ingin tahu kapan tersedia.
+                </p>
+            </div>
+        @else
+            <nav aria-label="Daftar Industri" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach ($presets as $preset)
+                    <article class="group flex min-h-32 flex-col justify-between rounded-[var(--erp-radius-lg)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] p-5 shadow-[var(--erp-card-shadow)] transition hover:-translate-y-0.5 hover:border-[var(--erp-accent)]">
+                        <div class="mb-4 flex items-center gap-4">
+                            <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent-soft)] text-[var(--erp-accent)]" aria-hidden="true">
+                                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A1.5 1.5 0 0 1 5.5 4h5A1.5 1.5 0 0 1 12 5.5v5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 10.5v-5ZM12 13.5a1.5 1.5 0 0 1 1.5-1.5h5a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5h-5a1.5 1.5 0 0 1-1.5-1.5v-5ZM14 4h4a2 2 0 0 1 2 2v4M4 16v2a2 2 0 0 0 2 2h2" />
+                                </svg>
+                            </span>
+                            <span>
+                                <span class="block text-lg font-bold">{{ $preset->name }}</span>
+                            </span>
+                        </div>
 
-                    <div class="flex-grow">
-                        <p class="text-sm text-[var(--erp-text-secondary)] line-clamp-3 mb-4">
-                            {{ $preset->definition['description'] ?? 'Modul sistem bisnis terintegrasi.' }}
-                        </p>
-                    </div>
+                        <div class="flex-grow">
+                            <p class="mb-4 line-clamp-3 text-sm text-[var(--erp-text-secondary)]">
+                                {{ $preset->definition['description'] ?? 'Modul sistem bisnis terintegrasi.' }}
+                            </p>
+                        </div>
 
-                    <a
-                        href="/onboarding?preset={{ $preset->key }}"
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[var(--erp-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[var(--erp-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] focus-visible:ring-offset-2"
-                    >
-                        Gunakan Preset Ini
-                    </a>
-                </div>
-            @endforeach
-        </nav>
+                        <a
+                            href="/onboarding?preset={{ $preset->key }}"
+                            class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--erp-radius-sm)] bg-[var(--erp-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] focus-visible:ring-offset-2"
+                            aria-label="Gunakan preset {{ $preset->name }}"
+                        >
+                            Gunakan Preset Ini
+                        </a>
+                    </article>
+                @endforeach
+            </nav>
+        @endif
 
         <div class="mt-10 text-center">
+            @guest
+                <a
+                    href="{{ route('login') }}"
+                    class="inline-flex min-h-11 items-center justify-center rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] px-6 font-semibold text-[var(--erp-text-primary)] shadow-[var(--erp-card-shadow)] transition hover:border-[var(--erp-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                >
+                    Masuk atau daftar
+                </a>
+                <p class="mt-2 text-sm text-[var(--erp-text-secondary)]">Sudah punya akun? Masuk untuk mulai mengatur usaha Anda.</p>
+            @endguest
+
             <a
                 href="/"
                 wire:navigate
-                class="mx-auto block w-fit text-sm font-semibold text-[var(--erp-text-secondary)] underline decoration-[var(--erp-border)] underline-offset-4 hover:text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                class="mx-auto mt-4 block w-fit text-sm font-semibold text-[var(--erp-text-secondary)] underline decoration-[var(--erp-border)] underline-offset-4 hover:text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
             >
                 Kembali ke Beranda
             </a>

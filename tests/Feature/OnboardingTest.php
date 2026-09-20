@@ -79,8 +79,11 @@ class OnboardingTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        $this->get('/onboarding')
-            ->assertOk()
+        // Alur multi-langkah: daftar preset tampil di langkah 2.
+        Livewire::test(Onboarding::class)
+            ->set('name', 'Usaha Baru')
+            ->call('nextStep')
+            ->assertSet('step', 2)
             ->assertSee('Preset Fixture Onboarding ZZ');
     }
 
@@ -291,10 +294,12 @@ class OnboardingTest extends TestCase
 
         $this->actingAs($user);
 
-        $this->get('/onboarding')
-            ->assertOk()
+        Livewire::test(Onboarding::class)
+            ->set('name', 'Usaha Paket Terbatas')
+            ->call('nextStep')
+            ->assertSet('step', 2)
             ->assertSee('Enterprise Preset')
-            ->assertSee('perlu paket lebih tinggi: inventory.bom, finance.accounting')
-            ->assertDontSee('perlu paket lebih tinggi: contacts');
+            ->assertSee('Perlu paket lebih tinggi: inventory.bom, finance.accounting')
+            ->assertDontSee('Perlu paket lebih tinggi: contacts');
     }
 }
