@@ -17,6 +17,23 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => route('login'));
 
+        // Redirect authenticated users trying to access guest routes (login/register).
+        // If user has company → app.dashboard. If not → onboarding.
+        $middleware->redirectUsersTo(function (Request $request) {
+            $user = auth()->user();
+            if (! $user) {
+                return route('login');
+            }
+
+            // User sudah punya company (sebagai owner)
+            if ($user->companies()->exists()) {
+                return route('app.dashboard');
+            }
+
+            // User belum punya company → arahkan ke onboarding
+            return route('onboarding');
+        });
+
         $middleware->alias([
             'company.access' => EnsureCompanyAccess::class,
             'feature.enabled' => EnsureFeatureEnabled::class,
