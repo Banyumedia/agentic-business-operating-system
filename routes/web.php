@@ -13,6 +13,7 @@ use App\Livewire\Dashboard;
 use App\Livewire\DummyModule;
 use App\Livewire\Lobby;
 use App\Livewire\Onboarding;
+use App\Livewire\Paywall;
 use App\Livewire\Public\IndustryList;
 use App\Livewire\Settings;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +45,8 @@ use App\Http\Controllers\App\GroupReportController;
 Route::middleware(['auth', SetCurrentCompany::class, EnsureCompanyAccess::class])->group(function (): void {
     Route::middleware(EnsureCompanyContext::class)->group(function (): void {
         Route::get('/app/dashboard', Dashboard::class)->name('app.dashboard');
+        // Paywall D-61: kuota gratis habis → klien memilih paket berbayar.
+        Route::get('/app/paywall', Paywall::class)->name('app.paywall');
         Route::get('/app/group-report', [GroupReportController::class, 'show'])->name('app.group_report');
         Route::get('/app/settings', Settings::class)->name('app.settings');
         Route::get('/app/settings/{tab}', Settings::class)
