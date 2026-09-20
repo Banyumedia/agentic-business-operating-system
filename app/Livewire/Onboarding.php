@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Contracts\CompanyContext;
 use App\Contracts\CompanySettingsStore;
 use App\Contracts\PresetSource;
 use App\Models\Company;
@@ -16,19 +17,26 @@ use Livewire\Component;
 use Throwable;
 
 /**
- * Onboarding form web (D-40). Wawancara AI via WA menyusul setelah node API
- * Hermes tersedia (T-17b); untuk sekarang klien mengisi nama usaha + preset
- * lewat form ini.
+ * Onboarding form web (D-40) dalam alur multi-langkah (maraton UX lane A):
+ * 1) identitas usaha, 2) pilih preset dari PresetSource/registry,
+ * 3) ringkasan + persetujuan kebijakan privasi -> usaha dibuat dan owner
+ * diarahkan ke dashboard.
+ *
+ * Wawancara AI via WA menyusul setelah node API Hermes tersedia (T-17b).
  *
  * PENTING (D-41): folder company yang dibuat di sini TIDAK otomatis bisa
  * diakses lewat `?company=` karena `JsonCompanyContext` fail-closed di luar
- * tiga company demo allowlist `config/datasource.php`. Ini batas yang
- * diterima sampai Fase 3 (`users.current_company_id` + auth sungguhan),
- * bukan bug untuk diperbaiki di task ini. Allowlist tidak diubah di sini.
+ * tiga company demo allowlist `config/datasource.php`. Setelah submit sukses
+ * konteks company aktif di-set via kontrak `CompanyContext` (driver-agnostik),
+ * lalu redirect ke dashboard.
  */
 class Onboarding extends Component
 {
     private const PRIVACY_POLICY_VERSION = '2026-09-18';
+
+    private const TOTAL_STEPS = 3;
+
+    public int $step = 1;
 
     public string $name = '';
 
@@ -50,9 +58,45 @@ class Onboarding extends Component
         $this->preset = $presets->find($requested) !== null
             ? $requested
             : ($available !== [] ? $available[0]['key'] : '');
+
+        // Tautan kartu dari halaman publik /industri sudah memilih preset;
+        // pemilik langsung diarahkan ke langkah identitas (step 1) supaya
+        // alur tetap berurutan, preset tinggal dikonfirmasi di step 2.
     }
 
-    public function submit(PresetSource $presets, CompanySettingsStore $settingsStore): void
+    public function nextStep(PresetSource $presets): void
+    {
+        $this->failure = null;
+
+        if ($this->step === 1 && trim($this->name) === '') {
+            $this->failure = 'Nama usaha wajib diisi.';
+
+            return;
+        }
+
+        if ($this->step === 2 && $presets->find($this->preset) === null) {
+            $this->failure = 'Preset bisnis tidak valid.';
+
+            return;
+        }
+
+        if ($this->step >= self::TOTAL_STEPS) {
+            return;
+        }
+
+        $this->step++;
+    }
+
+    public function previousStep(): void
+    {
+        $this->failure = null;
+
+        if ($this->step > 1) {
+            $this->step--;
+        }
+    }
+
+    public function submit(PresetSource $presets, CompanySettingsStore $settingsStore, CompanyContext $context): void
     {
         $this->failure = null;
         $this->createdSlug = null;
@@ -67,18 +111,21 @@ class Onboarding extends Component
         $name = trim($this->name);
         if ($name === '') {
             $this->failure = 'Nama usaha wajib diisi.';
+            $this->step = 1;
 
             return;
         }
 
         if ($presets->find($this->preset) === null) {
             $this->failure = 'Preset bisnis tidak valid.';
+            $this->step = 2;
 
             return;
         }
 
         if (! $this->acceptPrivacyPolicy) {
             $this->failure = 'Anda wajib menyetujui kebijakan privasi terlebih dahulu.';
+            $this->step = 3;
 
             return;
         }
@@ -87,6 +134,7 @@ class Onboarding extends Component
             $slug = $this->uniqueSlug($name);
         } catch (InvalidArgumentException $exception) {
             $this->failure = $exception->getMessage();
+            $this->step = 1;
 
             return;
         }
@@ -125,6 +173,19 @@ class Onboarding extends Component
         $this->createdSlug = $slug;
         $this->name = '';
         $this->acceptPrivacyPolicy = false;
+
+        // Set konteks company aktif (kontrak driver-agnostik: JSON demo atau
+        // Eloquent `users.current_company_id`) lalu arahkan owner ke dashboard.
+        // `JsonCompanyContext` hanya menerima company demo allowlist (D-41) -
+        // kegagalan set konteks tidak boleh membatalkan pembuatan usaha yang
+        // sudah sah tersimpan; redirect tetap dilakukan.
+        try {
+            $context->setCurrent((string) $company->id);
+        } catch (InvalidArgumentException) {
+            // D-41: company baru memang belum reachable di driver JSON demo.
+        }
+
+        $this->redirect(route('app.dashboard'));
     }
 
     public function render(PresetSource $presets, PlanCapabilityGate $planGate): View
@@ -169,6 +230,7 @@ class Onboarding extends Component
         return view('livewire.onboarding', [
             'presets' => $presetOptions,
             'privacyPolicyVersion' => self::PRIVACY_POLICY_VERSION,
+            'totalSteps' => self::TOTAL_STEPS,
         ])->layout('layouts.app');
     }
 
