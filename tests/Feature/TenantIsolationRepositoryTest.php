@@ -6,7 +6,6 @@ use App\Contracts\CompanyContext;
 use App\Contracts\EntityRepository;
 use App\Models\Company;
 use App\Models\Contact;
-use App\Models\Invoice;
 use App\Models\User;
 use App\Providers\DataSourceServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
