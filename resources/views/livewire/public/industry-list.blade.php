@@ -42,7 +42,7 @@
 
                         <a
                             href="/onboarding?preset={{ $preset->key }}"
-                            class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--erp-radius-sm)] bg-[var(--erp-accent)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] focus-visible:ring-offset-2"
+                            class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--erp-radius-sm)] bg-[var(--erp-accent)] px-4 py-2 text-sm font-semibold text-[var(--erp-text-inverse)] shadow-[var(--erp-card-shadow)] transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--erp-bg-secondary)]"
                             aria-label="Gunakan preset {{ $preset->name }}"
                         >
                             Gunakan Preset Ini
