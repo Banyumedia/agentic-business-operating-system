@@ -57,13 +57,13 @@
             <li class="flex flex-col rounded-[var(--erp-radius-lg)] border bg-[var(--erp-bg-secondary)] {{ $day['is_today'] ? 'border-[var(--erp-accent)]' : 'border-[var(--erp-border)]' }}">
                 <h2 class="flex items-baseline justify-between gap-2 border-b border-[var(--erp-border)] px-3 py-2">
                     <span class="text-sm font-semibold text-[var(--erp-text-primary)]">{{ $day['label'] }}</span>
-                    <span class="font-[family-name:var(--erp-font-mono)] text-xs text-[var(--erp-text-muted)]">{{ count($day['slots']) }}</span>
+                    <span class="font-[family-name:var(--erp-font-mono)] tabular-nums text-xs text-[var(--erp-text-muted)]">{{ count($day['slots']) }}</span>
                 </h2>
 
                 <div class="flex flex-1 flex-col gap-2 p-2">
                     @forelse ($day['slots'] as $slot)
                         <article class="rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-base)] p-2">
-                            <p class="font-[family-name:var(--erp-font-mono)] text-xs text-[var(--erp-text-secondary)]">
+                            <p class="font-[family-name:var(--erp-font-mono)] tabular-nums text-xs text-[var(--erp-text-secondary)]">
                                 {{ $slot['from'] }}@if ($slot['to'] !== null)&ndash;{{ $slot['to'] }}@endif
                             </p>
                             <p class="mt-1 text-sm font-medium text-[var(--erp-text-primary)]">{{ $slot['title'] }}</p>

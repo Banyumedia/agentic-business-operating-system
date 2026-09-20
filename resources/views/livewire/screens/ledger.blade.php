@@ -8,22 +8,22 @@
         @if ($hasDirection)
             <div class="rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] p-4">
                 <dt class="text-xs font-semibold uppercase tracking-wide text-[var(--erp-text-muted)]">Masuk</dt>
-                <dd class="mt-1 font-[family-name:var(--erp-font-mono)] text-lg text-[var(--erp-success)]">Rp {{ number_format($incoming, 0, ',', '.') }}</dd>
+                <dd class="mt-1 font-[family-name:var(--erp-font-mono)] tabular-nums text-lg text-[var(--erp-success)]">Rp {{ number_format($incoming, 0, ',', '.') }}</dd>
             </div>
             <div class="rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] p-4">
                 <dt class="text-xs font-semibold uppercase tracking-wide text-[var(--erp-text-muted)]">Keluar</dt>
-                <dd class="mt-1 font-[family-name:var(--erp-font-mono)] text-lg text-[var(--erp-danger)]">Rp {{ number_format($outgoing, 0, ',', '.') }}</dd>
+                <dd class="mt-1 font-[family-name:var(--erp-font-mono)] tabular-nums text-lg text-[var(--erp-danger)]">Rp {{ number_format($outgoing, 0, ',', '.') }}</dd>
             </div>
         @else
             <div class="rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] p-4 sm:col-span-2">
                 <dt class="text-xs font-semibold uppercase tracking-wide text-[var(--erp-text-muted)]">Nilai tercatat</dt>
-                <dd class="mt-1 font-[family-name:var(--erp-font-mono)] text-lg text-[var(--erp-text-primary)]">Rp {{ number_format($incoming, 0, ',', '.') }}</dd>
+                <dd class="mt-1 font-[family-name:var(--erp-font-mono)] tabular-nums text-lg text-[var(--erp-text-primary)]">Rp {{ number_format($incoming, 0, ',', '.') }}</dd>
             </div>
         @endif
 
         <div class="rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] p-4">
             <dt class="text-xs font-semibold uppercase tracking-wide text-[var(--erp-text-muted)]">{{ $hasDirection ? 'Saldo' : 'Total' }}</dt>
-            <dd class="mt-1 font-[family-name:var(--erp-font-mono)] text-lg font-semibold {{ $balance < 0 ? 'text-[var(--erp-danger)]' : 'text-[var(--erp-text-primary)]' }}">
+            <dd class="mt-1 font-[family-name:var(--erp-font-mono)] tabular-nums text-lg font-semibold {{ $balance < 0 ? 'text-[var(--erp-danger)]' : 'text-[var(--erp-text-primary)]' }}">
                 Rp {{ number_format($balance, 0, ',', '.') }}
             </dd>
         </div>
@@ -59,12 +59,12 @@
                     <tbody>
                         @foreach ($entries as $entry)
                             <tr class="border-b border-[var(--erp-border)] hover:bg-[var(--erp-bg-hover)]">
-                                <td class="px-3 py-2 font-[family-name:var(--erp-font-mono)] text-xs text-[var(--erp-text-secondary)]">{{ $entry['date'] }}</td>
+                                <td class="px-3 py-2 font-[family-name:var(--erp-font-mono)] tabular-nums text-xs text-[var(--erp-text-secondary)]">{{ $entry['date'] }}</td>
                                 <td class="px-3 py-2 text-[var(--erp-text-primary)]">{{ $entry['description'] }}</td>
-                                <td class="px-3 py-2 text-right font-[family-name:var(--erp-font-mono)] {{ $entry['outgoing'] ? 'text-[var(--erp-danger)]' : 'text-[var(--erp-success)]' }}">
+                                <td class="px-3 py-2 text-right font-[family-name:var(--erp-font-mono)] tabular-nums {{ $entry['outgoing'] ? 'text-[var(--erp-danger)]' : 'text-[var(--erp-success)]' }}">
                                     {{ $entry['outgoing'] ? '-' : '+' }}Rp {{ number_format($entry['amount'], 0, ',', '.') }}
                                 </td>
-                                <td class="px-3 py-2 text-right font-[family-name:var(--erp-font-mono)] text-[var(--erp-text-primary)]">
+                                <td class="px-3 py-2 text-right font-[family-name:var(--erp-font-mono)] tabular-nums text-[var(--erp-text-primary)]">
                                     Rp {{ number_format($entry['balance'], 0, ',', '.') }}
                                 </td>
                             </tr>
@@ -76,13 +76,13 @@
             <ul role="list" class="mt-4 grid gap-3 md:hidden">
                 @foreach ($entries as $entry)
                     <li class="rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-base)] p-3">
-                        <p class="font-[family-name:var(--erp-font-mono)] text-xs text-[var(--erp-text-muted)]">{{ $entry['date'] }}</p>
+                        <p class="font-[family-name:var(--erp-font-mono)] tabular-nums text-xs text-[var(--erp-text-muted)]">{{ $entry['date'] }}</p>
                         <p class="mt-1 text-sm font-medium text-[var(--erp-text-primary)]">{{ $entry['description'] }}</p>
                         <div class="mt-2 flex items-baseline justify-between gap-3">
-                            <span class="font-[family-name:var(--erp-font-mono)] text-sm {{ $entry['outgoing'] ? 'text-[var(--erp-danger)]' : 'text-[var(--erp-success)]' }}">
+                            <span class="font-[family-name:var(--erp-font-mono)] tabular-nums text-sm {{ $entry['outgoing'] ? 'text-[var(--erp-danger)]' : 'text-[var(--erp-success)]' }}">
                                 {{ $entry['outgoing'] ? '-' : '+' }}Rp {{ number_format($entry['amount'], 0, ',', '.') }}
                             </span>
-                            <span class="font-[family-name:var(--erp-font-mono)] text-xs text-[var(--erp-text-secondary)]">
+                            <span class="font-[family-name:var(--erp-font-mono)] tabular-nums text-xs text-[var(--erp-text-secondary)]">
                                 Saldo Rp {{ number_format($entry['balance'], 0, ',', '.') }}
                             </span>
                         </div>
