@@ -12,6 +12,8 @@
 
 **Iterasi I3 DONE & merged:** login/lobby/branch-switcher/palette/layouts kini memakai token `--erp-*` penuh (tidak ada warna mentah tersisa di scope), tap target 44px, focus ring, empty state lobby, highlight opsi aktif command palette saat navigasi keyboard, banner impersonasi bertoken. Perilaku auth/keamanan tidak diubah. Merged `main` — full suite 607 hijau. App live 8002 di-restart dan smoke `/login` `/` `/industri` = 200.
 
+**Iterasi I4 DONE & merged:** audit sisa inkonsistensi — grep warna Tailwind mentah (`text-white`/`bg-black`/`shadow-sm`/dll) di seluruh `resources/views/**` kini **0 match**; scrim modal & confirm-dialog pakai `color-mix` token; semua tombol aksi async (kasir, list, pipeline, kalender, data-table, branch-switcher, erasure) punya `wire:loading.attr="disabled"`. Fail-closed uang/erasure tidak diubah. `welcome.blade.php` (223 baris bawaan Laravel tak terpakai) dihapus. Merged `main` — full suite 607 hijau; app 8002 di-restart, smoke 200.
+
 **Catatan:** OpenCode reviewer tidak bisa menjalankan command (izin tool auto-reject) sejak maraton ini; peran QA diverifikasi Hermes dengan membaca diff langsung + final-gate. App live di `127.0.0.1:8002` di-restart untuk memuat hasil I1+I2.
 
 ## UX-MARATHON — Polesan UI/UX 3 lane paralel
