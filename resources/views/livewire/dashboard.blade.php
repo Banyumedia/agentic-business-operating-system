@@ -114,7 +114,7 @@
                 <h3 class="text-sm font-semibold text-[var(--erp-text-primary)]">Tindakan disarankan</h3>
                 <ul class="mt-3 space-y-3">
                     @forelse ($dashboard['assistant_report']['recommended_actions'] as $action)
-                        <li class="flex items-start gap-3 rounded-[var(--erp-radius-sm)] bg-[var(--erp-bg-secondary)] p-3 shadow-sm ring-1 ring-[var(--erp-border)] transition hover:bg-[var(--erp-bg-elevated)]">
+                        <li class="flex items-start gap-3 rounded-[var(--erp-radius-sm)] bg-[var(--erp-bg-secondary)] p-3 shadow-[var(--erp-card-shadow)] ring-1 ring-[var(--erp-border)] transition hover:bg-[var(--erp-bg-elevated)]">
                             <span aria-hidden="true" class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--erp-accent-soft)] text-[var(--erp-accent)]">
                                 <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
                                     <path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clip-rule="evenodd" />
