@@ -102,8 +102,9 @@
                         <select
                             id="preset-select"
                             wire:change="updatePreset($event.target.value)"
+                            wire:loading.attr="disabled"
                             @disabled(! $canManageTheme)
-                            class="mt-2 min-h-11 w-full max-w-md rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] px-3 text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                            class="mt-2 min-h-11 w-full max-w-md rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] px-3 text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                         >
                             @foreach ($presets as $presetOption)
                                 <option value="{{ $presetOption['key'] }}" @selected($presetOption['key'] === $selectedPreset)>{{ $presetOption['name'] }}</option>
@@ -140,9 +141,11 @@
                                             <button
                                                 type="button"
                                                 wire:click="updateTerminology('{{ $singular }}')"
-                                                class="min-h-11 rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] px-3 text-sm font-medium text-[var(--erp-text-primary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                                                wire:loading.attr="disabled"
+                                                class="min-h-11 rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] px-3 text-sm font-medium text-[var(--erp-text-primary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                                             >
-                                                Simpan
+                                                <span wire:loading.remove wire:target="updateTerminology">Simpan</span>
+                                                <span wire:loading wire:target="updateTerminology" class="sr-only">Menyimpan…</span>
                                             </button>
                                         @endif
                                     </div>
@@ -204,9 +207,10 @@
                             type="button"
                             wire:key="theme-{{ $key }}"
                             wire:click="selectTheme('{{ $key }}')"
+                            wire:loading.attr="disabled"
                             aria-pressed="{{ $selectedTheme === $key ? 'true' : 'false' }}"
                             @disabled(! $canManageTheme)
-                            class="min-h-44 rounded-[var(--erp-radius-md)] border p-5 text-left shadow-[var(--erp-card-shadow)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] {{ $selectedTheme === $key ? 'border-[var(--erp-focus)] bg-[var(--erp-bg-active)]' : 'border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] hover:bg-[var(--erp-bg-hover)]' }}"
+                            class="min-h-44 rounded-[var(--erp-radius-md)] border p-5 text-left shadow-[var(--erp-card-shadow)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60 {{ $selectedTheme === $key ? 'border-[var(--erp-focus)] bg-[var(--erp-bg-active)]' : 'border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] hover:bg-[var(--erp-bg-hover)]' }}"
                         >
                             <span class="mb-4 flex gap-2" aria-hidden="true">
                                 <span class="size-7 rounded-full border border-[var(--erp-border-strong)]" style="background: {{ $themeOption['tokens']['--erp-bg-base'] }}"></span>
