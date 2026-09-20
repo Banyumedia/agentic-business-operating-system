@@ -5,7 +5,7 @@
     <header class="mb-8">
         <p class="text-sm font-semibold text-[var(--erp-accent)]">Pengaturan usaha</p>
         <h1 class="mt-1 text-3xl font-bold text-[var(--erp-text-primary)]">Atur Agentic BOS sesuai cara kerja tim</h1>
-        <p class="mt-2 text-[var(--erp-text-secondary)]">Tema berlaku untuk seluruh pengguna di usaha ini.</p>
+        <p class="mt-2 text-[var(--erp-text-secondary)]">Semua perubahan di halaman ini berlaku untuk seluruh pengguna di usaha Anda, bukan hanya akun Anda sendiri.</p>
     </header>
 
     <div
@@ -92,7 +92,7 @@
                         </div>
 
                         @if ($featuresNotice)
-                            <p class="mb-4 text-sm text-[var(--erp-success)]" aria-live="polite">{{ $featuresNotice }}</p>
+                            <p class="mb-4 text-sm text-[var(--erp-success)]" role="status" aria-live="polite">{{ $featuresNotice }}</p>
                         @endif
                         @if ($featuresFailure)
                             <p class="mb-4 text-sm text-[var(--erp-danger)]" role="alert">{{ $featuresFailure }}</p>
@@ -245,12 +245,22 @@
             @elseif ($tab['id'] === 'erasure')
                 @livewire(\App\Livewire\Settings\DataErasure::class)
             @else
+                @php
+                    // Teks bantu per-tab untuk pemilik usaha awam, bahasa
+                    // sederhana dan tanpa istilah teknis. Tab tanpa entri
+                    // memakai kalimat umum di bawah.
+                    $stubHelp = [
+                        'assistant' => 'Di sini nanti Anda menyambungkan nomor WhatsApp usaha agar asisten AI bisa membantu membalas pelanggan dan mengirim pengingat.',
+                        'usage' => 'Di sini nanti Anda melihat sisa kuota AI dan paket langganan usaha, serta cara isi ulang kuota bila habis.',
+                        'team' => 'Di sini nanti Anda mengundang staf ke usaha ini dan mengatur bagian mana yang boleh mereka lihat.',
+                    ];
+                @endphp
                 <div class="rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] p-6">
                     <h2 class="text-lg font-semibold text-[var(--erp-text-primary)]">
                         {{ $tab['label'] }}
                         <span class="ml-2 inline-flex items-center rounded-full bg-[var(--erp-warning-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--erp-warning)]">Segera</span>
                     </h2>
-                    <p class="mt-2 text-sm text-[var(--erp-text-secondary)]">Bagian ini akan dilengkapi pada task fitur terkait.</p>
+                    <p class="mt-2 text-sm text-[var(--erp-text-secondary)]">{{ $stubHelp[$tab['id']] ?? 'Pengaturan bagian ini menyusul bersama fiturnya.' }}</p>
                 </div>
             @endif
         </section>

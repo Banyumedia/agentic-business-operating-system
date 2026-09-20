@@ -2,8 +2,10 @@
     <div class="rounded-[var(--erp-radius-lg)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)]">
         <h2 class="text-lg font-semibold text-[var(--erp-text-primary)]">Ekspor Data Usaha</h2>
         <p class="mt-1 text-sm text-[var(--erp-text-secondary)]">
-            Unduh seluruh data (CSV) dan pengaturan (JSON) milik usaha Anda.
-            Fitur ini tetap dapat digunakan kapan saja, termasuk jika langganan/trial Anda berakhir.
+            Unduh seluruh data usaha Anda dalam satu berkas ZIP: satu berkas CSV per bagian data
+            (kontak, pesanan, pembukuan, dan sebagainya) plus berkas JSON berisi pengaturan dan preset usaha.
+            Data Anda tetap milik Anda — fitur ini selalu tersedia untuk pemilik usaha,
+            termasuk saat langganan atau trial berakhir.
         </p>
 
         <div class="mt-4">

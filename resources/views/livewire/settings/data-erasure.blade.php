@@ -2,7 +2,9 @@
     <div class="rounded-[var(--erp-radius-lg)] border border-[var(--erp-danger)] bg-[var(--erp-bg-secondary)] p-6 shadow-[var(--erp-card-shadow)]">
         <h2 class="text-lg font-semibold text-[var(--erp-danger)]">Hapus Data {{ ucfirst($contactTerm) }}</h2>
         <p class="mt-1 text-sm text-[var(--erp-text-secondary)]">
-            Hapus seluruh data pribadi seorang {{ $contactTerm }}. Jejak transaksi (invoice, pesanan) akan dianomimkan untuk kebutuhan pembukuan. Tindakan ini tidak dapat dibatalkan.
+            Hapus seluruh data pribadi seorang {{ $contactTerm }} dari usaha ini.
+            Catatan transaksi lama (mis. pesanan, tagihan) tidak hilang — namanya hanya diganti jadi kosong agar pembukuan tetap bisa dihitung.
+            Tindakan ini tidak dapat dibatalkan. Bila ragu, unduh dulu lewat tab Ekspor Data.
         </p>
 
         <div class="mt-4">
