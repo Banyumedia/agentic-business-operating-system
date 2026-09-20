@@ -179,6 +179,29 @@ class ListScreenTest extends TestCase
         $this->assertCount(1, $repository->all());
     }
 
+    public function test_invalid_input_marks_the_field_with_aria_invalid(): void
+    {
+        $this->seedRows('bengkel-arka', 'contacts', [['id' => 1, 'name' => 'Awal']]);
+
+        $html = Livewire::test(ListScreen::class, ['module' => 'contacts'])
+            ->call('create')
+            ->set('form.name', 'Email Salah')
+            ->set('form.email', 'bukan-email')
+            ->call('save')
+            ->assertSet('editing', true)
+            ->html();
+
+        // Fokus + aria-invalid + aria-describedby pada field yang salah,
+        // bukan penandaan warna saja (kontrak a11y I6).
+        $this->assertStringContainsString('aria-invalid="true"', $html);
+        $this->assertStringContainsString('aria-describedby="field-email-error"', $html);
+        $this->assertStringContainsString('id="field-email-error"', $html);
+        $this->assertStringContainsString(
+            "x-init=\"\$el.getAttribute('aria-invalid') === 'true' && document.querySelector('[aria-invalid=true]') === \$el && \$el.focus()\"",
+            $html,
+        );
+    }
+
     public function test_delete_confirmation_is_two_step_and_starts_inert(): void
     {
         $this->seedRows('bengkel-arka', 'contacts', [['id' => 1, 'name' => 'Perlu Konfirmasi']]);
