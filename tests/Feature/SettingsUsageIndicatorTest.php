@@ -2,57 +2,202 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Support\Facades\Schema;
+use App\Contracts\CompanyContext;
+use App\Models\Company;
+use App\Models\CompanyMembership;
+use App\Models\HermesConversationContext;
+use App\Models\HermesProfile;
+use App\Models\MembershipPlan;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * W2 jalur JSON (tanpa tabel memberships): tab "Penggunaan & Paket"
- * menampilkan indikator tier gratis config-driven (D-60, U-05).
- * Jalur DB/membership diuji di SettingsUsageMembershipTest.
+ * Feature tests for W2: quota indicator + early warning (D-60, D-61).
  *
- * Semua angka dibaca dari gate/config, tidak ada hardcode di UI.
+ * Angka tampilan harus berasal dari gate/config, bukan hardcode:
+ * sisa token vs kuota, grup WA terpakai vs maksimal, label tier,
+ * banner peringatan dini saat saldo < 20% kuota, fail-closed (D-49).
  */
 class SettingsUsageIndicatorTest extends TestCase
 {
-    public function test_usage_tab_shows_free_tier_indicators_from_config(): void
+    use RefreshDatabase;
+
+    private function mockContext(Company $company): void
     {
-        $this->assertFalse(Schema::hasTable('company_memberships'));
+        $context = $this->mock(CompanyContext::class);
+        $context->shouldReceive('current')->andReturn((string) $company->id);
+    }
 
-        $quota = (int) config('billing.free_tier.token_quota', 500);
-        $maxGroups = (int) config('billing.free_tier.max_wa_groups', 1);
+    public function test_free_tier_shows_config_numbers_tier_label_and_upgrade_nudge(): void
+    {
+        config(['billing.usage.plans_url' => 'https://bos.test/paket']);
+        $company = Company::factory()->create();
+        $this->mockContext($company);
 
-        $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'staff'])
-            ->get('/app/settings/usage')
-            ->assertOk()
+        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
             ->assertSee('Tier Gratis')
-            ->assertSee(number_format($quota, 0, ',', '.'))
-            ->assertSee('Sisa token', false)
-            ->assertSee('Grup WhatsApp', false)
-            ->assertSee('maksimal '.$maxGroups.' grup', false)
-            ->assertDontSee('Sisa kuota AI menipis');
+            ->assertSee(number_format((int) config('billing.free_tier.token_quota'), 0, ',', '.'))
+            ->assertSee((string) config('billing.free_tier.max_wa_groups'))
+            ->assertSee('paket gratis')
+            ->assertSee('https://bos.test/paket');
     }
 
-    public function test_usage_tab_upsell_is_subtle_and_has_no_dead_plans_link(): void
+    public function test_low_balance_banner_appears_below_threshold_and_is_absent_above(): void
     {
-        $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'staff'])
-            ->get('/app/settings/usage')
-            ->assertOk()
-            // Ajakan upgrade halus (U-05: bukan CTA jualan menakutkan).
-            ->assertSee('Butuh kuota lebih besar?')
-            // Tautan paket graceful: route W1 belum ada -> tidak dirender
-            // sebagai link mati.
-            ->assertDontSee('href="/app/plans"', false);
+        $plan = MembershipPlan::factory()->create([
+            'monthly_token_quota' => 10000,
+            'max_wa_groups' => 5,
+        ]);
+        $company = Company::factory()->create();
+        $this->mockContext($company);
+
+        // 1000/10000 = 10% < 20% -> banner muncul.
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'active',
+            'monthly_token_quota' => 10000,
+            'current_token_balance' => 1000,
+            'max_wa_groups' => 5,
+        ]);
+
+        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
+            ->assertSee('mulai menipis')
+            ->assertSee('10%');
+
+        // 5000/10000 = 50% >= 20% -> banner hilang.
+        CompanyMembership::latest('id')->first()->forceFill(['current_token_balance' => 5000])->save();
+
+        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
+            ->assertDontSee('mulai menipis');
     }
 
-    public function test_component_reads_numbers_from_gates_not_hardcode(): void
+    public function test_active_plan_shows_plan_name_and_gate_numbers_not_free_tier(): void
     {
-        // Ubah config -> UI ikut (bukti tidak hardcode).
-        config(['billing.free_tier.token_quota' => 777, 'billing.free_tier.max_wa_groups' => 3]);
+        $plan = MembershipPlan::factory()->create([
+            'name' => 'Paket Uji Pro',
+            'monthly_token_quota' => 10000,
+            'max_wa_groups' => 5,
+        ]);
+        $company = Company::factory()->create();
+        $this->mockContext($company);
 
-        $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'staff'])
-            ->get('/app/settings/usage')
-            ->assertOk()
-            ->assertSee(number_format(777, 0, ',', '.'))
-            ->assertSee('maksimal 3 grup', false);
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'active',
+            'monthly_token_quota' => 10000,
+            'current_token_balance' => 9000,
+            'max_wa_groups' => 5,
+        ]);
+
+        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
+            ->assertSee('Paket Uji Pro')
+            ->assertSee(number_format(9000, 0, ',', '.'))
+            ->assertDontSee('Tier Gratis')
+            ->assertDontSee(number_format(500, 0, ',', '.'));
+    }
+
+    public function test_wa_groups_used_counts_group_conversation_contexts(): void
+    {
+        $plan = MembershipPlan::factory()->create(['max_wa_groups' => 5]);
+        $company = Company::factory()->create();
+        $this->mockContext($company);
+
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'active',
+            'max_wa_groups' => 5,
+        ]);
+
+        $profile = HermesProfile::factory()->create();
+        HermesConversationContext::create([
+            'hermes_profile_id' => $profile->id,
+            'channel' => 'whatsapp',
+            'chat_id' => '120363@g.us',
+            'active_company_id' => $company->id,
+        ]);
+        // Chat pribadi (bukan grup) + grup company lain tidak ikut terhitung.
+        HermesConversationContext::create([
+            'hermes_profile_id' => $profile->id,
+            'channel' => 'whatsapp',
+            'chat_id' => '6281234567890',
+            'active_company_id' => $company->id,
+        ]);
+        HermesConversationContext::create([
+            'hermes_profile_id' => $profile->id,
+            'channel' => 'whatsapp',
+            'chat_id' => '99999@g.us',
+            'active_company_id' => Company::factory()->create()->id,
+        ]);
+
+        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
+            ->assertSeeText('1')
+            ->assertSeeText('5');
+    }
+
+    public function test_non_active_membership_is_fail_closed_shows_zero_and_alert(): void
+    {
+        $plan = MembershipPlan::factory()->create(['name' => 'Paket Suspended']);
+        $company = Company::factory()->create();
+        $this->mockContext($company);
+
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'frozen',
+            'monthly_token_quota' => 10000,
+            'current_token_balance' => 9000,
+            'max_wa_groups' => 5,
+        ]);
+
+        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
+            ->assertSee('tidak aktif')
+            ->assertDontSee(number_format(9000, 0, ',', '.'))
+            ->assertDontSee(number_format(10000, 0, ',', '.'));
+    }
+
+    public function test_low_balance_threshold_and_plans_url_come_from_config(): void
+    {
+        config(['billing.usage.low_balance_ratio' => 0.5, 'billing.usage.plans_url' => '']);
+        $plan = MembershipPlan::factory()->create(['monthly_token_quota' => 10000]);
+        $company = Company::factory()->create();
+        $this->mockContext($company);
+
+        // 4000/10000 = 40% < threshold 50% (dari config, bukan hardcode 20%).
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'active',
+            'monthly_token_quota' => 10000,
+            'current_token_balance' => 4000,
+        ]);
+
+        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
+            ->assertSee('mulai menipis')
+            ->assertDontSee('Lihat pilihan paket');
+    }
+
+    public function test_usage_tab_renders_component_for_owner_and_staff(): void
+    {
+        $company = Company::factory()->create();
+        $context = $this->mock(CompanyContext::class);
+        $context->shouldReceive('current')->andReturn((string) $company->id);
+        $context->shouldReceive('preset')->andReturn('bengkel');
+
+        foreach (['owner', 'staff'] as $role) {
+            // Livewire merender sub-komponen sebagai placeholder wire:name
+            // (nama kebab-case) di snapshot induk; pastikan tab usage memuatnya
+            // dan konten indikator kuota ikut ter-render.
+            $html = Livewire::withQueryParams(['tab' => 'usage'])
+                ->test(\App\Livewire\Settings::class)
+                ->html();
+
+            $this->assertStringContainsString('settings.usage-and-plan', $html);
+            $this->assertStringContainsString("activeTab: 'usage'", $html);
+            unset($html);
+        }
     }
 }

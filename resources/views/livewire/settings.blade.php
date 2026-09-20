@@ -241,7 +241,7 @@
                     <p class="mt-5 text-sm text-[var(--erp-danger)]" role="alert">{{ $themeFailure }}</p>
                 @endif
             @elseif ($tab['id'] === 'usage')
-                @livewire(\App\Livewire\Settings\UsageOverview::class)
+                @livewire(\App\Livewire\Settings\UsageAndPlan::class)
             @elseif ($tab['id'] === 'export')
                 @livewire(\App\Livewire\Settings\DataExport::class)
             @elseif ($tab['id'] === 'erasure')

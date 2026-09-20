@@ -51,4 +51,27 @@ return [
         */
         'emergency_token_quota' => 0,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Usage Indicator Configuration (W2)
+    |--------------------------------------------------------------------------
+    | Angka-angka tampilan "Penggunaan & Paket" di Settings, config-driven
+    | (D-60) agar Bos bisa mengubahnya tanpa menyentuh kode.
+    |
+    */
+    'usage' => [
+        /*
+        | Rasio sisa saldo terhadap kuota di bawah nilai ini memunculkan
+        | banner peringatan dini yang sopan (default 20%).
+        */
+        'low_balance_ratio' => 0.2,
+
+        /*
+        | Tautan ke halaman paket untuk banner peringatan dan ajakan upgrade.
+        | Diisi Bos saat halaman paket (lane terpisah) tersedia; kosong =
+        | banner tampil tanpa tautan (fail-closed, tidak mengarang route).
+        */
+        'plans_url' => env('BILLING_PLANS_URL', ''),
+    ],
 ];
