@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Contracts\CompanyContext;
+use App\Contracts\EntityRepository;
 use App\Livewire\Widgets\DashboardWidget;
 use App\Services\Dashboard\WidgetRegistry;
 use Illuminate\Filesystem\Filesystem;
@@ -72,8 +73,8 @@ class WidgetTest extends TestCase
     public function test_widget_with_items_renders_them_without_a_placeholder(): void
     {
         app(CompanyContext::class)->setCurrent('bengkel-arka');
-        app(\App\Contracts\EntityRepository::class)->for('bengkel-arka', 'items')->save(['id' => 1, 'name' => 'Kanvas Unik', 'min_stock' => 5]);
-        app(\App\Contracts\EntityRepository::class)->for('bengkel-arka', 'item_batches')->save(['id' => 1, 'item_id' => 1, 'batch_no' => 'B-001', 'qty_on_hand' => 1]);
+        app(EntityRepository::class)->for('bengkel-arka', 'items')->save(['id' => 1, 'name' => 'Kanvas Unik', 'min_stock' => 5]);
+        app(EntityRepository::class)->for('bengkel-arka', 'item_batches')->save(['id' => 1, 'item_id' => 1, 'batch_no' => 'B-001', 'qty_on_hand' => 1]);
 
         $widget = app(WidgetRegistry::class)->compose('low_stock');
 

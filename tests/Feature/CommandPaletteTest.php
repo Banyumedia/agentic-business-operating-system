@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Contracts\CompanyContext;
 use App\Contracts\EntityRepository;
+use App\Livewire\CommandPalette;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -69,7 +70,7 @@ class CommandPaletteTest extends TestCase
         app(CompanyContext::class)->setCurrent('bengkel-arka');
         app(EntityRepository::class)->for('bengkel-arka', 'contacts')->save(['name' => 'Ketik Navigasi Unik']);
 
-        $html = Livewire::test(\App\Livewire\CommandPalette::class)
+        $html = Livewire::test(CommandPalette::class)
             ->set('search', 'Ketik Navigasi Unik')
             ->html();
 
@@ -84,7 +85,7 @@ class CommandPaletteTest extends TestCase
     public function test_active_option_wraps_around_and_follows_the_result_count(): void
     {
         $this->assertStringContainsString(
-            "(this.activeIndex + delta + options.length) % options.length",
+            '(this.activeIndex + delta + options.length) % options.length',
             file_get_contents(resource_path('views/livewire/command-palette.blade.php')),
         );
     }
@@ -95,7 +96,7 @@ class CommandPaletteTest extends TestCase
         app(EntityRepository::class)->for('bengkel-arka', 'contacts')->save(['name' => 'Pelanggan Unik']);
 
         // "Pelanggan" cocok dengan label menu terminologi sekaligus baris data.
-        $results = Livewire::test(\App\Livewire\CommandPalette::class)
+        $results = Livewire::test(CommandPalette::class)
             ->set('search', 'Pelanggan')
             ->viewData('results');
 
