@@ -10,6 +10,8 @@
 
 **Iterasi berjalan:** I3 (login + lobby + sidebar + branch-switcher + command palette + layouts) — lane `task/ux-i3`.
 
+**Iterasi I3 DONE & merged:** login/lobby/branch-switcher/palette/layouts kini memakai token `--erp-*` penuh (tidak ada warna mentah tersisa di scope), tap target 44px, focus ring, empty state lobby, highlight opsi aktif command palette saat navigasi keyboard, banner impersonasi bertoken. Perilaku auth/keamanan tidak diubah. Merged `main` — full suite 607 hijau. App live 8002 di-restart dan smoke `/login` `/` `/industri` = 200.
+
 **Catatan:** OpenCode reviewer tidak bisa menjalankan command (izin tool auto-reject) sejak maraton ini; peran QA diverifikasi Hermes dengan membaca diff langsung + final-gate. App live di `127.0.0.1:8002` di-restart untuk memuat hasil I1+I2.
 
 ## UX-MARATHON — Polesan UI/UX 3 lane paralel
