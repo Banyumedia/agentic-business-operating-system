@@ -6,7 +6,6 @@ use App\Contracts\CompanyContext;
 use App\Models\CompanyMembership;
 use App\Services\Billing\TokenQuotaGate;
 use App\Services\Billing\WaGroupQuotaGate;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -22,6 +21,11 @@ use Throwable;
  */
 class UsageOverview extends Component
 {
+    /**
+     * Ambang peringatan dini: sisa < 20% kuota (spesifikasi W2).
+     */
+    private const LOW_BALANCE_RATIO = 0.2;
+
     #[Locked]
     public int $tokenBalance = 0;
 
@@ -39,11 +43,6 @@ class UsageOverview extends Component
 
     #[Locked]
     public bool $lowBalance = false;
-
-    /**
-     * Ambang peringatan dini: sisa < 20% kuota (spesifikasi W2).
-     */
-    private const LOW_BALANCE_RATIO = 0.2;
 
     public function mount(CompanyContext $companyContext): void
     {
@@ -87,7 +86,7 @@ class UsageOverview extends Component
                 ->where('company_id', $companyId)
                 ->latest('id')
                 ->first();
-        } catch (QueryException|Throwable) {
+        } catch (Throwable) {
             return null;
         }
     }

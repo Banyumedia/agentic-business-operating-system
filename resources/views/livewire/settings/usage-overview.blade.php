@@ -46,7 +46,7 @@
         </div>
     </dl>
     <p class="mt-3 text-sm text-[var(--erp-text-muted)]">
-        Angka grup menunjukkan batas paket Anda saat ini; jumlah grup yang sudah tersambung akan terhitung di sini begitu fitur asisten aktif.
+        Sisa token berkurang seiring asisten AI Anda bekerja; angka grup WhatsApp di atas menunjukkan batas paket Anda, jumlah grup WhatsApp yang sudah tersambung akan terhitung di sini begitu fitur asisten aktif.
     </p>
 
     {{-- Ajakan upgrade halus untuk tier gratis (U-05): satu kalimat,
