@@ -332,6 +332,7 @@ billing, (b) **tidak** menambah nama industri ke kode (D-31), (c) tunduk Tier B
 | **T-29** Nomor WA disediakan platform | T-10b | **DONE** `a4932e4` — **D-55**: default tetap nomor klien; ini jalur tambahan, bukan pengganti |
 | **T-31** Domain & struk ber-merek sendiri | T-22 | **DONE** `26a53fd` — White-label lebih dalam dari D-09 |
 | **T-34** Penyimpanan terkelola (non-BYOS) | T-14 | **DONE** `8d8b01e` — Alternatif D-22 bagi klien tanpa Google Drive |
+| **T-36** Tier gratis untuk company tanpa paket (D-60) | T-10, T-10d | — | `app/Services/PlanCapabilityGate.php`, `config/billing.php` (atau sumber config yang ada), test | Saat company tanpa membership aktif: `PlanCapabilityGate` mengembalikan definisi **tier gratis dari config** (semua kapabilitas + `system.ai_agent` terbuka; `max_wa_groups=1`; kuota token kecil ~500, angka dari config). Kuota grup & token ditegakkan fail-closed. Test: company tanpa paket → semua fitur operasional terbuka tapi grup WA >1 ditolak dan token habis → aksi AI ditolak; company dengan paket aktif → kuota paket berlaku. Config-driven, tanpa hardcode nama industri/fitur di kode. | `READY` |
 
 **Metrik keberhasilan fase:** rasio *preset ditambah* : *diff kode* — target
 ≥ 20 preset baru dengan 0 baris kode domain baru selain T-25b.
