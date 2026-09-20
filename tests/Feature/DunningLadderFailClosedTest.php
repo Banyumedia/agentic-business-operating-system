@@ -15,7 +15,7 @@ use Tests\TestCase;
 
 /**
  * Dunning Ladder Fail-Closed Tests — D-49
- * 
+ *
  * Requirement: When membership is late on payment, layanan turun bertahap, bukan tetap penuh:
  * - H-3: Notifikasi via WA
  * - H+0: AI suspended, web tetap penuh

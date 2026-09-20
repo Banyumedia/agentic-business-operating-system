@@ -8,12 +8,11 @@ use App\Models\Invoice;
 use App\Models\MembershipPlan;
 use App\Services\Payment\MidtransSignatureVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
  * Payment Webhook Security Tests — D-08, D-49 fail-closed
- * 
+ *
  * Requirements:
  * - Invalid signature must be rejected (403)
  * - Only settlement/accepted capture statuses credit tokens
@@ -98,7 +97,7 @@ class PaymentWebhookSecurityTest extends TestCase
 
         // Calculate CORRECT signature per Midtrans spec: SHA512(order_id + status_code + gross_amount + server_key)
         $verifier = new MidtransSignatureVerifier;
-        $correctSignature = hash('sha512', 'ORDER-123' . '200' . '100000' . $this->serverKey);
+        $correctSignature = hash('sha512', 'ORDER-123'.'200'.'100000'.$this->serverKey);
 
         $response = $this->postJson('/api/webhooks/payment/midtrans', [
             'order_id' => 'ORDER-123',
@@ -143,7 +142,7 @@ class PaymentWebhookSecurityTest extends TestCase
             'token_amount_granted' => 5000,
         ]);
 
-        $correctSignature = hash('sha512', 'ORDER-REPLAY' . '200' . '100000' . $this->serverKey);
+        $correctSignature = hash('sha512', 'ORDER-REPLAY'.'200'.'100000'.$this->serverKey);
 
         $payload = [
             'order_id' => 'ORDER-REPLAY',
@@ -201,7 +200,7 @@ class PaymentWebhookSecurityTest extends TestCase
             'token_amount_granted' => 2000,
         ]);
 
-        $correctSignature = hash('sha512', 'ORDER-PAID' . '200' . '100000' . $this->serverKey);
+        $correctSignature = hash('sha512', 'ORDER-PAID'.'200'.'100000'.$this->serverKey);
 
         $response = $this->postJson('/api/webhooks/payment/midtrans', [
             'order_id' => 'ORDER-PAID',
@@ -234,7 +233,7 @@ class PaymentWebhookSecurityTest extends TestCase
             'payment_status' => 'pending',
         ]);
 
-        $correctSignature = hash('sha512', 'ORDER-LOST' . '200' . '100000' . $this->serverKey);
+        $correctSignature = hash('sha512', 'ORDER-LOST'.'200'.'100000'.$this->serverKey);
 
         $response = $this->postJson('/api/webhooks/payment/midtrans', [
             'order_id' => 'ORDER-LOST',
@@ -274,7 +273,7 @@ class PaymentWebhookSecurityTest extends TestCase
             'token_amount_granted' => 1000,
         ]);
 
-        $correctSignature = hash('sha512', 'ORDER-PENDING' . '201' . '100000' . $this->serverKey);
+        $correctSignature = hash('sha512', 'ORDER-PENDING'.'201'.'100000'.$this->serverKey);
 
         // Send webhook with 'pending' status (not settlement)
         $response = $this->postJson('/api/webhooks/payment/midtrans', [
@@ -318,7 +317,7 @@ class PaymentWebhookSecurityTest extends TestCase
             'token_amount_granted' => 1000,
         ]);
 
-        $correctSignature = hash('sha512', 'ORDER-FRAUD' . '200' . '100000' . $this->serverKey);
+        $correctSignature = hash('sha512', 'ORDER-FRAUD'.'200'.'100000'.$this->serverKey);
 
         $response = $this->postJson('/api/webhooks/payment/midtrans', [
             'order_id' => 'ORDER-FRAUD',
