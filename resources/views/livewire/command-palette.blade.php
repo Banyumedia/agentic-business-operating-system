@@ -114,7 +114,17 @@
                         @foreach ($results as $result)
                             <li role="option" id="command-palette-option-{{ $loop->index }}" x-bind:aria-selected="activeIndex === {{ $loop->index }}">
                                 <a href="{{ $result['url'] }}" wire:navigate x-on:mouseenter="activeIndex = {{ $loop->index }}" x-on:focus="activeIndex = {{ $loop->index }}" x-on:click="closePalette()" class="flex min-h-11 items-center gap-3 rounded-[var(--erp-radius-md)] p-3 hover:bg-[var(--erp-bg-inset)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
-                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent-soft)] text-[var(--erp-accent)]" aria-hidden="true">{{ $result['icon'] }}</span>
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent-soft)] text-[var(--erp-accent)]" aria-hidden="true">
+                                        @if ($result['type'] === 'Menu')
+                                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                                            </svg>
+                                        @else
+                                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6M9 8V4m6 4V4M4 12h16" />
+                                            </svg>
+                                        @endif
+                                    </span>
                                     <span class="min-w-0">
                                         <span class="block truncate font-medium text-[var(--erp-text-primary)]">{{ $result['title'] }}</span>
                                         <span class="block text-xs text-[var(--erp-text-muted)]">{{ $result['module'] }} · {{ $result['type'] }}</span>

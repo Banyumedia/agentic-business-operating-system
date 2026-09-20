@@ -1,14 +1,24 @@
 <div class="space-y-8" aria-busy="false" wire:loading.attr="aria-busy">
     @if ($loadError !== null)
-        <section role="alert" aria-labelledby="dashboard-error-title" class="rounded-[var(--erp-radius-lg)] border border-[var(--erp-danger)] bg-[var(--erp-danger-soft)] p-6">
-            <h1 id="dashboard-error-title" class="text-xl font-bold text-[var(--erp-text-primary)]">Dashboard belum dapat dimuat</h1>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-[var(--erp-text-secondary)]">{{ $loadError }}</p>
-            <button
-                type="button"
-                wire:click="reload"
-                wire:loading.attr="disabled"
-                class="mt-5 inline-flex min-h-11 items-center justify-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 py-2 text-sm font-semibold text-[var(--erp-text-inverse)] transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
-            >Coba lagi</button>
+        <section role="alert" aria-labelledby="dashboard-error-title" class="rounded-[var(--erp-radius-lg)] border border-[var(--erp-danger)] bg-[var(--erp-bg-secondary)] p-6 shadow-[var(--erp-card-shadow)] sm:p-8">
+            <div class="flex items-start gap-4">
+                <span aria-hidden="true" class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--erp-danger-soft)] text-[var(--erp-danger)]">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                    </svg>
+                </span>
+                <div class="min-w-0">
+                    <h1 id="dashboard-error-title" class="text-xl font-bold text-[var(--erp-text-primary)]">Dashboard belum dapat dimuat</h1>
+                    <p class="mt-2 max-w-2xl text-sm leading-6 text-[var(--erp-text-secondary)]">{{ $loadError }}</p>
+                    <p class="mt-1 text-sm leading-6 text-[var(--erp-text-muted)]">Data lain di company tetap aman; sumber data hanya dibaca ulang saat Anda mencoba lagi.</p>
+                    <button
+                        type="button"
+                        wire:click="reload"
+                        wire:loading.attr="disabled"
+                        class="mt-5 inline-flex min-h-11 items-center justify-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 py-2 text-sm font-semibold text-[var(--erp-text-inverse)] transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
+                    >Coba lagi</button>
+                </div>
+            </div>
         </section>
     @elseif ($dashboard !== null)
     <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -35,12 +45,38 @@
             <h2 id="dashboard-kpi-title" class="text-lg font-semibold text-[var(--erp-text-primary)]">Kinerja utama</h2>
             <span class="text-sm text-[var(--erp-text-muted)]">Data company aktif</span>
         </div>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {{-- Skeleton menutup grid saat request Livewire berjalan; aria-busy di root. --}}
+        <div wire:loading.class="hidden" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             @foreach ($dashboard['kpis'] as $kpi)
                 <article class="rounded-[var(--erp-radius-lg)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] p-5 shadow-[var(--erp-card-shadow)]">
-                    <p class="text-sm font-medium text-[var(--erp-text-secondary)]">{{ $kpi['label'] }}</p>
-                    <p class="mt-3 text-2xl font-bold tabular-nums text-[var(--erp-text-primary)]">{{ $kpi['value'] }}</p>
+                    <div class="flex items-center gap-2">
+                        <span aria-hidden="true" @class([
+                            'h-2.5 w-2.5 shrink-0 rounded-full',
+                            'bg-[var(--erp-success)]' => $kpi['tone'] === 'success',
+                            'bg-[var(--erp-warning)]' => $kpi['tone'] === 'warning',
+                            'bg-[var(--erp-danger)]' => $kpi['tone'] === 'danger',
+                            'bg-[var(--erp-info)]' => $kpi['tone'] === 'info',
+                            'bg-[var(--erp-accent)]' => $kpi['tone'] === 'accent',
+                        ])></span>
+                        <p class="text-sm font-medium text-[var(--erp-text-secondary)]">{{ $kpi['label'] }}</p>
+                    </div>
+                    <p @class([
+                        'mt-3 text-2xl font-bold tabular-nums',
+                        'text-[var(--erp-success)]' => $kpi['tone'] === 'success',
+                        'text-[var(--erp-danger)]' => $kpi['tone'] === 'danger',
+                        'text-[var(--erp-text-primary)]' => true,
+                    ])>{{ $kpi['value'] }}</p>
                     <p class="mt-2 text-sm text-[var(--erp-text-muted)]">{{ $kpi['meta'] }}</p>
+                </article>
+            @endforeach
+        </div>
+        {{-- Skeleton placeholder: bentuk kartu sama dengan grid asli. --}}
+        <div wire:loading.class="grid" wire:loading aria-hidden="true" wire:target="reload" class="hidden grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            @foreach ([1, 2, 3] as $n)
+                <article class="animate-pulse rounded-[var(--erp-radius-lg)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] p-5 shadow-[var(--erp-card-shadow)]">
+                    <div class="h-3 w-24 rounded-[var(--erp-radius-sm)] bg-[var(--erp-bg-inset)]"></div>
+                    <div class="mt-4 h-7 w-28 rounded-[var(--erp-radius-sm)] bg-[var(--erp-bg-inset)]"></div>
+                    <div class="mt-3 h-3 w-20 rounded-[var(--erp-radius-sm)] bg-[var(--erp-bg-inset)]"></div>
                 </article>
             @endforeach
         </div>
@@ -114,7 +150,8 @@
     </section>
     @endif
 
-    <div wire:loading.flex class="fixed inset-0 z-50 items-center justify-center bg-[color-mix(in_srgb,var(--erp-bg-inset)_72%,transparent)]" role="status" aria-live="polite">
+    {{-- Overlay hanya untuk request non-reload (mis. mount pertama); reload menampilkan skeleton KPI. --}}
+    <div wire:loading.flex wire:target="reload" wire:loading.remove wire:target.exclude class="fixed inset-0 z-50 items-center justify-center bg-[color-mix(in_srgb,var(--erp-bg-inset)_72%,transparent)]" role="status" aria-live="polite">
         <div class="rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] px-5 py-4 text-sm font-medium text-[var(--erp-text-primary)] shadow-[var(--erp-card-shadow)]">
             Memuat dashboard…
         </div>
