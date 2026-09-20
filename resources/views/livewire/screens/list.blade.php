@@ -12,7 +12,8 @@
             type="button"
             data-list-focus-fallback
             wire:click="create"
-            class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+            wire:loading.attr="disabled"
+            class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
         >
             Tambah {{ $term }}
         </button>
@@ -46,14 +47,17 @@
                 <div class="flex flex-wrap gap-3 border-t border-[var(--erp-border)] pt-4">
                     <button
                         type="submit"
-                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                        wire:loading.attr="disabled"
+                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] transition hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                     >
-                        Simpan
+                        <span wire:loading.remove>Simpan</span>
+                        <span wire:loading>Menyimpan…</span>
                     </button>
                     <button
                         type="button"
                         wire:click="cancel"
-                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] px-4 text-sm font-semibold text-[var(--erp-text-secondary)] transition hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                        wire:loading.attr="disabled"
+                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] px-4 text-sm font-semibold text-[var(--erp-text-secondary)] transition hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                     >
                         Batal
                     </button>
@@ -127,7 +131,7 @@
         muncul agar tap pembuka tidak ikut menekan tombol merah.
     --}}
     @if ($pendingDeletion !== null)
-        <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center">
+        <div class="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_srgb,var(--erp-text-primary)_60%,transparent)] p-4 sm:items-center">
             <div
                 role="dialog"
                 aria-modal="true"
@@ -137,7 +141,7 @@
                 x-trap.inert.noscroll="true"
                 x-init="setTimeout(() => ready = true, 400); $nextTick(() => $refs.cancel?.focus())"
                 x-on:keydown.escape.window="const target = opener; $wire.cancelDelete().then(() => target?.focus())"
-                class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)] ring-2 ring-[var(--erp-focus)] ring-offset-4 ring-offset-black/60 focus:outline-none"
+                class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)] ring-2 ring-[var(--erp-focus)] ring-offset-4 ring-offset-[color-mix(in_srgb,var(--erp-text-primary)_60%,transparent)] focus:outline-none"
                 tabindex="-1"
             >
                 <h2 id="delete-dialog-title" class="text-lg font-semibold text-[var(--erp-text-primary)]">Hapus {{ $term }}?</h2>
@@ -161,9 +165,11 @@
                         x-on:click="const target = opener; $wire.delete().then(() => $nextTick(() => { if (target?.isConnected) { target.focus(); } else { document.querySelector('[data-list-focus-fallback]')?.focus(); } }))"
                         disabled
                         x-bind:disabled="! ready"
+                        wire:loading.attr="disabled"
                         class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-danger)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        Hapus permanen
+                        <span wire:loading.remove>Hapus permanen</span>
+                        <span wire:loading>Menghapus…</span>
                     </button>
                 </div>
             </div>
