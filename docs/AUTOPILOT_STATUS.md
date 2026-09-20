@@ -8,7 +8,7 @@
 
 **Repo:** tidak ada perubahan source dari recovery data/runtime ini. Folder asing `backup-ahli-keuangan/` tidak disentuh.
 
-**Next:** Dashboard live dari HP dikonfirmasi Bos **PASS** pada 2026-09-20. **POS, Inventory, HRD juga PASS dari HP** pada 2026-09-20. Lanjutkan acceptance owner untuk Settings → Export; setelah seluruh checklist UI-LOCK selesai dan akses admin tersedia, restart service `PM2-AgenticBOS` dan kembalikan Caddy ke upstream permanen 8010 setelah verifikasi.
+**Next:** Dashboard live dari HP dikonfirmasi Bos **PASS** pada 2026-09-20. **POS, Inventory, HRD juga PASS dari HP** pada 2026-09-20. **Export owner (buat ZIP + unduh) PASS dari HP** pada 2026-09-20. Sisa checklist: export 404 saat file belum ada, staff/non-owner 403, admin impersonation 403 (butuh akun tambahan). Setelah seluruh checklist UI-LOCK selesai dan akses admin tersedia, restart service `PM2-AgenticBOS` dan kembalikan Caddy ke upstream permanen 8010 setelah verifikasi.
 
 **Smoke test menyeluruh 2026-09-20 (authenticated owner `bos@nalar.army`, company `Demo Usaha` preset `laundry`, via app 8002):**
 
