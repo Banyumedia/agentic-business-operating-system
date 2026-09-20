@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Contracts\CompanyContext;
+use App\Exceptions\Billing\InsufficientTokenQuotaException;
 use App\Models\Company;
 use App\Models\CompanyMembership;
 use App\Models\MembershipPlan;
@@ -131,7 +132,7 @@ class TokenQuotaGateTest extends TestCase
 
         $gate = new TokenQuotaGate($context);
 
-        $this->expectException(\Exception::class);
+        $this->expectException(InsufficientTokenQuotaException::class);
         $this->expectExceptionMessage('Kuota token AI tidak mencukupi');
 
         $gate->assertHasEnoughTokens(100); // Require 100 but only have 50
@@ -148,6 +149,90 @@ class TokenQuotaGateTest extends TestCase
         $gate = new TokenQuotaGate($context);
 
         // Company has no membership, so no token balance recorded
+        $this->assertSame(0, $gate->getCurrentTokenBalance());
+        $this->assertFalse($gate->hasEnoughTokens(1));
+    }
+
+    public function test_negative_membership_ai_suspended_returns_zero_quota(): void
+    {
+        // D-49: Negative test - membership in ai_suspended status → return 0 quota (fail-closed)
+        $plan = MembershipPlan::factory()->create([
+            'monthly_token_quota' => 10000,
+        ]);
+
+        $company = Company::factory()->create();
+
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'ai_suspended',
+            'monthly_token_quota' => 10000,
+            'current_token_balance' => 5000,
+        ]);
+
+        $context = $this->mock(CompanyContext::class);
+        $context->shouldReceive('current')->andReturn((string) $company->id);
+
+        $gate = new TokenQuotaGate($context);
+
+        // D-49: Status ai_suspended → return 0 quota
+        $this->assertSame(0, $gate->getMonthlyTokenQuota());
+        $this->assertSame(0, $gate->getCurrentTokenBalance());
+        $this->assertFalse($gate->hasEnoughTokens(1));
+    }
+
+    public function test_negative_membership_read_only_returns_zero_quota(): void
+    {
+        // D-49: Negative test - membership in read_only status → return 0 quota (fail-closed)
+        $plan = MembershipPlan::factory()->create([
+            'monthly_token_quota' => 10000,
+        ]);
+
+        $company = Company::factory()->create();
+
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'read_only',
+            'monthly_token_quota' => 10000,
+            'current_token_balance' => 5000,
+        ]);
+
+        $context = $this->mock(CompanyContext::class);
+        $context->shouldReceive('current')->andReturn((string) $company->id);
+
+        $gate = new TokenQuotaGate($context);
+
+        // D-49: Status read_only → return 0 quota
+        $this->assertSame(0, $gate->getMonthlyTokenQuota());
+        $this->assertSame(0, $gate->getCurrentTokenBalance());
+        $this->assertFalse($gate->hasEnoughTokens(1));
+    }
+
+    public function test_negative_membership_frozen_returns_zero_quota(): void
+    {
+        // D-49: Negative test - membership in frozen status → return 0 quota (fail-closed)
+        $plan = MembershipPlan::factory()->create([
+            'monthly_token_quota' => 10000,
+        ]);
+
+        $company = Company::factory()->create();
+
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'frozen',
+            'monthly_token_quota' => 10000,
+            'current_token_balance' => 5000,
+        ]);
+
+        $context = $this->mock(CompanyContext::class);
+        $context->shouldReceive('current')->andReturn((string) $company->id);
+
+        $gate = new TokenQuotaGate($context);
+
+        // D-49: Status frozen → return 0 quota
+        $this->assertSame(0, $gate->getMonthlyTokenQuota());
         $this->assertSame(0, $gate->getCurrentTokenBalance());
         $this->assertFalse($gate->hasEnoughTokens(1));
     }

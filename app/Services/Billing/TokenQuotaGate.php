@@ -3,6 +3,7 @@
 namespace App\Services\Billing;
 
 use App\Contracts\CompanyContext;
+use App\Exceptions\Billing\InsufficientTokenQuotaException;
 use App\Models\CompanyMembership;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Schema;
@@ -33,6 +34,7 @@ class TokenQuotaGate
         try {
             $membership = CompanyMembership::with('plan')
                 ->where('company_id', $companyId)
+                ->latest('id')
                 ->first();
         } catch (QueryException) {
             // Query error - return free tier quota (D-60, fail-closed)
@@ -67,6 +69,7 @@ class TokenQuotaGate
         try {
             $membership = CompanyMembership::where('company_id', $companyId)
                 ->where('status', 'active')
+                ->latest('id')
                 ->first();
 
             if (! $membership) {
@@ -93,18 +96,14 @@ class TokenQuotaGate
     /**
      * Assert company has enough tokens; throw if quota exceeded (fail-closed).
      *
-     * @throws \Exception If token quota would be exceeded
+     * @throws InsufficientTokenQuotaException If token quota would be exceeded
      */
     public function assertHasEnoughTokens(int $tokensRequired = 1): void
     {
-        if (! $this->hasEnoughTokens($tokensRequired)) {
-            throw new \Exception(
-                sprintf(
-                    'Kuota token AI tidak mencukupi. Diperlukan: %d token. Ketersediaan: %d token.',
-                    $tokensRequired,
-                    $this->getCurrentTokenBalance()
-                )
-            );
+        $available = $this->getCurrentTokenBalance();
+
+        if ($available < $tokensRequired) {
+            throw new InsufficientTokenQuotaException($tokensRequired, $available);
         }
     }
 }

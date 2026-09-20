@@ -3,6 +3,7 @@
 namespace App\Services\Billing;
 
 use App\Contracts\CompanyContext;
+use App\Exceptions\Billing\WaGroupQuotaExceededException;
 use App\Models\CompanyMembership;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Schema;
@@ -32,6 +33,7 @@ class WaGroupQuotaGate
         try {
             $membership = CompanyMembership::with('plan')
                 ->where('company_id', $companyId)
+                ->latest('id')
                 ->first();
         } catch (QueryException) {
             // Query error - return free tier quota (D-60, fail-closed)
@@ -66,17 +68,14 @@ class WaGroupQuotaGate
     /**
      * Assert company can add a group; throw if quota exceeded (fail-closed).
      *
-     * @throws \Exception If quota would be exceeded
+     * @throws WaGroupQuotaExceededException If quota would be exceeded
      */
     public function assertCanAddGroup(int $currentGroupCount = 0): void
     {
-        if (! $this->canAddGroup($currentGroupCount)) {
-            throw new \Exception(
-                sprintf(
-                    'Kuota grup WhatsApp tercapai. Maksimal: %d grup.',
-                    $this->maxAllowedGroups()
-                )
-            );
+        $maxAllowed = $this->maxAllowedGroups();
+
+        if ($currentGroupCount >= $maxAllowed) {
+            throw new WaGroupQuotaExceededException($maxAllowed);
         }
     }
 }

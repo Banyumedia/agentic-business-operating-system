@@ -24,6 +24,7 @@ class PlanCapabilityGate
         try {
             $membership = CompanyMembership::with('plan')
                 ->where('company_id', $companyId)
+                ->latest('id')
                 ->first();
         } catch (QueryException) {
             // Query error - return free tier config (D-60, fail-closed)

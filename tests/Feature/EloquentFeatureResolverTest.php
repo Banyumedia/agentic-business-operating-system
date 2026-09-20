@@ -239,6 +239,10 @@ class EloquentFeatureResolverTest extends TestCase
 
     public function test_sensitive_capability_is_enabled_after_privacy_consent_is_recorded(): void
     {
+        $plan = MembershipPlan::factory()->create([
+            'features' => ['contacts', 'pos', 'inventory.batch_expiry', 'pharmacy.prescription'],
+        ]);
+
         $user = User::factory()->create();
         $company = Company::factory()->create([
             'owner_user_id' => $user->id,
@@ -246,6 +250,12 @@ class EloquentFeatureResolverTest extends TestCase
             'privacy_accepted_at' => now(),
             'privacy_accepted_by_user_id' => $user->id,
             'privacy_policy_version' => '2026-09-18',
+        ]);
+
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'active',
         ]);
 
         $this->actingAs($user);
@@ -259,6 +269,18 @@ class EloquentFeatureResolverTest extends TestCase
     public function test_manufacturing_capability_fails_closed_when_any_locked_dependency_is_missing(): void
     {
         $user = User::factory()->create();
+
+        // Create a base plan that allows manufacturing capabilities
+        $basePlan = MembershipPlan::factory()->create([
+            'features' => [
+                'inventory',
+                'inventory.bom',
+                'inventory.batch_expiry',
+                'finance.accounting',
+                'manufacturing.production_order',
+            ],
+        ]);
+
         $resolver = app(FeatureResolver::class);
 
         foreach (['inventory.bom', 'inventory.batch_expiry', 'finance.accounting'] as $index => $missing) {
@@ -278,9 +300,21 @@ class EloquentFeatureResolverTest extends TestCase
                 'tier' => 'B',
                 'definition' => ['tier' => 'B', 'capabilities' => $capabilities],
             ]);
+
             $company = Company::factory()->create([
                 'owner_user_id' => $user->id,
                 'business_preset' => $presetKey,
+            ]);
+
+            // Create a membership with features that match preset MINUS the dependency
+            $plan = MembershipPlan::factory()->create([
+                'features' => array_keys($capabilities),
+            ]);
+
+            CompanyMembership::factory()->create([
+                'company_id' => $company->id,
+                'plan_id' => $plan->id,
+                'status' => 'active',
             ]);
 
             app(CompanyContext::class)->setCurrent((string) $company->id);

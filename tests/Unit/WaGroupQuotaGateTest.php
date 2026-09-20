@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Contracts\CompanyContext;
+use App\Exceptions\Billing\WaGroupQuotaExceededException;
 use App\Models\Company;
 use App\Models\CompanyMembership;
 use App\Models\MembershipPlan;
@@ -78,7 +79,7 @@ class WaGroupQuotaGateTest extends TestCase
         $gate = new WaGroupQuotaGate($context);
 
         // D-60: Should throw when trying to exceed free tier quota
-        $this->expectException(\Exception::class);
+        $this->expectException(WaGroupQuotaExceededException::class);
         $this->expectExceptionMessage('Kuota grup WhatsApp tercapai');
 
         $gate->assertCanAddGroup(1); // Free tier max = 1, already have 1
@@ -96,5 +97,83 @@ class WaGroupQuotaGateTest extends TestCase
 
         $this->assertTrue($gate->canAddGroup(0), 'Should allow 1st group');
         $this->assertFalse($gate->canAddGroup(1), 'Should reject 2nd group for free tier');
+    }
+
+    public function test_negative_membership_ai_suspended_returns_zero_quota(): void
+    {
+        // D-49: Negative test - membership in ai_suspended status → return 0 quota (fail-closed)
+        $plan = MembershipPlan::factory()->create([
+            'max_wa_groups' => 5,
+        ]);
+
+        $company = Company::factory()->create();
+
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'ai_suspended',
+            'max_wa_groups' => 5,
+        ]);
+
+        $context = $this->mock(CompanyContext::class);
+        $context->shouldReceive('current')->andReturn((string) $company->id);
+
+        $gate = new WaGroupQuotaGate($context);
+
+        // D-49: Status ai_suspended → return 0 quota
+        $this->assertSame(0, $gate->maxAllowedGroups());
+        $this->assertFalse($gate->canAddGroup(0));
+    }
+
+    public function test_negative_membership_read_only_returns_zero_quota(): void
+    {
+        // D-49: Negative test - membership in read_only status → return 0 quota (fail-closed)
+        $plan = MembershipPlan::factory()->create([
+            'max_wa_groups' => 5,
+        ]);
+
+        $company = Company::factory()->create();
+
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'read_only',
+            'max_wa_groups' => 5,
+        ]);
+
+        $context = $this->mock(CompanyContext::class);
+        $context->shouldReceive('current')->andReturn((string) $company->id);
+
+        $gate = new WaGroupQuotaGate($context);
+
+        // D-49: Status read_only → return 0 quota
+        $this->assertSame(0, $gate->maxAllowedGroups());
+        $this->assertFalse($gate->canAddGroup(0));
+    }
+
+    public function test_negative_membership_frozen_returns_zero_quota(): void
+    {
+        // D-49: Negative test - membership in frozen status → return 0 quota (fail-closed)
+        $plan = MembershipPlan::factory()->create([
+            'max_wa_groups' => 5,
+        ]);
+
+        $company = Company::factory()->create();
+
+        CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'frozen',
+            'max_wa_groups' => 5,
+        ]);
+
+        $context = $this->mock(CompanyContext::class);
+        $context->shouldReceive('current')->andReturn((string) $company->id);
+
+        $gate = new WaGroupQuotaGate($context);
+
+        // D-49: Status frozen → return 0 quota
+        $this->assertSame(0, $gate->maxAllowedGroups());
+        $this->assertFalse($gate->canAddGroup(0));
     }
 }
