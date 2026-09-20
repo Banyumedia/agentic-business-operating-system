@@ -74,4 +74,39 @@ return [
         */
         'plans_url' => env('BILLING_PLANS_URL', ''),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Manual Payment Configuration (PAY-1)
+    |--------------------------------------------------------------------------
+    | Pembayaran manual (transfer bank + static QRIS)
+    | Semua konfigurasi dari .env, JANGAN hardcode nomor rekening/path di kode
+    |
+    */
+    'manual_payment' => [
+        /*
+        | Status pembayaran manual (aktif/nonaktif)
+        */
+        'enabled' => (bool) env('MANUAL_PAYMENT_ENABLED', true),
+
+        /*
+        | Bank transfer details
+        */
+        'bank' => [
+            'name' => env('MANUAL_PAYMENT_BANK_NAME', 'BCA'),
+            'account_number' => env('MANUAL_PAYMENT_BANK_ACCOUNT', ''),
+            'account_holder' => env('MANUAL_PAYMENT_BANK_HOLDER', ''),
+        ],
+
+        /*
+        | QRIS static image path (harus di storage/app/public/ atau URL)
+        | Contoh: env('MANUAL_PAYMENT_QRIS_PATH', 'storage/app/public/qris.png')
+        */
+        'qris_path' => env('MANUAL_PAYMENT_QRIS_PATH', ''),
+
+        /*
+        | Waktu tunggu (jam) sebelum invoice kadaluarsa jika belum dibayar
+        */
+        'expiration_hours' => (int) env('MANUAL_PAYMENT_EXPIRATION_HOURS', 24),
+    ],
 ];

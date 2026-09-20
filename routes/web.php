@@ -3,12 +3,16 @@
 use App\Contracts\CompanyContext;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminImpersonationController;
+use App\Http\Controllers\App\GroupReportController;
 use App\Http\Middleware\EnsureCompanyAccess;
 use App\Http\Middleware\EnsureCompanyContext;
 use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\RequireSuperAdmin;
 use App\Http\Middleware\SetCurrentCompany;
+use App\Livewire\Admin\AdminInvoiceManager;
 use App\Livewire\Auth\Login;
+use App\Livewire\Billing\PaymentInstructionPage;
+use App\Livewire\Billing\SubscribePage;
 use App\Livewire\Dashboard;
 use App\Livewire\DummyModule;
 use App\Livewire\Lobby;
@@ -40,8 +44,6 @@ Route::middleware('auth')->post('/logout', function () {
     return redirect(route('login'));
 })->name('logout');
 
-use App\Http\Controllers\App\GroupReportController;
-
 Route::middleware(['auth', SetCurrentCompany::class, EnsureCompanyAccess::class])->group(function (): void {
     Route::middleware(EnsureCompanyContext::class)->group(function (): void {
         Route::get('/app/dashboard', Dashboard::class)->name('app.dashboard');
@@ -71,6 +73,10 @@ Route::middleware(['auth', SetCurrentCompany::class, EnsureCompanyAccess::class]
             abort(404, 'Export not found');
         })->name('settings.export.download');
 
+        // PAY-1: Halaman pilih paket dan instruksi pembayaran manual
+        Route::get('/app/billing/subscribe', SubscribePage::class)->name('billing.subscribe');
+        Route::get('/app/billing/payment-instruction/{invoice}', PaymentInstructionPage::class)->name('billing.payment-instruction');
+
         Route::get('/app/{module}/{submodule?}', DummyModule::class)
             ->middleware(EnsureFeatureEnabled::class)
             ->name('app.module');
@@ -81,4 +87,6 @@ Route::middleware(['auth', RequireSuperAdmin::class])->prefix('admin')->group(fu
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::post('/impersonate/stop', [AdminImpersonationController::class, 'stop'])->name('admin.impersonate.stop');
     Route::post('/impersonate/{company}', [AdminImpersonationController::class, 'impersonate'])->name('admin.impersonate');
+    // PAY-1: Admin invoice management
+    Route::get('/invoices', AdminInvoiceManager::class)->name('admin.invoices');
 });
