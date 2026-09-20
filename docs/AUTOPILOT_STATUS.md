@@ -1,5 +1,22 @@
 # Agentic BOS Autopilot Status
 
+## UX-MARATHON — Polesan UI/UX 3 lane paralel
+
+**State:** `DONE` — tiga lane Claude paralel selesai, direview OpenCode, final-gate oleh Hermes, di-merge serial ke `main`.
+
+**Lane & hasil:**
+- **Lane A** (onboarding + publik): onboarding multi-langkah (identitas → pilih preset → ringkasan/persetujuan → dashboard), halaman publik `/industri` dari registry, empty state informatif. Commit `26394bd`.
+- **Lane B** (dashboard + command palette): hierarki KPI, loading skeleton, command palette hasil nyata + keyboard navigable, widget empty state tanpa angka dummy. Commit `39ba1df`.
+- **Lane C** (layar operasional + settings): POS/list/ledger/pipeline/kalender mobile-friendly, settings konsisten, konfirmasi D-45 bertingkat. Commit `3658b23`.
+
+**Review OpenCode:** Lane A tidak bisa memverifikasi (izin tool ditolak) → final-gate Hermes. Lane B: 1 temuan tapi false-positive environment (test tanpa `DATA_SOURCE=json`); saran valid pin driver di phpunit.xml dicatat. Lane C: 1 temuan MED nyata — tombol submit erasure kini punya delay inert 400ms (D-45 Tier 1), commit `285b40c`.
+
+**Final gate (Hermes jalankan sendiri):** setelah merge A (`a61d843`), B (`85972bf`), C (`40edc2f`) — full suite `DATA_SOURCE=json php artisan test` → **603 passed / 3,244 assertions**; Pint PASS; `npm run build` PASS; `git diff --check` bersih. Satu kegagalan sesaat (DataExport 404 test) terbukti polusi artefak `storage/app/exports/1/export.zip` dari uji live, bukan bug; artefak dihapus, suite hijau.
+
+**Worktree:** `agentic-bos-ux-a/b/c` masih ada dengan branch `task/ux-*` (sudah di-merge). Bisa dihapus bila Bos setuju.
+
+**Next:** smoke test visual dari HP untuk onboarding/publik/dashboard/POS/settings. Jangan push/deploy tanpa izin.
+
 ## LIVE-UI-RECOVERY — Dashboard preset database
 
 **State:** `DONE` — error UI `Dashboard belum dapat dimuat` ditelusuri ke `BusinessPreset` kosong. Dengan izin eksplisit Bos, `BusinessPresetSeeder --force` memuat 40 preset; company aktif `Demo Usaha` sekarang menemukan preset `laundry` beserta 3 widget dashboard.
