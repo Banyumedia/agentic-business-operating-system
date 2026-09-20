@@ -45,7 +45,7 @@ class CommandPalette extends Component
         return view('livewire.command-palette', ['results' => $results]);
     }
 
-    /** @return array<int, array{title: string, module: string, type: string, url: string, icon: string}> */
+    /** @return array<int, array{title: string, module: string, type: string, url: string}> */
     private function searchableMenus(DynamicMenuRegistry $registry): array
     {
         try {
@@ -58,7 +58,6 @@ class CommandPalette extends Component
                         'module' => $module['name'],
                         'type' => 'Menu',
                         'url' => $menu['route'],
-                        'icon' => '?',
                     ];
                 }
             }
@@ -69,7 +68,6 @@ class CommandPalette extends Component
                     'module' => 'Pengaturan',
                     'type' => 'Menu',
                     'url' => $menu['route'],
-                    'icon' => '?',
                 ];
             }
 
@@ -80,7 +78,7 @@ class CommandPalette extends Component
     }
 
     /**
-     * @return array<int, array{title: string, module: string, type: string, url: string, icon: string}>
+     * @return array<int, array{title: string, module: string, type: string, url: string}>
      */
     private function searchEntityData(DynamicMenuRegistry $registry, CompanyContext $companyContext, EntityRepository $repository): array
     {
@@ -115,7 +113,6 @@ class CommandPalette extends Component
                             'module' => $target['module'],
                             'type' => 'Data',
                             'url' => $target['route'],
-                            'icon' => '?',
                         ];
 
                         if (count($results) >= self::MAX_DATA_RESULTS) {
@@ -141,7 +138,6 @@ class CommandPalette extends Component
                     'module' => $target['module'],
                     'type' => 'Data',
                     'url' => $target['route'],
-                    'icon' => '?',
                 ];
 
                 if (count($results) >= self::MAX_DATA_RESULTS) {
