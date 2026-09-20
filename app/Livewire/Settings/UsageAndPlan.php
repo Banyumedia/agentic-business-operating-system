@@ -35,7 +35,10 @@ class UsageAndPlan extends Component
         $membership = $this->latestMembership($companyId);
 
         $lowRatio = (float) config('billing.usage.low_balance_ratio', 0.2);
+        // Peringatan dini hanya bila masih ADA sisa: saldo 0 sudah "habis"
+        // (D-48), bukan "menipis" — jangan tampilkan banner (tersisa 0%).
         $isBalanceLow = $tokenQuota > 0
+            && $tokenBalance > 0
             && ($tokenBalance / $tokenQuota) < $lowRatio;
 
         return view('livewire.settings.usage-and-plan', [

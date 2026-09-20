@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Contracts\CompanyContext;
+use App\Livewire\Settings;
+use App\Livewire\Settings\UsageAndPlan;
 use App\Models\Company;
 use App\Models\CompanyMembership;
 use App\Models\HermesConversationContext;
@@ -35,7 +37,7 @@ class SettingsUsageIndicatorTest extends TestCase
         $company = Company::factory()->create();
         $this->mockContext($company);
 
-        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
+        Livewire::test(UsageAndPlan::class)
             ->assertSee('Tier Gratis')
             ->assertSee(number_format((int) config('billing.free_tier.token_quota'), 0, ',', '.'))
             ->assertSee((string) config('billing.free_tier.max_wa_groups'))
@@ -62,14 +64,14 @@ class SettingsUsageIndicatorTest extends TestCase
             'max_wa_groups' => 5,
         ]);
 
-        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
+        Livewire::test(UsageAndPlan::class)
             ->assertSee('mulai menipis')
             ->assertSee('10%');
 
         // 5000/10000 = 50% >= 20% -> banner hilang.
         CompanyMembership::latest('id')->first()->forceFill(['current_token_balance' => 5000])->save();
 
-        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
+        Livewire::test(UsageAndPlan::class)
             ->assertDontSee('mulai menipis');
     }
 
@@ -92,7 +94,7 @@ class SettingsUsageIndicatorTest extends TestCase
             'max_wa_groups' => 5,
         ]);
 
-        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
+        Livewire::test(UsageAndPlan::class)
             ->assertSee('Paket Uji Pro')
             ->assertSee(number_format(9000, 0, ',', '.'))
             ->assertDontSee('Tier Gratis')
@@ -133,7 +135,7 @@ class SettingsUsageIndicatorTest extends TestCase
             'active_company_id' => Company::factory()->create()->id,
         ]);
 
-        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
+        Livewire::test(UsageAndPlan::class)
             ->assertSeeText('1')
             ->assertSeeText('5');
     }
@@ -153,7 +155,7 @@ class SettingsUsageIndicatorTest extends TestCase
             'max_wa_groups' => 5,
         ]);
 
-        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
+        Livewire::test(UsageAndPlan::class)
             ->assertSee('tidak aktif')
             ->assertDontSee(number_format(9000, 0, ',', '.'))
             ->assertDontSee(number_format(10000, 0, ',', '.'));
@@ -175,7 +177,7 @@ class SettingsUsageIndicatorTest extends TestCase
             'current_token_balance' => 4000,
         ]);
 
-        Livewire::test(\App\Livewire\Settings\UsageAndPlan::class)
+        Livewire::test(UsageAndPlan::class)
             ->assertSee('mulai menipis')
             ->assertDontSee('Lihat pilihan paket');
     }
@@ -192,7 +194,7 @@ class SettingsUsageIndicatorTest extends TestCase
             // (nama kebab-case) di snapshot induk; pastikan tab usage memuatnya
             // dan konten indikator kuota ikut ter-render.
             $html = Livewire::withQueryParams(['tab' => 'usage'])
-                ->test(\App\Livewire\Settings::class)
+                ->test(Settings::class)
                 ->html();
 
             $this->assertStringContainsString('settings.usage-and-plan', $html);
