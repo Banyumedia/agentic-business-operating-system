@@ -6,6 +6,7 @@ use App\Contracts\CompanyContext;
 use App\Jobs\BuildCompanyExport;
 use App\Models\AccessLog;
 use App\Models\Company;
+use App\Services\CompanyRoleResolver;
 use Livewire\Component;
 
 class DataExport extends Component
@@ -20,6 +21,11 @@ class DataExport extends Component
         if (! $companyId) {
             return;
         }
+
+        // Fail-closed (QA-UI-R B.7): tab yang hanya tampil untuk owner tidak
+        // mengamankan aksi. Ekspor data usaha revalidasi kepemilikan dari
+        // pengguna terautentikasi, sama seperti penghapusan data.
+        abort_unless(app(CompanyRoleResolver::class)->isOwnerOfCompany($companyId), 403);
 
         $this->isExporting = true;
 
