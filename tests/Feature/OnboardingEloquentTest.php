@@ -10,9 +10,11 @@ use App\Models\ModuleSetting;
 use App\Models\User;
 use App\Providers\DataSourceServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
+use Throwable;
 
 /**
  * Onboarding end-to-end pada driver `eloquent` (D-42): company baru harus
@@ -82,6 +84,12 @@ class OnboardingEloquentTest extends TestCase
 
         // Dashboard company baru merender 200, bukan error identitas.
         $this->get(route('app.dashboard'))->assertOk();
+
+        // Sidebar modul sesuai preset (U-08/D-12): modul `contacts` aktif
+        // dan menampilkan menunya; modul di luar preset ditolak (zero-bloat).
+        $this->get('/app/contacts')->assertOk()->assertSee('Daftar Kontak');
+        $this->get('/app/pos')->assertForbidden();
+        $this->get('/app/accounting')->assertForbidden();
     }
 
     public function test_submit_without_privacy_consent_writes_nothing(): void
@@ -134,5 +142,71 @@ class OnboardingEloquentTest extends TestCase
         $this->assertSame(0, Company::count());
         $this->assertSame(0, BusinessIdentity::count());
         $this->assertSame(0, ModuleSetting::count());
+    }
+
+    public function test_submit_rolls_back_company_identity_and_settings_atomically(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // Kegagalan tulis `module_settings` harus membatalkan seluruh
+        // transaksi: tidak boleh ada company setengah jadi (fail-closed).
+        DB::statement("CREATE TRIGGER reject_module_settings BEFORE INSERT ON module_settings BEGIN SELECT RAISE(FAIL, 'forced settings failure'); END");
+
+        try {
+            Livewire::test(Onboarding::class)
+                ->set('name', 'Usaha Setengah Jadi')
+                ->set('preset', 'zz_onboarding_eloquent')
+                ->set('acceptPrivacyPolicy', true)
+                ->call('submit');
+
+            $this->fail('Kegagalan settings harus menggagalkan onboarding Eloquent.');
+        } catch (Throwable) {
+            $this->assertSame(0, Company::count());
+            $this->assertSame(0, BusinessIdentity::count());
+            $this->assertSame(0, ModuleSetting::count());
+            $this->assertNull($user->fresh()->current_company_id);
+        } finally {
+            DB::statement('DROP TRIGGER IF EXISTS reject_module_settings');
+        }
+    }
+
+    public function test_consecutive_onboarding_by_same_owner_creates_two_usable_companies_with_unique_slugs(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Livewire::test(Onboarding::class)
+            ->set('name', 'Cabang Pertama')
+            ->set('preset', 'zz_onboarding_eloquent')
+            ->set('acceptPrivacyPolicy', true)
+            ->call('submit')
+            ->assertRedirect(route('app.dashboard'));
+
+        Livewire::test(Onboarding::class)
+            ->set('name', 'Cabang Pertama')
+            ->set('preset', 'zz_onboarding_eloquent')
+            ->set('acceptPrivacyPolicy', true)
+            ->call('submit')
+            ->assertRedirect(route('app.dashboard'));
+
+        $this->assertSame(2, Company::query()->where('owner_user_id', $user->id)->count());
+        $this->assertSame(
+            ['cabang-pertama', 'cabang-pertama-2'],
+            Company::query()->where('owner_user_id', $user->id)->orderBy('id')->pluck('slug')->all(),
+        );
+
+        // Masing-masing company langsung usable: identitas + settings
+        // utuh, dan dashboard merender 200 untuk konteks aktif (company kedua).
+        foreach (Company::query()->where('owner_user_id', $user->id)->get() as $company) {
+            $this->assertSame(1, BusinessIdentity::query()->where('company_id', $company->id)->count());
+            $this->assertSame(1, ModuleSetting::query()->where('company_id', $company->id)->where('module_name', 'features')->count());
+        }
+
+        $this->assertSame(
+            'cabang-pertama-2',
+            Company::query()->findOrFail($user->fresh()->current_company_id)->slug,
+        );
+        $this->get(route('app.dashboard'))->assertOk();
     }
 }
