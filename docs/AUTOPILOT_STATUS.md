@@ -1,5 +1,17 @@
 # Agentic BOS Autopilot Status
 
+## UX-MARATHON ITERATIF — autopilot berkelanjutan (mandat Bos)
+
+**Mode:** autopilot penuh (skill `agentic-bos-full-autopilot`). Hermes = orkestrator; Claude = writer; OpenCode = QA independen; merge serial oleh Hermes.
+
+**Iterasi selesai:**
+- **I1** onboarding end-to-end Eloquent: `Onboarding::submit()` kini menulis `business_identities` + `module_settings` dalam `DB::transaction` (fail-closed) saat driver=eloquent; jalur JSON utuh. Test baru `OnboardingEloquentTest` (4 test). Merged `main` — full suite hijau.
+- **I2** polesan visual HP + konsistensi token `--erp-*`: list/pipeline/settings/public/onboarding; scrim modal & CTA diganti dari warna mentah ke token; tombol disabled saat loading. Merged `main`.
+
+**Iterasi berjalan:** I3 (login + lobby + sidebar + branch-switcher + command palette + layouts) — lane `task/ux-i3`.
+
+**Catatan:** OpenCode reviewer tidak bisa menjalankan command (izin tool auto-reject) sejak maraton ini; peran QA diverifikasi Hermes dengan membaca diff langsung + final-gate. App live di `127.0.0.1:8002` di-restart untuk memuat hasil I1+I2.
+
 ## UX-MARATHON — Polesan UI/UX 3 lane paralel
 
 **State:** `DONE` — tiga lane Claude paralel selesai, direview OpenCode, final-gate oleh Hermes, di-merge serial ke `main`.
