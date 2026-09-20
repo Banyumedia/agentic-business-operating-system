@@ -1,4 +1,4 @@
-<div class="flex min-h-screen items-center justify-center bg-[var(--erp-bg-base)] px-4 py-10 text-[var(--erp-text-primary)] sm:px-6">
+<div id="main-content" class="flex min-h-screen items-center justify-center bg-[var(--erp-bg-base)] px-4 py-10 text-[var(--erp-text-primary)] sm:px-6">
     <div class="w-full max-w-5xl">
         <header class="mb-10 text-center">
             <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--erp-accent)]">Ruang kerja perusahaan</p>
