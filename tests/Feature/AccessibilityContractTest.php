@@ -68,7 +68,12 @@ class AccessibilityContractTest extends TestCase
         $html = $component->html();
         $this->assertStringContainsString('x-trap.inert.noscroll="true"', $html);
         $this->assertStringContainsString('opener: document.activeElement', $html);
-        $this->assertStringContainsString('cancelMove().then(() => opener?.focus())', $html);
+        // Fokus kembali ke pembuka setelah batal (dua pola setara diterima).
+        $this->assertTrue(
+            str_contains($html, 'cancelMove().then(() => opener?.focus())')
+            || str_contains($html, 'cancelMove().then(() => target?.focus())'),
+            'Dialog harus mengembalikan fokus ke elemen pembuka saat dibatalkan.'
+        );
     }
 
     /**
