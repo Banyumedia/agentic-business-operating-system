@@ -56,20 +56,20 @@ class InvoiceConfirmationService
             ]);
 
             // Buat atau perpanjang company_membership → active
-            $membership = CompanyMembership::query()
-                ->where('company_id', $lockedInvoice->company_id)
-                ->where('plan_id', $lockedInvoice->membership?->plan_id ?? null)
-                ->lockForUpdate()
-                ->first();
+            // Invoice subscription kini terikat ke membership placeholder (status
+            // 'pending') yang dibuat saat invoice dibuat, sehingga plan selalu
+            // diketahui. Aktifkan membership itu; bila tidak ada (invoice lama),
+            // fallback membuat baru dari plan yang terkait.
+            $linkedMembership = $lockedInvoice->membership;
 
-            if ($membership) {
-                // Perpanjang membership yang ada
-                $membership->update([
+            if ($linkedMembership) {
+                $linkedMembership->update([
                     'status' => 'active',
+                    'starts_at' => now(),
                     'expires_at' => now()->addMonth(),
+                    'current_token_balance' => $linkedMembership->plan?->monthly_token_quota ?? 0,
                 ]);
             } else {
-                // Buat membership baru (jika tidak ada)
                 $plan = $lockedInvoice->membership?->plan;
 
                 if ($plan) {
@@ -83,13 +83,6 @@ class InvoiceConfirmationService
                         'monthly_token_quota' => $plan->monthly_token_quota,
                         'emergency_token_quota' => $plan->emergency_token_quota ?? 0,
                         'current_token_balance' => $plan->monthly_token_quota,
-                    ]);
-
-                    $lockedInvoice->update([
-                        'company_membership_id' => CompanyMembership::where('company_id', $lockedInvoice->company_id)
-                            ->where('plan_id', $plan->id)
-                            ->latest('id')
-                            ->value('id'),
                     ]);
                 }
             }

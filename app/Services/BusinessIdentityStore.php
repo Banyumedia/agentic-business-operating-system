@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\CompanyContext;
+use App\Models\BusinessIdentity;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use JsonException;
@@ -24,6 +25,28 @@ class BusinessIdentityStore
     {
         if ($company !== $this->companyContext->current()) {
             throw new \LogicException('Akses identitas usaha lintas company ditolak.');
+        }
+
+        // Jalur Eloquent: company berupa ID numerik -> baca tabel business_identities.
+        // Jalur JSON demo (D-41): company berupa slug -> baca file per-slug.
+        if (ctype_digit($company)) {
+            $identity = BusinessIdentity::where('company_id', (int) $company)
+                ->where('is_default', true)
+                ->first();
+
+            if (! $identity) {
+                throw new InvalidArgumentException("Identitas usaha tidak ditemukan: {$company}");
+            }
+
+            return [
+                'id' => $identity->id,
+                'legal_name' => $identity->legal_name,
+                'npwp' => $identity->npwp,
+                'address' => $identity->address,
+                'tax_mode' => $identity->tax_mode,
+                'tax_rate' => $identity->tax_rate !== null ? (float) $identity->tax_rate : null,
+                'price_includes_tax' => (bool) $identity->price_includes_tax,
+            ];
         }
 
         $path = $this->path($company);

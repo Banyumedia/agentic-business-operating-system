@@ -3,6 +3,7 @@
 namespace App\Services\Manual;
 
 use App\Models\Company;
+use App\Models\CompanyMembership;
 use App\Models\Invoice;
 use App\Models\MembershipPlan;
 use Illuminate\Validation\ValidationException;
@@ -56,6 +57,24 @@ class InvoiceCreationService
         // Generate order_id unik (format: INV-{company_id}-{timestamp}-{random})
         $orderId = $this->generateUniqueOrderId($company->id);
 
+        // Buat membership PLACEHOLDER ber-status 'cancelled' yang terikat ke plan
+        // yang dipilih. Ini mengaitkan invoice -> plan tanpa migration baru.
+        // Status 'cancelled' memastikan PlanCapabilityGate tetap fail-closed
+        // (hanya 'active' yang membuka kuota), jadi kuota paket belum berlaku
+        // sampai admin konfirmasi pembayaran. (Kolom status adalah ENUM;
+        // 'cancelled' dipakai sebagai penanda "belum aktif / menunggu bayar".)
+        $pendingMembership = CompanyMembership::create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'cancelled',
+            'starts_at' => now(),
+            'expires_at' => now()->addMonth(),
+            'max_wa_groups' => $plan->max_wa_groups,
+            'monthly_token_quota' => $plan->monthly_token_quota,
+            'emergency_token_quota' => $plan->emergency_token_quota ?? 0,
+            'current_token_balance' => 0,
+        ]);
+
         // Create invoice dengan status pending
         $invoice = Invoice::create([
             'company_id' => $company->id,
@@ -63,7 +82,7 @@ class InvoiceCreationService
             'payment_status' => 'pending',
             'order_id' => $orderId,
             'amount' => $plan->monthly_price,
-            'company_membership_id' => null, // Akan di-set saat pembayaran dikonfirmasi
+            'company_membership_id' => $pendingMembership->id, // terikat ke plan sejak awal
             'due_date' => now()->addHours((int) config('billing.manual_payment.expiration_hours', 24))->toDate(),
         ]);
 
