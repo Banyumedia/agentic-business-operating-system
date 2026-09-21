@@ -5,6 +5,7 @@ namespace App\Livewire\Billing;
 use App\Contracts\CompanyContext;
 use App\Contracts\CompanySettingsStore;
 use App\Models\Invoice;
+use App\Services\Platform\PlatformSettingStore;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -76,11 +77,13 @@ class PaymentInstructionPage extends Component
         $this->orderId = (string) $invoice->order_id;
         $this->amount = 'Rp '.number_format((float) $invoice->amount, 0, ',', '.');
 
-        // Dari config billing.manual_payment.* (D-52: config-driven, tidak hardcode)
-        $this->bankName = (string) config('billing.manual_payment.bank.name', 'BCA');
-        $this->bankAccount = (string) config('billing.manual_payment.bank.account_number', '');
-        $this->bankHolder = (string) config('billing.manual_payment.bank.account_holder', '');
-        $this->qrisPath = (string) config('billing.manual_payment.qris_path', '');
+        // Dari platform settings (Super Admin runtime, UR-04) dengan fallback
+        // config env (D-52: config-driven, tidak hardcode)
+        $payment = app(PlatformSettingStore::class)->paymentConfig();
+        $this->bankName = $payment['bank_name'];
+        $this->bankAccount = $payment['bank_account'];
+        $this->bankHolder = $payment['bank_holder'];
+        $this->qrisPath = $payment['qris_path'];
     }
 
     public function render(): View

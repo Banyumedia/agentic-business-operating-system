@@ -8,6 +8,10 @@
 </head>
 <body class="bg-[var(--erp-bg-base)] text-[var(--erp-text-primary)] font-sans antialiased min-h-screen p-8">
     <h1 class="text-2xl font-bold mb-4">Panel Super Admin</h1>
+    <nav class="mb-6 flex gap-4 text-sm">
+        <a href="{{ route('admin.invoices') }}" class="text-[var(--erp-text-link)] underline">Invoice</a>
+        <a href="{{ route('admin.payment-settings') }}" class="text-[var(--erp-text-link)] underline">Pembayaran & Statistik</a>
+    </nav>
     <table class="w-full text-left border-collapse border border-[var(--erp-border)] rounded-[var(--erp-radius-md)]">
         <thead>
             <tr class="bg-[var(--erp-bg-inset)]">

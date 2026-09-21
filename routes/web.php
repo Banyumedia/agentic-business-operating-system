@@ -11,6 +11,7 @@ use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\RequireSuperAdmin;
 use App\Http\Middleware\SetCurrentCompany;
 use App\Livewire\Admin\AdminInvoiceManager;
+use App\Livewire\Admin\AdminPaymentSettings;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Register;
 use App\Livewire\Billing\PaymentInstructionPage;
@@ -91,4 +92,6 @@ Route::middleware(['auth', RequireSuperAdmin::class])->prefix('admin')->group(fu
     Route::post('/impersonate/{company}', [AdminImpersonationController::class, 'impersonate'])->name('admin.impersonate');
     // PAY-1: Admin invoice management
     Route::get('/invoices', AdminInvoiceManager::class)->name('admin.invoices');
+    // UR-04: pengaturan pembayaran + statistik komersial
+    Route::get('/payment-settings', AdminPaymentSettings::class)->name('admin.payment-settings');
 });
