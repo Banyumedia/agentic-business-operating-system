@@ -8,14 +8,14 @@
 
 ## MQ-01  Peningkatan modul satu per satu
 
-**Slice MQ-01C1  integritas uang + recovery: `DONE`, merged `56b623d` (writer `44416aa` di worktree `task/mq-01c1`).**
+**Slice MQ-01C1 — integritas uang + recovery: `DONE`, merged `56b623d`; precision hardening merged `833240b` (writer `4a848c2`).**
 
-- Acceptance 2 (uang fail-closed): terbukti via negative test  data korup (direction `sideways`, amount `-5000`/`abc`/`1e1000`) ditulis langsung ke file JSON bypass `save()`  `readRows()` validator schema menolak keras untuk **kedua** jalur kalkulasi (KPI composer + widget `kpi_cashflow`), tidak ada total menyesatkan. Catatan: lapisan JSON sudah fail-closed sejak awal (schema `enum[in|out]`, `minimum:0`, `is_finite`); slice ini menguncinya dengan test permanen.
-- Acceptance 1 (reload recovery): test `reload_recovers`  compose gagal lalu sukses = pesan error hilang.
-- Acceptance 3 (aturan sama KPI/widget): test `same_strict_rules`.
-- Defect nyata diperbaiki: `Dashboard::render()` melempar `ViewException` saat `CompanySettingsStore::read()` gagal  kini fail-closed penyajian: tema default `a`, `themeError` flag, banner `role="status"` terkontrol, `report()` tetap jalan.
-- Gate: focused `DashboardTest`+`DashboardEloquentTest` 19 passed/121 assertions; full suite main 784 passed/4,006 assertions (3 notice pre-existing `EnsureFeatureEnabledTest`); Pint PASS 422 file; `npm run build` PASS; smoke `/app/dashboard` 200.
-- File: `app/Livewire/Dashboard.php`, `resources/views/livewire/dashboard.blade.php`, `tests/Feature/DashboardTest.php` (+5 test).
+- Acceptance 2 (uang fail-closed): validator repository tetap menolak data korup; lapisan Dashboard kini juga memakai satu `CashFlowCalculator` berbasis integer-sen untuk KPI dan widget, menolak direction/amount invalid, `DECIMAL(18,2)` out-of-range, float yang tidak mampu membedakan satu sen, dan aggregate overflow. Nilai maksimum valid tetap presisi; negative test KPI/widget berjalan independen.
+- Acceptance 1 (reload recovery): test `reload_recovers` — compose gagal lalu sukses = pesan error hilang.
+- Acceptance 3 (aturan sama KPI/widget): satu service shared; Eloquent negative test membuktikan uang company lain tidak masuk KPI/widget.
+- Defect nyata diperbaiki: `Dashboard::render()` melempar `ViewException` saat `CompanySettingsStore::read()` gagal — kini fail-closed penyajian: tema default `a`, `themeError` flag, banner `role="status"` terkontrol, `report()` tetap jalan.
+- Gate akhir sesudah rekonsiliasi writer: focused Dashboard **36 passed / 199 assertions**; full suite main **801 passed / 4.084 assertions**; Pint PASS **424 files**; `npm run build` PASS (`vite v8.3.0`, 3 modules); `git diff --check` PASS.
+- File: `app/Livewire/Dashboard.php`, `resources/views/livewire/dashboard.blade.php`, `app/Services/Dashboard/{CashFlowCalculator,DashboardComposer,WidgetRegistry}.php`, `tests/Feature/{DashboardTest,DashboardCashFlowIntegrityTest,DashboardEloquentTest}.php`.
 
 **State:** `IN_PROGRESS`  mandat Bos 2026-09-21; mulai dari Dashboard, dikerjakan sebagai part kecil dan didelegasikan setelah plan lolos QA independen.
 
