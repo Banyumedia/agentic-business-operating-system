@@ -1,5 +1,21 @@
 # Agentic BOS Autopilot Status
 
+## UR  Product Usage Readiness (docs/plans/product-usage-readiness-plan.md)
+
+**UR-00  convergence & final QA baseline: `DONE`, commit `f942299` (laporan `docs/worker-reports/UR-00.md`).**
+- Foreign-writer audit fresh: tidak ada writer asing aktif; main stabil `9e0364b` (saat itu).
+- Verifikasi fresh: 856 passed/4.376 assertions, Pint PASS, `npm run build` PASS, smoke browser 0 temuan, migrate dev OK.
+- QA independen MQ-01 (OpenCode read-only) verdict **LAYAK**: delta MQ-01C6 + checklist UR-00 semua PASS; 4 temuan LOW/INFO non-blocking dicatat (audit-stamp expiry, test null-expires_at, trim-parity displayName, current_company_id residu).
+- Lane BI-A (`9d032af`) ternyata sudah merged lama di main = bagian baseline, tidak ada aksi. Lane BI-B (`49bcaed`, panel Kesehatan Usaha) verdict **PARKIR**: konflik merge nyata dengan MQ-01 di `app/Livewire/Dashboard.php` (base pra-MQ-01); kualitas intrinsik oke; perlu task rebase + adaptasi kontrak MQ-01 (BI-B2), bukan launch blocker.
+
+**UR-01  bootstrap identitas produksi: pra-approval scope `DONE` di main (merge `4a9db57` via worktree `task/ur01-provisioning`).**
+- Audit: `RequireSuperAdmin` fail-closed 403; `User` `#[Hidden(password, remember_token)]` + cast hashed; negative test non-admin 403 `/admin` sudah ada (`AdminImpersonationTest`).
+- Command baru `bos:provision` (idempoten by email/slug, admin + owner + company pilot; password via `--password` atau prompt `secret()` tersembunyi; slug conflict owner lain = FAILURE; output hanya tabel non-secret email+id). 4 test: idempotensi, hash bukan plaintext, tidak ada password di log channel, slug-conflict ditolak.
+- Gate: worktree & main post-merge **860 passed / 4.392 assertions**, Pint PASS.
+- **Sisa UR-01 (menunggu approval Bos `HUMAN:DEPLOY` + `HUMAN:SECRET`):** jalankan `bos:provision` di produksi dengan email/data pilot asli dari Bos (via prompt interaktif, password tidak masuk shell history). Tidak pakai `DogfoodTenantSeeder`.
+- Next READY pra-gate: UR-02 local implementation (service terkelola web/queue/scheduler, log terpisah, idempotent test job) boleh dikerjakan tanpa menyentuh produksi.
+
+
 ## A11Y-SMOKE 2026-09-20  tap target fix (selesai)
 
 **State:** `DONE` commit `da1d385`. Smoke mobile otomatis headless Chromium 390x844 (playwright, login real, 8 layar auth + 2 publik, SS di `storage/app/_shots/`). Audit DOM: 0 overflow horizontal, 0 teks <12px, kontras lulus (1 temuan = `sr-only` false positive). Dua temuan tap target <44px diperbaiki: skip-link fokus 24px44px via `focus:min-h-11` (`not-sr-only` mereset padding, jadi `py-3` kalah cascade), brand sidebar 20px44px via `min-h-11`. Verifikasi ulang terukur di DOM: keduanya 44px. Pint 3 file style bawaan (bukan file task) ikut diperbaiki. `DATA_SOURCE=json php artisan test` 779 passed / 3,996 assertions; Pint PASS; `npm run build` PASS. File: `layouts/app.blade.php`, `components/layouts/module.blade.php`, `livewire/sidebar.blade.php` (+ pint: `Login.php`, `smoke-e2e.php`, `ModuleScreenWireIdStabilityTest.php`).
