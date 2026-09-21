@@ -8,6 +8,14 @@
 
 ## MQ-01  Peningkatan modul satu per satu
 
+**Slice MQ-01C4  parity identitas company: `DONE`, merged `ea90b6c` (writer `a7b66c8` di worktree `task/mq-01c4`).**
+
+- Defect nyata: `DashboardComposer` men-title-case `CompanyContext::current()`  datasource Eloquent mengembalikan ID numerik (`'1'`), jadi header dashboard Eloquent menampilkan angka, bukan nama usaha. Datasource JSON kebetulan benar karena slug (`bengkel-arka`  `Bengkel Arka`) cocok dengan nama di file identity.
+- Kontrak baru `CompanyContext::displayName()`: Eloquent baca kolom `name`; JSON baca `business_identity.json` field `name` (fallback title-case slug bila file/field tidak ada). Composer memakai `displayName()` untuk kedua driver.
+- Test baru `CompanyDisplayNameParityTest` (3 test): dashboard Eloquent tampil nama + tidak ada `>1<` sebagai label; composer expose nama; JSON displayName baca identity file. Mock `DashboardCashFlowIntegrityTest` diperbarui untuk method baru.
+- Gate: worktree full **851 passed / 4.369 assertions**; main post-merge full **851 passed / 4.369 assertions** (3 notice pre-existing); Pint PASS; smoke `/app/dashboard` 200. Tidak ada perubahan Blade/CSS/JS.
+- File: `app/Contracts/CompanyContext.php`, `app/Services/Dashboard/DashboardComposer.php`, `app/Services/Eloquent/EloquentCompanyContext.php`, `app/Services/Json/JsonCompanyContext.php`, `tests/Feature/CompanyDisplayNameParityTest.php` (baru), `tests/Feature/DashboardCashFlowIntegrityTest.php`.
+
 **Slice MQ-01C3  kontrak preset-widget-capability tunggal: `DONE`, merged `70d23e3` (writer `5249e32` di worktree `task/mq-01c3`).**
 
 - Kontrak baru `App\Services\Dashboard\WidgetCapabilityMap`  satu sumber widgetcapability dipakai runtime (`WidgetRegistry`) **dan** validator (`PresetDefinitionValidator`). Duplikasi dua daftar (18 vs 5 widget) dihapus.
@@ -51,7 +59,7 @@
 
 **Batas:** D-31 tetap wajib; tidak ada dependency/migration/push/deploy. Uang dan tenant wajib fail-closed dengan negative test. Temuan placeholder route dan fokus shell dicatat untuk boundary modul shell, tidak disisipkan ke commit Dashboard.
 
-**Next:** slice berikutnya serial: `MQ-01C3` (kontrak preset-widget-capability + matriks seluruh preset) di worktree terpisah.
+**Next:** slice terakhir serial: `MQ-01C5` (browser/mobile/a11y smoke) di worktree terpisah, lalu QA independen menyeluruh MQ-01 (kesepakatan Bos: QA ditunda sampai semua slice selesai).
 
 ## UX-MARATHON ITERATIF — autopilot berkelanjutan (mandat Bos)
 
