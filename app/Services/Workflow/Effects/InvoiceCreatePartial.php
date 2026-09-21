@@ -13,9 +13,11 @@ class InvoiceCreatePartial implements WorkflowEffect
 
     public function execute(array $context): array
     {
-        // Update ProjectMilestone status based on context
-        // This is a partial invoice effect. The actual invoice record
-        // will be created when the invoices table exists (Task T-12).
+        // Menandai termin sebagai sudah ditagih ketika progres proyek mencapai
+        // pemicunya. Dokumen tagihannya sendiri diterbitkan dari layar tagihan
+        // (`customer_invoices`, D-62) - efek ini tidak membuat dokumen, dan
+        // sengaja tidak menyentuh `invoices` yang merupakan tagihan langganan
+        // platform (D-23).
 
         $milestoneId = $context['milestone_id'] ?? null;
 
@@ -30,7 +32,7 @@ class InvoiceCreatePartial implements WorkflowEffect
                     'effect' => $this->key(),
                     'status' => 'success',
                     'milestone_id' => $milestoneId,
-                    'note' => 'Project milestone marked as invoiced. Invoice creation skipped pending invoices table (T-12).',
+                    'note' => 'Termin ditandai sudah ditagih. Dokumen tagihan diterbitkan dari layar tagihan pelanggan.',
                 ];
             }
         }

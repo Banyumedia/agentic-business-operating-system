@@ -242,15 +242,15 @@ class DynamicMenuRegistry
                 'requires_all' => ['projects'],
                 'items' => [
                     $this->item(null, ['term' => 'projects', 'prefix' => 'Daftar '], '/app/projects', 'list', 'projects'),
-                    // `navigation: false` sampai ada entitas tagihan pelanggan.
-                    // Entity `invoices` adalah tagihan langganan platform
-                    // (D-23: topup/subscription), bukan piutang pelanggan
-                    // tenant, jadi pola `contract` sengaja belum dibangun di
-                    // atasnya. Route dipertahankan supaya kontrak path kanonik
-                    // tidak berubah.
-                    $this->item('billing', 'Termin & Opname', '/app/projects/billing', 'contract', 'invoices', ['projects.progress_billing'], [], false),
+                    // Termin proyek: daftar generik atas `project_milestones`.
+                    // Penerbitan tagihan dari termin dilakukan di layar tagihan
+                    // (D-62), jadi di sini cukup pola `list`.
+                    $this->item('billing', 'Termin & Opname', '/app/projects/billing', 'list', 'project_milestones', ['projects.progress_billing']),
                     $this->item('quotations', 'Penawaran', '/app/projects/quotations', 'list', 'quotations', ['quotations'], [], false),
                     $this->item('timesheet', 'Timesheet', '/app/projects/timesheet', 'list', 'timesheet_entries', ['timesheet']),
+                    // Laba-rugi basis kas per proyek (D-62). Butuh buku kas
+                    // karena seluruh angkanya dibaca dari sana.
+                    $this->item('margin', 'Laba-Rugi', '/app/projects/margin', 'margin', 'projects', ['projects', 'finance.cashbook']),
                     $this->item('retention', 'Retensi', '/app/projects/retention', 'list', 'project_milestones', ['construction.retention']),
                 ],
             ],
@@ -308,11 +308,10 @@ class DynamicMenuRegistry
                     // sekali. Pola `list` generik sudah cukup - field relasi
                     // proyek/kontak datang dari schema (T-41, D-62).
                     $this->item('entries', 'Entri Kas', '/app/accounting/entries', 'list', 'cash_entries', ['finance.cashbook']),
-                    // Lihat catatan di `projects.billing`: disembunyikan dari
-                    // navigasi sampai tagihan pelanggan punya entitasnya
-                    // sendiri. Sebelumnya menu ini terjangkau di 29 preset dan
-                    // hanya menampilkan kartu kontrak.
-                    $this->item('invoices', ['term' => 'invoices'], '/app/accounting/invoices', 'contract', 'invoices', [], ['milestone_billing', 'pos'], false),
+                    // Entity-nya `customer_invoices` (D-62): tagihan yang tenant
+                    // terbitkan ke pelanggannya, BUKAN `invoices` yang merupakan
+                    // tagihan langganan platform (D-23).
+                    $this->item('invoices', ['term' => 'invoices'], '/app/accounting/invoices', 'contract', 'customer_invoices', [], ['milestone_billing', 'pos']),
                     $this->item('reports', 'Laporan Keuangan', '/app/accounting/reports', 'report', 'cash_entries', ['finance.accounting']),
                     $this->item('coa', 'Bagan Akun', '/app/accounting/coa', 'list', 'cash_entries', ['finance.accounting']),
                     $this->item('journals', 'Jurnal', '/app/accounting/journals', 'ledger', 'cash_entries', ['finance.accounting']),

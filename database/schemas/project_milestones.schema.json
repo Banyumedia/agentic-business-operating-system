@@ -45,7 +45,7 @@
       "scale": 2,
       "minimum": 0
     },
-    "invoice_id": {
+    "customer_invoice_id": {
       "type": "integer",
       "nullable": true,
       "unsigned": true
@@ -101,8 +101,8 @@
       "entity": "projects",
       "on_delete": "cascade"
     },
-    "invoice_id": {
-      "entity": "invoices",
+    "customer_invoice_id": {
+      "entity": "customer_invoices",
       "on_delete": "set_null"
     }
   }

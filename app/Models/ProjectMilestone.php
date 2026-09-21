@@ -19,7 +19,7 @@ class ProjectMilestone extends Model
         'trigger_value',
         'amount',
         'retention_pct',
-        'invoice_id',
+        'customer_invoice_id',
         'status',
         'achieved_at',
     ];
