@@ -55,8 +55,15 @@ class Login extends Component
         session()->regenerate();
 
         // Set konteks company aktif agar middleware /app tidak 403.
+        // UR-03: current_company_id residual (sisa impersonasi yang tidak
+        // di-stop bersih) tidak dipercaya mentah - diverifikasi kepemilikan;
+        // tidak valid -> self-heal ke company milik user.
         $user = Auth::user();
         $companyId = $user->current_company_id;
+        if ($companyId !== null && $user->companies()->whereKey($companyId)->doesntExist()) {
+            $companyId = null;
+            $user->forceFill(['current_company_id' => null])->save();
+        }
         if (! $companyId) {
             $company = $user->companies()->first();
             if ($company) {
