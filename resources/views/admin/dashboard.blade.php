@@ -7,11 +7,18 @@
     @vite(["resources/css/app.css", "resources/js/app.js"])
 </head>
 <body class="bg-[var(--erp-bg-base)] text-[var(--erp-text-primary)] font-sans antialiased min-h-screen p-8">
-    <h1 class="text-2xl font-bold mb-4">Panel Super Admin</h1>
-    <nav class="mb-6 flex gap-4 text-sm">
-        <a href="{{ route('admin.invoices') }}" class="text-[var(--erp-text-link)] underline">Invoice</a>
-        <a href="{{ route('admin.payment-settings') }}" class="text-[var(--erp-text-link)] underline">Pembayaran & Statistik</a>
-    </nav>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 class="text-2xl font-bold">Panel Super Admin</h1>
+        <nav class="flex flex-wrap gap-2 text-sm">
+            <a href="{{ route('admin.dashboard') }}" class="px-3 py-1.5 rounded bg-[var(--erp-primary,#2563eb)] text-white">Tenant</a>
+            <a href="{{ route('admin.invoices') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-bg-inset)]">Invoice</a>
+            <a href="{{ route('admin.payment-settings') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-bg-inset)]">Pembayaran</a>
+            <a href="{{ route('admin.ai-pricings') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-bg-inset)]">AI Pricing</a>
+            <a href="{{ route('admin.plans') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-bg-inset)]">Paket</a>
+            <a href="{{ route('admin.support-tickets') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-bg-inset)]">Tiket</a>
+        </nav>
+    </div>
+
     <table class="w-full text-left border-collapse border border-[var(--erp-border)] rounded-[var(--erp-radius-md)]">
         <thead>
             <tr class="bg-[var(--erp-bg-inset)]">

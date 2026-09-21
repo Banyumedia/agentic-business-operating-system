@@ -1,7 +1,17 @@
 <div class="mx-auto max-w-4xl space-y-8 px-4 py-8">
-    <header>
-        <h1 class="text-2xl font-bold text-[var(--erp-text)]">Pengaturan Pembayaran & Statistik</h1>
-        <p class="mt-1 text-sm text-[var(--erp-text-muted)]">Rekening, QRIS, dan ringkasan komersial platform. Perubahan langsung berlaku.</p>
+    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-[var(--erp-text)]">Pengaturan Pembayaran & Statistik</h1>
+            <p class="mt-1 text-sm text-[var(--erp-text-muted)]">Rekening, QRIS, dan ringkasan komersial platform. Perubahan langsung berlaku.</p>
+        </div>
+        <nav class="flex flex-wrap gap-2 text-sm">
+            <a href="{{ route('admin.dashboard') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Tenant</a>
+            <a href="{{ route('admin.invoices') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Invoice</a>
+            <a href="{{ route('admin.payment-settings') }}" class="px-3 py-1.5 rounded bg-[var(--erp-primary)] text-white">Pembayaran</a>
+            <a href="{{ route('admin.ai-pricings') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">AI Pricing</a>
+            <a href="{{ route('admin.plans') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Paket</a>
+            <a href="{{ route('admin.support-tickets') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Tiket</a>
+        </nav>
     </header>
 
     @if (session('success'))

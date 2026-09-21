@@ -12,6 +12,9 @@ use App\Http\Middleware\RequireSuperAdmin;
 use App\Http\Middleware\SetCurrentCompany;
 use App\Livewire\Admin\AdminInvoiceManager;
 use App\Livewire\Admin\AdminPaymentSettings;
+use App\Livewire\Admin\AiPricingManager;
+use App\Livewire\Admin\PlanManager;
+use App\Livewire\Admin\SupportTicketManager;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Register;
 use App\Livewire\Billing\PaymentInstructionPage;
@@ -94,4 +97,10 @@ Route::middleware(['auth', RequireSuperAdmin::class])->prefix('admin')->group(fu
     Route::get('/invoices', AdminInvoiceManager::class)->name('admin.invoices');
     // UR-04: pengaturan pembayaran + statistik komersial
     Route::get('/payment-settings', AdminPaymentSettings::class)->name('admin.payment-settings');
+    // Super Admin: AI Model Pricing & Multipliers
+    Route::get('/ai-pricings', AiPricingManager::class)->name('admin.ai-pricings');
+    // Super Admin: Membership Plans & Capabilities
+    Route::get('/plans', PlanManager::class)->name('admin.plans');
+    // Super Admin: Support Tickets (Master Bot Helpdesk)
+    Route::get('/support-tickets', SupportTicketManager::class)->name('admin.support-tickets');
 });

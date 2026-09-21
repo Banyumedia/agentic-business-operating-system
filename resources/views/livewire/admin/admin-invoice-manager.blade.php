@@ -1,11 +1,21 @@
 <div class="min-h-screen bg-gradient-to-br from-[var(--erp-surface)] to-[var(--erp-surface-secondary)]">
     <!-- Header -->
     <div class="border-b border-[var(--erp-border)] bg-[var(--erp-surface)]">
-        <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-            <h1 class="text-3xl font-bold text-[var(--erp-text)]">Konfirmasi Invoice Pembayaran</h1>
-            <p class="mt-2 text-[var(--erp-text-secondary)]">
-                Daftar invoice pending yang menunggu konfirmasi pembayaran
-            </p>
+        <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-[var(--erp-text)]">Konfirmasi Invoice Pembayaran</h1>
+                <p class="mt-2 text-[var(--erp-text-secondary)]">
+                    Daftar invoice pending yang menunggu konfirmasi pembayaran
+                </p>
+            </div>
+            <nav class="flex flex-wrap gap-2 text-sm">
+                <a href="{{ route('admin.dashboard') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Tenant</a>
+                <a href="{{ route('admin.invoices') }}" class="px-3 py-1.5 rounded bg-[var(--erp-primary)] text-white">Invoice</a>
+                <a href="{{ route('admin.payment-settings') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Pembayaran</a>
+                <a href="{{ route('admin.ai-pricings') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">AI Pricing</a>
+                <a href="{{ route('admin.plans') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Paket</a>
+                <a href="{{ route('admin.support-tickets') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Tiket</a>
+            </nav>
         </div>
     </div>
 
