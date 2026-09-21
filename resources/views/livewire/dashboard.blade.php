@@ -1,4 +1,9 @@
 <div class="space-y-8" aria-busy="false" wire:loading.attr="aria-busy">
+    @if ($themeError)
+        <div role="status" class="rounded-[var(--erp-radius-md)] border border-[var(--erp-warning)] bg-[var(--erp-warning-soft)] px-4 py-3 text-sm text-[var(--erp-text-primary)]">
+            Tampilan kembali ke tema default karena pengaturan tampilan tidak dapat dibaca.
+        </div>
+    @endif
     @if ($loadError !== null)
         <section role="alert" aria-labelledby="dashboard-error-title" class="rounded-[var(--erp-radius-lg)] border border-[var(--erp-danger)] bg-[var(--erp-bg-secondary)] p-6 shadow-[var(--erp-card-shadow)] sm:p-8">
             <div class="flex items-start gap-4">
