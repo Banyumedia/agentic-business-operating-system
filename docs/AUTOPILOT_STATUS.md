@@ -1,6 +1,12 @@
 # Agentic BOS Autopilot Status
 
-## MQ-01 — Peningkatan modul satu per satu
+## A11Y-SMOKE 2026-09-20  tap target fix (selesai)
+
+**State:** `DONE` commit `da1d385`. Smoke mobile otomatis headless Chromium 390x844 (playwright, login real, 8 layar auth + 2 publik, SS di `storage/app/_shots/`). Audit DOM: 0 overflow horizontal, 0 teks <12px, kontras lulus (1 temuan = `sr-only` false positive). Dua temuan tap target <44px diperbaiki: skip-link fokus 24px44px via `focus:min-h-11` (`not-sr-only` mereset padding, jadi `py-3` kalah cascade), brand sidebar 20px44px via `min-h-11`. Verifikasi ulang terukur di DOM: keduanya 44px. Pint 3 file style bawaan (bukan file task) ikut diperbaiki. `DATA_SOURCE=json php artisan test` 779 passed / 3,996 assertions; Pint PASS; `npm run build` PASS. File: `layouts/app.blade.php`, `components/layouts/module.blade.php`, `livewire/sidebar.blade.php` (+ pint: `Login.php`, `smoke-e2e.php`, `ModuleScreenWireIdStabilityTest.php`).
+
+**Catatan infra:** `APP_URL=https://agentic-bos.nalar.army` di `.env` membuat server dev `php artisan serve` merender asset/JS dengan `https://` protokol  Livewire JS gagal termuat di headless browser HTTP (login tidak berjalan). Bypass: server sementara port 8003 dengan `APP_URL/ASSET_URL=http://127.0.0.1:8003`. Bukan bug app; hanya dev-vs-prod config.
+
+## MQ-01  Peningkatan modul satu per satu
 
 **State:** `IN_PROGRESS` — mandat Bos 2026-09-21; mulai dari Dashboard, dikerjakan sebagai part kecil dan didelegasikan setelah plan lolos QA independen.
 
