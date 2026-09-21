@@ -54,9 +54,18 @@ T-48..T-56. Ringkas:
 - **T-52 dokumen cetak:** route `/app/invoices/{invoice}/print` + view cetak (identitas usaha, penerima, rincian, pajak, sudah dibayar, sisa) dengan tombol cetak/simpan PDF. Isolasi tenant bukan dari pemeriksaan tambahan melainkan dari repository yang ter-scope company — id usaha lain sederhananya 404. Draf ditolak 403. 4 test.
 - **T-53 penawaran → tagihan:** `quotation_lines.schema.json` ditambahkan (tabelnya sudah ada sejak `2026_09_18_141709` tapi tanpa schema, sehingga barisnya tak terlihat layar generik). Layar tagihan dapat pilihan "Tagih dari penawaran" yang menyalin seluruh baris penawaran; nilai diambil dari basis data, penawaran yang sudah ditagih hilang dari pilihan, penawaran kosong dan penawaran company lain ditolak. 4 test.
 - **T-55 ekspor lengkap:** `BuildCompanyExport` tidak lagi memakai daftar tabel hardcoded — entitas diturunkan dari katalog `database/schemas/*.schema.json`, disaring oleh keberadaan model dan kolom `company_id`. Entitas baru ikut terekspor tanpa menyunting job. Ditambah `manifest.json` (jumlah baris per entitas) dan `memberships.json`. 4 test, termasuk negatif: tidak ada satu baris pun dari company lain, dan permintaan dari non-owner tidak menghasilkan arsip. Catatan: gap `downloadUrl` dari daftar lama ternyata **sudah tertutup** — view `data-export.blade.php` merendernya.
-- **T-56 BI-B2 di-BLOCK, bukan dikerjakan:** file targetnya (`app/Livewire/Dashboard.php`, `resources/views/livewire/dashboard.blade.php`) bertabrakan dengan WIP writer lain yang sedang aktif di `DashboardComposer.php` dan `dashboard.blade.php`. HERMES butir 5 melarang menyentuhnya; dicatat dan dilewati.
-- **Gate:** `DATA_SOURCE=json php artisan test` **1.017 passed / 4.923 assertions**; Pint PASS 12 file task ini; `npm run build` PASS.
-- **Sisa Fase 9:** T-49, T-51, T-54 menunggu keputusan Bos (kanal pengingat; model peran + kanal undangan; apakah akuntansi penuh & payroll dijual). T-56 menunggu writer lain selesai.
+- **Gate (T-48/50/52/53/55):** Pint PASS 12 file task ini; `npm run build` PASS.
+
+**T-56 BI-B2 panel Kesehatan Usaha: `DONE`, commit `3524598`.** Dikerjakan setelah WIP writer lain di-commit (`b0ef5b0`) sehingga tree bersih dan `Dashboard.php`/`dashboard.blade.php` tidak lagi kotor.
+
+- **Rebase, bukan merge:** branch `task/bi-b` @ `49bcaed` dibangun pra-MQ-01 (mount `mount(DashboardComposer)`), sedangkan `main` sudah `mount(DashboardComposer, ...)` dengan `loadError`/`themeError`. Perubahannya diterapkan ulang di atas kontrak MQ-01 sekarang, bukan di-merge.
+- **Komponen:** `Dashboard::mount()` dan `reload()` kini juga menerima `CompanyRoleResolver` + `BusinessHealthAnalyzer` (di-resolve container). Properti `$health` null untuk non-owner (tidak bocor ke snapshot Livewire) dan tetap null bila analyzer melempar — dashboard yang sudah dimuat tidak ikut jatuh (fail-closed dua arah, D-50).
+- **View:** markup panel dipindah ke partial `resources/views/livewire/dashboard/health-panel.blade.php` dan disertakan lewat `@include` di bawah `@if ($health !== null)`. Memisahnya ke partial mengurangi risiko rebase berikutnya bertabrakan lagi di satu berkas besar. String statis, tanpa `term()` maupun kata industri (D-31).
+- **Test:** `tests/Feature/DashboardHealthPanelTest.php` (dari `49bcaed`, diadaptasi) 5 test: owner lihat angka nyata, insufficient-data empty state, non-owner tidak dapat panel maupun data finansial di snapshot, analyzer gagal = fail-closed dashboard tetap hidup, reload memuat ulang health.
+- **Gate:** `DATA_SOURCE=json php artisan test` **1.022 passed / 4.959 assertions**; Pint PASS file task ini; `npm run build` PASS.
+- **Sisa Fase 9:** hanya T-49, T-51, T-54 yang menunggu keputusan Bos (kanal pengingat; model peran + kanal undangan; apakah akuntansi penuh & payroll dijual). Seluruh task `READY` Fase 9 sudah selesai.
+
+**Catatan:** WIP writer lain (polesan UX mobile, landing publik, quick actions dashboard, pin `DATA_SOURCE=json` di phpunit.xml) di-commit apa adanya di `b0ef5b0` atas instruksi Bos supaya tidak hilang dan supaya T-56 tidak terhalang file kotor — belum direview, bukan tulisan sesi ini.
 
 ## UR  Product Usage Readiness (docs/plans/product-usage-readiness-plan.md)
 
