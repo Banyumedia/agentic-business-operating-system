@@ -19,13 +19,14 @@ use App\Http\Controllers\Api\TenantBot\AiContextController;
 use App\Http\Controllers\Api\TenantBot\CapabilitiesController;
 use App\Http\Controllers\Api\TenantBot\TenantBotController;
 use App\Http\Middleware\AuthenticateTenantBot;
+use App\Http\Middleware\EnforceBotToolScoping;
 
-Route::middleware([AuthenticateTenantBot::class])->group(function () {
-    Route::get('/bot/tenant/context', [AiContextController::class, 'show']);
-    Route::put('/bot/tenant/context/opt-in', [AiContextController::class, 'update']);
-    Route::get('/bot/tenant/capabilities', [CapabilitiesController::class, 'index']);
-    Route::put('/bot/tenant/settings', [TenantBotController::class, 'updateSettings']);
-    Route::post('/bot/tenant/contacts', [TenantBotController::class, 'createContact']);
-    Route::post('/bot/tenant/deals', [TenantBotController::class, 'createDeal']);
-    Route::post('/bot/tenant/destructive-action', [TenantBotController::class, 'destructiveAction']);
+Route::middleware([AuthenticateTenantBot::class, EnforceBotToolScoping::class])->group(function () {
+    Route::get('/bot/tenant/context', [AiContextController::class, 'show'])->name('api.bot.tenant.context.show');
+    Route::put('/bot/tenant/context/opt-in', [AiContextController::class, 'update'])->name('api.bot.tenant.context.opt-in');
+    Route::get('/bot/tenant/capabilities', [CapabilitiesController::class, 'index'])->name('api.bot.tenant.capabilities');
+    Route::put('/bot/tenant/settings', [TenantBotController::class, 'updateSettings'])->name('api.bot.tenant.settings');
+    Route::post('/bot/tenant/contacts', [TenantBotController::class, 'createContact'])->name('api.bot.tenant.contacts');
+    Route::post('/bot/tenant/deals', [TenantBotController::class, 'createDeal'])->name('api.bot.tenant.deals');
+    Route::post('/bot/tenant/destructive-action', [TenantBotController::class, 'destructiveAction'])->name('api.bot.tenant.destructive-action');
 });

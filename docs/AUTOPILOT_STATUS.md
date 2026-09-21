@@ -101,9 +101,10 @@
      - Evidence: 4 passed tests di `AssistantSettingsTest`, Pint clean, `npm run build` sukses.
   2. `[DONE]` **WA-02: Konfigurasi Profil & Scoped Tools Hermes**: isolasi profil Bot Internal (`primary`: konsultasi bisnis + tool ERP internal, zero OS tools) vs Bot CS Publik (`addon`: read-only katalog/pesanan sendiri, guardrail anti-jailbreak terkunci di platform).
      - Config `config/hermes.php` mendefinisikan whitelist/blacklist tool per tipe profil.
-     - Service `HermesProfileProvisioner` dengan verifikasi izin `isToolAllowed` fail-closed.
-     - Test `HermesProfileProvisionerTest` 4 passed (19 assertions).
-     - Verifikasi Pint clean, `npm run build` pass.
+     - Middleware runtime `EnforceBotToolScoping` dipasang ke seluruh endpoint `/api/bot/tenant/*`.
+     - Subagent QA audit temuan kritis berhasil ditutup: bot CS `addon` terbukti 403 saat mencoba mutasi setting/destructive actions.
+     - Integration tests `EnforceBotToolScopingTest` & `HermesProfileProvisionerTest` PASS (8 tests passed).
+     - Pint clean, `npm run build` pass.
   3. `[DONE]` **WA-03: T-36 NLU Intent Router**: klasifikasi bahasa manusia dari WhatsApp (reminder, report omzet/stok, approval tiket, update setting bisnis via chat owner).
      - Model DTO `IntentResult` & Service `NluIntentRouter`.
      - Unit test `NluIntentRouterTest` 5 passed (21 assertions).

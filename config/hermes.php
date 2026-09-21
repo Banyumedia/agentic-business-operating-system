@@ -23,11 +23,14 @@ return [
             'allow_dm_for' => 'owner_only',
             'allow_groups' => true,
             'allowed_tools' => [
+                'read_context',
                 'create_transaction',
                 'check_stock',
                 'set_reminder',
                 'approve_ticket',
                 'generate_report',
+                'update_settings',
+                'destructive_action',
             ],
             'disallowed_tools' => [
                 'terminal',
@@ -46,9 +49,9 @@ return [
             'allow_dm_for' => 'all',
             'allow_groups' => false,
             'allowed_tools' => [
+                'read_context',
                 'search_catalog',
                 'check_my_order',
-                'create_support_ticket',
             ],
             'disallowed_tools' => [
                 'terminal',
@@ -59,6 +62,7 @@ return [
                 'process',
                 'create_transaction',
                 'update_settings',
+                'destructive_action',
                 'view_accounting',
             ],
             'temperature' => 0.1, // deterministik & kaku
