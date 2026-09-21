@@ -93,6 +93,10 @@
 - Next READY pra-gate: UR-02 local implementation (service terkelola web/queue/scheduler, log terpisah, idempotent test job) boleh dikerjakan tanpa menyentuh produksi.
 - **Antrean Tambahan Super Admin (Backlog Feature):**
   1. `[PENDING]` **Watchdog Antrean & Sistem Error (`/admin/system-health`)**: monitoring antrean worker, tabel `failed_jobs`, status job batches, dan tombol retry/flush error jobs (notifikasi WA macet / AI timeout).
+- **Antrean Peningkatan Halaman Pengaturan (Settings Backlog):**
+  1. `[PENDING]` **Tab Karyawan AI (`/app/settings/assistant`)**: implementasi antarmuka konfigurasi Hermes Control Center sesuai `docs/UX_UI_SPEC.md` Bab 4.4:
+     - Sub-tab 1: Form Identitas & SOP (Anti-Jailbreak Form: nama panggilan bot, gaya bicara, batas diskon maksimal kasir, jam operasional, catatan khusus max 300 char).
+     - Sub-tab 2: WhatsApp Pairing & Role Grup (Status koneksi QR/API, tabel grup WA aktif per role Kasir/Gudang/Keuangan, kuota grup `membership_plans.max_wa_groups` per D-53, dialog konfirmasi pemutusan grup fail-closed).
 
 
 ## A11Y-SMOKE 2026-09-20  tap target fix (selesai)
