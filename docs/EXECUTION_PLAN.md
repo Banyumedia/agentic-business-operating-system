@@ -430,3 +430,15 @@ pintas.
    **Push, deploy, migrate non-dev** tetap butuh approval eksplisit.
 7. **Laporan** di setiap batas fase dan saat `BLOCKED`: task, file, command +
    hasil, risiko, blocker, next `READY`.
+## Fase 7: WA-First Business Assistant (D-60 Draft)
+
+> **Visi Bos (D-60):** Produk diposisikan sebagai "Asisten Pribadi di WhatsApp", bukan sekadar software POS/ERP Web. UI Web menjadi layar pantau (backend) atau alat kasir, sementara Owner mengendalikan multi-bisnis via chat WA. Onboarding, laporan, dan *approval* diutamakan lewat WA.
+
+| ID | Task | Depends On | Gate | File Target | Acceptance | State |
+|---|---|---|---|---|---|---|
+| T-36 | NLU Intent Router (WA) | T-17b | | `app/Services/AI/IntentRouter.php` | Klasifikasi intent pesan WA masuk (contoh: `transaction`, `report`, `approval`, `setup`). | `READY` |
+| T-37 | Multi-Tenant Context Switcher | T-36 | | `app/Services/TenantBot/ChatSessionManager.php` | Manajemen sesi multi-cabang per nomor WA. Tanya/ingat konteks cabang aktif (cache). | `BLOCKED` |
+| T-38 | Magic Import (Vision AI) | T-36 | `HUMAN:AI-COST` | `app/Services/AI/VisionParser.php` | Parse gambar foto nota/price list dari WA jadi master data `products`. | `BLOCKED` |
+| T-39 | Proactive AI & Approval | T-08d, T-36 | | `app/Services/Workflow/ApprovalHandler.php` | Balasan WA "Y" memicu transisi workflow dari tiket yang tertunda. | `BLOCKED` |
+| T-40 | WA-Native Onboarding | T-37, T-38 | | `OnboardingFlow.php` | Buat `Company` baru dan terapkan `preset` via chat WA. | `BLOCKED` |
+
