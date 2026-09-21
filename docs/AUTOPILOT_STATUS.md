@@ -16,6 +16,12 @@
 - Gate: worktree full **851 passed / 4.369 assertions**; Pint PASS; main post-merge full **851 passed / 4.369 assertions** (3 notice pre-existing).
 - File: `scripts/smoke_browser_c5.py` (baru).
 
+**QA independen menyeluruh MQ-01 (C1-C5): `LAYAK`, tanpa temuan HIGH. Laporan penuh: `docs/worker-reports/MQ-01_QA_INDEPENDENT.md` (OpenCode 1.18.31 read-only, 2026-09-21).**
+
+- Verdict per aspek: uang PASS, tenant PASS (1 concern), kontrak widget PASS (1 concern), data preset PASS, parity displayName CONCERN, test-adaptation PASS, D-31 PASS.
+- Temuan non-blocking: F2 MEDIUM (sesi impersonasi tanpa `expires_at`  stale permanent access), F1 LOW (const `WIDGETS` validator 14 widget mati), F3 LOW (displayName Eloquent string kosong tanpa fallback), F4 LOW (banner impersonasi pakai `getCompany()->name` bukan `displayName()`), F5 LOW (nama test DataErasure menipu).
+- Semua temuan diverifikasi orchestrator terhadap sumber sebelum diterima. Tree tidak termutasi reviewer.
+
 **MQ-01 selesai (C1-C5). Sesuai kesepakatan Bos, QA independen menyeluruh MQ-01 berikutnya.**
 
 **Slice MQ-01C4  parity identitas company: `DONE`, merged `ea90b6c` (writer `a7b66c8` di worktree `task/mq-01c4`).**
