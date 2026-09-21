@@ -1,5 +1,22 @@
 # Agentic BOS Autopilot Status
 
+## MQ-01 — Peningkatan modul satu per satu
+
+**State:** `IN_PROGRESS` — mandat Bos 2026-09-21; mulai dari Dashboard, dikerjakan sebagai part kecil dan didelegasikan setelah plan lolos QA independen.
+
+**Baseline:** branch `main` HEAD `d0cc3fd`; folder asing `backup-ahli-keuangan/` telah diverifikasi bukan git worktree/tidak direferensikan source lalu dihapus atas instruksi Bos. Full suite pertama sempat gagal 8 test akibat state fixture; setelah fixture `storage/app/json/1/workflow_log.json` dipulihkan, focused `ModuleSidebarTest` **14 passed / 55 assertions** dan full rerun terisolasi **779 passed / 3,996 assertions**.
+
+**Plan 5 part kecil:**
+1. `MQ-01A` audit kontrak Dashboard: alur, data, tenant/auth, uang, a11y; read-only paralel.
+2. `MQ-01B` tulis acceptance plan dengan scope file sempit; wajib review QA independen sebelum kode.
+3. `MQ-01C` implement defect terverifikasi + negative/regression test oleh delegate writer di worktree terisolasi.
+4. `MQ-01D` QA independen atas diff; temuan valid diperbaiki di branch worker.
+5. `MQ-01E` merge serial, full test + Pint + build + smoke, lalu lanjut modul berikutnya.
+
+**Batas:** D-31 tetap wajib; tidak ada dependency/migration/push/deploy. Uang dan tenant wajib fail-closed dengan negative test. Detail: `docs/plans/module-quality-dashboard.md`.
+
+**Next:** selesaikan audit MQ-01A dan review plan; baru delegasikan writer MQ-01C.
+
 ## UX-MARATHON ITERATIF — autopilot berkelanjutan (mandat Bos)
 
 **Mode:** autopilot penuh (skill `agentic-bos-full-autopilot`). Hermes = orkestrator; Claude = writer; OpenCode = QA independen; merge serial oleh Hermes.
