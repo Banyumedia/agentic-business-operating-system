@@ -10,7 +10,7 @@
     aria-labelledby="module-sidebar-title"
 >
     <div class="flex items-center justify-between border-b border-[var(--erp-border)] px-5 py-5">
-        <a href="{{ route('lobby') }}" wire:navigate class="min-w-0 flex-1 hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] rounded-[var(--erp-radius-sm)]">
+        <a href="{{ route('lobby') }}" wire:navigate class="min-h-11 min-w-0 flex-1 hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] rounded-[var(--erp-radius-sm)]">
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--erp-sidebar-text)] opacity-70">Agentic BOS</p>
             <h2 id="module-sidebar-title" class="mt-1 truncate text-lg font-bold">{{ $this->title }}</h2>
         </a>

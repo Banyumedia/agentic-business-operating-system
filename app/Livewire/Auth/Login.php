@@ -73,6 +73,7 @@ class Login extends Component
         // onboarding, bukan dashboard yang bisa 403.
         if (! $companyId) {
             $this->redirect(route('onboarding'));
+
             return;
         }
 

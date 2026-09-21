@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Contracts\CompanyContext;
+use App\Contracts\EntityRepository;
 use App\Livewire\Screens\ListScreen;
 use Illuminate\Filesystem\Filesystem;
 use Livewire\Livewire;
@@ -164,7 +165,7 @@ class ModuleScreenWireIdStabilityTest extends TestCase
     private function seedRows(string $company, string $entity, array $rows): void
     {
         app(CompanyContext::class)->setCurrent($company);
-        $repository = app(\App\Contracts\EntityRepository::class)->for($company, $entity);
+        $repository = app(EntityRepository::class)->for($company, $entity);
 
         foreach ($rows as $row) {
             $repository->save($row);

@@ -19,7 +19,7 @@
     @endif
     <div wire:loading class="fixed left-0 right-0 top-0 z-[100] h-1 animate-pulse bg-[var(--erp-accent)]"></div>
 
-    <a href="#main-content" class="sr-only z-[70] rounded-[var(--erp-radius-sm)] bg-[var(--erp-accent)] px-4 py-2 text-[var(--erp-text-inverse)] focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
+    <a href="#main-content" class="sr-only z-[70] rounded-[var(--erp-radius-sm)] bg-[var(--erp-accent)] px-4 py-3 text-[var(--erp-text-inverse)] focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:min-h-11">
         Lewati ke konten utama
     </a>
 
