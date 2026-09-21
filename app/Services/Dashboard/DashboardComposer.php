@@ -18,6 +18,7 @@ class DashboardComposer
         private readonly FeatureResolver $features,
         private readonly TerminologyResolver $terms,
         private readonly WidgetRegistry $widgets,
+        private readonly CashFlowCalculator $cashFlowCalculator,
     ) {}
 
     /** @return array{company: string, kpis: list<array{label: string, value: string, meta: string, tone: string}>, assistant_report: array{summary: string, generated_at: string, period: string, highlights: list<string>, recommended_actions: list<string>}, widgets: list<array<string, mixed>>} */
@@ -50,11 +51,7 @@ class DashboardComposer
     private function universalKpis(): array
     {
         $cashEntries = $this->rows('cash_entries');
-        $balance = 0.0;
-        foreach ($cashEntries as $entry) {
-            $amount = (float) ($entry['amount'] ?? 0);
-            $balance += ($entry['direction'] ?? null) === 'in' ? $amount : -$amount;
-        }
+        $flow = $this->cashFlowCalculator->calculate($cashEntries);
 
         [$workEntity, $workTerm] = $this->workSource();
         $work = $this->rows($workEntity);
@@ -63,9 +60,9 @@ class DashboardComposer
         return [
             [
                 'label' => 'Arus kas bersih',
-                'value' => 'Rp '.number_format($balance, 0, ',', '.'),
+                'value' => $this->cashFlowCalculator->formatRupiah($flow['balance_cents']),
                 'meta' => count($cashEntries).' transaksi tercatat',
-                'tone' => $balance >= 0 ? 'success' : 'danger',
+                'tone' => $flow['balance_cents'] >= 0 ? 'success' : 'danger',
             ],
             [
                 'label' => $this->terms->resolve($workTerm).' aktif',
