@@ -27,7 +27,17 @@
 - **Sisa UR-02 (butuh `HUMAN:DEPLOY`):** restart service `PM2-AgenticBOS` agar daemon PM2 memuat 3 app baru, lalu health check + probe di runbook.
 - Temuan infra dari UR-01 tetap berlaku: akses produksi harus via proxy https `agentic-bos.nalar.army` (Basic Auth 401 aktif); akses http langsung 8010 membuat asset gagal termuat.
 
-**Next READY: UR-03 golden-path UAT menunggu UR-02 aktivasi (HUMAN:DEPLOY) + tenant pilot.**
+**UR-02  web + queue + scheduler: `DONE` penuh (aktivasi produksi 2026-09-21, gate `HUMAN:DEPLOY` dibuka Bos).**
+
+- **Aktivasi dijalankan:** service `PM2-AgenticBOS` direstart (via UAC admin); daemon PM2 memuat `ecosystem.production.config.cjs` penuh: web 8010 + queue worker + scheduler, semua online (`pm2 jlist` via sesi admin: 4 apps online, 0 unstable restarts), mockup lama tetap hidup. Scheduler tick per menit terlihat di `pm2-scheduler-out.log`.
+- **Root-cause 1 (queue job tak terproses):** dispatch tinker awal masuk SQLite dev (APP_ENV=local) padahal worker PM2 membaca `.env.production` (MySQL). Worker sehat  probe `ur02-prod` di MySQL produksi diproses **tepat sekali** (marker 1 baris, `jobs=0` setelahnya, `failed_jobs=0`).
+- **Root-cause 2 (MySQL produksi kosong):** pilot UR-01 ternyata dibuat di SQLite dev, bukan MySQL `agentic_bos_production` (0 users). Fix (approval Bos 2026-09-21): `migrate --force` (1 migration pending MQ-01C6 `expires_at`) + `BusinessPresetSeeder` (40 preset) + `bos:provision` ulang di APP_ENV=production (admin `bos@nalar.army` id 1, owner pilot `pilot@nalar.army` id 2, company `usaha-pilot`; password acak via PHP `random_bytes`, prompt hidden, file kredensial gitignored diserahkan ke Bos lalu dihapus). Verifikasi: users=2, companies=1, hash `$2y$12$` (bukan plaintext).
+- **Root-cause 3 (login produksi 500):** `.env.production` lama set `DATA_SOURCE=json`  `JsonCompanyContext` fail-closed menolak json di environment production (by design, guard demo). Driver diubah ke `eloquent` (konsisten dengan `.env` dev dan data pilot Eloquent). Restart `agentic-bos-production` via admin.
+- **Root-cause 4 (asset/redirect https):** `APP_URL=https://bos.nalar.army` (domain salah) diperbaiki ke `https://agentic-bos.nalar.army` sesuai Caddy host.
+- **Caddy:** `D:\PROJECTS\nalarin\Caddyfile` blok `agentic-bos.nalar.army` upstream 8000  **8010** (PM2 produksi). `caddy validate` PASS, reload sukses via admin; Basic Auth tetap aktif (401 tanpa kredensial = benar). Blok JEJAK foreign tak disentuh.
+- **Verifikasi golden-path produksi (Livewire HTTP nyata via 8010):** login owner pilot 200 + redirect `/app/dashboard`; dashboard render nama company **Usaha Pilot**; `/app/settings` 200 (91KB); `/app/contacts` 200; `/admin` **403** untuk owner (fail-closed benar); sessions tersimpan di MySQL (44), `jobs=0`, `failed_jobs=0`.
+- **Catatan dev:** server dev lama 8000/8002/8003/8005 masih hidup (sesi user); proxy kini menunjuk 8010 sehingga 8000 tidak lagi dilayani proxy. `workflow_log.json` (+230 baris jejak runtime dev 2026-09-21) tetap uncommitted (bukan tulisan task ini).
+- **Next READY: UR-03 golden-path UAT tenant produksi** (butuh kredensial pilot Bos + akses proxy https dari HP/laptop).
 
 **Next READY: UR-02 local implementation (service terkelola web+queue+scheduler) tanpa restart produksi; aktivasi = `HUMAN:DEPLOY`.**
 
