@@ -1,5 +1,21 @@
 # Agentic BOS Autopilot Status
 
+## Fase 8 — Tagihan Pelanggan & Profitabilitas Proyek (D-62)
+
+**D-62 dicatat LOCKED** (commit `2ba0ee3`) beserta antrean Fase 8 (T-41..T-47) di `EXECUTION_PLAN.md`.
+
+**T-41 jalur input Buku Kas + pembebanan ke proyek: `DONE`, commit `2cc6c96`.**
+
+- **Cacat yang ditutup:** `LedgerScreen` hanya punya `render()` — tidak ada aksi tulis sama sekali, jadi tenant tidak punya cara mencatat penerimaan atau pengeluaran dari UI. Tanpa ini laba-rugi proyek (T-46) mustahil punya isi.
+- **Submenu baru** `accounting/entries` ("Entri Kas", screen `list`, entity `cash_entries`, `requires_all: ['finance.cashbook']`). Tidak ada kelas layar baru — `ListScreen` generik yang dipakai.
+- **Temuan saat kerja:** `SchemaPresenter::columns()` membuang **semua** foreign key, jadi `project_id` tidak pernah muncul di form. Itu benar untuk kolom sistem (`journal_id`, `created_by_user_id`) tapi salah untuk pembebanan yang memang dipilih manusia. Perbaikan tidak memakai daftar field per entitas: referensi kini bisa ditandai di schema (`references.{field}.assignable = true`), dan `SchemaPresenter::relations()` mengangkatnya jadi field form bertipe `relation`. Penanda divalidasi `EntitySchema` (harus bool; `term`/`label` harus string). `cash_entries.project_id` dan `contact_id` ditandai; kolom sistem tetap tersembunyi. Entitas baru mendapat perilaku ini tanpa menyentuh presenter (D-31/D-42).
+- **Label relasi lewat kamus istilah:** schema menyebut kunci `term`, layar meneruskannya ke `term()`. Pada preset bengkel labelnya jadi "Pekerjaan" dan "Pelanggan", bukan "Project Id".
+- **Fail-closed:** pilihan relasi hanya dimuat dari repository company aktif, dan id yang dikirim klien diverifikasi ada di company itu sebelum disimpan — tanpa itu id company lain bisa tersimpan sebagai relasi menggantung yang tidak tampil di layar mana pun.
+- **Test** `tests/Feature/CashEntryInputTest.php` 9 test: path modul terdaftar + muncul di navigasi, hanya referensi `assignable` jadi field, label mengikuti terminologi, pengeluaran terbebani proyek, entri tanpa proyek sah, opsi relasi hanya company aktif, id proyek luar company ditolak dan tidak ada yang tersimpan, `direction` di luar enum ditolak, isolasi tenant.
+- **Gate:** `DATA_SOURCE=json php artisan test` **938 passed / 4.629 assertions**; `vendor/bin/pint` PASS 5 file task ini; `npm run build` PASS.
+- **Catatan:** `vendor/bin/pint --test` melaporkan pelanggaran pre-existing di `tests/Feature/LobbyNavigationTest.php` (`class_attributes_separation`) — file writer lain yang sedang dimodifikasi, dicatat dan tidak disentuh (§0.2).
+- **Next:** T-42 (entitas `customer_invoices` + `customer_invoice_lines`) kini `READY` tapi **serial** — ia menyentuh migration, jadi harus menunggu tidak ada writer lain aktif di `main`.
+
 ## UR  Product Usage Readiness (docs/plans/product-usage-readiness-plan.md)
 
 **UR-00  convergence & final QA baseline: `DONE`, commit `f942299` (laporan `docs/worker-reports/UR-00.md`).**
