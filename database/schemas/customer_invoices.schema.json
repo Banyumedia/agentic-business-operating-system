@@ -1,0 +1,181 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "customer_invoices",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "number",
+    "title",
+    "issue_date"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "number": {
+      "type": "string",
+      "length": 64
+    },
+    "title": {
+      "type": "string",
+      "length": 191
+    },
+    "status": {
+      "type": "string",
+      "default": "draft",
+      "length": 16,
+      "enum": [
+        "draft",
+        "issued",
+        "partial",
+        "paid",
+        "void"
+      ]
+    },
+    "issue_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "due_date": {
+      "type": "string",
+      "nullable": true,
+      "format": "date"
+    },
+    "contact_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "project_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "quotation_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "subtotal": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "discount_amount": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "dpp": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "tax": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "grand_total": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "paid_amount": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 1000
+    },
+    "attributes": {
+      "type": "object",
+      "nullable": true
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [
+    {
+      "fields": [
+        "status"
+      ],
+      "company_scoped": true
+    },
+    {
+      "fields": [
+        "issue_date"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [
+    {
+      "fields": [
+        "number"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "references": {
+    "contact_id": {
+      "entity": "contacts",
+      "on_delete": "set_null",
+      "assignable": true,
+      "term": "contact"
+    },
+    "project_id": {
+      "entity": "projects",
+      "on_delete": "set_null",
+      "assignable": true,
+      "term": "project"
+    },
+    "quotation_id": {
+      "entity": "quotations",
+      "on_delete": "set_null",
+      "assignable": true,
+      "label": "Penawaran"
+    }
+  }
+}

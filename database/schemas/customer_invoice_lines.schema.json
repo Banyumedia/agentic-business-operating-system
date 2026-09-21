@@ -1,0 +1,118 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "customer_invoice_lines",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "customer_invoice_id",
+    "description",
+    "quantity",
+    "unit_price",
+    "line_total"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "customer_invoice_id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "item_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "description": {
+      "type": "string",
+      "length": 255
+    },
+    "quantity": {
+      "type": "number",
+      "default": 1,
+      "precision": 18,
+      "scale": 4,
+      "minimum": 0
+    },
+    "unit": {
+      "type": "string",
+      "nullable": true,
+      "length": 32
+    },
+    "unit_price": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "discount_amount": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "line_total": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "sort_order": {
+      "type": "integer",
+      "default": 0,
+      "unsigned": true
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [
+    {
+      "fields": [
+        "customer_invoice_id"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [],
+  "references": {
+    "customer_invoice_id": {
+      "entity": "customer_invoices",
+      "on_delete": "cascade"
+    },
+    "item_id": {
+      "entity": "items",
+      "on_delete": "set_null",
+      "assignable": true,
+      "term": "item"
+    }
+  }
+}
