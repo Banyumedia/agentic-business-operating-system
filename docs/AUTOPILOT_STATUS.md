@@ -39,6 +39,17 @@
 - **Catatan dev:** server dev lama 8000/8002/8003/8005 masih hidup (sesi user); proxy kini menunjuk 8010 sehingga 8000 tidak lagi dilayani proxy. `workflow_log.json` (+230 baris jejak runtime dev 2026-09-21) tetap uncommitted (bukan tulisan task ini).
 - **Next READY: UR-03 golden-path UAT tenant produksi** (butuh kredensial pilot Bos + akses proxy https dari HP/laptop).
 
+**UR-03  golden-path UAT tenant produksi: `DONE` (automated via 8010, 2026-09-21).**
+
+- **Setup tenant UAT:** preset company `usaha-pilot` diganti `custom` -> `laundry` (butuh POS/inventory untuk golden path); `business_identities` + `module_settings` dibuat mengikuti kontrak onboarding (D-03/D-44/D-19) karena `bos:provision` hanya bikin user/company.
+- **Golden path POSITIF (semua PASS, via Livewire HTTP nyata):** login owner pilot -> redirect `/app/dashboard` 200 + nama company render; kontak baru `Budi UAT` create+save sukses; POS (`/app/pos`) 200 render Layar Kasir; cashbook (`/app/accounting`) 200 render Buku Kas; export ZIP dibuat via Livewire `DataExport@export` + download 200 (`PK` header); logout POST+CSRF 302; login ulang OK redirect dashboard.
+- **Negative path (semua PASS):** N1 admin tanpa impersonation -> `/app/dashboard` 302 (bukan tenant view); N2 admin impersonation -> export download **403** (fail-closed benar) + stop impersonation bersih; N3 API tenant tanpa token -> **401**; N4 POST logout tanpa CSRF -> **419**; N5 password salah -> tidak redirect + pesan kredensial.
+- **Defect nyata ditemukan & diperbaiki (commit `bea1a76`):** `current_company_id` residual pada user admin (sisa impersonation yang tidak di-stop bersih / polusi) membuat `Login.php:69` percaya kolom residual -> `setCurrent()` ke company asing -> `assertAuthorizedFor` fail-closed -> **login 500 permanen untuk user itu**. Ini temuan QA UR-00 "current_company_id residu" (LOW) terbukti berdampak nyata di UAT. Fix: login self-healing  verifikasi kepemilikan residual via `companies()->whereKey()->doesntExist()`, tidak valid -> reset + fallback ke company milik user. RED test `LoginResidualCompanyContextTest` (3 test, Eloquent rebind karena suite default json) GREEN.
+- **Artefak dibersihkan:** `storage/app/exports/1/` (sisa UAT), impersonation rows, cache script UAT; preset `laundry` + data UAT (`Budi UAT` contact) tetap sebagai data tenant pilot.
+- **Gate:** `DATA_SOURCE=json php artisan test` **865 passed / 4.406 assertions** (awal run tanpa `DATA_SOURCE=json` = 193 failed PRE-EXISTING karena `.env` `DATA_SOURCE=eloquent` vs konvensi suite json  bukan defect; baseline stash konfirmasi sama); Pint PASS 436 files; `npm run build` PASS. Web PM2 di-restart, negative suite re-run PASS, log error produksi bersih (error terakhir 11:08 sebelum fix).
+- **Sisa UR-03 (manual, butuh Bos):** onboarding pilih preset via UI nyata + satu transaksi POS lengkap dari HP via `https://agentic-bos.nalar.army` (basic auth `bos`), karena automated run via 8010 memakai APP_URL https proxy.
+- **Next READY: UR-04** (siklus komersial end-to-end; gate `HUMAN:SECRET` + `HUMAN:DEPLOY`) atau UR-06 (observability/backup).
+
 **Next READY: UR-02 local implementation (service terkelola web+queue+scheduler) tanpa restart produksi; aktivasi = `HUMAN:DEPLOY`.**
 
 - Next READY pra-gate: UR-02 local implementation (service terkelola web/queue/scheduler, log terpisah, idempotent test job) boleh dikerjakan tanpa menyentuh produksi.
