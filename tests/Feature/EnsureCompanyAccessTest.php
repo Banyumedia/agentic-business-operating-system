@@ -51,6 +51,24 @@ class EnsureCompanyAccessTest extends TestCase
 
         $middleware = new EnsureCompanyAccess;
 
+        // Web request: dialihkan secara halus ke onboarding (bukan 403 mentah),
+        // supaya user baru tanpa company dibimbing, bukan dibenturkan error.
+        $response = $middleware->handle($request, fn () => response('OK'));
+
+        $this->assertTrue($response->isRedirect(route('onboarding')));
+    }
+
+    public function test_api_request_without_current_company_fails_closed(): void
+    {
+        $user = User::factory()->create(['current_company_id' => null]);
+
+        $request = Request::create('/app/dashboard');
+        $request->setUserResolver(fn () => $user);
+        $request->headers->set('Accept', 'application/json');
+
+        $middleware = new EnsureCompanyAccess;
+
+        // Jalur API/JSON tetap fail-closed 403 (tidak ada redirect HTML).
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage('No active company selected');
 

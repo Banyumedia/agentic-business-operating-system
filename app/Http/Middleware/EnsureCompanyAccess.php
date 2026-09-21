@@ -25,8 +25,21 @@ class EnsureCompanyAccess
 
         $companyId = $user->current_company_id;
 
+        // Sumber kebenaran ganda: kolom `users.current_company_id` (Eloquent)
+        // atau session `active_company` (driver JSON / test). Hormati keduanya.
+        if (! $companyId && session()->has('active_company')) {
+            $companyId = session('active_company');
+        }
+
         if (! $companyId) {
-            abort(403, 'No active company selected.');
+            // User belum punya/memilih company (mis. baru daftar, belum
+            // onboarding). Alihkan secara halus ke onboarding alih-alih
+            // melempar 403 mentah — pengalaman yang benar untuk user baru.
+            if ($request->expectsJson()) {
+                abort(403, 'No active company selected.');
+            }
+
+            return redirect()->route('onboarding');
         }
 
         // Verify the user belongs to this company (via owner for now, could be via roles table later)
