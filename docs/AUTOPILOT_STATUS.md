@@ -58,9 +58,9 @@
    - `admin-invoice-manager.blade.php`: `$this->errors->any()` tidak valid di Livewire v4 -> `PropertyNotFoundException` -> **500 halaman admin invoice**. Test baru `AdminInvoiceManagerRenderTest` (render OK + non-admin 403) RED lalu GREEN.
 3. **Drill end-to-end nyata (Livewire HTTP produksi):** owner login -> subscribe page render 3 kartu paket -> `selectPlan(Starter)` -> redirect `payment-instruction/1` 200 (nominal + instruksi bank tampil) -> owner akses `/admin/invoices` **403** (benar) -> admin login -> `/admin/invoices` 200 invoice ter-list -> `confirmPayment(1)` -> **REPLAY confirmPayment** (idempoten).
 4. **Konsistensi 4 sumber terbukti:** invoice #1 `paid` amount 750.000 `paid_at` tercatat; membership tepat **1 row** setelah replay (tidak dobel), `active` plan Starter, `expires 2026-10-21` (+1 bln dari konfirmasi); token balance cache 500.000 = kuota Starter; ledger entries 0 by-design (kredit kuota via cache, ledger saat konsumsi). Anti-spam invoice pending juga terbukti (pemilihan kedua saat pending = ditolak).
-5. **Data rekening/QRIS**: `MANUAL_PAYMENT_BANK_*` masih kosong  halaman instruksi tampil tapi nomor rekening placeholder. Butuh Bos set di `.env.production` (gate `HUMAN:SECRET` tetap terbuka untuk data riil).
+5. **Data rekening/QRIS**: `MANUAL_PAYMENT_BANK_*` **sudah di-set produksi** (Mandiri 1370011925654 a.n. Didik Wahyudi, default menunggu Bos ganti; persetujuan via chat). Diverifikasi live: invoice #2 baru -> halaman instruksi tampil bank+rekening+pemilik+nominal. QRIS sengaja kosong, bisa ditambah belakangan tanpa kode: set `MANUAL_PAYMENT_QRIS_PATH` + file `storage/app/public/qris.png`.
 6. Gate: `DATA_SOURCE=json php artisan test` **877 passed / 4.427 assertions**; Pint PASS 443 files; `npm run build` PASS (Blade berubah).
-7. **Sisa untuk UR-04 penuh (manual Bos):** set `MANUAL_PAYMENT_BANK_NAME/ACCOUNT/HOLDER` + QRIS, lalu jalankan satu siklus dengan transfer riil bila mau uji `HUMAN:COST`.
+7. **Sisa untuk UR-04 penuh (manual Bos):** QRIS (opsional, belakangan) dan satu siklus transfer riil bila mau uji `HUMAN:COST`.
 
 - **Next READY: UR-05** (pilot WA-first; gate `HUMAN:DECISION` scope + `HUMAN:SECRET`) atau tunggu pilot operasional UR-07 (deps: UR-04 sisa manual + UR-06 aktivasi).
 
