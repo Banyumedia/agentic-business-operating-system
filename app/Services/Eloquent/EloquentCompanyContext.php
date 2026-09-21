@@ -26,7 +26,13 @@ class EloquentCompanyContext implements CompanyContext
 
     public function displayName(): string
     {
-        return (string) $this->getCompany()->name;
+        // F3 (QA MQ-01): paritas dengan driver JSON - jangan pernah
+        // menampilkan string kosong; fallback ke slug bila nama kosong.
+        $name = trim((string) $this->getCompany()->name);
+
+        return $name !== ''
+            ? $name
+            : str($this->getCompany()->slug)->replace('-', ' ')->title()->toString();
     }
 
     public function setCurrent(string $companyId): void
@@ -97,10 +103,14 @@ class EloquentCompanyContext implements CompanyContext
 
         $impersonationId = session('admin_impersonation_id');
         if (is_string($impersonationId) && $impersonationId !== '') {
+            // F2 (QA MQ-01): sesi impersonasi berumur pendek - fail-closed pada
+            // baris tanpa expires_at maupun yang sudah lewat.
             $valid = AdminImpersonationSession::query()
                 ->where('session_id', $impersonationId)
                 ->where('target_company_id', $company->id)
                 ->where('admin_user_id', $user->id)
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '>', now())
                 ->exists();
 
             if ($valid) {

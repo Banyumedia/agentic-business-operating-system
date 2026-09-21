@@ -76,13 +76,22 @@ class CompanyDisplayNameParityTest extends TestCase
      * Parity JSON: displayName membaca business_identity.json, bukan
      * men-title-case slug - nama usaha apa adanya.
      */
-    public function test_json_display_name_reads_identity_file(): void
+    public function test_eloquent_display_name_falls_back_to_slug_when_name_empty(): void
     {
-        config(['datasource.driver' => 'json']);
-        (new DataSourceServiceProvider($this->app))->register();
-        $context = app(CompanyContext::class);
-        $context->setCurrent('bengkel-arka');
+        $user = User::factory()->create();
+        $company = Company::create([
+            'name' => '',
+            'slug' => 'klinik-sehat-utama',
+            'business_preset' => 'rental',
+            'owner_user_id' => $user->id,
+        ]);
 
-        $this->assertSame('Bengkel Arka', $context->displayName());
+        $this->actingAs($user);
+        session(['active_company' => (string) $company->id]);
+
+        $context = app(CompanyContext::class);
+
+        // F3 (QA MQ-01): nama kosong tidak boleh menghasilkan banner kosong.
+        $this->assertSame('Klinik Sehat Utama', $context->displayName());
     }
 }

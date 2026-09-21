@@ -206,7 +206,7 @@ class DataErasureTest extends TestCase
         $this->assertStringContainsString('Penghapusan', $response->getContent());
     }
 
-    public function test_erasure_tab_is_absent_from_staff_dom(): void
+    public function test_intruder_cannot_set_foreign_company_context(): void
     {
         $owner = User::factory()->create();
         $company = Company::factory()->create(['owner_user_id' => $owner->id]);

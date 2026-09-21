@@ -46,9 +46,13 @@ class EnsureCompanyAccess
         $ownsCompany = Company::where('id', $companyId)->where('owner_user_id', $user->id)->exists();
         $hasAccess = $ownsCompany;
         if (! $hasAccess && session()->has('admin_impersonation_id')) {
+            // F2 (QA MQ-01): fail-closed - baris tanpa expires_at atau sudah
+            // kedaluwarsa tidak memberi akses.
             $hasAccess = AdminImpersonationSession::where('session_id', session('admin_impersonation_id'))
                 ->where('target_company_id', $companyId)
                 ->where('admin_user_id', $user->id)
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '>', now())
                 ->exists();
         }
 
