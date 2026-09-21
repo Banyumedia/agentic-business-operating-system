@@ -40,19 +40,48 @@ Acceptance minimum:
 
 Jalankan focused test dan buktikan test defect RED sebelum implementasi.
 
-### MQ-01C — Implementasi terkecil (writer)
+### MQ-01C — Implementasi terkecil (writer, serial per slice)
 
-**Allowed paths:**
+Temuan audit ditutup dalam commit kecil berikut. Hanya satu slice boleh memiliki
+writer aktif pada satu waktu.
 
-- `app/Services/Dashboard/**`
-- `app/Livewire/Dashboard.php`
-- `resources/views/livewire/dashboard.blade.php`
-- `resources/views/livewire/widgets/dashboard-widget.blade.php`
-- test Dashboard terkait
+#### MQ-01C1 — Integritas uang dan recovery
 
-Larangan: migration, model baru, dependency, route umum, nama industri pada kode,
-atau refactor di luar Dashboard. Gunakan service/helper generik hanya jika perlu
-untuk mencegah dua kalkulasi uang berbeda.
+**Allowed paths:** `app/Services/Dashboard/**`, `app/Livewire/Dashboard.php`, view
+Dashboard/widget, serta test Dashboard. Tutup acceptance MQ-01B nomor 1–4 dan
+pastikan settings/theme failure juga masuk error state terkontrol.
+
+#### MQ-01C2 — Tenant authorization fail-closed
+
+**Allowed paths:** middleware/company context, registrasi persistent middleware
+Livewire, dan negative test tenant terkait. Jadikan company ID yang benar-benar
+dikembalikan `CompanyContext` sebagai ID yang diotorisasi. Buktikan mismatch
+`current_company_id` versus `active_company`, ownership yang dicabut setelah
+mount, dan capability yang dicabut setelah mount ditolak tanpa membocorkan data.
+Request Livewire nyata diperlukan untuk klaim middleware persistence.
+
+#### MQ-01C3 — Kontrak preset-widget-capability
+
+**Allowed paths:** `WidgetRegistry`, validator preset, data preset terkait, dan
+test matriks seluruh preset. Satu kontrak widget→capability harus dipakai runtime
+dan validator. Deklarasi widget yang capability-nya tidak aktif harus gagal jelas,
+bukan hilang diam-diam. Penyelesaian mismatch dilakukan sebagai data preset,
+tanpa cabang nama industri di kode.
+
+#### MQ-01C4 — Parity identitas dan error state
+
+Pastikan datasource Eloquent menampilkan nama company, bukan ID numerik, dan
+JSON/Eloquent memiliki kontrak tampilan setara. Tambahkan test terfokus.
+
+#### MQ-01C5 — Browser/mobile/a11y smoke
+
+Buktikan reload/loading, fokus setelah navigasi, viewport 360–390 px, serta aksi
+keyboard dengan browser aktual. Temuan shell/Command Palette yang bukan milik
+Dashboard dipindahkan ke boundary modul shell berikutnya dan tidak disisipkan ke
+commit Dashboard.
+
+Larangan seluruh slice: migration, dependency, route umum, nama industri pada
+kode, atau refactor di luar acceptance slice.
 
 ### MQ-01D — QA diff (read-only)
 

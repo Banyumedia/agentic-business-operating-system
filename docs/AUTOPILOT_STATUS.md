@@ -6,16 +6,18 @@
 
 **Baseline:** branch `main` HEAD `d0cc3fd`; folder asing `backup-ahli-keuangan/` telah diverifikasi bukan git worktree/tidak direferensikan source lalu dihapus atas instruksi Bos. Full suite pertama sempat gagal 8 test akibat state fixture; setelah fixture `storage/app/json/1/workflow_log.json` dipulihkan, focused `ModuleSidebarTest` **14 passed / 55 assertions** dan full rerun terisolasi **779 passed / 3,996 assertions**.
 
-**Plan 5 part kecil:**
-1. `MQ-01A` audit kontrak Dashboard: alur, data, tenant/auth, uang, a11y; read-only paralel.
-2. `MQ-01B` tulis acceptance plan dengan scope file sempit; wajib review QA independen sebelum kode.
-3. `MQ-01C` implement defect terverifikasi + negative/regression test oleh delegate writer di worktree terisolasi.
-4. `MQ-01D` QA independen atas diff; temuan valid diperbaiki di branch worker.
-5. `MQ-01E` merge serial, full test + Pint + build + smoke, lalu lanjut modul berikutnya.
+**Plan dan audit:** plan awal committed `9076af8`; QA independen OpenCode menyatakan tidak ada blocker. Audit paralel MQ-01A selesai dan memverifikasi empat boundary: integritas kalkulasi uang/reload, mismatch sumber tenant authorization, middleware Livewire update yang belum persistent, serta kontrak preset-widget-capability yang dapat hilang diam-diam. Plan direvisi menjadi slice serial `MQ-01C1`–`MQ-01C5`; detail: `docs/plans/module-quality-dashboard.md`.
 
-**Batas:** D-31 tetap wajib; tidak ada dependency/migration/push/deploy. Uang dan tenant wajib fail-closed dengan negative test. Detail: `docs/plans/module-quality-dashboard.md`.
+**Urutan writer:**
+1. `MQ-01C1` integritas uang + reload/settings recovery.
+2. `MQ-01C2` tenant authorization + persistent Livewire middleware dengan negative test request nyata.
+3. `MQ-01C3` kontrak preset-widget-capability + matriks seluruh preset.
+4. `MQ-01C4` parity nama company JSON/Eloquent.
+5. `MQ-01C5` browser/mobile/a11y smoke.
 
-**Next:** selesaikan audit MQ-01A dan review plan; baru delegasikan writer MQ-01C.
+**Batas:** D-31 tetap wajib; tidak ada dependency/migration/push/deploy. Uang dan tenant wajib fail-closed dengan negative test. Temuan placeholder route dan fokus shell dicatat untuk boundary modul shell, tidak disisipkan ke commit Dashboard.
+
+**Next:** delegasikan writer `MQ-01C1` di worktree terisolasi; setelah verifikasi dan commit, lanjutkan slice berikutnya secara serial.
 
 ## UX-MARATHON ITERATIF — autopilot berkelanjutan (mandat Bos)
 
