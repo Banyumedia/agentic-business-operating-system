@@ -9,3 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('billing:check-expiring')->daily();
+
+// UR-06: backup harian terenkripsi + health check dengan alert log.
+Schedule::command('bos:backup-mysql')->dailyAt('02:30');
+Schedule::command('bos:health')->everyFiveMinutes();

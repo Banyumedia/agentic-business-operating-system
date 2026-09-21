@@ -50,4 +50,13 @@ return [
         'secret' => env('MASTER_BOT_SECRET', ''),
     ],
 
+    // UR-06: backup MySQL terenkripsi + observability.
+    'backup' => [
+        // Kunci enkripsi backup (min 32 char). Kosong = bos:backup-mysql
+        // menolak jalan (fail-closed: tidak ada backup plain-text).
+        'encryption_key' => env('BACKUP_ENCRYPTION_KEY', ''),
+        'mysqldump_path' => env('BACKUP_MYSQLDUMP_PATH', 'mysqldump'),
+        'openssl_path' => env('BACKUP_OPENSSL_PATH', 'openssl'),
+    ],
+
 ];
