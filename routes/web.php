@@ -4,6 +4,7 @@ use App\Contracts\CompanyContext;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminImpersonationController;
 use App\Http\Controllers\App\GroupReportController;
+use App\Http\Controllers\App\ModuleController;
 use App\Http\Middleware\EnsureCompanyAccess;
 use App\Http\Middleware\EnsureCompanyContext;
 use App\Http\Middleware\EnsureFeatureEnabled;
@@ -15,7 +16,6 @@ use App\Livewire\Auth\Register;
 use App\Livewire\Billing\PaymentInstructionPage;
 use App\Livewire\Billing\SubscribePage;
 use App\Livewire\Dashboard;
-use App\Livewire\DummyModule;
 use App\Livewire\Lobby;
 use App\Livewire\Onboarding;
 use App\Livewire\Paywall;
@@ -79,7 +79,7 @@ Route::middleware(['auth', SetCurrentCompany::class, EnsureCompanyAccess::class]
         Route::get('/app/billing/subscribe', SubscribePage::class)->name('billing.subscribe');
         Route::get('/app/billing/payment-instruction/{invoice}', PaymentInstructionPage::class)->name('billing.payment-instruction');
 
-        Route::get('/app/{module}/{submodule?}', DummyModule::class)
+        Route::get('/app/{module}/{submodule?}', [ModuleController::class, 'show'])
             ->middleware(EnsureFeatureEnabled::class)
             ->name('app.module');
     });
