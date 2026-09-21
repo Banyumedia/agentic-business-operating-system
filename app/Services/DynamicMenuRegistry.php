@@ -39,6 +39,14 @@ class DynamicMenuRegistry
             }
         }
 
+        // Modul yang tidak didaftarkan preset tetap muncul (capability-nya
+        // aktif, jadi menyembunyikannya = fitur dibayar tapi hilang), tapi
+        // ia di-append di belakang. Tanpa penguncian ini, preset yang lupa
+        // mendaftarkan satu grup membuat menu harian - mis. Kasir - jatuh di
+        // bawah Pengaturan.
+        $ordered = array_values(array_filter($ordered, static fn (string $module): bool => $module !== 'settings'));
+        $ordered[] = 'settings';
+
         return $ordered;
     }
 

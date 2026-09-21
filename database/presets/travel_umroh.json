@@ -95,7 +95,6 @@
         "order": [
             "dashboard",
             "contacts",
-            "deals",
             "employees",
             "accounting",
             "settings"

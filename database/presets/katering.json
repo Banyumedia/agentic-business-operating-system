@@ -97,7 +97,7 @@
     "menus": {
         "order": [
             "dashboard",
-            "orders",
+            "pos",
             "contacts",
             "inventory",
             "employees",

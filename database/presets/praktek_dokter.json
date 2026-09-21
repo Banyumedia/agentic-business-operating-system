@@ -101,9 +101,8 @@
             "dashboard",
             "bookings",
             "contacts",
-            "pharmacy",
-            "inventory",
             "pos",
+            "inventory",
             "accounting",
             "settings"
         ]

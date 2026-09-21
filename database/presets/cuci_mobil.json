@@ -80,10 +80,9 @@
     "menus": {
         "order": [
             "dashboard",
-            "orders",
+            "pos",
             "contacts",
             "inventory",
-            "pos",
             "employees",
             "accounting",
             "settings"

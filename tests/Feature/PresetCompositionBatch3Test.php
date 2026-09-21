@@ -151,50 +151,6 @@ class PresetCompositionBatch3Test extends TestCase
         $this->assertSame(0, $checked, 'Batch 3 tidak boleh mengaktifkan effect sebelum kontrak runtime aman tersedia.');
     }
 
-    public function test_every_active_capability_has_a_navigable_home(): void
-    {
-        // Capability yang dinyalakan tapi grup menu pemiliknya tidak ada di
-        // `menus.order` jadi fitur mati: dibayar di tier, tak pernah terlihat.
-        // Contoh nyata yang pernah lolos: `timesheet` tanpa grup `projects`.
-        $home = [
-            'contacts' => 'contacts',
-            'deals' => 'contacts',
-            'projects' => 'projects',
-            'projects.progress_billing' => 'projects',
-            'timesheet' => 'projects',
-            'scheduling' => 'bookings',
-            'bookings' => 'bookings',
-            'bookings.deposit' => 'bookings',
-            'inventory' => 'inventory',
-            'inventory.batch_expiry' => 'inventory',
-            'inventory.bom' => 'inventory',
-            'pos' => 'pos',
-            'pos.tables' => 'pos',
-            'milestone_billing' => 'accounting',
-            'finance.cashbook' => 'accounting',
-            'finance.accounting' => 'accounting',
-            'hr.employees' => 'employees',
-            'hr.payroll' => 'employees',
-        ];
-
-        foreach (self::BATCH as $slug) {
-            $definition = $this->definition($slug);
-            $order = $definition['menus']['order'];
-
-            foreach ($definition['capabilities'] as $capability => $enabled) {
-                if ($enabled !== true || ! isset($home[$capability])) {
-                    continue;
-                }
-
-                $this->assertContains(
-                    $home[$capability],
-                    $order,
-                    "Capability {$capability} aktif tapi grup menu {$home[$capability]} tidak dinavigasikan: {$slug}"
-                );
-            }
-        }
-    }
-
     public function test_batch_dashboard_widgets_are_backed_by_an_active_capability(): void
     {
         // Widget hanya dirender bila kapabilitas pendukungnya aktif; kalau

@@ -100,7 +100,6 @@
         "order": [
             "dashboard",
             "pos",
-            "orders",
             "inventory",
             "contacts",
             "employees",

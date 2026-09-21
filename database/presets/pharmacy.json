@@ -107,7 +107,6 @@
         "order": [
             "dashboard",
             "pos",
-            "orders",
             "inventory",
             "contacts",
             "accounting",

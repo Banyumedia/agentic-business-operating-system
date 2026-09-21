@@ -78,9 +78,16 @@ class DynamicMenuRegistryTest extends TestCase
 
     public function test_module_order_is_composed_from_the_active_preset(): void
     {
+        $modules = $this->registry->modules();
+
+        // Urutan yang didaftarkan preset dipertahankan di depan...
         $this->assertSame(
-            ['dashboard', 'bookings', 'contacts', 'hrd', 'accounting', 'settings'],
-            array_slice($this->registry->modules(), 0, 6),
+            ['dashboard', 'bookings', 'contacts', 'hrd', 'accounting'],
+            array_slice($modules, 0, 5),
         );
+
+        // ...dan Pengaturan dipaksa ke posisi terakhir, di belakang modul
+        // katalog yang di-append karena tidak didaftarkan preset.
+        $this->assertSame('settings', end($modules));
     }
 }
