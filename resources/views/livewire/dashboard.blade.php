@@ -121,6 +121,12 @@
         </div>
     </section>
 
+    {{-- Panel Kesehatan Usaha (D-50, BI-B2). Dirender hanya bila $health terisi,
+         dan itu hanya untuk owner - lihat Dashboard::loadDashboard(). --}}
+    @if ($health !== null)
+        @include('livewire.dashboard.health-panel')
+    @endif
+
     <section aria-labelledby="assistant-report-title" class="overflow-hidden rounded-[var(--erp-radius-lg)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] shadow-[var(--erp-card-shadow)]">
         <div class="border-b border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] px-5 py-4 sm:px-6">
             <div class="flex flex-wrap items-center justify-between gap-3">
