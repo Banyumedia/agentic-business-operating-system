@@ -48,7 +48,18 @@
 - **Artefak dibersihkan:** `storage/app/exports/1/` (sisa UAT), impersonation rows, cache script UAT; preset `laundry` + data UAT (`Budi UAT` contact) tetap sebagai data tenant pilot.
 - **Gate:** `DATA_SOURCE=json php artisan test` **865 passed / 4.406 assertions** (awal run tanpa `DATA_SOURCE=json` = 193 failed PRE-EXISTING karena `.env` `DATA_SOURCE=eloquent` vs konvensi suite json  bukan defect; baseline stash konfirmasi sama); Pint PASS 436 files; `npm run build` PASS. Web PM2 di-restart, negative suite re-run PASS, log error produksi bersih (error terakhir 11:08 sebelum fix).
 - **Sisa UR-03 (manual, butuh Bos):** onboarding pilih preset via UI nyata + satu transaksi POS lengkap dari HP via `https://agentic-bos.nalar.army` (basic auth `bos`), karena automated run via 8010 memakai APP_URL https proxy.
-- **Next READY: UR-04** (siklus komersial end-to-end; gate `HUMAN:SECRET` + `HUMAN:DEPLOY`) atau UR-06 (observability/backup).
+- **Next READY: UR-04** (siklus komersial end-to-end; gate `HUMAN:SECRET` + `HUMAN:DEPLOY` + set `BACKUP_ENCRYPTION_KEY`). UR-06 selesai lokal.
+
+**UR-06  observability, backup, dan recovery drill  `DONE` lokal (2026-09-21, commit `b913c42`); aktivasi schedule backup/health produksi = `HUMAN:DEPLOY`.**
+
+1. `bos:backup-mysql` (BosBackupMysql): mysqldump `--single-transaction` -> enkripsi AES-256-CBC + PBKDF2 60k iter, output `storage/app/backups/mysql-<ts>.sql.enc`, retensi rotasi `--keep=7`. **Fail-closed terbukti**: tanpa/pendek `BACKUP_ENCRYPTION_KEY` exit 1; tidak ada jalur plain-text. Tes nyata: backup DB produksi 197.744 bytes, dekripsi roundtrip OK (65 tabel, data utuh).
+2. `bos:health` (BosHealth): 5 check  database (ping+jumlah tabel), queue (pending+umur tertua, FAIL bila >15 menit = worker macet), scheduler (log fresh), failed-jobs (=0), web (HTTP probe). Exit 1 bila gagal = sinyal alert tiap 5 menit via schedule. Tes nyata produksi: **5/5 lulus**. Health check menangkap 1 job stale dev (InfrastructureProbeJob 93 menit)  dibersihkan.
+3. Schedule (`routes/console.php`): `bos:backup-mysql` dailyAt 02:30 + `bos:health` everyFiveMinutes.
+4. **Restore drill SUKSES** (policy: backup tak pernah di-restore = belum valid): DB disposable `agentic_bos_restore_drill`  dekripsi + restore 5,3 detik; bukti `users=2 companies=1 sessions=57 contacts=2 access_logs=3` (transaksi referensi UAT UR-03 ada), **bcrypt login pilot verify OK**; drill DB dihapus setelah selesai.
+5. Runbook `docs/RUNBOOK_BACKUP_RECOVERY.md`: health checklist, backup manual + verifikasi, prosedur drill lengkap, recovery nyata, incident response berurutan, **RPO 24 jam / RTO 5,3 detik** tercatat.
+6. Test `BackupAndHealthCommandsTest` 5 test (fail-closed kunci kosong/pendek, mysqldump unavailable, health exit 1 web unreachable, skip-web).
+7. Gate: `DATA_SOURCE=json php artisan test` **870 passed / 4.412 assertions**; Pint PASS 439 files; tidak ada perubahan Blade/CSS/JS (build tidak diwajibkan; terakhir PASS UR-03).
+8. Catatan: `.env.production` masih `BACKUP_ENCRYPTION_KEY` kosong  **Bos harus set kunci (min 32 char) sebelum aktivasi produksi** (gate `HUMAN:SECRET` implisit); scheduler produksi PM2 harus reload `routes/console.php` baru saat restart stack berikutnya.
 
 **Next READY: UR-02 local implementation (service terkelola web+queue+scheduler) tanpa restart produksi; aktivasi = `HUMAN:DEPLOY`.**
 
