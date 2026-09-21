@@ -164,7 +164,7 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <span class="inline-flex rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-xs font-semibold">Nomor 2: CS Publik (Add-on)</span>
-                            <h3 class="text-base font-bold text-[var(--erp-text-primary)] mt-1">Bot Layanan Pelanggan Toko</h3>
+                            <h3 class="text-base font-bold text-[var(--erp-text-primary)] mt-1">Bot Layanan {{ term('contact') }} Toko</h3>
                         </div>
                         <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold {{ $csProfile?->status === 'connected' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
                             {{ $csProfile ? ucfirst($csProfile->status) : 'Belum Aktif' }}

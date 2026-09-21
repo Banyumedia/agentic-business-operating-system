@@ -1,4 +1,17 @@
 <div class="space-y-6">
+    {{-- Adaptive Kiosk Bar (Mobile/Tablet <1024px) --}}
+    <div class="flex items-center justify-between pb-3 border-b border-[var(--erp-border)] lg:hidden">
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--erp-accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--erp-accent)]">
+            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Mode Kasir
+        </span>
+        <a href="{{ route('app.dashboard') }}" class="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-[var(--erp-text-secondary)] hover:text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+            ← Kembali ke Dashboard
+        </a>
+    </div>
+
     <header>
         <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--erp-text-muted)]">Ruang kerja</p>
         <h1 class="mt-2 text-3xl font-bold text-[var(--erp-text-primary)]">{{ $label }}</h1>

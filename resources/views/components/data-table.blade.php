@@ -116,24 +116,36 @@
             </table>
         </div>
 
-        {{-- Kontrol urutan untuk layar sempit agar sorting tidak desktop-only. --}}
-        <div class="mb-3 grid gap-2 md:hidden" role="group" aria-label="Urutkan data">
-            @foreach ($columns as $column)
+        {{-- Kontrol urutan ringkas untuk layar sempit (Compact Mobile Sort Bar) --}}
+        <div class="mb-3 flex items-center gap-2 md:hidden" role="group" aria-label="Urutkan data">
+            <div class="relative min-w-0 flex-1">
+                <label for="mobile-sort-select" class="sr-only">Urutkan berdasarkan kolom</label>
+                <select
+                    id="mobile-sort-select"
+                    wire:change="sortBy($event.target.value)"
+                    class="w-full min-h-11 rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] px-3 py-2 text-sm text-[var(--erp-text-primary)] shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                >
+                    <option value="" disabled {{ $sort === null ? 'selected' : '' }}>Pilih Kolom Urutan…</option>
+                    @foreach ($columns as $column)
+                        <option value="{{ $column['field'] }}" {{ $sort === $column['field'] ? 'selected' : '' }}>
+                            Urut: {{ $column['label'] }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            @if ($sort !== null)
                 <button
                     type="button"
-                    wire:click="sortBy('{{ $column['field'] }}')"
+                    wire:click="sortBy('{{ $sort }}')"
                     wire:loading.attr="disabled"
-                    class="inline-flex min-h-11 items-center justify-between rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-inset)] px-3 text-sm text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
+                    aria-label="Ubah arah urutan: saat ini {{ $direction === 'desc' ? 'menurun' : 'menaik' }}"
+                    title="Ubah arah urutan ({{ $direction === 'desc' ? 'Menurun' : 'Menaik' }})"
+                    class="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] px-3 text-sm font-semibold text-[var(--erp-text-primary)] shadow-sm hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
                 >
-                    <span>{{ $column['label'] }}</span>
-                    @if ($sort === $column['field'])
-                        <span aria-hidden="true">{{ $direction === 'desc' ? '▼' : '▲' }}</span>
-                        <span class="sr-only">{{ $direction === 'desc' ? 'menurun' : 'menaik' }}</span>
-                    @else
-                        <span class="text-[var(--erp-text-muted)]" aria-hidden="true">↕</span>
-                    @endif
+                    <span aria-hidden="true" class="text-base">{{ $direction === 'desc' ? '↓' : '↑' }}</span>
                 </button>
-            @endforeach
+            @endif
         </div>
 
         {{-- Kartu untuk layar sempit: tabel padat tidak terbaca di ponsel --}}

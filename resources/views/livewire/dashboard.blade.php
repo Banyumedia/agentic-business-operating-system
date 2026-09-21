@@ -45,6 +45,40 @@
         </button>
     </header>
 
+    @if (! empty($dashboard['quick_actions']))
+        <nav aria-label="Aksi cepat" class="flex flex-wrap items-center gap-3">
+            @foreach ($dashboard['quick_actions'] as $action)
+                <a
+                    href="{{ $action['url'] }}"
+                    @class([
+                        'inline-flex min-h-11 items-center gap-2 rounded-[var(--erp-radius-md)] px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]',
+                        'bg-[var(--erp-accent)] text-[var(--erp-text-inverse)] shadow-[var(--erp-card-shadow)] hover:bg-[var(--erp-accent-hover)]' => $action['primary'],
+                        'border border-[var(--erp-border-strong)] bg-[var(--erp-bg-secondary)] text-[var(--erp-text-primary)] hover:bg-[var(--erp-bg-hover)]' => ! $action['primary'],
+                    ])
+                >
+                    @if ($action['icon'] === 'pos')
+                        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    @elseif ($action['icon'] === 'cashbook')
+                        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    @elseif ($action['icon'] === 'contact')
+                        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                    @else
+                        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                    @endif
+                    <span>{{ $action['label'] }}</span>
+                </a>
+            @endforeach
+        </nav>
+    @endif
+
     <section aria-labelledby="dashboard-kpi-title">
         <div class="mb-4 flex items-center justify-between gap-4">
             <h2 id="dashboard-kpi-title" class="text-lg font-semibold text-[var(--erp-text-primary)]">Kinerja utama</h2>
@@ -94,13 +128,23 @@
                     <p class="text-sm font-semibold text-[var(--erp-accent)]">{{ $dashboard['assistant_report']['period'] }}</p>
                     <h2 id="assistant-report-title" class="mt-1 text-lg font-semibold text-[var(--erp-text-primary)]">Laporan AI</h2>
                 </div>
-                @if ($dashboard['assistant_report']['generated_at'] !== '')
-                    <time datetime="{{ $dashboard['assistant_report']['generated_at'] }}" class="text-sm text-[var(--erp-text-muted)]">
-                        Diperbarui {{ \Illuminate\Support\Carbon::parse($dashboard['assistant_report']['generated_at'])->translatedFormat('d M Y, H:i') }}
-                    </time>
-                @endif
+                <div class="flex items-center gap-3">
+                    @if ($dashboard['assistant_report']['generated_at'] !== '')
+                        <time datetime="{{ $dashboard['assistant_report']['generated_at'] }}" class="text-sm text-[var(--erp-text-muted)]">
+                            Diperbarui {{ \Illuminate\Support\Carbon::parse($dashboard['assistant_report']['generated_at'])->translatedFormat('d M Y, H:i') }}
+                        </time>
+                    @endif
+                    <a
+                        href="https://wa.me/?text={{ urlencode('Halo Asisten, saya ingin mendiskusikan laporan operasional hari ini.') }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] px-3 py-1.5 text-xs font-semibold text-[var(--erp-text-primary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                    >
+                        <span>Diskusi di WhatsApp</span>
+                        <span aria-hidden="true">↗</span>
+                    </a>
+                </div>
             </div>
-        </div>
         <div class="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1.35fr_1fr]">
             <div>
                 <p class="text-base leading-7 text-[var(--erp-text-primary)]">{{ $dashboard['assistant_report']['summary'] }}</p>

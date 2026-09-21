@@ -65,7 +65,7 @@ class AdminImpersonationTest extends TestCase
 
         // Banner layout app (Lobby) tidak lagi memanggil currentCompany()
         // yang tidak ada di kontrak - nama company dirender aman.
-        $lobby = $this->withSession(['admin_impersonation_id' => $sessionId, 'active_company' => $company->id])->get('/');
+        $lobby = $this->withSession(['admin_impersonation_id' => $sessionId, 'active_company' => $company->id])->get('/app/lobby');
         $lobby->assertOk();
         $lobby->assertSee('mode Bantuan Admin');
         $lobby->assertSee($company->name);

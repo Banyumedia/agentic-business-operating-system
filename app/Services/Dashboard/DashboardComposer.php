@@ -52,7 +52,78 @@ class DashboardComposer
             'kpis' => $this->universalKpis(),
             'assistant_report' => $this->assistantReport(),
             'widgets' => $widgets,
+            'quick_actions' => $this->quickActions(),
         ];
+    }
+
+    /** @return list<array{key: string, label: string, url: string, icon: string, primary: bool}> */
+    private function quickActions(): array
+    {
+        $candidates = [];
+
+        if ($this->features->enabled('pos')) {
+            $candidates[] = [
+                'key' => 'pos',
+                'label' => 'Buka Kasir',
+                'url' => url('/app/pos'),
+                'icon' => 'pos',
+            ];
+        }
+
+        if ($this->features->enabled('bookings')) {
+            $candidates[] = [
+                'key' => 'bookings',
+                'label' => '+ '.$this->terms->resolve('booking').' Baru',
+                'url' => url('/app/bookings'),
+                'icon' => 'booking',
+            ];
+        }
+
+        if ($this->features->enabled('orders')) {
+            $candidates[] = [
+                'key' => 'orders',
+                'label' => '+ '.$this->terms->resolve('order').' Baru',
+                'url' => url('/app/orders'),
+                'icon' => 'order',
+            ];
+        }
+
+        if ($this->features->enabled('finance.cashbook')) {
+            $candidates[] = [
+                'key' => 'cashbook',
+                'label' => 'Catat Kas',
+                'url' => url('/app/accounting'),
+                'icon' => 'cashbook',
+            ];
+        }
+
+        if ($this->features->enabled('contacts')) {
+            $candidates[] = [
+                'key' => 'contacts',
+                'label' => '+ '.$this->terms->resolve('contact').' Baru',
+                'url' => url('/app/contacts'),
+                'icon' => 'contact',
+            ];
+        }
+
+        if ($this->features->enabled('inventory')) {
+            $candidates[] = [
+                'key' => 'inventory',
+                'label' => 'Cek '.$this->terms->resolve('item'),
+                'url' => url('/app/inventory'),
+                'icon' => 'inventory',
+            ];
+        }
+
+        $selected = array_slice($candidates, 0, 3);
+        $actions = [];
+
+        foreach ($selected as $i => $action) {
+            $action['primary'] = ($i === 0);
+            $actions[] = $action;
+        }
+
+        return $actions;
     }
 
     /** @return list<array{label: string, value: string, meta: string, tone: string}> */

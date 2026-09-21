@@ -2,7 +2,7 @@
     <div class="border-b border-[var(--erp-border)] bg-[var(--erp-surface)]">
         <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-[var(--erp-text)]">Log Aktivitas Klien</h1>
+                <h1 class="text-3xl font-bold text-[var(--erp-text)]">Log Aktivitas Tenant</h1>
                 <p class="mt-2 text-[var(--erp-text-secondary)]">
                     Pantau aksi operasional tenant dan histori pemakaian token AI di seluruh sistem.
                 </p>
@@ -14,7 +14,7 @@
                 <a href="{{ route('admin.ai-pricings') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">AI Pricing</a>
                 <a href="{{ route('admin.plans') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Paket</a>
                 <a href="{{ route('admin.support-tickets') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Tiket</a>
-                <a href="{{ route('admin.client-logs') }}" class="px-3 py-1.5 rounded bg-[var(--erp-primary)] text-white">Log Klien</a>
+                <a href="{{ route('admin.client-logs') }}" class="px-3 py-1.5 rounded bg-[var(--erp-primary)] text-white">Log Tenant</a>
             </nav>
         </div>
     </div>

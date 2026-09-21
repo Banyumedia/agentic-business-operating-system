@@ -15,7 +15,7 @@
                 <a href="{{ route('admin.plans') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Paket</a>
                 <a href="{{ route('admin.support-tickets') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Tiket</a>
                 <a href="{{ route('admin.hermes-nodes') }}" class="px-3 py-1.5 rounded bg-[var(--erp-primary)] text-white">Hermes Nodes</a>
-                <a href="{{ route('admin.client-logs') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Log Klien</a>
+                <a href="{{ route('admin.client-logs') }}" class="px-3 py-1.5 rounded border border-[var(--erp-border)] hover:bg-[var(--erp-surface-secondary)] text-[var(--erp-text)]">Log Tenant</a>
             </nav>
         </div>
     </div>
@@ -64,7 +64,7 @@
 
         {{-- Active Profiles / Bot Fleet --}}
         <div>
-            <h2 class="text-xl font-bold text-[var(--erp-text)] mb-4">Daftar Bot Asisten Klien</h2>
+            <h2 class="text-xl font-bold text-[var(--erp-text)] mb-4">Daftar Bot Asisten Tenant</h2>
             <div class="overflow-x-auto rounded-lg border border-[var(--erp-border)] bg-[var(--erp-surface)]">
                 <table class="w-full text-left">
                     <thead>

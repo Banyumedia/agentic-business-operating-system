@@ -6,6 +6,7 @@ use Tests\TestCase;
 
 class LobbyNavigationTest extends TestCase
 {
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -14,7 +15,7 @@ class LobbyNavigationTest extends TestCase
 
     public function test_lobby_page_renders_only_visible_application_links(): void
     {
-        $html = $this->get('/?company=klinik-sehat')->assertOk()->assertSee('Agentic BOS')->getContent();
+        $html = $this->get('/app/lobby?company=klinik-sehat')->assertOk()->assertSee('Agentic BOS')->getContent();
 
         foreach (['dashboard', 'contacts', 'bookings', 'accounting', 'hrd', 'settings'] as $module) {
             $this->assertStringContainsString('/app/'.$module, $html);

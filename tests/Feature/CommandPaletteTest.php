@@ -41,7 +41,7 @@ class CommandPaletteTest extends TestCase
 
     public function test_palette_is_a_native_modal_dialog_with_focus_trap_and_escape(): void
     {
-        $html = $this->get('/?company=bengkel-arka')->assertOk()->getContent();
+        $html = $this->get('/app/lobby?company=bengkel-arka')->assertOk()->getContent();
 
         // <dialog>.showModal() = focus trap + Esc native; cancel dicegah default-nya
         // agar Alpine yang mengatur penutupan dan pengembalian fokus.
@@ -57,7 +57,7 @@ class CommandPaletteTest extends TestCase
 
     public function test_palette_opens_from_ctrl_k_and_dispatched_event(): void
     {
-        $html = $this->get('/?company=bengkel-arka')->assertOk()->getContent();
+        $html = $this->get('/app/lobby?company=bengkel-arka')->assertOk()->getContent();
 
         $this->assertStringContainsString('x-on:keydown.window.ctrl.k.prevent="openPalette()"', $html);
         $this->assertStringContainsString('x-on:keydown.window.meta.k.prevent="openPalette()"', $html);
@@ -119,7 +119,7 @@ class CommandPaletteTest extends TestCase
 
     public function test_palette_renders_no_dummy_icon_literals(): void
     {
-        $html = $this->get('/?company=bengkel-arka')->assertOk()->getContent();
+        $html = $this->get('/app/lobby?company=bengkel-arka')->assertOk()->getContent();
 
         $this->assertStringNotContainsString(">{{ '?' }}</span>", $html);
         $this->assertStringNotContainsString('? </span>', $html);
