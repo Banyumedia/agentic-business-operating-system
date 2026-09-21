@@ -13,6 +13,14 @@
 - Command baru `bos:provision` (idempoten by email/slug, admin + owner + company pilot; password via `--password` atau prompt `secret()` tersembunyi; slug conflict owner lain = FAILURE; output hanya tabel non-secret email+id). 4 test: idempotensi, hash bukan plaintext, tidak ada password di log channel, slug-conflict ditolak.
 - Gate: worktree & main post-merge **860 passed / 4.392 assertions**, Pint PASS.
 - **Sisa UR-01 (menunggu approval Bos `HUMAN:DEPLOY` + `HUMAN:SECRET`):** jalankan `bos:provision` di produksi dengan email/data pilot asli dari Bos (via prompt interaktif, password tidak masuk shell history). Tidak pakai `DogfoodTenantSeeder`.
+**UR-01  bootstrap identitas produksi: `DONE` (gate `HUMAN:DEPLOY`+`HUMAN:SECRET` dibuka Bos 2026-09-21).**
+- `bos:provision` dijalankan: admin Bos = user existing `bos@nalar.army` (id 2, flag `is_platform_admin` diaktifkan, tidak dibuat ulang); owner pilot baru `pilot@nalar.army` (id 18) + company `usaha-pilot` (id 14, preset `custom`). Password pilot digenerate acak via PHP (`random_bytes`), diinput via prompt tersembunyi, TIDAK pernah masuk shell history/argumen/log; file `cache/pilot-credentials.txt` (gitignored, dihapus setelah diserahkan ke Bos via Telegram).
+- Verifikasi: users=7, admins=1, pilot_companies=1; login browser nyata sukses (Playwright): `/login` -> `/app/dashboard`, dashboard render 'USAHA PILOT', KPI 0 (tenant baru), 0 error.
+- Temuan infra (dicatat untuk UR-02): server 8010 http-tanpa-proxy membuat asset `https://127.0.0.1:8010` gagal dimuat bila diakses langsung via http (APP_URL https); akses publik normal via proxy https (401 Basic Auth = sesuai snapshot). Login diverifikasi pada server verifikasi terpisah port 8005 dengan env APP_URL konsisten.
+- Verifikasi agregat non-secret di `docs/worker-reports/UR-01.md`.
+
+**Next READY: UR-02 local implementation (service terkelola web+queue+scheduler) tanpa restart produksi; aktivasi = `HUMAN:DEPLOY`.**
+
 - Next READY pra-gate: UR-02 local implementation (service terkelola web/queue/scheduler, log terpisah, idempotent test job) boleh dikerjakan tanpa menyentuh produksi.
 
 
