@@ -62,6 +62,15 @@
 6. Gate: `DATA_SOURCE=json php artisan test` **877 passed / 4.427 assertions**; Pint PASS 443 files; `npm run build` PASS (Blade berubah).
 7. **Sisa untuk UR-04 penuh (manual Bos):** QRIS (opsional, belakangan) dan satu siklus transfer riil bila mau uji `HUMAN:COST`.
 
+**Lanjutan UR-04  panel Super Admin pembayaran & statistik  `DONE` (2026-09-21, commit `0dc1a9f`, migrasi `2026_09_21_130000_create_platform_settings_table` di produksi).**
+
+1. **Tabel `platform_settings`** (key-value, tanpa company_id  bukan data tenant) + `PlatformSettingStore`: read DB override -> fallback env config, cache 5 menit, write flush cache. Rekening sekarang bisa diganti runtime tanpa restart.
+2. **Halaman `/admin/payment-settings`** (`AdminPaymentSettings`, route `admin.payment-settings`, RequireSuperAdmin): form rekening (bank/nomor/pemilik/aktif) + **upload QRIS** (image maks 2MB, simpan `storage/app/public/qris/`, bisa hapus) + **statistik**: invoice pending/lunas, pendapatan total & bulan ini, membership aktif, expiry <= 7 hari, tabel 5 pembayaran terbaru. Nav admin dashboard juga dapat link Invoice + Pembayaran & Statistik.
+3. **PaymentInstructionPage** sekarang baca `PlatformSettingStore` (DB dulu, env fallback)  perubahan rekening Super Admin langsung tampil di halaman instruksi bayar tenant.
+4. Rekening default Mandiri 1370011925654 a.n. Didik Wahyudi di-seed ke DB produksi (bisa Bos ganti dari UI).
+5. Verifikasi live produksi: `/admin/payment-settings` 200 dengan statistik + form + rekening terisi; owner non-admin **403** (fail-closed).
+6. Test `AdminPaymentSettingsTest` 5 test (403 non-admin, render+statistik, save rekening + fallback env, upload QRIS tersimpan di disk public, hapus QRIS). Gate: **882 passed / 4.439 assertions**, Pint PASS 448 files, `npm run build` PASS, web di-restart.
+
 - **Next READY: UR-05** (pilot WA-first; gate `HUMAN:DECISION` scope + `HUMAN:SECRET`) atau tunggu pilot operasional UR-07 (deps: UR-04 sisa manual + UR-06 aktivasi).
 
 **UR-06  observability, backup, dan recovery drill  `DONE` lokal (2026-09-21, commit `b913c42`); aktivasi schedule backup/health produksi = `HUMAN:DEPLOY`.**
