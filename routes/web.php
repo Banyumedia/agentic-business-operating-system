@@ -13,6 +13,9 @@ use App\Http\Middleware\SetCurrentCompany;
 use App\Livewire\Admin\AdminInvoiceManager;
 use App\Livewire\Admin\AdminPaymentSettings;
 use App\Livewire\Admin\AiPricingManager;
+use App\Livewire\Admin\ClientLogManager;
+use App\Livewire\Admin\HermesNodeManager;
+use App\Livewire\Admin\ImpersonationLogManager;
 use App\Livewire\Admin\PlanManager;
 use App\Livewire\Admin\SupportTicketManager;
 use App\Livewire\Auth\Login;
@@ -103,4 +106,10 @@ Route::middleware(['auth', RequireSuperAdmin::class])->prefix('admin')->group(fu
     Route::get('/plans', PlanManager::class)->name('admin.plans');
     // Super Admin: Support Tickets (Master Bot Helpdesk)
     Route::get('/support-tickets', SupportTicketManager::class)->name('admin.support-tickets');
+    // Super Admin: Hermes Nodes & Assistant Fleet
+    Route::get('/hermes-nodes', HermesNodeManager::class)->name('admin.hermes-nodes');
+    // Super Admin: Impersonation Audit Logs (D-47)
+    Route::get('/impersonation-logs', ImpersonationLogManager::class)->name('admin.impersonation-logs');
+    // Super Admin: Client Activity & Token Logs
+    Route::get('/client-logs', ClientLogManager::class)->name('admin.client-logs');
 });
