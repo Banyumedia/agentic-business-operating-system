@@ -14,6 +14,12 @@ workflow, widget, dan menu generik.
   `PresetSource`.
 - Coverage pasar adalah daftar preset yang tersedia, bukan klaim bahwa semua
   variasi bisnis di pasar telah selesai.
+- **Fase 8 (D-62)** menambah jalur uang tenant: Entri Kas untuk setiap preset
+  ber-`finance.cashbook`, Tagihan pelanggan di **29 preset**, Termin & Opname di
+  **3 preset**, dan Laba-Rugi proyek basis kas di **10 preset**. Delapan preset
+  mendapat rangkaian penuh tagihan + laba-rugi: `agency`, `bengkel`,
+  `contractor`, `desain_interior`, `fotografi`, `it_support`, `kantor_hukum`,
+  `mebel_custom`. Detail di `docs/worker-reports/FASE_8_CUSTOMER_INVOICING.md`.
 
 ## T-24d — Batch 1
 
