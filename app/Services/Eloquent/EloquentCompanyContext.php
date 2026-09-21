@@ -24,6 +24,11 @@ class EloquentCompanyContext implements CompanyContext
         return $company->business_preset;
     }
 
+    public function displayName(): string
+    {
+        return (string) $this->getCompany()->name;
+    }
+
     public function setCurrent(string $companyId): void
     {
         $company = Company::find($companyId);
