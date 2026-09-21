@@ -22,6 +22,18 @@
 - Temuan non-blocking: F2 MEDIUM (sesi impersonasi tanpa `expires_at`  stale permanent access), F1 LOW (const `WIDGETS` validator 14 widget mati), F3 LOW (displayName Eloquent string kosong tanpa fallback), F4 LOW (banner impersonasi pakai `getCompany()->name` bukan `displayName()`), F5 LOW (nama test DataErasure menipu).
 - Semua temuan diverifikasi orchestrator terhadap sumber sebelum diterima. Tree tidak termutasi reviewer.
 
+**Slice MQ-01C6  remediasi temuan QA independen F1-F5: `DONE`, merged `b743ed5` (writer `0db1850` di worktree `task/mq-01c6`).**
+
+- **F2 MEDIUM**: migration `2026_09_21_120000_add_expires_at_to_admin_impersonation_sessions_table` (kolom `expires_at` + index); controller impersonate set TTL 2 jam; `EloquentCompanyContext` + `EnsureCompanyAccess` fail-closed (`whereNotNull('expires_at')->where('expires_at','>',now())`). RED test `ImpersonationExpiryFailClosedTest` (expired  LogicException di context, expired 403 di middleware, valid tetap lolos).
+- **F1 LOW**: `PresetDefinitionValidator` hapus const `WIDGETS` (14 widget mati); cek widget kini murni `WidgetCapabilityMap::known()`. Test `ValidatorWidgetSingleSourceTest` (semua widget map diterima; widget tak dikenal ditolak).
+- **F3 LOW**: `EloquentCompanyContext::displayName()` fallback slug title-case bila `Company->name` kosong (paritas JSON). Test F3 di `CompanyDisplayNameParityTest`.
+- **F4 LOW**: banner impersonasi `app.blade.php` pakai `displayName()` kontrak, bukan `getCompany()->name`.
+- **F5 LOW**: rename `test_erasure_tab_is_absent_from_staff_dom` `test_intruder_cannot_set_foreign_company_context`.
+- Gate: full **856 passed / 4.376 assertions** (worktree & main post-merge), Pint PASS, `npm run build` PASS, smoke browser C5 re-run 0 temuan, `php artisan migrate` dev DB OK.
+- File: migration baru, 4 file app, 1 blade, 2 test baru, 3 test diadaptasi.
+
+**MQ-01 kini tuntas penuh: C1-C5 + QA independen (LAYAK) + remediasi C6.**
+
 **MQ-01 selesai (C1-C5). Sesuai kesepakatan Bos, QA independen menyeluruh MQ-01 berikutnya.**
 
 **Slice MQ-01C4  parity identitas company: `DONE`, merged `ea90b6c` (writer `a7b66c8` di worktree `task/mq-01c4`).**
@@ -75,7 +87,7 @@
 
 **Batas:** D-31 tetap wajib; tidak ada dependency/migration/push/deploy. Uang dan tenant wajib fail-closed dengan negative test. Temuan placeholder route dan fokus shell dicatat untuk boundary modul shell, tidak disisipkan ke commit Dashboard.
 
-**Next:** QA independen menyeluruh seluruh slice MQ-01 (C1-C5) via review eksternal; lalu tutup MQ-01 dan evaluasi modul berikutnya.
+**Next:** MQ-01 ditutup. Evaluasi modul berikutnya untuk pola MQ (audit  QA independen  remediasi) sesuai kesepakatan Bos.
 
 ## UX-MARATHON ITERATIF — autopilot berkelanjutan (mandat Bos)
 
