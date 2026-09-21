@@ -94,9 +94,14 @@
 - **Antrean Tambahan Super Admin (Backlog Feature):**
   1. `[PENDING]` **Watchdog Antrean & Sistem Error (`/admin/system-health`)**: monitoring antrean worker, tabel `failed_jobs`, status job batches, dan tombol retry/flush error jobs (notifikasi WA macet / AI timeout).
 - **Antrean Peningkatan Halaman Pengaturan (Settings Backlog):**
-  1. `[PENDING]` **Tab Karyawan AI (`/app/settings/assistant`)**: implementasi antarmuka konfigurasi Hermes Control Center sesuai `docs/UX_UI_SPEC.md` Bab 4.4:
-     - Sub-tab 1: Form Identitas & SOP (Anti-Jailbreak Form: nama panggilan bot, gaya bicara, batas diskon maksimal kasir, jam operasional, catatan khusus max 300 char).
-     - Sub-tab 2: WhatsApp Pairing & Role Grup (Status koneksi QR/API, tabel grup WA aktif per role Kasir/Gudang/Keuangan, kuota grup `membership_plans.max_wa_groups` per D-53, dialog konfirmasi pemutusan grup fail-closed).
+  1. `[DONE]` **WA-01: Tab Karyawan AI (`/app/settings/assistant`)**: implementasi antarmuka konfigurasi Hermes Control Center:
+     - Form SOP format Markdown (aturan kerja bot internal, batas diskon, jam operasional, instruksi tim).
+     - Sub-tab WhatsApp Pairing & Role Grup (status koneksi QR/API, tabel grup WA aktif per role Kasir/Gudang/Keuangan, toggle interaksi Tag-Only `@bot`, kuota grup `membership_plans.max_wa_groups` per D-53).
+     - Fail-closed guardrail: hanya Owner yang bisa menyimpan SOP/aturan (`assertOwner`), staf 403.
+     - Evidence: 4 passed tests di `AssistantSettingsTest`, Pint clean, `npm run build` sukses.
+  2. `[READY]` **WA-02: Konfigurasi Profil & Scoped Tools Hermes**: isolasi profil Bot Internal (`primary`: konsultasi bisnis + tool ERP internal, zero OS tools) vs Bot CS Publik (`addon`: read-only katalog/pesanan sendiri, guardrail anti-jailbreak terkunci di platform).
+  3. `[PENDING]` **WA-03: T-36 NLU Intent Router**: klasifikasi bahasa manusia dari WhatsApp (reminder, report omzet/stok, approval tiket, update setting bisnis via chat owner).
+  4. `[PENDING]` **WA-04: Filter Interaksi Grup & Otorisasi Pengirim**: filter pesan grup (hanya jawab jika di-tag), fail-closed DM (chat japri internal hanya untuk nomor Owner).
 
 
 ## A11Y-SMOKE 2026-09-20  tap target fix (selesai)

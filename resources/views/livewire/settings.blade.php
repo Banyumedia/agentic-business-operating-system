@@ -240,6 +240,8 @@
                 @if ($themeFailure)
                     <p class="mt-5 text-sm text-[var(--erp-danger)]" role="alert">{{ $themeFailure }}</p>
                 @endif
+            @elseif ($tab['id'] === 'assistant')
+                @livewire(\App\Livewire\Settings\AssistantSettings::class)
             @elseif ($tab['id'] === 'usage')
                 @livewire(\App\Livewire\Settings\UsageAndPlan::class)
             @elseif ($tab['id'] === 'export')
@@ -252,7 +254,6 @@
                     // sederhana dan tanpa istilah teknis. Tab tanpa entri
                     // memakai kalimat umum di bawah.
                     $stubHelp = [
-                        'assistant' => 'Di sini nanti Anda menyambungkan nomor WhatsApp usaha agar asisten AI bisa membantu membalas pelanggan dan mengirim pengingat.',
                         'team' => 'Di sini nanti Anda mengundang staf ke usaha ini dan mengatur bagian mana yang boleh mereka lihat.',
                     ];
                 @endphp
