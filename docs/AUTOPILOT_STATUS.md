@@ -73,6 +73,8 @@
 
 - **Next READY: UR-05** (pilot WA-first; gate `HUMAN:DECISION` scope + `HUMAN:SECRET`) atau tunggu pilot operasional UR-07 (deps: UR-04 sisa manual + UR-06 aktivasi).
 
+**Foreign writer (dicatat sekali, per HERMES.md):** commit `0643644` oleh `masgant99` (2026-09-21 19:48) menambah 3 modul Super Admin  `PlanManager` (kelola harga/kuota paket via UI, penerapan D-05), `AiPricingManager`, `SupportTicketManager`  + blade + test `SuperAdminModulesTest` (5 test). Menyentuh file task UR-04 saya (`routes/web.php`, blade admin) tapi ter-commit serial di `main`. Gate pasca-commit hijau: **887 passed / 4.453 assertions**, Pint PASS 452 files, build PASS. Tidak ada konflik terbuka; file tersebut tidak saya tulis ulang.
+
 **UR-06  observability, backup, dan recovery drill  `DONE` lokal (2026-09-21, commit `b913c42`); aktivasi schedule backup/health produksi = `HUMAN:DEPLOY`.**
 
 1. `bos:backup-mysql` (BosBackupMysql): mysqldump `--single-transaction` -> enkripsi AES-256-CBC + PBKDF2 60k iter, output `storage/app/backups/mysql-<ts>.sql.enc`, retensi rotasi `--keep=7`. **Fail-closed terbukti**: tanpa/pendek `BACKUP_ENCRYPTION_KEY` exit 1; tidak ada jalur plain-text. Tes nyata: backup DB produksi 197.744 bytes, dekripsi roundtrip OK (65 tabel, data utuh).
