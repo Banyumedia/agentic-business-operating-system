@@ -4,6 +4,7 @@ namespace App\Livewire\Billing;
 
 use App\Contracts\CompanyContext;
 use App\Contracts\CompanySettingsStore;
+use App\Models\Company;
 use App\Models\MembershipPlan;
 use App\Services\Manual\InvoiceCreationService;
 use Illuminate\Contracts\View\View;

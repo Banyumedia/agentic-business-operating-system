@@ -17,8 +17,8 @@
             </div>
         @endif
 
-        @if ($this->errors->any())
-            @foreach ($this->errors->all() as $error)
+        @if ($errors->any())
+            @foreach ($errors->all() as $error)
                 <div class="mb-6 rounded-lg border border-[var(--erp-error)] bg-[var(--erp-error)]/10 p-4">
                     <p class="text-sm text-[var(--erp-error)]">{{ $error }}</p>
                 </div>
