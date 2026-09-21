@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use LogicException;
 use Tests\TestCase;
 
 class DataExportTest extends TestCase
@@ -119,11 +120,12 @@ class DataExportTest extends TestCase
         ]);
 
         $this->actingAs($staff);
+        // Fail-closed lebih awal (MQ-01C2): staff non-owner tidak lagi bisa
+        // set context company milik orang lain - ditolak di lapisan context
+        // sebelum komponen tersentuh. Data tetap tanpa mutasi.
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Akses lintas company ditolak.');
         app(CompanyContext::class)->setCurrent((string) $company->id);
-
-        Livewire::test(DataExport::class)
-            ->call('export')
-            ->assertStatus(403);
 
         Queue::assertNotPushed(BuildCompanyExport::class);
     }
