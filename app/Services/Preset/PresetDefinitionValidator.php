@@ -43,14 +43,6 @@ class PresetDefinitionValidator
         'vendor', 'vendors',
     ];
 
-    private const WIDGETS = [
-        'kpi_revenue', 'kpi_cashflow', 'kpi_receivables_due', 'ai_report_card',
-        'deals_pipeline', 'projects_progress', 'retention_held', 'upcoming_schedule',
-        'resources_status', 'bookings_due_today', 'overdue_returns', 'open_bills',
-        'expiring_batches', 'low_stock', 'prescription_queue', 'timesheet_summary',
-        'vendor_settlement', 'pending_approvals',
-    ];
-
     private const CAPABILITY_DEPENDENCIES = [
         'system.ai_agent' => ['approval_flow'],
     ];
@@ -309,15 +301,11 @@ class PresetDefinitionValidator
             }
             $this->assertAllowedKeys($item, ['widget', 'props'], 'item dashboard');
             $widget = $item['widget'];
-            if (! in_array($widget, self::WIDGETS, true)) {
-                throw new InvalidArgumentException("Widget tidak terdaftar: {$widget}");
-            }
-            // MQ-01C3: satu kontrak widget->capability (WidgetCapabilityMap)
-            // dipakai runtime dan validator. Deklarasi widget yang tidak
-            // dikenal runtime, atau capability-nya tidak aktif di preset ini,
-            // harus gagal jelas - bukan hilang diam-diam saat render.
+            // F1 (QA MQ-01): satu sumber - WidgetCapabilityMap. Baris
+            // `in_array(self::WIDGETS)` lama sudah dihapus supaya widget baru
+            // cukup ditambahkan ke map, bukan ke dua daftar.
             if (! WidgetCapabilityMap::known($widget)) {
-                throw new InvalidArgumentException("Widget tidak dikenal kontrak runtime: {$widget}");
+                throw new InvalidArgumentException("Widget tidak terdaftar: {$widget}");
             }
             foreach (WidgetCapabilityMap::required($widget) as $capability) {
                 if (($capabilities[$capability] ?? false) !== true) {

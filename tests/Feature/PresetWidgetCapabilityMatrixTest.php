@@ -86,7 +86,7 @@ class PresetWidgetCapabilityMatrixTest extends TestCase
         $definition['dashboard']['industry_zone'][] = ['widget' => 'kpi_revenue'];
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Widget tidak dikenal kontrak runtime: kpi_revenue');
+        $this->expectExceptionMessage('Widget tidak terdaftar: kpi_revenue');
 
         app(PresetDefinitionValidator::class)->validate($definition);
     }

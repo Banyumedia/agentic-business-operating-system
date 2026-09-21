@@ -1,0 +1,44 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Services\Dashboard\WidgetCapabilityMap;
+use App\Services\Preset\PresetDefinitionValidator;
+use Tests\TestCase;
+
+/**
+ * MQ-01C6: F1 - validator widget list must be derived from WidgetCapabilityMap
+ * (single source), never a stale hardcoded const.
+ */
+class ValidatorWidgetSingleSourceTest extends TestCase
+{
+    public function test_validator_accepts_every_widget_known_by_capability_map(): void
+    {
+        $validator = app(PresetDefinitionValidator::class);
+        $widgets = array_map(
+            static fn (string $w): array => ['widget' => $w],
+            WidgetCapabilityMap::widgets(),
+        );
+        $definition = json_decode(base64_decode('eyJrZXkiOiAic2luZ2xlX3NvdXJjZV9wcm9iZSIsICJuYW1lIjogIlBlcnNld2FhbiIsICJ0aWVyIjogIkEiLCAiY2FwYWJpbGl0aWVzIjogeyJzY2hlZHVsaW5nIjogdHJ1ZSwgImludmVudG9yeSI6IHRydWUsICJmaW5hbmNlLmNhc2hib29rIjogdHJ1ZSwgImRlYWxzIjogdHJ1ZSwgImFwcHJvdmFsX2Zsb3ciOiB0cnVlfSwgInRlcm1pbm9sb2d5IjogeyJjb250YWN0IjogIlBlbnlld2EiLCAiY29udGFjdHMiOiAiUGVueWV3YSIsICJib29raW5nIjogIkJvb2tpbmciLCAiYm9va2luZ3MiOiAiQm9va2luZyIsICJpdGVtIjogIlVuaXQgU2V3YSIsICJpdGVtcyI6ICJVbml0IFNld2EiLCAib3JkZXIiOiAiU2V3YSIsICJvcmRlcnMiOiAiU2V3YSJ9LCAibWVudXMiOiB7Im9yZGVyIjogWyJkYXNoYm9hcmQiLCAiYm9va2luZ3MiLCAiaW52ZW50b3J5IiwgImNvbnRhY3RzIiwgImFjY291bnRpbmciLCAic2V0dGluZ3MiXX0sICJ3b3JrZmxvd3MiOiB7ImJvb2tpbmdzIjogeyJzdGFnZXMiOiBbeyJjb2RlIjogImRpcGVzYW4iLCAibGFiZWwiOiAiRGlwZXNhbiAoRFApIn0sIHsiY29kZSI6ICJkaXNpYXBrYW4iLCAibGFiZWwiOiAiRGlzaWFwa2FuIn0sIHsiY29kZSI6ICJkaXNld2EiLCAibGFiZWwiOiAiRGlzZXdhIChBY3RpdmUpIn0sIHsiY29kZSI6ICJrZW1iYWxpIiwgImxhYmVsIjogIkRpa2VtYmFsaWthbiAoQ2VrKSJ9LCB7ImNvZGUiOiAic2VsZXNhaSIsICJsYWJlbCI6ICJTZWxlc2FpIn0sIHsiY29kZSI6ICJkaWJhdGFsa2FuIiwgImxhYmVsIjogIkRpYmF0YWxrYW4ifV0sICJ0ZXJtaW5hbCI6IFsic2VsZXNhaSIsICJkaWJhdGFsa2FuIl0sICJ0cmFuc2l0aW9ucyI6IFt7ImZyb20iOiAiZGlwZXNhbiIsICJ0byI6ICJkaXNpYXBrYW4iLCAicm9sZXMiOiBbIm93bmVyIiwgInN0YWZmIl19LCB7ImZyb20iOiAiZGlzaWFwa2FuIiwgInRvIjogImRpc2V3YSIsICJyb2xlcyI6IFsib3duZXIiLCAic3RhZmYiXX0sIHsiZnJvbSI6ICJkaXNld2EiLCAidG8iOiAia2VtYmFsaSIsICJyb2xlcyI6IFsib3duZXIiLCAic3RhZmYiXX0sIHsiZnJvbSI6ICJrZW1iYWxpIiwgInRvIjogImRpc2V3YSIsICJyZXF1aXJlc19ub3RlIjogdHJ1ZSwgInJvbGVzIjogWyJvd25lciIsICJzdGFmZiJdfSwgeyJmcm9tIjogImtlbWJhbGkiLCAidG8iOiAic2VsZXNhaSIsICJyb2xlcyI6IFsib3duZXIiLCAic3RhZmYiXX0sIHsiZnJvbSI6ICIqIiwgInRvIjogImRpYmF0YWxrYW4iLCAicmVxdWlyZXNfYXBwcm92YWwiOiB0cnVlLCAicm9sZXMiOiBbIm93bmVyIl19XX19LCAiZGFzaGJvYXJkIjogeyJpbmR1c3RyeV96b25lIjogW3sid2lkZ2V0IjogImtwaV9jYXNoZmxvdyJ9LCB7IndpZGdldCI6ICJwZW5kaW5nX2FwcHJvdmFscyJ9XX0sICJkZXNjcmlwdGlvbiI6ICJTaXN0ZW0gcGVueWV3YWFuIGJhcmFuZyBkYW4ga2VuZGFyYWFuLCBoaXR1bmcgZHVyYXNpLCBkZW5kYSBrZXRlcmxhbWJhdGFuLCBkYW4gcGVtZWxpaGFyYWFuIGFzZXQuIn0='), true);
+        $definition['dashboard'] = ['industry_zone' => $widgets];
+
+        // If the validator rejects any map-known widget, the contract has
+        // drifted: runtime can render it but validation forbids it.
+        // Throwing InvalidArgumentException on any violation is the contract;
+        // reaching here means every map-known widget was accepted.
+        $result = $validator->validate($definition);
+
+        $this->assertIsArray($result);
+    }
+
+    public function test_validator_rejects_widget_unknown_to_capability_map(): void
+    {
+        $validator = app(PresetDefinitionValidator::class);
+        $definition = json_decode(base64_decode('eyJrZXkiOiAic2luZ2xlX3NvdXJjZV9wcm9iZV8yIiwgIm5hbWUiOiAiUGVyc2V3YWFuIiwgInRpZXIiOiAiQSIsICJjYXBhYmlsaXRpZXMiOiB7InNjaGVkdWxpbmciOiB0cnVlLCAiaW52ZW50b3J5IjogdHJ1ZSwgImZpbmFuY2UuY2FzaGJvb2siOiB0cnVlLCAiZGVhbHMiOiB0cnVlLCAiYXBwcm92YWxfZmxvdyI6IHRydWV9LCAidGVybWlub2xvZ3kiOiB7ImNvbnRhY3QiOiAiUGVueWV3YSIsICJjb250YWN0cyI6ICJQZW55ZXdhIiwgImJvb2tpbmciOiAiQm9va2luZyIsICJib29raW5ncyI6ICJCb29raW5nIiwgIml0ZW0iOiAiVW5pdCBTZXdhIiwgIml0ZW1zIjogIlVuaXQgU2V3YSIsICJvcmRlciI6ICJTZXdhIiwgIm9yZGVycyI6ICJTZXdhIn0sICJtZW51cyI6IHsib3JkZXIiOiBbImRhc2hib2FyZCIsICJib29raW5ncyIsICJpbnZlbnRvcnkiLCAiY29udGFjdHMiLCAiYWNjb3VudGluZyIsICJzZXR0aW5ncyJdfSwgIndvcmtmbG93cyI6IHsiYm9va2luZ3MiOiB7InN0YWdlcyI6IFt7ImNvZGUiOiAiZGlwZXNhbiIsICJsYWJlbCI6ICJEaXBlc2FuIChEUCkifSwgeyJjb2RlIjogImRpc2lhcGthbiIsICJsYWJlbCI6ICJEaXNpYXBrYW4ifSwgeyJjb2RlIjogImRpc2V3YSIsICJsYWJlbCI6ICJEaXNld2EgKEFjdGl2ZSkifSwgeyJjb2RlIjogImtlbWJhbGkiLCAibGFiZWwiOiAiRGlrZW1iYWxpa2FuIChDZWspIn0sIHsiY29kZSI6ICJzZWxlc2FpIiwgImxhYmVsIjogIlNlbGVzYWkifSwgeyJjb2RlIjogImRpYmF0YWxrYW4iLCAibGFiZWwiOiAiRGliYXRhbGthbiJ9XSwgInRlcm1pbmFsIjogWyJzZWxlc2FpIiwgImRpYmF0YWxrYW4iXSwgInRyYW5zaXRpb25zIjogW3siZnJvbSI6ICJkaXBlc2FuIiwgInRvIjogImRpc2lhcGthbiIsICJyb2xlcyI6IFsib3duZXIiLCAic3RhZmYiXX0sIHsiZnJvbSI6ICJkaXNpYXBrYW4iLCAidG8iOiAiZGlzZXdhIiwgInJvbGVzIjogWyJvd25lciIsICJzdGFmZiJdfSwgeyJmcm9tIjogImRpc2V3YSIsICJ0byI6ICJrZW1iYWxpIiwgInJvbGVzIjogWyJvd25lciIsICJzdGFmZiJdfSwgeyJmcm9tIjogImtlbWJhbGkiLCAidG8iOiAiZGlzZXdhIiwgInJlcXVpcmVzX25vdGUiOiB0cnVlLCAicm9sZXMiOiBbIm93bmVyIiwgInN0YWZmIl19LCB7ImZyb20iOiAia2VtYmFsaSIsICJ0byI6ICJzZWxlc2FpIiwgInJvbGVzIjogWyJvd25lciIsICJzdGFmZiJdfSwgeyJmcm9tIjogIioiLCAidG8iOiAiZGliYXRhbGthbiIsICJyZXF1aXJlc19hcHByb3ZhbCI6IHRydWUsICJyb2xlcyI6IFsib3duZXIiXX1dfX0sICJkYXNoYm9hcmQiOiB7ImluZHVzdHJ5X3pvbmUiOiBbeyJ3aWRnZXQiOiAia3BpX2Nhc2hmbG93In0sIHsid2lkZ2V0IjogInBlbmRpbmdfYXBwcm92YWxzIn1dfSwgImRlc2NyaXB0aW9uIjogIlNpc3RlbSBwZW55ZXdhYW4gYmFyYW5nIGRhbiBrZW5kYXJhYW4sIGhpdHVuZyBkdXJhc2ksIGRlbmRhIGtldGVybGFtYmF0YW4sIGRhbiBwZW1lbGloYXJhYW4gYXNldC4ifQ=='), true);
+        $definition['dashboard'] = ['industry_zone' => [['widget' => 'not_a_real_widget']]];
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Widget tidak terdaftar');
+        $validator->validate($definition);
+    }
+}

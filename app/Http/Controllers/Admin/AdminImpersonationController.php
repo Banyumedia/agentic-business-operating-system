@@ -20,6 +20,9 @@ class AdminImpersonationController extends Controller
             'session_id' => $sessionId,
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
+            // F2 (QA MQ-01): TTL terbatas - sesi impersonasi kedaluwarsa
+            // otomatis meski admin lupa menekan "Akhiri Sesi".
+            'expires_at' => now()->addHours(2),
         ]);
 
         $request->session()->put('admin_impersonation_id', $sessionId);

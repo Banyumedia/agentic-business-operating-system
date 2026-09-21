@@ -15,16 +15,12 @@
 
         @if(session()->has('admin_impersonation_id'))
             @php
-                // `currentCompany()` tidak ada di kontrak CompanyContext (fatal
-                // error saat banner dirender). Nama company diselesaikan aman:
-                // hanya EloquentCompanyContext yang punya getCompany(), dan
-                // konteks gagal tidak boleh meruntuhkan layout.
+                // F4 (QA MQ-01): gunakan kontrak displayName() (MQ-01C4), bukan
+                // getCompany()->name langsung. Konteks gagal tidak boleh
+                // meruntuhkan layout.
                 $bannerCompany = 'Klien';
                 try {
-                    $context = app(\App\Contracts\CompanyContext::class);
-                    $bannerCompany = method_exists($context, 'getCompany')
-                        ? ($context->getCompany()->name ?? 'Klien')
-                        : 'Klien';
+                    $bannerCompany = app(\App\Contracts\CompanyContext::class)->displayName();
                 } catch (\Throwable) {
                     $bannerCompany = 'Klien';
                 }
