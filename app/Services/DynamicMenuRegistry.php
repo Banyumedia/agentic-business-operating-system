@@ -303,6 +303,11 @@ class DynamicMenuRegistry
                 'requires_any' => ['finance.cashbook', 'finance.accounting'],
                 'items' => [
                     $this->item(null, 'Buku Kas', '/app/accounting', 'ledger', 'cash_entries', ['finance.cashbook']),
+                    // Buku Kas hanya menyajikan saldo berjalan; tanpa item ini
+                    // tidak ada jalur mencatat penerimaan atau pengeluaran sama
+                    // sekali. Pola `list` generik sudah cukup - field relasi
+                    // proyek/kontak datang dari schema (T-41, D-62).
+                    $this->item('entries', 'Entri Kas', '/app/accounting/entries', 'list', 'cash_entries', ['finance.cashbook']),
                     // Lihat catatan di `projects.billing`: disembunyikan dari
                     // navigasi sampai tagihan pelanggan punya entitasnya
                     // sendiri. Sebelumnya menu ini terjangkau di 29 preset dan

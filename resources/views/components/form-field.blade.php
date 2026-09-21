@@ -34,7 +34,24 @@
             @endif
         </label>
 
-        @if ($field['input'] === 'select')
+        @if ($field['input'] === 'relation')
+            {{-- Relasi: nilai = id baris, teks = judul baris. Pilihan sudah
+                 dibatasi company aktif oleh layar yang merender field ini. --}}
+            <select
+                id="{{ $fieldId }}"
+                wire:model="{{ $model }}"
+                @required($field['required'])
+                aria-invalid="{{ $invalid ? 'true' : 'false' }}"
+                @if ($invalid) aria-describedby="{{ $errorId }}" @endif
+                x-init="$el.getAttribute('aria-invalid') === 'true' && document.querySelector('[aria-invalid=true]') === $el && $el.focus()"
+                class="min-h-11 w-full rounded-[var(--erp-radius-md)] border {{ $invalid ? 'border-[var(--erp-danger)]' : 'border-[var(--erp-border)]' }} bg-[var(--erp-bg-inset)] px-3 py-2 text-sm text-[var(--erp-text-primary)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+            >
+                <option value="">{{ $field['required'] ? 'Pilih '.$field['label'] : 'Tanpa '.$field['label'] }}</option>
+                @foreach ($field['options'] as $optionValue => $optionLabel)
+                    <option value="{{ $optionValue }}">{{ $optionLabel }}</option>
+                @endforeach
+            </select>
+        @elseif ($field['input'] === 'select')
             <select
                 id="{{ $fieldId }}"
                 wire:model="{{ $model }}"

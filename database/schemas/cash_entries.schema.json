@@ -111,11 +111,15 @@
   "references": {
     "contact_id": {
       "entity": "contacts",
-      "on_delete": "set_null"
+      "on_delete": "set_null",
+      "assignable": true,
+      "term": "contact"
     },
     "project_id": {
       "entity": "projects",
-      "on_delete": "set_null"
+      "on_delete": "set_null",
+      "assignable": true,
+      "term": "project"
     },
     "journal_id": {
       "entity": "accounting_journals",

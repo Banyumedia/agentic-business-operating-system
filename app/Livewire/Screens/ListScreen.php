@@ -147,6 +147,27 @@ class ListScreen extends Component
             $record[$name] = $presenter->cast($schema, $name, $this->form[$name] ?? null);
         }
 
+        // Referensi yang dipilih operator diverifikasi terhadap company aktif.
+        // Repository memang sudah tenant-scoped, tapi tanpa pemeriksaan ini id
+        // yang dikirim klien bisa menunjuk baris company lain dan tersimpan
+        // sebagai relasi menggantung yang tidak pernah tampil di layar mana pun.
+        foreach ($presenter->relations($schema) as $relation) {
+            $name = $relation['field'];
+            $value = $record[$name] ?? null;
+
+            if ($value === null || $value === '') {
+                $record[$name] = null;
+
+                continue;
+            }
+
+            if (! $this->relationExists($relation['relation'], (int) $value)) {
+                $this->addError('form.'.$name, 'Pilihan '.$relation['label'].' tidak ditemukan pada usaha ini.');
+
+                return;
+            }
+        }
+
         $record = $this->stampTimestamps($schema, $record, $this->editingId === null);
 
         try {
@@ -230,7 +251,7 @@ class ListScreen extends Component
             'term' => $definition['term'] ?? $definition['label'],
             'entity' => $definition['entity'],
             'columns' => $columns,
-            'fields' => $presenter->fields($schema),
+            'fields' => $this->resolveRelationFields($presenter->fields($schema)),
             'rows' => $result['data'],
             'total' => $result['total'],
             'page' => $result['page'],
@@ -239,6 +260,60 @@ class ListScreen extends Component
             'direction' => $direction,
             'pendingDeletion' => $pending,
         ]);
+    }
+
+    /**
+     * Mengisi pilihan dan label untuk field relasi.
+     *
+     * Pilihan diambil dari repository company aktif, jadi daftar yang muncul
+     * tidak pernah memuat baris usaha lain. Label memakai kamus istilah bila
+     * schema menyebut kuncinya, sehingga "Project" menjadi "Proyek" atau
+     * apa pun sebutan usaha itu (D-31).
+     *
+     * @param  list<array<string, mixed>>  $fields
+     * @return list<array<string, mixed>>
+     */
+    private function resolveRelationFields(array $fields): array
+    {
+        foreach ($fields as $index => $field) {
+            if (($field['input'] ?? null) !== 'relation') {
+                continue;
+            }
+
+            $term = $field['term'] ?? null;
+            if (is_string($term) && $term !== '') {
+                $fields[$index]['label'] = term($term);
+            }
+
+            $fields[$index]['options'] = $this->relationOptions((string) $field['relation']);
+        }
+
+        return $fields;
+    }
+
+    /** @return array<int, string> */
+    private function relationOptions(string $entity): array
+    {
+        $presenter = $this->presenter();
+        $titleField = $presenter->titleField(EntitySchema::load($entity));
+        $options = [];
+
+        foreach (app(EntityRepository::class)->for($this->company(), $entity)->all() as $row) {
+            $id = (int) ($row['id'] ?? 0);
+            if ($id === 0) {
+                continue;
+            }
+
+            $title = $titleField === null ? null : ($row[$titleField] ?? null);
+            $options[$id] = is_string($title) && trim($title) !== '' ? $title : '#'.$id;
+        }
+
+        return $options;
+    }
+
+    private function relationExists(string $entity, int $id): bool
+    {
+        return app(EntityRepository::class)->for($this->company(), $entity)->find($id) !== null;
     }
 
     /**

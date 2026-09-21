@@ -176,6 +176,19 @@ class EntitySchema
             if (! preg_match('/^[a-z][a-z0-9_]*$/', $reference['entity'] ?? '') || ! in_array($reference['on_delete'] ?? null, ['cascade', 'restrict', 'set_null'], true)) {
                 throw new InvalidArgumentException("Target reference schema tidak valid: {$field}");
             }
+
+            // `assignable` menyatakan referensi ini dipilih manusia di form,
+            // bukan diisi sistem. Ditegakkan di sini supaya penandaannya tidak
+            // bisa masuk sebagai string atau angka yang kebetulan truthy.
+            if (array_key_exists('assignable', $reference) && ! is_bool($reference['assignable'])) {
+                throw new InvalidArgumentException("Penanda assignable reference tidak valid: {$field}");
+            }
+
+            foreach (['term', 'label'] as $descriptor) {
+                if (array_key_exists($descriptor, $reference) && ! is_string($reference[$descriptor])) {
+                    throw new InvalidArgumentException("Deskriptor reference tidak valid: {$field}.{$descriptor}");
+                }
+            }
         }
     }
 

@@ -58,9 +58,10 @@ class SchemaPresenter
     }
 
     /**
-     * Field form: sama dengan kolom tabel, tanpa `id` yang ditetapkan repository.
+     * Field form: kolom tabel tanpa `id`, ditambah referensi yang memang boleh
+     * dipilih operator.
      *
-     * @return list<array{field: string, label: string, input: string, type: string, required: bool, nullable: bool, options: list<string>, attrs: array<string, string|int|float>}>
+     * @return list<array{field: string, label: string, input: string, type: string, required: bool, nullable: bool, options: array<array-key, string>, attrs: array<string, string|int|float>, relation?: string, term?: string}>
      */
     public function fields(EntitySchema $schema): array
     {
@@ -86,7 +87,52 @@ class SchemaPresenter
             ];
         }
 
-        return $fields;
+        return array_merge($fields, $this->relations($schema));
+    }
+
+    /**
+     * Referensi yang boleh ditetapkan operator.
+     *
+     * Ditandai di schema (`references.{field}.assignable = true`), bukan
+     * didaftar di kode, supaya entitas baru mendapat field relasinya tanpa
+     * menyentuh presenter. Tanpa penandaan ini seluruh foreign key tersembunyi
+     * dari form - itu benar untuk kolom sistem seperti `journal_id`, tapi salah
+     * untuk pembebanan yang memang dipilih manusia.
+     *
+     * `term` merujuk kunci kamus istilah; layar yang merender field ini wajib
+     * meneruskannya ke `term()` supaya labelnya mengikuti bahasa usaha (D-31).
+     *
+     * @return list<array{field: string, label: string, input: string, type: string, required: bool, nullable: bool, options: array<array-key, string>, attrs: array<string, string|int|float>, relation: string, term: string|null}>
+     */
+    public function relations(EntitySchema $schema): array
+    {
+        $required = $schema->required();
+        $properties = $schema->properties();
+        $relations = [];
+
+        foreach ($schema->references() as $field => $reference) {
+            if (($reference['assignable'] ?? false) !== true) {
+                continue;
+            }
+
+            $definition = $properties[$field] ?? [];
+            $term = $reference['term'] ?? null;
+
+            $relations[] = [
+                'field' => $field,
+                'label' => $this->relationLabel($field, $reference),
+                'input' => 'relation',
+                'type' => (string) ($definition['type'] ?? 'integer'),
+                'required' => in_array($field, $required, true),
+                'nullable' => ($definition['nullable'] ?? false) === true,
+                'options' => [],
+                'attrs' => [],
+                'relation' => (string) $reference['entity'],
+                'term' => is_string($term) && $term !== '' ? $term : null,
+            ];
+        }
+
+        return $relations;
     }
 
     /**
@@ -183,6 +229,25 @@ class SchemaPresenter
         }
 
         return $blank;
+    }
+
+    /**
+     * Label referensi: `label` eksplisit bila ada, kalau tidak nama field tanpa
+     * akhiran `_id` - "project_id" jadi "Project", bukan "Project Id".
+     *
+     * @param  array<string, mixed>  $reference
+     */
+    private function relationLabel(string $field, array $reference): string
+    {
+        $label = $reference['label'] ?? null;
+
+        if (is_string($label) && trim($label) !== '') {
+            return $label;
+        }
+
+        $base = preg_replace('/_id$/', '', $field) ?? $field;
+
+        return ucwords(str_replace('_', ' ', $base));
     }
 
     /** @param array<string, mixed> $definition */
