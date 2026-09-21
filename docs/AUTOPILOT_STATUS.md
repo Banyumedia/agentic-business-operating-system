@@ -86,6 +86,8 @@
 7. Gate: `DATA_SOURCE=json php artisan test` **870 passed / 4.412 assertions**; Pint PASS 439 files; tidak ada perubahan Blade/CSS/JS (build tidak diwajibkan; terakhir PASS UR-03).
 8. Catatan: `.env.production` masih `BACKUP_ENCRYPTION_KEY` kosong  **Bos harus set kunci (min 32 char) sebelum aktivasi produksi** (gate `HUMAN:SECRET` implisit); scheduler produksi PM2 harus reload `routes/console.php` baru saat restart stack berikutnya.
 
+**UR-06 aktivasi produksi  `DONE` (2026-09-21 20:02).** `BACKUP_ENCRYPTION_KEY` ter-set di `.env.production` (kunci acak 64 char, salinan di `cache/pilot-prod-credentials.txt` lokal, fingerprint sha256/12 `339d7b3f392e`). Backup manual pertama dengan kunci baru: `mysql-20260921-130253.sql.enc` 215.344 bytes, dekripsi roundtrip OK (66 tabel). Scheduler `schedule:work` auto-reload tanpa restart: `schedule:list` produksi menampilkan backup 02:30 + health `*/5`, log eksekusi health tiap 5 menit terverifikasi. `bos:health` produksi 5/5 lulus. UR-06 penuh selesai.
+
 **Next READY: UR-02 local implementation (service terkelola web+queue+scheduler) tanpa restart produksi; aktivasi = `HUMAN:DEPLOY`.**
 
 - Next READY pra-gate: UR-02 local implementation (service terkelola web/queue/scheduler, log terpisah, idempotent test job) boleh dikerjakan tanpa menyentuh produksi.
