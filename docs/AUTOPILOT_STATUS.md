@@ -8,7 +8,16 @@
 
 ## MQ-01  Peningkatan modul satu per satu
 
-**State:** `IN_PROGRESS` — mandat Bos 2026-09-21; mulai dari Dashboard, dikerjakan sebagai part kecil dan didelegasikan setelah plan lolos QA independen.
+**Slice MQ-01C1  integritas uang + recovery: `DONE`, merged `56b623d` (writer `44416aa` di worktree `task/mq-01c1`).**
+
+- Acceptance 2 (uang fail-closed): terbukti via negative test  data korup (direction `sideways`, amount `-5000`/`abc`/`1e1000`) ditulis langsung ke file JSON bypass `save()`  `readRows()` validator schema menolak keras untuk **kedua** jalur kalkulasi (KPI composer + widget `kpi_cashflow`), tidak ada total menyesatkan. Catatan: lapisan JSON sudah fail-closed sejak awal (schema `enum[in|out]`, `minimum:0`, `is_finite`); slice ini menguncinya dengan test permanen.
+- Acceptance 1 (reload recovery): test `reload_recovers`  compose gagal lalu sukses = pesan error hilang.
+- Acceptance 3 (aturan sama KPI/widget): test `same_strict_rules`.
+- Defect nyata diperbaiki: `Dashboard::render()` melempar `ViewException` saat `CompanySettingsStore::read()` gagal  kini fail-closed penyajian: tema default `a`, `themeError` flag, banner `role="status"` terkontrol, `report()` tetap jalan.
+- Gate: focused `DashboardTest`+`DashboardEloquentTest` 19 passed/121 assertions; full suite main 784 passed/4,006 assertions (3 notice pre-existing `EnsureFeatureEnabledTest`); Pint PASS 422 file; `npm run build` PASS; smoke `/app/dashboard` 200.
+- File: `app/Livewire/Dashboard.php`, `resources/views/livewire/dashboard.blade.php`, `tests/Feature/DashboardTest.php` (+5 test).
+
+**State:** `IN_PROGRESS`  mandat Bos 2026-09-21; mulai dari Dashboard, dikerjakan sebagai part kecil dan didelegasikan setelah plan lolos QA independen.
 
 **Baseline:** branch `main` HEAD `d0cc3fd`; folder asing `backup-ahli-keuangan/` telah diverifikasi bukan git worktree/tidak direferensikan source lalu dihapus atas instruksi Bos. Full suite pertama sempat gagal 8 test akibat state fixture; setelah fixture `storage/app/json/1/workflow_log.json` dipulihkan, focused `ModuleSidebarTest` **14 passed / 55 assertions** dan full rerun terisolasi **779 passed / 3,996 assertions**.
 
@@ -23,7 +32,7 @@
 
 **Batas:** D-31 tetap wajib; tidak ada dependency/migration/push/deploy. Uang dan tenant wajib fail-closed dengan negative test. Temuan placeholder route dan fokus shell dicatat untuk boundary modul shell, tidak disisipkan ke commit Dashboard.
 
-**Next:** delegasikan writer `MQ-01C1` di worktree terisolasi; setelah verifikasi dan commit, lanjutkan slice berikutnya secara serial.
+**Next:** slice berikutnya serial: `MQ-01C2` (tenant authorization + persistent Livewire middleware, negative test request nyata) di worktree terpisah.
 
 ## UX-MARATHON ITERATIF — autopilot berkelanjutan (mandat Bos)
 
