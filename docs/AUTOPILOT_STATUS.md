@@ -91,6 +91,8 @@
 **Next READY: UR-02 local implementation (service terkelola web+queue+scheduler) tanpa restart produksi; aktivasi = `HUMAN:DEPLOY`.**
 
 - Next READY pra-gate: UR-02 local implementation (service terkelola web/queue/scheduler, log terpisah, idempotent test job) boleh dikerjakan tanpa menyentuh produksi.
+- **Antrean Tambahan Super Admin (Backlog Feature):**
+  1. `[PENDING]` **Watchdog Antrean & Sistem Error (`/admin/system-health`)**: monitoring antrean worker, tabel `failed_jobs`, status job batches, dan tombol retry/flush error jobs (notifikasi WA macet / AI timeout).
 
 
 ## A11Y-SMOKE 2026-09-20  tap target fix (selesai)
