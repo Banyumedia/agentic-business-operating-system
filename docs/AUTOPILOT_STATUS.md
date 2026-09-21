@@ -8,7 +8,16 @@
 
 ## MQ-01  Peningkatan modul satu per satu
 
-**Slice MQ-01C1 — integritas uang + recovery: `DONE`, merged `56b623d`; precision hardening merged `833240b` (writer `4a848c2`).**
+**Slice MQ-01C2  tenant authorization fail-closed + persistent middleware: `DONE`, merged `4f7565b` (writer `6bb172b` di worktree `task/mq-01c2`).**
+
+- Defect nyata diperbaiki di `EloquentCompanyContext`: `getCompany()` dulu percaya `session('active_company')` **tanpa verifikasi kepemilikan**  keamanan hanya bergantung pada middleware HTTP. Kini setiap resolve company (session maupun `current_company_id`) diverifikasi ulang: owner company, atau admin dengan sesi impersonasi sah (D-47); selain itu `LogicException: Akses lintas company ditolak`. Cache `$cachedCompany` dihapus  `Company::find` per-PK murah, dan cache bisa bertahan lintas request Livewire dalam satu proses sehingga memakai company basi pasca kepemilikan dicabut.
+- `setCurrent()` tanpa user terautentikasi (CLI/seed) tetap diizinkan; pembacaan data tetap wajib verifikasi.
+- `Livewire::addPersistentMiddleware([SetCurrentCompany, EnsureCompanyAccess])` di `AppServiceProvider`  request update Livewire (POST `/livewire/update`) kini juga melewati cek tenant.
+- Test baru `LivewireTenantMiddlewareTest` (4 test): route menolak session `active_company` palsu (403); context melempar keras pada session palsu; reload Livewire pasca kepemilikan dicabut gagal terkontrol; widget tanpa capability ditolak keras. 3 test lama (DataErasure x2, DataExport x1) diperbarui: staff non-owner kini ditolak di lapisan context (lebih awal), kontrak "tanpa mutasi" tetap.
+- Gate: worktree full **805 passed / 4.091 assertions**; main post-merge full **805 passed / 4.091 assertions** (3 notice pre-existing `EnsureFeatureEnabledTest`); Pint PASS; `npm run build` PASS; smoke `/app/dashboard` 200.
+- File: `app/Services/Eloquent/EloquentCompanyContext.php`, `app/Providers/AppServiceProvider.php`, `tests/Feature/LivewireTenantMiddlewareTest.php` (baru), `tests/Feature/DataErasureTest.php`, `tests/Feature/DataExportTest.php`.
+
+**Slice MQ-01C1  integritas uang + recovery: `DONE`, merged `56b623d`; precision hardening merged `833240b` (writer `4a848c2`).**
 
 - Acceptance 2 (uang fail-closed): validator repository tetap menolak data korup; lapisan Dashboard kini juga memakai satu `CashFlowCalculator` berbasis integer-sen untuk KPI dan widget, menolak direction/amount invalid, `DECIMAL(18,2)` out-of-range, float yang tidak mampu membedakan satu sen, dan aggregate overflow. Nilai maksimum valid tetap presisi; negative test KPI/widget berjalan independen.
 - Acceptance 1 (reload recovery): test `reload_recovers` — compose gagal lalu sukses = pesan error hilang.
@@ -32,7 +41,7 @@
 
 **Batas:** D-31 tetap wajib; tidak ada dependency/migration/push/deploy. Uang dan tenant wajib fail-closed dengan negative test. Temuan placeholder route dan fokus shell dicatat untuk boundary modul shell, tidak disisipkan ke commit Dashboard.
 
-**Next:** slice berikutnya serial: `MQ-01C2` (tenant authorization + persistent Livewire middleware, negative test request nyata) di worktree terpisah.
+**Next:** slice berikutnya serial: `MQ-01C3` (kontrak preset-widget-capability + matriks seluruh preset) di worktree terpisah.
 
 ## UX-MARATHON ITERATIF — autopilot berkelanjutan (mandat Bos)
 
