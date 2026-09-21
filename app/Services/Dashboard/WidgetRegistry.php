@@ -26,6 +26,7 @@ class WidgetRegistry
         private readonly CompanyContext $companyContext,
         private readonly FeatureResolver $features,
         private readonly TerminologyResolver $terms,
+        private readonly CashFlowCalculator $cashFlowCalculator,
     ) {}
 
     public function available(string $key): bool
@@ -121,24 +122,15 @@ class WidgetRegistry
     /** @return array{key: string, title: string, value: string, meta: string, items: list<array{primary: string, secondary: string}>, tone: string} */
     private function cashFlow(): array
     {
-        $incoming = 0.0;
-        $outgoing = 0.0;
-        foreach ($this->rows('cash_entries') as $entry) {
-            $amount = (float) ($entry['amount'] ?? 0);
-            if (($entry['direction'] ?? null) === 'in') {
-                $incoming += $amount;
-            } else {
-                $outgoing += $amount;
-            }
-        }
+        $flow = $this->cashFlowCalculator->calculate($this->rows('cash_entries'));
 
         return $this->card(
             'kpi_cashflow',
             'Arus kas',
-            $this->currency($incoming - $outgoing),
-            'Masuk '.$this->currency($incoming).' · keluar '.$this->currency($outgoing),
+            $this->cashFlowCalculator->formatRupiah($flow['balance_cents']),
+            'Masuk '.$this->cashFlowCalculator->formatRupiah($flow['incoming_cents']).' · keluar '.$this->cashFlowCalculator->formatRupiah($flow['outgoing_cents']),
             [],
-            $incoming >= $outgoing ? 'success' : 'danger',
+            $flow['balance_cents'] >= 0 ? 'success' : 'danger',
         );
     }
 
@@ -203,11 +195,6 @@ class WidgetRegistry
     private function card(string $key, string $title, string $value, string $meta, array $items, string $tone): array
     {
         return compact('key', 'title', 'value', 'meta', 'items', 'tone');
-    }
-
-    private function currency(float $amount): string
-    {
-        return 'Rp '.number_format($amount, 0, ',', '.');
     }
 
     private function formatNumber(float $number): string

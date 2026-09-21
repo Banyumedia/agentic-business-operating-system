@@ -6,6 +6,7 @@ use App\Contracts\CompanyContext;
 use App\Contracts\EntityRepository;
 use App\Models\ApprovalTicket;
 use App\Models\AssistantReport;
+use App\Models\CashEntry;
 use App\Models\Company;
 use App\Models\User;
 use App\Models\WorkflowTransitionLog;
@@ -78,6 +79,32 @@ class DashboardEloquentTest extends TestCase
                 ->assertSee('Laporan AI')
                 ->assertSee($dashboard['assistant_report']['summary']);
         }
+    }
+
+    public function test_cashflow_kpi_and_widget_exclude_another_companys_money(): void
+    {
+        $user = User::factory()->create();
+        $company = Company::factory()->create([
+            'owner_user_id' => $user->id,
+            'business_preset' => 'bengkel',
+        ]);
+        $otherCompany = Company::factory()->create([
+            'owner_user_id' => $user->id,
+            'business_preset' => 'bengkel',
+        ]);
+
+        CashEntry::factory()->create(['company_id' => $company->id, 'direction' => 'in', 'amount' => 100000]);
+        CashEntry::factory()->create(['company_id' => $company->id, 'direction' => 'out', 'amount' => 30000]);
+        CashEntry::factory()->create(['company_id' => $otherCompany->id, 'direction' => 'in', 'amount' => 999999]);
+
+        app(CompanyContext::class)->setCurrent($company->id);
+
+        $dashboard = app(DashboardComposer::class)->compose();
+        $widget = app(WidgetRegistry::class)->compose('kpi_cashflow');
+
+        $this->assertSame('Rp 70.000', $dashboard['kpis'][0]['value']);
+        $this->assertSame('Rp 70.000', $widget['value']);
+        $this->assertStringNotContainsString('999.999', $widget['meta']);
     }
 
     public function test_schedule_widget_uses_the_recorded_offset_and_hides_past_agenda_with_eloquent(): void
