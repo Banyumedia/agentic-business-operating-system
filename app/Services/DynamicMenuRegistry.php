@@ -242,7 +242,13 @@ class DynamicMenuRegistry
                 'requires_all' => ['projects'],
                 'items' => [
                     $this->item(null, ['term' => 'projects', 'prefix' => 'Daftar '], '/app/projects', 'list', 'projects'),
-                    $this->item('billing', 'Termin & Opname', '/app/projects/billing', 'contract', 'invoices', ['projects.progress_billing']),
+                    // `navigation: false` sampai ada entitas tagihan pelanggan.
+                    // Entity `invoices` adalah tagihan langganan platform
+                    // (D-23: topup/subscription), bukan piutang pelanggan
+                    // tenant, jadi pola `contract` sengaja belum dibangun di
+                    // atasnya. Route dipertahankan supaya kontrak path kanonik
+                    // tidak berubah.
+                    $this->item('billing', 'Termin & Opname', '/app/projects/billing', 'contract', 'invoices', ['projects.progress_billing'], [], false),
                     $this->item('quotations', 'Penawaran', '/app/projects/quotations', 'list', 'quotations', ['quotations'], [], false),
                     $this->item('timesheet', 'Timesheet', '/app/projects/timesheet', 'list', 'timesheet_entries', ['timesheet']),
                     $this->item('retention', 'Retensi', '/app/projects/retention', 'list', 'project_milestones', ['construction.retention']),
@@ -297,7 +303,11 @@ class DynamicMenuRegistry
                 'requires_any' => ['finance.cashbook', 'finance.accounting'],
                 'items' => [
                     $this->item(null, 'Buku Kas', '/app/accounting', 'ledger', 'cash_entries', ['finance.cashbook']),
-                    $this->item('invoices', ['term' => 'invoices'], '/app/accounting/invoices', 'contract', 'invoices', [], ['milestone_billing', 'pos']),
+                    // Lihat catatan di `projects.billing`: disembunyikan dari
+                    // navigasi sampai tagihan pelanggan punya entitasnya
+                    // sendiri. Sebelumnya menu ini terjangkau di 29 preset dan
+                    // hanya menampilkan kartu kontrak.
+                    $this->item('invoices', ['term' => 'invoices'], '/app/accounting/invoices', 'contract', 'invoices', [], ['milestone_billing', 'pos'], false),
                     $this->item('reports', 'Laporan Keuangan', '/app/accounting/reports', 'report', 'cash_entries', ['finance.accounting']),
                     $this->item('coa', 'Bagan Akun', '/app/accounting/coa', 'list', 'cash_entries', ['finance.accounting']),
                     $this->item('journals', 'Jurnal', '/app/accounting/journals', 'ledger', 'cash_entries', ['finance.accounting']),
