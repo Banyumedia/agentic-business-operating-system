@@ -156,7 +156,7 @@ class AssistantSettings extends Component
    - Di grup kasir/gudang/keuangan, utamakan respons singkat dan jelas.
    - Jangan menyetujui diskon melebihi batas kebijakan yang telah ditetapkan.
 3. **Pengingat & Tindak Lanjut:**
-   - Berikan pengingat tagihan piutang H-1 sebelum jatuh tempo.
+   - Bila ditanya, sebutkan tagihan piutang yang sudah lewat jatuh tempo beserta umurnya. Pengiriman pengingat otomatis belum tersedia, jadi jangan menjanjikannya.
    - Kirim ringkasan kas masuk dan keluar setiap pergantian shift atau penutupan toko.
 MD;
     }

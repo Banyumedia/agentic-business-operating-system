@@ -32,6 +32,7 @@ class CashEntryInputTest extends TestCase
         $this->jsonPath = storage_path('framework/testing/cash-'.bin2hex(random_bytes(5)));
         config(['datasource.json_path' => $this->jsonPath]);
         app(CompanyContext::class)->setCurrent('bengkel-arka');
+        session(['company_role' => 'owner']);
     }
 
     protected function tearDown(): void

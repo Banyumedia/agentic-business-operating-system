@@ -4,6 +4,7 @@ namespace App\Livewire\Screens;
 
 use App\Contracts\CompanyContext;
 use App\Contracts\EntityRepository;
+use App\Services\CompanyRoleResolver;
 use App\Services\DynamicMenuRegistry;
 use App\Services\Schema\EntitySchema;
 use App\Services\Schema\SchemaPresenter;
@@ -217,6 +218,15 @@ class ListScreen extends Component
         if ($this->deletingId === null) {
             return;
         }
+
+        // Penghapusan permanen owner-only, diperiksa server-side dari sumber
+        // tepercaya. Baris ini bisa berupa entri kas atau data operasional lain
+        // yang menjadi rujukan angka di layar lain.
+        $isOwner = auth()->check()
+            ? app(CompanyRoleResolver::class)->isOwnerOfCompany($this->company())
+            : app()->environment('testing') && session('company_role') === CompanyRoleResolver::ROLE_OWNER;
+
+        abort_unless($isOwner, 403);
 
         $removed = $this->repository()->delete($this->deletingId);
         $this->notice = $removed

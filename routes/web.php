@@ -4,6 +4,7 @@ use App\Contracts\CompanyContext;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminImpersonationController;
 use App\Http\Controllers\App\GroupReportController;
+use App\Http\Controllers\App\InvoiceDocumentController;
 use App\Http\Controllers\App\ModuleController;
 use App\Http\Middleware\EnsureCompanyAccess;
 use App\Http\Middleware\EnsureCompanyContext;
@@ -28,14 +29,16 @@ use App\Livewire\Lobby;
 use App\Livewire\Onboarding;
 use App\Livewire\Paywall;
 use App\Livewire\Public\IndustryList;
+use App\Livewire\Public\LandingPage;
 use App\Livewire\Settings;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', Lobby::class)->name('lobby');
+Route::get('/', LandingPage::class)->name('home');
 Route::get('/industri', IndustryList::class)->name('industri');
 
 // Onboarding membuat data usaha - hanya untuk pengguna terautentikasi.
 Route::middleware('auth')->group(function (): void {
+    Route::get('/app/lobby', Lobby::class)->name('lobby');
     Route::get('/onboarding', Onboarding::class)->name('onboarding');
 });
 
@@ -86,6 +89,12 @@ Route::middleware(['auth', SetCurrentCompany::class, EnsureCompanyAccess::class]
         // PAY-1: Halaman pilih paket dan instruksi pembayaran manual
         Route::get('/app/billing/subscribe', SubscribePage::class)->name('billing.subscribe');
         Route::get('/app/billing/payment-instruction/{invoice}', PaymentInstructionPage::class)->name('billing.payment-instruction');
+
+        // Dokumen cetak tagihan (T-52). Didaftarkan sebelum wildcard modul
+        // karena tiga segmennya tidak cocok dengan pola `{module}/{submodule?}`.
+        Route::get('/app/invoices/{invoice}/print', [InvoiceDocumentController::class, 'show'])
+            ->whereNumber('invoice')
+            ->name('app.invoice.print');
 
         Route::get('/app/{module}/{submodule?}', [ModuleController::class, 'show'])
             ->middleware(EnsureFeatureEnabled::class)

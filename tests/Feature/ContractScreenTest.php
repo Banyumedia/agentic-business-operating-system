@@ -363,6 +363,223 @@ class ContractScreenTest extends TestCase
         $this->assertArrayNotHasKey($milestoneId, $after);
     }
 
+    public function test_invoice_can_be_billed_from_an_approved_quotation(): void
+    {
+        $quotationId = $this->quotation('PEN-001', 'Renovasi tahap awal', [
+            ['description' => 'Bongkar dinding', 'quantity' => 1, 'unit_price' => 2000000, 'sort_order' => 0],
+            ['description' => 'Pasang keramik', 'quantity' => 20, 'unit_price' => 150000, 'sort_order' => 1],
+        ]);
+
+        Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->call('create')
+            ->set('form.quotation_id', $quotationId)
+            ->call('loadQuotation')
+            ->assertSet('failure', null)
+            ->assertSet('lines.0.description', 'Bongkar dinding')
+            ->assertSet('lines.1.description', 'Pasang keramik')
+            ->call('save')
+            ->assertSet('failure', null);
+
+        $invoice = $this->invoices()->all()[0];
+
+        // Judul dan total ikut dari penawaran, dihitung ulang dari barisnya.
+        $this->assertSame('Renovasi tahap awal', $invoice['title']);
+        $this->assertSame(5000000.0, (float) $invoice['grand_total']);
+        $this->assertSame($quotationId, (int) $invoice['quotation_id']);
+        $this->assertCount(2, $this->lines());
+    }
+
+    public function test_negative_quotation_cannot_be_billed_twice(): void
+    {
+        $quotationId = $this->quotation('PEN-002', 'Sekali saja', [
+            ['description' => 'Jasa', 'quantity' => 1, 'unit_price' => 1000000, 'sort_order' => 0],
+        ]);
+
+        Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->call('create')
+            ->set('form.quotation_id', $quotationId)
+            ->call('loadQuotation')
+            ->call('save')
+            ->assertSet('failure', null);
+
+        Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->call('create')
+            ->set('form.quotation_id', $quotationId)
+            ->call('loadQuotation')
+            ->assertSet('failure', 'Penawaran ini sudah pernah ditagih.');
+
+        $this->assertCount(1, $this->invoices()->all());
+    }
+
+    public function test_negative_quotation_without_lines_is_rejected(): void
+    {
+        $quotationId = $this->quotation('PEN-003', 'Kosong', []);
+
+        Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->call('create')
+            ->set('form.quotation_id', $quotationId)
+            ->call('loadQuotation')
+            ->assertSet('failure', 'Penawaran ini belum punya rincian.');
+    }
+
+    public function test_negative_quotation_of_another_company_is_rejected(): void
+    {
+        $this->useCompany('salon-ayu', 'bengkel', ['tax_mode' => 'non_taxable']);
+        app(EntityRepository::class)->for('salon-ayu', 'quotations')
+            ->save(['id' => 88, 'number' => 'PEN-LAIN', 'title' => 'Penawaran Usaha Lain']);
+        $this->useCompany('bengkel-arka', 'bengkel', ['tax_mode' => 'non_taxable']);
+
+        Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->call('create')
+            ->set('form.quotation_id', 88)
+            ->call('loadQuotation')
+            ->assertSet('failure', 'Penawaran tidak ditemukan pada usaha ini.');
+    }
+
+    public function test_negative_staff_cannot_issue_an_invoice(): void
+    {
+        $this->saveInvoice('Disiapkan staf');
+        $id = (int) $this->invoices()->all()[0]['id'];
+
+        // Staf boleh menyiapkan draf, tapi menerbitkan adalah komitmen fiskal.
+        session(['company_role' => 'staff']);
+
+        Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->call('requestIssue', $id)
+            ->call('issue')
+            ->assertForbidden();
+
+        $this->assertSame('draft', $this->invoices()->find($id)['status']);
+    }
+
+    public function test_negative_staff_cannot_record_a_payment(): void
+    {
+        $id = $this->issuedInvoice(250000);
+
+        session(['company_role' => 'staff']);
+
+        Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->call('requestPayment', $id)
+            ->set('paymentAmount', '250000')
+            ->call('recordPayment')
+            ->assertForbidden();
+
+        $this->assertSame([], $this->cashEntries());
+        $this->assertSame('issued', $this->invoices()->find($id)['status']);
+    }
+
+    public function test_role_is_revalidated_when_it_changes_mid_session(): void
+    {
+        $id = $this->issuedInvoice(100000);
+        $component = Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->call('requestPayment', $id)
+            ->set('paymentAmount', '100000');
+
+        // Peran diperiksa saat aksi dijalankan, bukan saat komponen dipasang.
+        session(['company_role' => 'staff']);
+
+        $component->call('recordPayment')->assertForbidden();
+        $this->assertSame([], $this->cashEntries());
+    }
+
+    public function test_overdue_invoice_is_flagged_with_its_age(): void
+    {
+        // Waktu dibekukan supaya umur tunggakan tidak bergantung jam mesin.
+        $this->travelTo('2026-09-22 09:00:00');
+        $this->issuedInvoiceWithDue(1000000, '2026-09-12');
+
+        $component = Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices']);
+        $row = $component->viewData('rows')[0];
+
+        $this->assertTrue($row['is_overdue']);
+        $this->assertSame(10, $row['overdue_days']);
+        $this->assertSame('2026-09-12', $row['due_date']);
+        $this->assertSame(1, $component->viewData('overdueCount'));
+        $this->assertSame(1000000.0, $component->viewData('overdueTotal'));
+    }
+
+    public function test_invoice_not_yet_due_is_not_flagged(): void
+    {
+        $this->travelTo('2026-09-22 09:00:00');
+        $this->issuedInvoiceWithDue(1000000, '2026-10-30');
+
+        $row = Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->viewData('rows')[0];
+
+        $this->assertFalse($row['is_overdue']);
+        $this->assertSame(0, $row['overdue_days']);
+    }
+
+    public function test_invoice_without_a_due_date_is_never_overdue(): void
+    {
+        $this->issuedInvoiceWithDue(1000000, null);
+
+        $row = Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->viewData('rows')[0];
+
+        $this->assertFalse($row['is_overdue']);
+        $this->assertNull($row['due_date']);
+    }
+
+    public function test_settled_invoice_is_not_overdue_even_past_the_due_date(): void
+    {
+        $id = $this->issuedInvoiceWithDue(500000, '2026-09-01');
+
+        Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->call('requestPayment', $id)
+            ->set('paymentAmount', '500000')
+            ->call('recordPayment');
+
+        $component = Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices']);
+
+        // Sudah lunas: tanggalnya lewat tapi tidak ada lagi yang ditunggu.
+        $this->assertFalse($component->viewData('rows')[0]['is_overdue']);
+        $this->assertSame(0, $component->viewData('overdueCount'));
+    }
+
+    public function test_draft_is_never_overdue(): void
+    {
+        $this->invoices()->save([
+            'number' => 'INV-DRAFT-DUE',
+            'title' => 'Draf lewat tanggal',
+            'status' => 'draft',
+            'issue_date' => '2026-08-01',
+            'due_date' => '2026-08-10',
+            'grand_total' => 750000,
+        ]);
+
+        $row = Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->viewData('rows')[0];
+
+        // Draf belum menagih siapa pun, jadi tidak bisa menunggak.
+        $this->assertFalse($row['is_overdue']);
+    }
+
+    public function test_oldest_overdue_invoice_is_listed_first(): void
+    {
+        $this->travelTo('2026-09-22 09:00:00');
+        $this->issuedInvoiceWithDue(100000, '2026-09-20');
+        $this->issuedInvoiceWithDue(200000, '2026-09-01');
+        $this->issuedInvoiceWithDue(300000, null);
+
+        $rows = Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->viewData('rows');
+
+        $this->assertSame('2026-09-01', $rows[0]['due_date']);
+        $this->assertSame('2026-09-20', $rows[1]['due_date']);
+        $this->assertNull($rows[2]['due_date']);
+    }
+
+    public function test_assistant_sop_does_not_promise_unimplemented_reminders(): void
+    {
+        // Janji yang tidak bisa ditepati sistem lebih buruk daripada tidak
+        // menjanjikan apa pun (T-48; pengingat otomatis menunggu T-49).
+        $source = file_get_contents(app_path('Livewire/Settings/AssistantSettings.php'));
+
+        $this->assertStringNotContainsString('Berikan pengingat tagihan piutang H-1', $source);
+        $this->assertStringContainsString('belum tersedia', $source);
+    }
+
     public function test_payment_is_recorded_as_cash_in_linked_to_the_invoice(): void
     {
         app(EntityRepository::class)->for('bengkel-arka', 'projects')
@@ -489,6 +706,47 @@ class ContractScreenTest extends TestCase
         $component->call('recordPayment')->assertForbidden();
     }
 
+    /** @param list<array<string, mixed>> $lines */
+    private function quotation(string $number, string $title, array $lines): int
+    {
+        $company = app(CompanyContext::class)->current();
+
+        $saved = app(EntityRepository::class)->for($company, 'quotations')
+            ->save(['number' => $number, 'title' => $title]);
+
+        $repository = app(EntityRepository::class)->for($company, 'quotation_lines');
+        foreach ($lines as $line) {
+            $repository->save(array_replace($line, [
+                'quotation_id' => (int) $saved['id'],
+                'line_total' => (float) $line['quantity'] * (float) $line['unit_price'],
+            ]));
+        }
+
+        return (int) $saved['id'];
+    }
+
+    private function issuedInvoiceWithDue(float $price, ?string $dueDate): int
+    {
+        Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->call('create')
+            ->set('form.title', 'Tagihan jatuh tempo')
+            ->set('form.due_date', $dueDate)
+            ->set('lines.0.description', 'Jasa')
+            ->set('lines.0.quantity', 1)
+            ->set('lines.0.unit_price', $price)
+            ->call('save')
+            ->assertSet('failure', null);
+
+        $id = (int) collect($this->invoices()->all())->last()['id'];
+
+        Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->call('requestIssue', $id)
+            ->call('issue')
+            ->assertSet('failure', null);
+
+        return $id;
+    }
+
     private function milestone(string $name, float $amount, int $projectId): int
     {
         app(EntityRepository::class)->for('bengkel-arka', 'projects')
@@ -604,5 +862,8 @@ class ContractScreenTest extends TestCase
         );
 
         app(CompanyContext::class)->setCurrent($company);
+
+        // Aksi fiskal owner-only (T-50); fixture default bertindak sebagai owner.
+        session(['company_role' => 'owner']);
     }
 }

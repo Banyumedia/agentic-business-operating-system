@@ -7,6 +7,12 @@
                 Belum tertagih: <span class="font-[family-name:var(--erp-font-mono)] tabular-nums font-semibold text-[var(--erp-text-primary)]">{{ number_format($outstanding, 2, ',', '.') }}</span>
                 &middot; dihitung dari tagihan yang sudah diterbitkan.
             </p>
+            @if ($overdueCount > 0)
+                <p role="alert" class="mt-2 inline-flex flex-wrap items-baseline gap-1 rounded-[var(--erp-radius-md)] border border-[var(--erp-danger)] bg-[var(--erp-danger-soft)] px-3 py-1.5 text-sm text-[var(--erp-text-primary)]">
+                    <strong>{{ $overdueCount }} tagihan lewat jatuh tempo</strong>
+                    senilai <span class="font-[family-name:var(--erp-font-mono)] tabular-nums font-semibold">{{ number_format($overdueTotal, 2, ',', '.') }}</span>
+                </p>
+            @endif
         </div>
 
         <button
@@ -92,6 +98,26 @@
                         </select>
                         <p class="text-xs text-[var(--erp-text-muted)]">Menempelkan tagihan ke {{ strtolower($projectLabel) }} membuat nilainya ikut terhitung pada laba-rugi {{ strtolower($projectLabel) }}.</p>
                     </div>
+
+                    @if ($quotations !== [])
+                        <div class="space-y-1.5 sm:col-span-2">
+                            <label for="contract-quotation" class="block text-sm font-medium text-[var(--erp-text-primary)]">Tagih dari penawaran</label>
+                            <div class="flex flex-wrap gap-2">
+                                <select id="contract-quotation" wire:model="form.quotation_id"
+                                    class="min-h-11 flex-1 rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-inset)] px-3 py-2 text-sm text-[var(--erp-text-primary)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                                    <option value="">Tanpa penawaran</option>
+                                    @foreach ($quotations as $id => $name)
+                                        <option value="{{ $id }}">{{ $name }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="button" wire:click="loadQuotation" wire:loading.attr="disabled"
+                                    class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] px-4 text-sm font-semibold text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60">
+                                    Muat rincian
+                                </button>
+                            </div>
+                            <p class="text-xs text-[var(--erp-text-muted)]">Seluruh baris penawaran disalin ke rincian tagihan. Penawaran yang sudah ditagih tidak tampil.</p>
+                        </div>
+                    @endif
 
                     @if ($milestones !== [])
                         <div class="space-y-1.5 sm:col-span-2">
@@ -196,6 +222,7 @@
                         <th scope="col" class="py-2 pr-3">Nomor</th>
                         <th scope="col" class="py-2 pr-3">Keterangan</th>
                         <th scope="col" class="py-2 pr-3">Terbit</th>
+                        <th scope="col" class="py-2 pr-3">Jatuh tempo</th>
                         <th scope="col" class="py-2 pr-3">Status</th>
                         <th scope="col" class="py-2 pr-3 text-right">Total</th>
                         <th scope="col" class="py-2 pr-3 text-right">Belum dibayar</th>
@@ -208,6 +235,12 @@
                             <td class="py-3 pr-3 font-[family-name:var(--erp-font-mono)] text-[var(--erp-text-primary)]">{{ $row['number'] }}</td>
                             <td class="py-3 pr-3 text-[var(--erp-text-primary)]">{{ $row['title'] }}</td>
                             <td class="py-3 pr-3 text-[var(--erp-text-secondary)]">{{ $row['issue_date'] }}</td>
+                            <td class="py-3 pr-3 {{ $row['is_overdue'] ? 'text-[var(--erp-danger)] font-semibold' : 'text-[var(--erp-text-secondary)]' }}">
+                                {{ $row['due_date'] ?? '—' }}
+                                @if ($row['is_overdue'])
+                                    <span class="block text-xs font-normal">telat {{ $row['overdue_days'] }} hari</span>
+                                @endif
+                            </td>
                             <td class="py-3 pr-3">
                                 <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold {{ $row['status'] === 'paid' ? 'bg-[var(--erp-success-soft)] text-[var(--erp-success)]' : ($row['is_draft'] ? 'bg-[var(--erp-bg-inset)] text-[var(--erp-text-secondary)]' : 'bg-[var(--erp-warning-soft)] text-[var(--erp-warning)]') }}">
                                     {{ $row['status'] }}
@@ -226,7 +259,14 @@
                                             class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-2 text-xs font-semibold text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60">
                                             Terbitkan<span class="sr-only"> {{ $row['number'] }}</span>
                                         </button>
-                                    @elseif ($row['outstanding'] > 0)
+                                    @else
+                                        <a href="{{ route('app.invoice.print', ['invoice' => $row['id']]) }}" target="_blank" rel="noopener"
+                                            class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-2 text-xs font-medium text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                                            Cetak<span class="sr-only"> {{ $row['number'] }}</span>
+                                        </a>
+                                    @endif
+
+                                    @if (! $row['is_draft'] && $row['outstanding'] > 0)
                                         <button type="button" wire:click="requestPayment({{ $row['id'] }})" wire:loading.attr="disabled"
                                             class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-2 text-xs font-semibold text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60">
                                             Catat pembayaran<span class="sr-only"> {{ $row['number'] }}</span>
@@ -237,7 +277,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="py-10 text-center text-sm text-[var(--erp-text-muted)]">
+                            <td colspan="8" class="py-10 text-center text-sm text-[var(--erp-text-muted)]">
                                 Belum ada {{ $term }}. Mulai dengan menekan "Buat {{ $term }}".
                             </td>
                         </tr>

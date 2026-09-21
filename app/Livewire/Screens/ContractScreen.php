@@ -5,9 +5,11 @@ namespace App\Livewire\Screens;
 use App\Contracts\CompanyContext;
 use App\Contracts\EntityRepository;
 use App\Services\BusinessIdentityStore;
+use App\Services\CompanyRoleResolver;
 use App\Services\DynamicMenuRegistry;
 use App\Services\Schema\EntitySchema;
 use App\Services\TaxRateService;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -87,6 +89,7 @@ class ContractScreen extends Component
             'notes' => null,
         ];
         $this->form['milestone_id'] = null;
+        $this->form['quotation_id'] = null;
         $this->lines = [$this->blankLine()];
     }
 
@@ -129,6 +132,60 @@ class ContractScreen extends Component
             'unit_price' => (float) ($milestone['amount'] ?? 0),
         ]];
         $this->notice = 'Rincian diisi dari termin.';
+    }
+
+    /**
+     * Memuat penawaran yang sudah disetujui menjadi rincian tagihan.
+     *
+     * Barisnya disalin dari penawaran di basis data, bukan dari klien, dan
+     * penawaran yang sudah pernah ditagih ditolak.
+     */
+    public function loadQuotation(): void
+    {
+        $this->resetFeedback();
+
+        $id = $this->form['quotation_id'] ?? null;
+        if ($id === null || $id === '') {
+            return;
+        }
+
+        $quotation = $this->quotationRepository()->find((int) $id);
+
+        if ($quotation === null) {
+            $this->failure = 'Penawaran tidak ditemukan pada usaha ini.';
+            $this->form['quotation_id'] = null;
+
+            return;
+        }
+
+        if ($this->quotationIsBilled((int) $id)) {
+            $this->failure = 'Penawaran ini sudah pernah ditagih.';
+            $this->form['quotation_id'] = null;
+
+            return;
+        }
+
+        $lines = $this->quotationLinesOf((int) $id);
+
+        if ($lines === []) {
+            $this->failure = 'Penawaran ini belum punya rincian.';
+
+            return;
+        }
+
+        $this->form['project_id'] = $quotation['project_id'] ?? $this->form['project_id'] ?? null;
+        $this->form['contact_id'] = $quotation['contact_id'] ?? $this->form['contact_id'] ?? null;
+        $this->form['title'] = $this->form['title'] === ''
+            ? (string) ($quotation['title'] ?? '')
+            : $this->form['title'];
+
+        $this->lines = array_map(static fn (array $line): array => [
+            'description' => (string) ($line['description'] ?? ''),
+            'quantity' => (float) ($line['quantity'] ?? 1),
+            'unit_price' => (float) ($line['unit_price'] ?? 0),
+        ], $lines);
+
+        $this->notice = 'Rincian diisi dari penawaran.';
     }
 
     public function edit(int $id): void
@@ -228,6 +285,7 @@ class ContractScreen extends Component
             'due_date' => $this->nullIfBlank($this->form['due_date'] ?? null),
             'contact_id' => $this->nullIfBlank($this->form['contact_id'] ?? null, true),
             'project_id' => $this->nullIfBlank($this->form['project_id'] ?? null, true),
+            'quotation_id' => $this->nullIfBlank($this->form['quotation_id'] ?? null, true),
             'notes' => $this->nullIfBlank($this->form['notes'] ?? null),
             'subtotal' => $totals['subtotal'],
             'dpp' => $totals['dpp'],
@@ -290,6 +348,8 @@ class ContractScreen extends Component
         if ($this->pendingIssueId === null) {
             return;
         }
+
+        $this->assertOwner();
 
         $invoice = $this->repository()->find($this->pendingIssueId);
         $this->pendingIssueId = null;
@@ -367,6 +427,8 @@ class ContractScreen extends Component
             return;
         }
 
+        $this->assertOwner();
+
         $id = $this->pendingPaymentId;
         $this->pendingPaymentId = null;
 
@@ -432,6 +494,26 @@ class ContractScreen extends Component
             : 'Pembayaran sebagian tercatat.';
     }
 
+    /**
+     * Umur tunggakan dalam hari.
+     *
+     * Nol berarti tidak menunggak - dan itu berlaku untuk tiga keadaan yang
+     * berbeda: belum jatuh tempo, tidak punya tanggal jatuh tempo, atau sudah
+     * tidak ada sisa yang harus dibayar. Draf juga tidak pernah menunggak karena
+     * ia belum menagih siapa pun.
+     */
+    private function overdueDays(?string $dueDate, float $outstanding, string $status): int
+    {
+        if ($dueDate === null || $status === 'draft' || $outstanding <= 0) {
+            return 0;
+        }
+
+        $due = CarbonImmutable::parse($dueDate)->startOfDay();
+        $today = CarbonImmutable::now()->startOfDay();
+
+        return $due->lessThan($today) ? (int) $due->diffInDays($today) : 0;
+    }
+
     /** @param array<string, mixed> $invoice */
     private function outstandingOf(array $invoice): float
     {
@@ -492,29 +574,45 @@ class ContractScreen extends Component
                 $outstanding += max($due, 0);
             }
 
+            $dueDate = $this->nullIfBlank($invoice['due_date'] ?? null);
+            $age = $this->overdueDays($dueDate, $due, $invoice['status'] ?? 'draft');
+
             $rows[] = [
                 'id' => (int) $invoice['id'],
                 'number' => (string) ($invoice['number'] ?? ''),
                 'title' => (string) ($invoice['title'] ?? ''),
                 'status' => (string) ($invoice['status'] ?? 'draft'),
                 'issue_date' => (string) ($invoice['issue_date'] ?? ''),
-                'due_date' => $invoice['due_date'] ?? null,
+                'due_date' => $dueDate,
                 'grand_total' => $total,
                 'paid_amount' => $paid,
                 'outstanding' => $due,
                 'is_draft' => ($invoice['status'] ?? 'draft') === 'draft',
+                'overdue_days' => $age,
+                'is_overdue' => $age > 0,
             ];
         }
+
+        // Yang paling lama menunggak naik ke atas. Sisanya nilai bandingnya sama
+        // sehingga urutan tanggal terbit di atas tetap terjaga (sort PHP 8 stabil).
+        // Tanpa ini piutang tertua justru paling mudah terlewat.
+        usort($rows, static fn (array $left, array $right): int => $right['overdue_days'] <=> $left['overdue_days']);
 
         return view('livewire.screens.contract', [
             'label' => $definition['label'],
             'term' => $definition['term'] ?? $definition['label'],
             'rows' => $rows,
             'outstanding' => round($outstanding, 2),
+            'overdueTotal' => round(array_sum(array_map(
+                static fn (array $row): float => $row['is_overdue'] ? $row['outstanding'] : 0.0,
+                $rows,
+            )), 2),
+            'overdueCount' => count(array_filter($rows, static fn (array $row): bool => $row['is_overdue'])),
             'totals' => $this->previewTotals(),
             'contacts' => $this->referenceOptions('contacts'),
             'projects' => $this->referenceOptions('projects'),
             'milestones' => $this->milestoneOptions(),
+            'quotations' => $this->quotationOptions(),
             'contactLabel' => term('contacts'),
             'projectLabel' => term('projects'),
             'pendingIssue' => $this->pendingIssueId === null ? null : $this->repository()->find($this->pendingIssueId),
@@ -651,6 +749,55 @@ class ContractScreen extends Component
         $milestone['customer_invoice_id'] = $invoiceId;
         $milestone['status'] = 'invoiced';
         $repository->save($milestone);
+    }
+
+    /** Penawaran yang belum pernah ditagih pada company aktif. @return array<int, string> */
+    private function quotationOptions(): array
+    {
+        $options = [];
+
+        foreach ($this->quotationRepository()->all() as $quotation) {
+            $id = (int) ($quotation['id'] ?? 0);
+            if ($id === 0 || $this->quotationIsBilled($id)) {
+                continue;
+            }
+
+            $number = (string) ($quotation['number'] ?? '#'.$id);
+            $title = (string) ($quotation['title'] ?? '');
+
+            $options[$id] = trim($number.' — '.$title, ' —');
+        }
+
+        return $options;
+    }
+
+    private function quotationIsBilled(int $quotationId): bool
+    {
+        foreach ($this->repository()->all() as $invoice) {
+            if ((int) ($invoice['quotation_id'] ?? 0) === $quotationId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function quotationLinesOf(int $quotationId): array
+    {
+        $lines = array_values(array_filter(
+            app(EntityRepository::class)->for($this->company(), 'quotation_lines')->all(),
+            static fn (array $line): bool => (int) ($line['quotation_id'] ?? 0) === $quotationId,
+        ));
+
+        usort($lines, static fn (array $left, array $right): int => ($left['sort_order'] ?? 0) <=> ($right['sort_order'] ?? 0));
+
+        return $lines;
+    }
+
+    private function quotationRepository(): EntityRepository
+    {
+        return app(EntityRepository::class)->for($this->company(), 'quotations');
     }
 
     /** Termin yang belum ditagih pada company aktif. @return array<int, string> */
@@ -833,6 +980,24 @@ class ContractScreen extends Component
         abort_unless(app(CompanyContext::class)->current() === $this->company, 403);
 
         return $this->company;
+    }
+
+    /**
+     * Penerbitan dan pencatatan pembayaran adalah komitmen fiskal, jadi
+     * owner-only dan diperiksa **server-side** - menyembunyikan tombol saja
+     * tidak menghalangi pemanggilan aksi Livewire.
+     *
+     * Peran diambil dari sumber tepercaya (kepemilikan company terautentikasi),
+     * bukan dari state komponen. Jalur session hanya berlaku pada fixture JSON
+     * tanpa basis data, mengikuti pola `Settings`.
+     */
+    private function assertOwner(): void
+    {
+        $isOwner = auth()->check()
+            ? app(CompanyRoleResolver::class)->isOwnerOfCompany($this->company())
+            : app()->environment('testing') && session('company_role') === CompanyRoleResolver::ROLE_OWNER;
+
+        abort_unless($isOwner, 403);
     }
 
     private function resetFeedback(): void

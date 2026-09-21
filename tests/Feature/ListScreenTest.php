@@ -25,6 +25,9 @@ class ListScreenTest extends TestCase
         // Data entitas diisolasi; preset dan terminologi tetap dari fixture nyata.
         $this->jsonPath = storage_path('framework/testing/list-'.bin2hex(random_bytes(5)));
         config(['datasource.json_path' => $this->jsonPath]);
+
+        // Penghapusan permanen owner-only (T-50); fixture default = owner.
+        session(['company_role' => 'owner']);
     }
 
     protected function tearDown(): void
