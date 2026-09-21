@@ -8,6 +8,16 @@
 
 ## MQ-01  Peningkatan modul satu per satu
 
+**Slice MQ-01C5  browser/mobile/a11y smoke: `DONE`, merged `f2089f6` (writer `c79b50b` di worktree `task/mq-01c5`).**
+
+- Skrip baru `scripts/smoke_browser_c5.py` (Playwright headless Chromium, login nyata ke server dev 8003): login mobile 360x390, tanpa overflow horizontal (360/360), tanpa teks <12px, nama company tampil (bukan ID, MQ-01C4 verified di browser), tombol `Perbarui data` reload konten tetap ter-render tanpa pesan error, fokus keyboard pertama = skip-link `Lewati ke konten utama`, navigasi settings->dashboard konten kembali, desktop 1280x800 clean. Screenshot: `storage/app/_shots/c5_{mobile_360,desktop}.png`.
+- Hasil: **TEMUAN TOTAL: 0**. Dua asersi pertama sempat false-positive (label uppercase, tombol bernama `Perbarui data` bukan `Muat ulang`)  koreksi asersi, bukan defect app.
+- Catatan: smoke berjalan terhadap server dev main (semua merge C1-C4 sudah masuk), bukan worktree c5 yang tidak mengubah kode app.
+- Gate: worktree full **851 passed / 4.369 assertions**; Pint PASS; main post-merge full **851 passed / 4.369 assertions** (3 notice pre-existing).
+- File: `scripts/smoke_browser_c5.py` (baru).
+
+**MQ-01 selesai (C1-C5). Sesuai kesepakatan Bos, QA independen menyeluruh MQ-01 berikutnya.**
+
 **Slice MQ-01C4  parity identitas company: `DONE`, merged `ea90b6c` (writer `a7b66c8` di worktree `task/mq-01c4`).**
 
 - Defect nyata: `DashboardComposer` men-title-case `CompanyContext::current()`  datasource Eloquent mengembalikan ID numerik (`'1'`), jadi header dashboard Eloquent menampilkan angka, bukan nama usaha. Datasource JSON kebetulan benar karena slug (`bengkel-arka`  `Bengkel Arka`) cocok dengan nama di file identity.
@@ -59,7 +69,7 @@
 
 **Batas:** D-31 tetap wajib; tidak ada dependency/migration/push/deploy. Uang dan tenant wajib fail-closed dengan negative test. Temuan placeholder route dan fokus shell dicatat untuk boundary modul shell, tidak disisipkan ke commit Dashboard.
 
-**Next:** slice terakhir serial: `MQ-01C5` (browser/mobile/a11y smoke) di worktree terpisah, lalu QA independen menyeluruh MQ-01 (kesepakatan Bos: QA ditunda sampai semua slice selesai).
+**Next:** QA independen menyeluruh seluruh slice MQ-01 (C1-C5) via review eksternal; lalu tutup MQ-01 dan evaluasi modul berikutnya.
 
 ## UX-MARATHON ITERATIF — autopilot berkelanjutan (mandat Bos)
 
