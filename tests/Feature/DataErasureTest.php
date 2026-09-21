@@ -14,6 +14,7 @@ use App\Services\Eloquent\EloquentCompanyContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Livewire\Livewire;
+use LogicException;
 use Tests\TestCase;
 
 class DataErasureTest extends TestCase
@@ -178,13 +179,11 @@ class DataErasureTest extends TestCase
         ]);
 
         $this->actingAs($staff);
+        // Fail-closed lebih awal (MQ-01C2): staff non-owner ditolak di lapisan
+        // context sebelum komponen tersentuh; data tetap tanpa mutasi.
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Akses lintas company ditolak.');
         app(CompanyContext::class)->setCurrent((string) $company->id);
-
-        Livewire::test(DataErasure::class)
-            ->set('contactId', (string) $contact->id)
-            ->set('confirmationCode', 'YA')
-            ->call('erase')
-            ->assertStatus(403);
 
         $this->assertDatabaseHas('contacts', ['id' => $contact->id]);
         $this->assertDatabaseMissing('access_logs', [
@@ -219,8 +218,10 @@ class DataErasureTest extends TestCase
         $intruder->update(['current_company_id' => $company->id]);
 
         $this->actingAs($intruder);
+        // Fail-closed lebih awal (MQ-01C2): intruder non-owner ditolak di
+        // lapisan context sebelum route/komponen tersentuh.
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Akses lintas company ditolak.');
         app(CompanyContext::class)->setCurrent((string) $company->id);
-
-        $this->get('/app/settings')->assertStatus(403);
     }
 }

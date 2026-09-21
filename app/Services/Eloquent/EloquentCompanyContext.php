@@ -3,14 +3,13 @@
 namespace App\Services\Eloquent;
 
 use App\Contracts\CompanyContext;
+use App\Models\AdminImpersonationSession;
 use App\Models\Company;
 use Illuminate\Support\Facades\Auth;
 use LogicException;
 
 class EloquentCompanyContext implements CompanyContext
 {
-    private ?Company $cachedCompany = null;
-
     public function current(): string
     {
         $company = $this->getCompany();
@@ -32,6 +31,8 @@ class EloquentCompanyContext implements CompanyContext
             throw new LogicException('Company tidak ditemukan.');
         }
 
+        $this->assertAuthorizedFor($company);
+
         session(['active_company' => $companyId]);
 
         $user = Auth::user();
@@ -39,21 +40,19 @@ class EloquentCompanyContext implements CompanyContext
             $user->current_company_id = (int) $companyId;
             $user->save();
         }
-
-        $this->cachedCompany = $company;
     }
 
     public function getCompany(): Company
     {
-        if ($this->cachedCompany) {
-            return $this->cachedCompany;
-        }
-
         $activeCompanyId = session('active_company');
         if ($activeCompanyId) {
             $company = Company::find($activeCompanyId);
             if ($company) {
-                $this->cachedCompany = $company;
+                // Session adalah input tak tepercaya: kepemilikan (atau sesi
+                // impersonasi admin yang sah) wajib diverifikasi ulang di
+                // sini, bukan hanya di middleware HTTP - request Livewire
+                // dan pemanggilan service langsung juga melewati jalur ini.
+                $this->assertAuthorizedFor($company);
 
                 return $company;
             }
@@ -63,13 +62,47 @@ class EloquentCompanyContext implements CompanyContext
         if ($user && $user->current_company_id) {
             $company = Company::find($user->current_company_id);
             if ($company) {
+                $this->assertAuthorizedFor($company);
+
                 session(['active_company' => $company->id]);
-                $this->cachedCompany = $company;
 
                 return $company;
             }
         }
 
         throw new LogicException('Company aktif belum di-set pada EloquentCompanyContext.');
+    }
+
+    /**
+     * Fail-closed: user harus owner company, atau admin platform dengan sesi
+     * impersonasi sah yang menargetkan company ini. Tanpa user terautentikasi
+     * (CLI/seed), tidak ada prinsipal untuk diverifikasi - izinkan set,
+     * karena pembacaan getCompany() tetap diverifikasi saat ada user.
+     */
+    private function assertAuthorizedFor(Company $company): void
+    {
+        $user = Auth::user();
+        if ($user === null) {
+            return;
+        }
+
+        if ((int) $company->owner_user_id === (int) $user->id) {
+            return;
+        }
+
+        $impersonationId = session('admin_impersonation_id');
+        if (is_string($impersonationId) && $impersonationId !== '') {
+            $valid = AdminImpersonationSession::query()
+                ->where('session_id', $impersonationId)
+                ->where('target_company_id', $company->id)
+                ->where('admin_user_id', $user->id)
+                ->exists();
+
+            if ($valid) {
+                return;
+            }
+        }
+
+        throw new LogicException('Akses lintas company ditolak.');
     }
 }
