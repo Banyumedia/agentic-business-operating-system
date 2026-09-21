@@ -108,7 +108,11 @@
      - Model DTO `IntentResult` & Service `NluIntentRouter`.
      - Unit test `NluIntentRouterTest` 5 passed (21 assertions).
      - Pint clean, `npm run build` pass.
-  4. `[READY]` **WA-04: Filter Interaksi Grup & Otorisasi Pengirim**: filter pesan grup (hanya jawab jika di-tag), fail-closed DM (chat japri internal hanya untuk nomor Owner).
+  4. `[DONE]` **WA-04: Filter Interaksi Grup & Otorisasi Pengirim**: filter pesan grup (hanya jawab jika di-tag), fail-closed DM (chat japri internal hanya untuk nomor Owner).
+     - Service `WhatsAppInteractionFilter` dengan normalisasi nomor HP (+62/08) dan aturan fail-closed.
+     - Unit test `WhatsAppInteractionFilterTest` 4 passed (6 assertions).
+     - Pint clean, `npm run build` pass.
+     - QA Independen: Memastikan kepatuhan aturan fail-closed isolasi nomor asing vs owner, serta pembatasan bot CS agar tidak bisa masuk ke grup internal.
 
 
 ## A11Y-SMOKE 2026-09-20  tap target fix (selesai)
