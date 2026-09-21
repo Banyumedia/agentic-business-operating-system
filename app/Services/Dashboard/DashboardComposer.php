@@ -48,7 +48,7 @@ class DashboardComposer
         }
 
         return [
-            'company' => str($company)->replace('-', ' ')->title()->toString(),
+            'company' => $this->companyContext->displayName(),
             'kpis' => $this->universalKpis(),
             'assistant_report' => $this->assistantReport(),
             'widgets' => $widgets,

@@ -56,6 +56,35 @@ class JsonCompanyContext implements CompanyContext
         return $preset;
     }
 
+    public function displayName(): string
+    {
+        $company = $this->current();
+        $name = $this->identityPreset($company) === null
+            ? null
+            : $this->identityName($company);
+
+        // Fallback setara perilaku lama: slug di-title-case.
+        return $name ?? str($company)->replace('-', ' ')->title()->toString();
+    }
+
+    private function identityName(string $company): ?string
+    {
+        $path = "json/{$company}/business_identity.json";
+        $disk = Storage::disk('company-json');
+        if (! $disk->exists($path)) {
+            return null;
+        }
+
+        $identity = json_decode($disk->get($path), flags: JSON_THROW_ON_ERROR);
+        if (! is_object($identity)) {
+            throw new JsonException("Identitas usaha harus object: {$company}");
+        }
+
+        $name = $identity->name ?? null;
+
+        return is_string($name) && $name !== '' ? $name : null;
+    }
+
     public function setCurrent(string $company): void
     {
         $this->assertDemoEnvironment();

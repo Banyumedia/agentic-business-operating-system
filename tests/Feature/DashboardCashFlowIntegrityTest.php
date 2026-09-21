@@ -35,6 +35,7 @@ class DashboardCashFlowIntegrityTest extends TestCase
     {
         $this->mock(CompanyContext::class, function (MockInterface $mock): void {
             $mock->shouldReceive('current')->once()->andReturn('tenant-a');
+            $mock->shouldReceive('displayName')->andReturn('Tenant A');
         });
         $this->mock(FeatureResolver::class, function (MockInterface $mock): void {
             $mock->shouldReceive('enabled')->once()->with('finance.cashbook')->andReturnTrue();
@@ -56,6 +57,7 @@ class DashboardCashFlowIntegrityTest extends TestCase
     {
         $this->mock(CompanyContext::class, function (MockInterface $mock): void {
             $mock->shouldReceive('current')->andReturn('tenant-a');
+            $mock->shouldReceive('displayName')->andReturn('Tenant A');
             $mock->shouldReceive('preset')->once()->andReturn('preset-a');
         });
         $this->mock(PresetSource::class, function (MockInterface $mock): void {
