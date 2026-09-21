@@ -19,6 +19,16 @@
 - Temuan infra (dicatat untuk UR-02): server 8010 http-tanpa-proxy membuat asset `https://127.0.0.1:8010` gagal dimuat bila diakses langsung via http (APP_URL https); akses publik normal via proxy https (401 Basic Auth = sesuai snapshot). Login diverifikasi pada server verifikasi terpisah port 8005 dengan env APP_URL konsisten.
 - Verifikasi agregat non-secret di `docs/worker-reports/UR-01.md`.
 
+**UR-02  web + queue + scheduler: local implementation `DONE` (commit `10bc76c`); aktivasi produksi menunggu `HUMAN:DEPLOY`.**
+- Topologi runtime terkelola siap: `ecosystem.production.config.cjs` diperluas jadi 3 proses PM2 (web 8010 + queue worker `--tries=3 --backoff=30 --max-time=3600` + scheduler `schedule:work`), semua path absolut, `APP_ENV=production`, log terpisah per proses di `storage/logs/pm2-{production,queue,scheduler}-{out,error}.log`, autorestart + restart delay + NSSM service `PM2-AgenticBOS` StartMode Auto (reboot resilience).
+- Bukti lokal nyata: job uji diproses **tepat sekali** (`InfrastructureProbeJob` dispatch -> `queue:work --stop-when-empty` -> marker file 1 baris, 12,79s tanpa duplikasi); scheduler `schedule:work` 70 detik = tick per menit aktif; `failed_jobs=0` setelah flush (1 artefak tinker lama dibersihkan); `schedule:list` = `billing:check-expiring 0 0 * * *`.
+- Runbook: `docs/RUNBOOK_RUNTIME_SERVICE.md` (restart per proses, health check, probe tepat-sekali, prosedur aktivasi).
+- Test: `InfrastructureProbeJobTest` 2 test (dispatch tepat 1 + handle menulis 1 baris). Gate: full **862 passed / 4.397 assertions**, Pint PASS, build PASS (tak ada perubahan Blade/CSS/JS).
+- **Sisa UR-02 (butuh `HUMAN:DEPLOY`):** restart service `PM2-AgenticBOS` agar daemon PM2 memuat 3 app baru, lalu health check + probe di runbook.
+- Temuan infra dari UR-01 tetap berlaku: akses produksi harus via proxy https `agentic-bos.nalar.army` (Basic Auth 401 aktif); akses http langsung 8010 membuat asset gagal termuat.
+
+**Next READY: UR-03 golden-path UAT menunggu UR-02 aktivasi (HUMAN:DEPLOY) + tenant pilot.**
+
 **Next READY: UR-02 local implementation (service terkelola web+queue+scheduler) tanpa restart produksi; aktivasi = `HUMAN:DEPLOY`.**
 
 - Next READY pra-gate: UR-02 local implementation (service terkelola web/queue/scheduler, log terpisah, idempotent test job) boleh dikerjakan tanpa menyentuh produksi.
