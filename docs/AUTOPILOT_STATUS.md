@@ -50,6 +50,20 @@
 - **Sisa UR-03 (manual, butuh Bos):** onboarding pilih preset via UI nyata + satu transaksi POS lengkap dari HP via `https://agentic-bos.nalar.army` (basic auth `bos`), karena automated run via 8010 memakai APP_URL https proxy.
 - **Next READY: UR-04** (siklus komersial end-to-end; gate `HUMAN:SECRET` + `HUMAN:DEPLOY` + set `BACKUP_ENCRYPTION_KEY`). UR-06 selesai lokal.
 
+**UR-04  siklus komersial end-to-end  `DONE` (drill nyata via 8010, 2026-09-21, commit `34a3b6a`); `HUMAN:COST` tidak terpakai (nominal penuh tanpa uang riil).**
+
+1. **Seed plan produksi** via `bos:seed-plans` (idempoten, D-05: tidak menimpa harga yang diedit manual Bos kecuali `--force`): Starter Rp 750rb/bln (7,5jt/thn, 11 kapabilitas D-52, 500k token), Pro Rp 2,75jt/bln (27,5jt/thn, 18 kapabilitas, 3jt token), Enterprise Rp 10jt/bln (100jt/thn, 23 kapabilitas + Tier B, 15jt token). Harga = titik tengah acuan `COMMERCIAL_AND_AI_AGENTIC_SPEC` 2.3, persetujuan Bos via chat ("harga wajar, nanti aku edit"). Test `SeedPlansCommandTest` 4 test GREEN.
+2. **Dua defect produksi ditemukan & diperbaiki (REDGREEN):**
+   - `SubscribePage.php`: `use App\Models\Company` hilang -> PHP resolve `App\Livewire\Billing\Company` -> **500 di seluruh alur pilih paket produksi**. Tak ada test sebelumnya. Test baru `SubscribePagePlanSelectionTest` RED lalu GREEN.
+   - `admin-invoice-manager.blade.php`: `$this->errors->any()` tidak valid di Livewire v4 -> `PropertyNotFoundException` -> **500 halaman admin invoice**. Test baru `AdminInvoiceManagerRenderTest` (render OK + non-admin 403) RED lalu GREEN.
+3. **Drill end-to-end nyata (Livewire HTTP produksi):** owner login -> subscribe page render 3 kartu paket -> `selectPlan(Starter)` -> redirect `payment-instruction/1` 200 (nominal + instruksi bank tampil) -> owner akses `/admin/invoices` **403** (benar) -> admin login -> `/admin/invoices` 200 invoice ter-list -> `confirmPayment(1)` -> **REPLAY confirmPayment** (idempoten).
+4. **Konsistensi 4 sumber terbukti:** invoice #1 `paid` amount 750.000 `paid_at` tercatat; membership tepat **1 row** setelah replay (tidak dobel), `active` plan Starter, `expires 2026-10-21` (+1 bln dari konfirmasi); token balance cache 500.000 = kuota Starter; ledger entries 0 by-design (kredit kuota via cache, ledger saat konsumsi). Anti-spam invoice pending juga terbukti (pemilihan kedua saat pending = ditolak).
+5. **Data rekening/QRIS**: `MANUAL_PAYMENT_BANK_*` masih kosong  halaman instruksi tampil tapi nomor rekening placeholder. Butuh Bos set di `.env.production` (gate `HUMAN:SECRET` tetap terbuka untuk data riil).
+6. Gate: `DATA_SOURCE=json php artisan test` **877 passed / 4.427 assertions**; Pint PASS 443 files; `npm run build` PASS (Blade berubah).
+7. **Sisa untuk UR-04 penuh (manual Bos):** set `MANUAL_PAYMENT_BANK_NAME/ACCOUNT/HOLDER` + QRIS, lalu jalankan satu siklus dengan transfer riil bila mau uji `HUMAN:COST`.
+
+- **Next READY: UR-05** (pilot WA-first; gate `HUMAN:DECISION` scope + `HUMAN:SECRET`) atau tunggu pilot operasional UR-07 (deps: UR-04 sisa manual + UR-06 aktivasi).
+
 **UR-06  observability, backup, dan recovery drill  `DONE` lokal (2026-09-21, commit `b913c42`); aktivasi schedule backup/health produksi = `HUMAN:DEPLOY`.**
 
 1. `bos:backup-mysql` (BosBackupMysql): mysqldump `--single-transaction` -> enkripsi AES-256-CBC + PBKDF2 60k iter, output `storage/app/backups/mysql-<ts>.sql.enc`, retensi rotasi `--keep=7`. **Fail-closed terbukti**: tanpa/pendek `BACKUP_ENCRYPTION_KEY` exit 1; tidak ada jalur plain-text. Tes nyata: backup DB produksi 197.744 bytes, dekripsi roundtrip OK (65 tabel, data utuh).
