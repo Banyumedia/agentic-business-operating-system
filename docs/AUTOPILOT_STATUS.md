@@ -8,6 +8,16 @@
 
 ## MQ-01  Peningkatan modul satu per satu
 
+**Slice MQ-01C3  kontrak preset-widget-capability tunggal: `DONE`, merged `70d23e3` (writer `5249e32` di worktree `task/mq-01c3`).**
+
+- Kontrak baru `App\Services\Dashboard\WidgetCapabilityMap`  satu sumber widgetcapability dipakai runtime (`WidgetRegistry`) **dan** validator (`PresetDefinitionValidator`). Duplikasi dua daftar (18 vs 5 widget) dihapus.
+- Validator kini menolak keras: widget tak dikenal kontrak runtime (`Widget tidak dikenal kontrak runtime: X`) dan widget tanpa capability aktif (`Widget X membutuhkan capability aktif: Y`). Sebelumnya 9 preset mendeklarasi widget tanpa capability + 9 preset memakai widget yang runtime tidak kenal  semua **hilang diam-diam** saat render.
+- `DashboardComposer` fail-closed: deklarasi widget tak tersedia kini melempar exception jelas, bukan `if available()` silent-skip.
+- Data preset diperbaiki (16 file): deklarasi tak dikenal/tanpa capability diganti widget runtime yang tersedia dari capability preset; tanpa duplikat; semua 40 preset punya widget.
+- Test matriks baru `PresetWidgetCapabilityMatrixTest`: 43 test (40 preset via data provider + seeder + 2 negative). PHPUnit 12 pakai attribute `#[DataProvider]`.
+- Gate: worktree full **848 passed / 4.364 assertions**; main post-merge full **848 passed / 4.364 assertions** (3 notice pre-existing); Pint PASS; `npm run build` PASS; smoke `/app/dashboard` 200.
+- File: `app/Services/Dashboard/{WidgetCapabilityMap,WidgetRegistry,DashboardComposer}.php`, `app/Services/Preset/PresetDefinitionValidator.php`, 16 file `database/presets/*.json`, `tests/Feature/PresetWidgetCapabilityMatrixTest.php` (baru).
+
 **Slice MQ-01C2  tenant authorization fail-closed + persistent middleware: `DONE`, merged `4f7565b` (writer `6bb172b` di worktree `task/mq-01c2`).**
 
 - Defect nyata diperbaiki di `EloquentCompanyContext`: `getCompany()` dulu percaya `session('active_company')` **tanpa verifikasi kepemilikan**  keamanan hanya bergantung pada middleware HTTP. Kini setiap resolve company (session maupun `current_company_id`) diverifikasi ulang: owner company, atau admin dengan sesi impersonasi sah (D-47); selain itu `LogicException: Akses lintas company ditolak`. Cache `$cachedCompany` dihapus  `Company::find` per-PK murah, dan cache bisa bertahan lintas request Livewire dalam satu proses sehingga memakai company basi pasca kepemilikan dicabut.
