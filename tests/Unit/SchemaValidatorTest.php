@@ -17,7 +17,7 @@ class SchemaValidatorTest extends TestCase
             'contacts', 'deals', 'projects', 'project_milestones', 'resources',
             'bookings', 'items', 'item_batches', 'orders', 'order_lines',
             'employees', 'cash_entries', 'invoices', 'quotations', 'timesheet_entries',
-            'approval_tickets',
+            'approval_tickets', 'customer_invoices', 'customer_invoice_lines',
         ])->mapWithKeys(fn (string $entity): array => [$entity => [$entity]])->all();
     }
 
