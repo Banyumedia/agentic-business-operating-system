@@ -104,9 +104,11 @@
      - Service `HermesProfileProvisioner` dengan verifikasi izin `isToolAllowed` fail-closed.
      - Test `HermesProfileProvisionerTest` 4 passed (19 assertions).
      - Verifikasi Pint clean, `npm run build` pass.
-  3. `[READY]` **WA-03: T-36 NLU Intent Router**: klasifikasi bahasa manusia dari WhatsApp (reminder, report omzet/stok, approval tiket, update setting bisnis via chat owner).
-  3. `[PENDING]` **WA-03: T-36 NLU Intent Router**: klasifikasi bahasa manusia dari WhatsApp (reminder, report omzet/stok, approval tiket, update setting bisnis via chat owner).
-  4. `[PENDING]` **WA-04: Filter Interaksi Grup & Otorisasi Pengirim**: filter pesan grup (hanya jawab jika di-tag), fail-closed DM (chat japri internal hanya untuk nomor Owner).
+  3. `[DONE]` **WA-03: T-36 NLU Intent Router**: klasifikasi bahasa manusia dari WhatsApp (reminder, report omzet/stok, approval tiket, update setting bisnis via chat owner).
+     - Model DTO `IntentResult` & Service `NluIntentRouter`.
+     - Unit test `NluIntentRouterTest` 5 passed (21 assertions).
+     - Pint clean, `npm run build` pass.
+  4. `[READY]` **WA-04: Filter Interaksi Grup & Otorisasi Pengirim**: filter pesan grup (hanya jawab jika di-tag), fail-closed DM (chat japri internal hanya untuk nomor Owner).
 
 
 ## A11Y-SMOKE 2026-09-20  tap target fix (selesai)
