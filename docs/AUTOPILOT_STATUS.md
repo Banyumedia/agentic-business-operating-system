@@ -35,6 +35,18 @@
 - **Gate:** `DATA_SOURCE=json php artisan test` **993 passed / 4.809 assertions**; `migrate:fresh --seed` OK; Pint PASS pada file Fase 8; `npm run build` PASS. Pint masih menyisakan pelanggaran pre-existing `tests/Feature/LobbyNavigationTest.php` milik writer lain (dicatat, tidak disentuh).
 - **Sisa risiko:** rangkaian ini belum pernah dijalankan dari HP pada tenant produksi; belum ada cetak/kirim tagihan ke pelanggan.
 
+## Fase 9 — Pengerasan Sisi Tenant (antrean, belum dikerjakan)
+
+Audit sisi tenant pasca-Fase 8 (2026-09-22) menghasilkan delapan temuan, semuanya
+berbukti di kode. Sudah masuk antrean `EXECUTION_PLAN.md` §Fase 9 sebagai
+T-48..T-56. Ringkas:
+
+- **`READY` sekarang:** T-48 (jatuh tempo & umur piutang — `due_date` disimpan tapi tidak pernah dirender, ujung longgar T-43; tidak ada konsep terlambat untuk piutang tenant), T-50 (otorisasi peran di layar uang — tidak ada pemeriksaan peran di layar mana pun kecuali `PipelineScreen::actorRole()`), T-53 (penawaran → tagihan; `quotation_lines` punya migration tanpa schema JSON), T-55 (ekspor hanya 4 file, data uang Fase 8 tidak ikut), T-56 (BI-B2 rebase panel Kesehatan Usaha).
+- **`BLOCKED` keputusan Bos:** T-49 (pengingat piutang otomatis — kanal + frekuensi + Hermes node), T-51 (tab Tim & Akses — model peran, kanal undangan, pengaruh ke kuota paket), T-54 (`finance.accounting`/`hr.payroll` aktif di 0 preset dan belum punya schema/layar yang benar — apakah memang dijual).
+- **`BLOCKED` dependency:** T-52 (cetak/unduh dokumen tagihan, menunggu T-48).
+- **Urutan yang disarankan:** T-48 lebih dulu (paling murah, sekaligus membereskan janji SOP bot soal pengingat piutang), lalu T-50 + T-51 sebagai satu paket — memisahkannya membuka tagihan dan pembayaran untuk semua staf.
+- **Janji yang belum ditepati:** SOP bawaan Karyawan AI (`AssistantSettings.php:159`) menjanjikan pengingat piutang H-1 yang belum ada implementasinya. T-48 mewajibkan teks itu disesuaikan sampai T-49 mendarat.
+
 ## UR  Product Usage Readiness (docs/plans/product-usage-readiness-plan.md)
 
 **UR-00  convergence & final QA baseline: `DONE`, commit `f942299` (laporan `docs/worker-reports/UR-00.md`).**
