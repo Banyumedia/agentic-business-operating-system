@@ -108,13 +108,10 @@
     "dashboard": {
         "industry_zone": [
             {
-                "widget": "bookings_due_today"
-            },
-            {
-                "widget": "overdue_returns"
-            },
-            {
                 "widget": "kpi_cashflow"
+            },
+            {
+                "widget": "pending_approvals"
             }
         ]
     },

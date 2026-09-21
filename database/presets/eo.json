@@ -98,16 +98,10 @@
     "dashboard": {
         "industry_zone": [
             {
-                "widget": "projects_progress"
-            },
-            {
-                "widget": "upcoming_schedule"
+                "widget": "kpi_cashflow"
             },
             {
                 "widget": "pending_approvals"
-            },
-            {
-                "widget": "kpi_cashflow"
             }
         ]
     },

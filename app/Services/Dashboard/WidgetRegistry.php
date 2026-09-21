@@ -12,15 +12,6 @@ use Throwable;
 
 class WidgetRegistry
 {
-    /** @var array<string, list<string>> */
-    private const REQUIREMENTS = [
-        'upcoming_schedule' => ['scheduling'],
-        'low_stock' => ['inventory'],
-        'kpi_cashflow' => ['finance.cashbook'],
-        'deals_pipeline' => ['deals'],
-        'pending_approvals' => ['approval_flow'],
-    ];
-
     public function __construct(
         private readonly EntityRepository $repository,
         private readonly CompanyContext $companyContext,
@@ -31,11 +22,11 @@ class WidgetRegistry
 
     public function available(string $key): bool
     {
-        if (! isset(self::REQUIREMENTS[$key])) {
+        if (! WidgetCapabilityMap::known($key)) {
             return false;
         }
 
-        foreach (self::REQUIREMENTS[$key] as $capability) {
+        foreach (WidgetCapabilityMap::required($key) as $capability) {
             if (! $this->features->enabled($capability)) {
                 return false;
             }

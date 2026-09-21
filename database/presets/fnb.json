@@ -89,13 +89,10 @@
     "dashboard": {
         "industry_zone": [
             {
-                "widget": "kpi_revenue"
+                "widget": "kpi_cashflow"
             },
             {
                 "widget": "low_stock"
-            },
-            {
-                "widget": "kpi_cashflow"
             }
         ]
     },

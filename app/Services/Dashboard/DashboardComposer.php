@@ -34,9 +34,17 @@ class DashboardComposer
         $widgets = [];
         foreach ($preset['dashboard']['industry_zone'] ?? [] as $selection) {
             $key = is_array($selection) ? ($selection['widget'] ?? null) : null;
-            if (is_string($key) && $this->widgets->available($key)) {
-                $widgets[] = $this->widgets->compose($key);
+            if (! is_string($key)) {
+                throw new InvalidArgumentException('Deklarasi widget dashboard tidak valid.');
             }
+            if (! $this->widgets->available($key)) {
+                // MQ-01C3: gagal jelas, bukan hilang diam-diam. Validator
+                // preset sudah menolak kombinasi ini saat seeding; sampai di
+                // sini berarti data runtime (module settings) menyimpang dari
+                // preset - tetap fail-closed, jangan render sebagian.
+                throw new InvalidArgumentException("Widget dashboard tidak tersedia untuk company aktif: {$key}");
+            }
+            $widgets[] = $this->widgets->compose($key);
         }
 
         return [

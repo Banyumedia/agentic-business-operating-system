@@ -119,13 +119,10 @@
     "dashboard": {
         "industry_zone": [
             {
-                "widget": "projects_progress"
-            },
-            {
-                "widget": "timesheet_summary"
-            },
-            {
                 "widget": "kpi_cashflow"
+            },
+            {
+                "widget": "pending_approvals"
             }
         ]
     },

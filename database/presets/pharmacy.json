@@ -96,16 +96,10 @@
     "dashboard": {
         "industry_zone": [
             {
-                "widget": "prescription_queue"
-            },
-            {
-                "widget": "expiring_batches"
+                "widget": "kpi_cashflow"
             },
             {
                 "widget": "low_stock"
-            },
-            {
-                "widget": "kpi_revenue"
             }
         ]
     },
