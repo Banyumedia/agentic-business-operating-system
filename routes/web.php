@@ -14,6 +14,7 @@ use App\Livewire\Admin\AdminInvoiceManager;
 use App\Livewire\Admin\AdminPaymentSettings;
 use App\Livewire\Admin\AiPricingManager;
 use App\Livewire\Admin\ClientLogManager;
+use App\Livewire\Admin\DocumentationViewer;
 use App\Livewire\Admin\HermesNodeManager;
 use App\Livewire\Admin\ImpersonationLogManager;
 use App\Livewire\Admin\PlanManager;
@@ -112,4 +113,6 @@ Route::middleware(['auth', RequireSuperAdmin::class])->prefix('admin')->group(fu
     Route::get('/impersonation-logs', ImpersonationLogManager::class)->name('admin.impersonation-logs');
     // Super Admin: Client Activity & Token Logs
     Route::get('/client-logs', ClientLogManager::class)->name('admin.client-logs');
+    // Super Admin: Pusat Dokumentasi & Arsitektur Sistem
+    Route::get('/docs', DocumentationViewer::class)->name('admin.docs');
 });

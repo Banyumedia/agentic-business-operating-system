@@ -92,7 +92,8 @@
 
 - Next READY pra-gate: UR-02 local implementation (service terkelola web/queue/scheduler, log terpisah, idempotent test job) boleh dikerjakan tanpa menyentuh produksi.
 - **Antrean Tambahan Super Admin (Backlog Feature):**
-  1. `[PENDING]` **Watchdog Antrean & Sistem Error (`/admin/system-health`)**: monitoring antrean worker, tabel `failed_jobs`, status job batches, dan tombol retry/flush error jobs (notifikasi WA macet / AI timeout).
+  1. `[DONE]` **Pusat Dokumentasi & Arsitektur Asisten AI (`/admin/docs`)**: halaman referensi teknis Super Admin mencakup Arsitektur Dua Nomor WhatsApp, Pagar Keamanan & Tool Scoping (Zero-OS), Perintah Bahasa Manusia (NLU), dan Panduan Provisioning Hermes.
+  2. `[PENDING]` **Watchdog Antrean & Sistem Error (`/admin/system-health`)**: monitoring antrean worker, tabel `failed_jobs`, status job batches, dan tombol retry/flush error jobs (notifikasi WA macet / AI timeout).
 - **Antrean Peningkatan Halaman Pengaturan (Settings Backlog):**
   1. `[DONE]` **WA-01: Tab Karyawan AI (`/app/settings/assistant`)**: implementasi antarmuka konfigurasi Hermes Control Center:
      - Form SOP format Markdown (aturan kerja bot internal, batas diskon, jam operasional, instruksi tim).
