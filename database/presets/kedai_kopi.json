@@ -93,9 +93,6 @@
     "dashboard": {
         "industry_zone": [
             {
-                "widget": "kpi_revenue"
-            },
-            {
                 "widget": "kpi_cashflow"
             },
             {

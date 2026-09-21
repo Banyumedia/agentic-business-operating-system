@@ -70,7 +70,10 @@
     "dashboard": {
         "industry_zone": [
             {
-                "widget": "kpi_cashflow"
+                "widget": "pending_approvals"
+            },
+            {
+                "widget": "low_stock"
             }
         ]
     },

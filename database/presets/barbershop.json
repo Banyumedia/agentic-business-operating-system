@@ -83,7 +83,7 @@
                 "widget": "upcoming_schedule"
             },
             {
-                "widget": "kpi_revenue"
+                "widget": "kpi_cashflow"
             },
             {
                 "widget": "low_stock"

@@ -74,7 +74,7 @@
                 "widget": "upcoming_schedule"
             },
             {
-                "widget": "kpi_cashflow"
+                "widget": "pending_approvals"
             }
         ]
     },

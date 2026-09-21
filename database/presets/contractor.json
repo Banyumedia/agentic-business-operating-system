@@ -121,16 +121,10 @@
     "dashboard": {
         "industry_zone": [
             {
-                "widget": "projects_progress"
-            },
-            {
-                "widget": "retention_held"
+                "widget": "kpi_cashflow"
             },
             {
                 "widget": "pending_approvals"
-            },
-            {
-                "widget": "kpi_cashflow"
             }
         ]
     },

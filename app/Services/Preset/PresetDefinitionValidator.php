@@ -2,6 +2,7 @@
 
 namespace App\Services\Preset;
 
+use App\Services\Dashboard\WidgetCapabilityMap;
 use App\Services\Workflow\WorkflowEngine;
 use InvalidArgumentException;
 use stdClass;
@@ -79,7 +80,9 @@ class PresetDefinitionValidator
         $this->validateCapabilities($definition['capabilities'], $definition['tier']);
         $this->validateTerminology($definition['terminology']);
         $this->validateWorkflows($definition['workflows']);
-        $this->validateDashboard($definition['dashboard']);
+        // objectMap() membiarkan stdClass; pastikan capabilities berbentuk
+        // array sebelum dipakai sebagai lookup map widget->capability.
+        $this->validateDashboard($definition['dashboard'], (array) $definition['capabilities']);
         $this->validateMenus($definition['menus']);
 
         return $this->normalize($definition);
@@ -291,7 +294,8 @@ class PresetDefinitionValidator
         }
     }
 
-    private function validateDashboard(mixed $value): void
+    /** @param array<string, mixed> $capabilities */
+    private function validateDashboard(mixed $value, array $capabilities): void
     {
         $dashboard = $this->objectMap($value, 'Dashboard');
         $this->assertExactKeys($dashboard, ['industry_zone'], 'dashboard');
@@ -304,11 +308,24 @@ class PresetDefinitionValidator
                 throw new InvalidArgumentException('Item dashboard tidak valid.');
             }
             $this->assertAllowedKeys($item, ['widget', 'props'], 'item dashboard');
-            if (! in_array($item['widget'], self::WIDGETS, true)) {
-                throw new InvalidArgumentException("Widget tidak terdaftar: {$item['widget']}");
+            $widget = $item['widget'];
+            if (! in_array($widget, self::WIDGETS, true)) {
+                throw new InvalidArgumentException("Widget tidak terdaftar: {$widget}");
+            }
+            // MQ-01C3: satu kontrak widget->capability (WidgetCapabilityMap)
+            // dipakai runtime dan validator. Deklarasi widget yang tidak
+            // dikenal runtime, atau capability-nya tidak aktif di preset ini,
+            // harus gagal jelas - bukan hilang diam-diam saat render.
+            if (! WidgetCapabilityMap::known($widget)) {
+                throw new InvalidArgumentException("Widget tidak dikenal kontrak runtime: {$widget}");
+            }
+            foreach (WidgetCapabilityMap::required($widget) as $capability) {
+                if (($capabilities[$capability] ?? false) !== true) {
+                    throw new InvalidArgumentException("Widget {$widget} membutuhkan capability aktif: {$capability}");
+                }
             }
             if (array_key_exists('props', $item)) {
-                $this->objectMap($item['props'], "Props widget harus object: {$item['widget']}");
+                $this->objectMap($item['props'], "Props widget harus object: {$widget}");
             }
         }
     }

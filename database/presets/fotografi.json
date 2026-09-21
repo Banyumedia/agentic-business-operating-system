@@ -186,9 +186,6 @@
                 "widget": "upcoming_schedule"
             },
             {
-                "widget": "projects_progress"
-            },
-            {
                 "widget": "kpi_cashflow"
             }
         ]
