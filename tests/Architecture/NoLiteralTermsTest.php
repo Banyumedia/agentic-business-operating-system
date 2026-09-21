@@ -14,6 +14,23 @@ class NoLiteralTermsTest extends TestCase
             'Pegawai', 'Karyawan', 'Terapis', 'Mekanik',
         ];
 
+        // Kamus istilah per industri hanya berlaku di UI tenant. Panel Super
+        // Admin adalah UI platform: ia tidak punya company aktif, sehingga
+        // `term()` (yang resolve lewat `CompanyPresetResolver::current()`)
+        // tidak punya konteks di sana. "Klien" di panel itu berarti tenant
+        // pelanggan platform, bukan entity `contact` milik sebuah usaha.
+        $platformViewDirs = [
+            'resources'.DIRECTORY_SEPARATOR.'views'.DIRECTORY_SEPARATOR.'admin',
+            'resources'.DIRECTORY_SEPARATOR.'views'.DIRECTORY_SEPARATOR.'livewire'.DIRECTORY_SEPARATOR.'admin',
+        ];
+
+        // Frasa majemuk yang kebetulan memuat kata kamus tetapi bukan istilah
+        // kamus: ini nama produk/fungsi yang terkunci, sama perlakuannya
+        // dengan "Karyawan AI" (D-30).
+        $compoundPhrases = [
+            'Pelanggan' => ['Layanan Pelanggan'],
+        ];
+
         $dir = __DIR__.'/../../resources/views';
 
         $violations = [];
@@ -21,6 +38,26 @@ class NoLiteralTermsTest extends TestCase
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
         foreach ($iterator as $file) {
             if ($file->isFile() && $file->getExtension() === 'php') {
+                // `getPathname()` masih memuat `/../../` dari $dir, jadi
+                // dinormalkan dulu sebelum dipakai untuk pencocokan direktori.
+                $relativePath = str_replace(
+                    dirname(__DIR__, 2).DIRECTORY_SEPARATOR,
+                    '',
+                    (string) realpath($file->getPathname()),
+                );
+
+                $isPlatformView = false;
+                foreach ($platformViewDirs as $platformDir) {
+                    if (str_starts_with($relativePath, $platformDir.DIRECTORY_SEPARATOR)) {
+                        $isPlatformView = true;
+                        break;
+                    }
+                }
+
+                if ($isPlatformView) {
+                    continue;
+                }
+
                 $content = file_get_contents($file->getPathname());
 
                 // Only check text nodes in HTML or strings, roughly.
@@ -29,8 +66,6 @@ class NoLiteralTermsTest extends TestCase
                     $regex = '/(?<![\'"])'.preg_quote($literal, '/').'(?![\'"])/'; // naive check outside quotes mostly
 
                     if (preg_match_all($regex, $content, $matches, PREG_OFFSET_CAPTURE)) {
-                        $relativePath = str_replace(dirname(__DIR__, 2).DIRECTORY_SEPARATOR, '', $file->getPathname());
-
                         foreach ($matches[0] as $match) {
                             $offset = $match[1];
 
@@ -39,6 +74,10 @@ class NoLiteralTermsTest extends TestCase
                             // per-industry `staff` dictionary term. Flagging it
                             // here would force renaming a locked product name.
                             if ($literal === 'Karyawan' && substr($content, $offset, 11) === 'Karyawan AI') {
+                                continue;
+                            }
+
+                            if ($this->matchesCompoundPhrase($content, $offset, $literal, $compoundPhrases)) {
                                 continue;
                             }
 
@@ -57,6 +96,30 @@ class NoLiteralTermsTest extends TestCase
             $violations,
             "Found literal terms in blade views:\n".implode("\n", array_unique($violations))
         );
+    }
+
+    /**
+     * Kata kamus yang muncul sebagai bagian frasa majemuk terkunci, mis.
+     * "Layanan Pelanggan" (customer service) yang merujuk fungsi bot, bukan
+     * entity `contact` sebuah usaha.
+     *
+     * @param  array<string, list<string>>  $compoundPhrases
+     */
+    private function matchesCompoundPhrase(string $content, int $offset, string $literal, array $compoundPhrases): bool
+    {
+        foreach ($compoundPhrases[$literal] ?? [] as $phrase) {
+            $position = strpos($phrase, $literal);
+            if ($position === false) {
+                continue;
+            }
+
+            $start = $offset - $position;
+            if ($start >= 0 && substr($content, $start, strlen($phrase)) === $phrase) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function test_a11y_attributes()
