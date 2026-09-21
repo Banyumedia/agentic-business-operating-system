@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Contracts\CompanyContext;
+use App\Contracts\CompanySettingsStore;
 use App\Contracts\EntityRepository;
 use App\Livewire\Dashboard;
 use App\Services\Dashboard\DashboardComposer;
@@ -13,6 +14,7 @@ use App\Services\Workflow\JsonWorkflowLog;
 use App\Services\Workflow\WorkflowEngine;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
+use InvalidArgumentException;
 use Livewire\Livewire;
 use Mockery\MockInterface;
 use RuntimeException;
@@ -288,5 +290,138 @@ class DashboardTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/\b(?:klinik|salon|bengkel|laundry|kontraktor)\b/i', $source);
         $this->assertDoesNotMatchRegularExpression('/>\s*(?:1[,.]204|45|12)\s*</', $source);
         $this->assertStringNotContainsString('DB::', $source);
+    }
+
+    // ==== MQ-01C1 acceptance: integritas uang fail-closed ====
+
+    public function test_dashboard_rejects_cash_entries_with_invalid_direction_and_shows_fail_closed_error(): void
+    {
+        $jsonPath = storage_path('framework/testing/mqc1-'.bin2hex(random_bytes(5)));
+        config(['datasource.json_path' => $jsonPath]);
+
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+        $repository = app(EntityRepository::class)->for('bengkel-arka', 'cash_entries');
+        $repository->save(['id' => 1, 'entry_date' => '2026-09-20', 'direction' => 'in', 'amount' => 100000]);
+
+        // Data rusak masuk langsung ke file (bypass save) - misal file
+        // ditulis proses lain/tangan. readRows() wajib menolak keras,
+        // tidak boleh dihitung diam-diam sebagai arus keluar.
+        $file = $jsonPath.DIRECTORY_SEPARATOR.'bengkel-arka'.DIRECTORY_SEPARATOR.'cash_entries.json';
+        $rows = json_decode((string) file_get_contents($file), true);
+        $rows[] = ['id' => 2, 'entry_date' => '2026-09-20', 'direction' => 'sideways', 'amount' => 500000];
+        file_put_contents($file, json_encode($rows));
+
+        $composer = app(DashboardComposer::class);
+
+        try {
+            $composer->compose();
+            $this->fail('Baris kas dengan direction tidak valid harus ditolak, bukan dihitung.');
+        } catch (InvalidArgumentException $e) {
+            $this->assertStringContainsString('direction', $e->getMessage());
+        }
+
+        (new Filesystem)->deleteDirectory($jsonPath);
+    }
+
+    public function test_dashboard_rejects_non_numeric_negative_or_non_finite_cash_amounts(): void
+    {
+        $jsonPath = storage_path('framework/testing/mqc1-'.bin2hex(random_bytes(5)));
+        config(['datasource.json_path' => $jsonPath]);
+
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+        $repository = app(EntityRepository::class)->for('bengkel-arka', 'cash_entries');
+        $repository->save(['id' => 1, 'entry_date' => '2026-09-20', 'direction' => 'in', 'amount' => 100000]);
+        $file = $jsonPath.DIRECTORY_SEPARATOR.'bengkel-arka'.DIRECTORY_SEPARATOR.'cash_entries.json';
+
+        $corruptions = [
+            'negatif' => -5000,
+            'non-numerik' => 'abc',
+            'non-finite' => '1e1000',
+        ];
+
+        $rejected = 0;
+        foreach ($corruptions as $label => $amount) {
+            $rows = json_decode((string) file_get_contents($file), true);
+            $rows[] = ['id' => 2, 'entry_date' => '2026-09-20', 'direction' => 'out', 'amount' => $amount];
+            file_put_contents($file, json_encode($rows));
+
+            try {
+                app(DashboardComposer::class)->compose();
+                $this->fail("Amount kas {$label} harus ditolak keras.");
+            } catch (InvalidArgumentException) {
+                // fail-closed
+                $rejected++;
+            }
+
+            // tulis ulang file bersih untuk iterasi berikutnya
+            $rows = json_decode((string) file_get_contents($file), true);
+            $rows = array_values(array_filter($rows, static fn (array $r): bool => (string) $r['id'] !== '2'));
+            file_put_contents($file, json_encode($rows));
+        }
+
+        $this->assertSame(count($corruptions), $rejected, 'Semua jenis korupsi amount harus ditolak keras.');
+
+        (new Filesystem)->deleteDirectory($jsonPath);
+    }
+
+    public function test_cashflow_widget_and_universal_kpi_use_the_same_strict_rules(): void
+    {
+        $jsonPath = storage_path('framework/testing/mqc1-'.bin2hex(random_bytes(5)));
+        config(['datasource.json_path' => $jsonPath]);
+
+        app(CompanyContext::class)->setCurrent('bengkel-arka');
+        $repository = app(EntityRepository::class)->for('bengkel-arka', 'cash_entries');
+        $repository->save(['id' => 1, 'entry_date' => '2026-09-20', 'direction' => 'in', 'amount' => 100000]);
+        $repository->save(['id' => 2, 'entry_date' => '2026-09-20', 'direction' => 'out', 'amount' => 30000]);
+
+        $widgets = app(WidgetRegistry::class);
+        $this->assertTrue($widgets->available('kpi_cashflow'));
+        $card = $widgets->compose('kpi_cashflow');
+        $this->assertSame('Rp 70.000', $card['value']);
+
+        // baris rusak -> widget juga harus menolak, bukan menghitung setengah-setengah
+        $file = $jsonPath.DIRECTORY_SEPARATOR.'bengkel-arka'.DIRECTORY_SEPARATOR.'cash_entries.json';
+        $rows = json_decode((string) file_get_contents($file), true);
+        $rows[] = ['id' => 3, 'entry_date' => '2026-09-20', 'direction' => 'in', 'amount' => 'lorem'];
+        file_put_contents($file, json_encode($rows));
+        try {
+            $widgets->compose('kpi_cashflow');
+            $this->fail('Widget arus kas harus menolak baris amount tidak valid.');
+        } catch (InvalidArgumentException) {
+        }
+
+        (new Filesystem)->deleteDirectory($jsonPath);
+    }
+
+    public function test_reload_recovers_from_error_and_clears_the_message(): void
+    {
+        session(['active_company' => 'bengkel-arka']);
+        $this->mock(DashboardComposer::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('compose')->twice()->andReturnUsing(
+                fn () => throw new RuntimeException('broken source'),
+                fn () => ['company' => 'Bengkel Arka', 'kpis' => [], 'assistant_report' => ['summary' => '', 'generated_at' => '', 'period' => '', 'highlights' => [], 'recommended_actions' => []], 'widgets' => []],
+            );
+        });
+
+        $component = Livewire::test(Dashboard::class)
+            ->assertSee('Dashboard belum dapat dimuat')
+            ->assertSee('Coba lagi');
+
+        $component->call('reload')
+            ->assertDontSee('Dashboard belum dapat dimuat');
+    }
+
+    public function test_theme_read_failure_falls_back_to_default_theme_with_controlled_error_state(): void
+    {
+        session(['active_company' => 'bengkel-arka']);
+        $this->mock(CompanySettingsStore::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('read')->andThrow(new RuntimeException('settings store broken'));
+        });
+
+        Livewire::test(Dashboard::class)
+            // Dashboard tetap dirender (tidak ViewException), tema default 'a',
+            // dengan banner status terkontrol - bukan crash.
+            ->assertOk()
+            ->assertSee('Tampilan kembali ke tema default');
     }
 }

@@ -16,6 +16,8 @@ class Dashboard extends Component
 
     public ?string $loadError = null;
 
+    public bool $themeError = false;
+
     public function mount(DashboardComposer $composer): void
     {
         $this->loadDashboard($composer);
@@ -28,12 +30,24 @@ class Dashboard extends Component
 
     public function render(CompanyContext $companyContext, CompanySettingsStore $settingsStore): View
     {
-        $settings = $settingsStore->read($companyContext->current());
-        $theme = is_string($settings['theme'] ?? null) ? $settings['theme'] : 'a';
+        $theme = 'a';
+        $this->themeError = false;
+
+        try {
+            $settings = $settingsStore->read($companyContext->current());
+            if (is_string($settings['theme'] ?? null) && $settings['theme'] !== '') {
+                $theme = $settings['theme'];
+            }
+        } catch (Throwable $exception) {
+            // Fail-closed penyajian: tema tidak bisa dibaca -> tema default,
+            // dashboard tetap dirender dengan banner kesalahan terkontrol.
+            report($exception);
+            $this->themeError = true;
+        }
 
         return view('livewire.dashboard')
             ->layout('components.layouts.module', [
-                'title' => 'Dashboard · Agentic BOS',
+                'title' => 'Dashboard  Agentic BOS',
                 'theme' => $theme,
             ]);
     }
