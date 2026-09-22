@@ -172,7 +172,10 @@ class HermesNodeClientTest extends TestCase
         $company = $this->companyWithProfile(nodeStatus: 'maintenance');
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Node Hermes tidak aktif');
+        // T-105 menambah `draining` sebagai status yang tetap melayani; pesannya
+        // berubah dari "tidak aktif" menjadi "tidak melayani pengiriman" karena kini
+        // ada lebih dari satu status yang melayani. `maintenance` tetap ditolak.
+        $this->expectExceptionMessage('Node Hermes tidak melayani pengiriman');
 
         try {
             $this->client->sendWhatsAppMessage((string) $company->id, '6281234567890', 'Halo');

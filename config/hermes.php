@@ -68,6 +68,35 @@ return [
         'sender_profile_type' => env('HERMES_PLATFORM_SENDER_TYPE', 'addon'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Penempatan Profil ke Node (T-105)
+    |--------------------------------------------------------------------------
+    |
+    | Satu bridge WhatsApp = satu nomor = **satu port** (T-81). Selama port hanya
+    | disimpan sebagai bagian bebas dari `api_url`, dua profil pada satu node bisa
+    | memakai port yang sama dan saling menendang tanpa pesan yang jelas. `NodePlacement`
+    | menjadikan port sumber daya yang dialokasikan: memilih port bebas terkecil dalam
+    | rentang ini yang belum dipakai profil lain di node yang sama.
+    |
+    | Rentang dibuat dapat dikonfigurasi karena tiap host bisa punya kebijakan port
+    | berbeda; bawaannya 3000-3099 sejalan dengan port bridge bawaan Hermes (3000).
+    |
+    | Catatan batas: kita **tidak** membandingkan alokasi ini dengan port yang
+    | dilaporkan `/api/status` node (mis. webhook Cloud API di 8090). Alasannya
+    | ditulis di `NodePlacement`: menyeret penempatan ke pemanggilan control plane
+    | membuat jalur yang wajib cepat dan tanpa jaringan menjadi bergantung pada
+    | proses lain yang bisa lambat atau mati. Jaminan tabrakan port ditegakkan oleh
+    | unique-per-node di basis data + rentang yang dijaga di luar port platform.
+    |
+    */
+    'placement' => [
+        'port_range' => [
+            'start' => (int) env('HERMES_PLACEMENT_PORT_START', 3000),
+            'end' => (int) env('HERMES_PLACEMENT_PORT_END', 3099),
+        ],
+    ],
+
     'node_secrets' => array_filter([
         'node_lokal' => env('HERMES_NODE_LOKAL_SECRET'),
         'node_01' => env('HERMES_NODE_01_SECRET'),

@@ -42,8 +42,10 @@ class PlatformHermesNodeClient implements HermesNodeClient
                 throw new RuntimeException('Profil bot platform belum ditempatkan pada node.');
             }
 
-            if (($node->status ?? null) !== 'active') {
-                throw new RuntimeException('Node bot platform tidak aktif: '.($node->status ?? 'tidak diketahui').'.');
+            // Sama seperti lajur tenant (T-105): `draining` tetap melayani profil yang
+            // sudah tertempel; hanya `maintenance`/`down` yang menolak sama sekali.
+            if (! in_array($node->status ?? null, ['active', 'draining'], true)) {
+                throw new RuntimeException('Node bot platform tidak melayani pengiriman: '.($node->status ?? 'tidak diketahui').'.');
             }
 
             $this->gateway->sendText(

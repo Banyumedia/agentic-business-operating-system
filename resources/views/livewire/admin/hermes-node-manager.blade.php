@@ -88,6 +88,7 @@
                         <label for="node-status" class="block text-sm font-medium text-[var(--erp-text)]">Status</label>
                         <select id="node-status" wire:model="status" class="mt-1 w-full min-h-11 rounded border border-[var(--erp-border)] bg-[var(--erp-surface)] px-3 text-[var(--erp-text)]">
                             <option value="active">Active</option>
+                            <option value="draining">Draining</option>
                             <option value="maintenance">Maintenance</option>
                             <option value="down">Down</option>
                         </select>

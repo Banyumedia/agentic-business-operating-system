@@ -66,8 +66,15 @@ class HermesNodeClient
             throw new RuntimeException("Profil Hermes belum ditempatkan pada node: company {$companyId}.");
         }
 
-        if (($node->status ?? null) !== 'active') {
-            throw new RuntimeException('Node Hermes tidak aktif: '.($node->status ?? 'tidak diketahui').'.');
+        // `draining` ikut diterima **untuk profil yang sudah tertempel**: node yang
+        // sedang dikosongkan (T-105, `POST /api/gateway/drain`) berhenti menerima
+        // penempatan baru tetapi tetap melayani nomor yang sudah jalan. Menolak
+        // draining di sini berarti drain memutus tenant seketika, bukan mengosongkan
+        // dengan tertib. `maintenance` dan `down` tetap ditolak - keduanya menyatakan
+        // node tidak melayani sama sekali, dan kelonggaran draining tidak boleh
+        // merembet ke sana.
+        if (! in_array($node->status ?? null, ['active', 'draining'], true)) {
+            throw new RuntimeException('Node Hermes tidak melayani pengiriman: '.($node->status ?? 'tidak diketahui').'.');
         }
 
         try {

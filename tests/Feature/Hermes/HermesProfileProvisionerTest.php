@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Hermes;
 
+use App\Models\HermesNode;
 use App\Models\HermesProfile;
 use App\Models\User;
 use App\Services\Hermes\HermesProfileProvisioner;
@@ -23,8 +24,30 @@ class HermesProfileProvisionerTest extends TestCase
         $this->provisioner = new HermesProfileProvisioner;
     }
 
+    /**
+     * Node aktif yang layak menampung penempatan.
+     *
+     * T-105 membuat `ensurePrimaryProfile` menempatkan profil pada node saat membuat,
+     * dan **menolak** bila tidak ada node layak - jadi test yang membuat profil primary
+     * harus menyediakan node dulu. Ini fixture yang menyesuaikan diri dengan aturan yang
+     * benar, bukan pelonggaran penempatan supaya test lama hijau.
+     */
+    private function activeNode(): HermesNode
+    {
+        return HermesNode::create([
+            'name' => 'Node Lokal',
+            'api_url' => 'http://127.0.0.1:3000',
+            'api_secret_reference' => 'none',
+            'max_capacity' => 100,
+            'active_profiles' => 0,
+            'status' => 'active',
+        ]);
+    }
+
     public function test_ensures_primary_profile_is_idempotent(): void
     {
+        $this->activeNode();
+
         $profile1 = $this->provisioner->ensurePrimaryProfile($this->owner);
         $this->assertSame('primary', $profile1->type);
         $this->assertSame($this->owner->id, $profile1->owner_user_id);

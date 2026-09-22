@@ -241,7 +241,12 @@ class HermesNodeManager extends Component
             'controlUrl' => ['nullable', 'url:http,https', 'max:191'],
             'controlSecretReference' => ['nullable', 'string', 'max:191'],
             'maxCapacity' => ['required', 'integer', 'min:1'],
-            'status' => ['required', 'in:active,maintenance,down'],
+            // `draining` (T-105): node yang sedang dikosongkan lewat
+            // `POST /api/gateway/drain` - berhenti menerima penempatan baru
+            // (`NodePlacement`) tetapi tetap melayani profil yang sudah ada
+            // (`HermesNodeClient`). Bedanya dengan `maintenance`/`down` yang
+            // menolak pengiriman sama sekali.
+            'status' => ['required', 'in:active,maintenance,down,draining'],
         ]);
 
         // Aturan yang sama ditegakkan `HermesControlPlaneClient`: control plane tanpa
