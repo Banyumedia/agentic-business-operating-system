@@ -27,6 +27,68 @@
             </div>
         @endif
 
+        {{-- Pendaftaran / penyuntingan node. Sebelum T-70 form ini tidak ada,
+             sehingga tabel hermes_nodes yang kosong tidak bisa diisi dari UI. --}}
+        <div class="rounded-lg border border-[var(--erp-border)] bg-[var(--erp-surface)] p-5">
+            <h2 class="text-xl font-bold text-[var(--erp-text)] mb-1">
+                {{ $editingNodeId ? 'Sunting Node' : 'Daftarkan Node Baru' }}
+            </h2>
+            <p class="text-sm text-[var(--erp-text-secondary)] mb-4">
+                Referensi rahasia adalah <strong>nama</strong> rahasianya, bukan nilainya. Nilainya dipetakan di konfigurasi dari environment, sehingga basis data tetap bebas kredensial.
+            </p>
+
+            <form wire:submit="saveNode" class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <label for="node-name" class="block text-sm font-medium text-[var(--erp-text)]">Nama Node</label>
+                    <input id="node-name" type="text" wire:model="name" class="mt-1 w-full min-h-11 rounded border border-[var(--erp-border)] bg-[var(--erp-surface)] px-3 text-[var(--erp-text)]">
+                    @error('name') <p class="mt-1 text-sm text-[var(--erp-danger)]">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="node-url" class="block text-sm font-medium text-[var(--erp-text)]">Alamat API</label>
+                    <input id="node-url" type="text" wire:model="apiUrl" placeholder="http://127.0.0.1:8642" class="mt-1 w-full min-h-11 rounded border border-[var(--erp-border)] bg-[var(--erp-surface)] px-3 font-mono text-sm text-[var(--erp-text)]">
+                    @error('apiUrl') <p class="mt-1 text-sm text-[var(--erp-danger)]">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="node-secret-ref" class="block text-sm font-medium text-[var(--erp-text)]">Referensi Rahasia</label>
+                    <input id="node-secret-ref" type="text" wire:model="apiSecretReference" placeholder="node_lokal" class="mt-1 w-full min-h-11 rounded border border-[var(--erp-border)] bg-[var(--erp-surface)] px-3 font-mono text-sm text-[var(--erp-text)]">
+                    @error('apiSecretReference') <p class="mt-1 text-sm text-[var(--erp-danger)]">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="node-capacity" class="block text-sm font-medium text-[var(--erp-text)]">Kapasitas Profil</label>
+                        <input id="node-capacity" type="number" min="1" wire:model="maxCapacity" class="mt-1 w-full min-h-11 rounded border border-[var(--erp-border)] bg-[var(--erp-surface)] px-3 text-[var(--erp-text)]">
+                        @error('maxCapacity') <p class="mt-1 text-sm text-[var(--erp-danger)]">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="node-status" class="block text-sm font-medium text-[var(--erp-text)]">Status</label>
+                        <select id="node-status" wire:model="status" class="mt-1 w-full min-h-11 rounded border border-[var(--erp-border)] bg-[var(--erp-surface)] px-3 text-[var(--erp-text)]">
+                            <option value="active">Active</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="down">Down</option>
+                        </select>
+                        @error('status') <p class="mt-1 text-sm text-[var(--erp-danger)]">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                <div class="md:col-span-2 flex flex-wrap gap-3">
+                    <button type="submit" class="min-h-11 rounded bg-[var(--erp-primary)] px-4 font-semibold text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                        {{ $editingNodeId ? 'Simpan Perubahan' : 'Daftarkan Node' }}
+                    </button>
+                    @if ($editingNodeId)
+                        <button type="button" wire:click="cancelEdit" class="min-h-11 rounded border border-[var(--erp-border)] px-4 text-[var(--erp-text)] hover:bg-[var(--erp-surface-secondary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                            Batal
+                        </button>
+                    @endif
+                    <button type="button" wire:click="checkHealth" class="min-h-11 rounded border border-[var(--erp-border)] px-4 text-[var(--erp-text)] hover:bg-[var(--erp-surface-secondary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                        Periksa Kesehatan Node
+                    </button>
+                </div>
+            </form>
+        </div>
+
         {{-- Node Cluster Cards --}}
         <div>
             <h2 class="text-xl font-bold text-[var(--erp-text)] mb-4">Klaster Server Node</h2>
@@ -40,6 +102,16 @@
                             </span>
                         </div>
                         <p class="mt-1 font-mono text-xs text-[var(--erp-text-secondary)] truncate">{{ $node->api_url }}</p>
+
+                        @if (isset($health[$node->id]))
+                            <p class="mt-2 text-xs {{ $health[$node->id]['ok'] ? 'text-[var(--erp-success)]' : 'text-[var(--erp-danger)]' }}">
+                                {{ $health[$node->id]['ok'] ? 'Terjangkau' : 'Tidak terjangkau' }} — {{ $health[$node->id]['detail'] }}
+                            </p>
+                        @endif
+
+                        <button type="button" wire:click="editNode({{ $node->id }})" class="mt-3 min-h-11 rounded border border-[var(--erp-border)] px-3 text-sm text-[var(--erp-text)] hover:bg-[var(--erp-surface-secondary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                            Sunting
+                        </button>
                         
                         <div class="mt-4 pt-3 border-t border-[var(--erp-border)]">
                             <div class="flex justify-between text-xs text-[var(--erp-text-secondary)] mb-1">
@@ -59,6 +131,39 @@
                         Belum ada node Hermes yang terdaftar di sistem.
                     </div>
                 @endforelse
+            </div>
+        </div>
+
+        {{-- Profil milik platform: bot dev dan bot CS kita. Melayani nol company,
+             jadi dipisahkan supaya daftar tenant tidak menyesatkan. --}}
+        <div>
+            <h2 class="text-xl font-bold text-[var(--erp-text)] mb-1">Bot Milik Platform</h2>
+            <p class="text-sm text-[var(--erp-text-secondary)] mb-4">Tidak melayani usaha mana pun. Dipakai untuk operasional internal dan layanan pelanggan platform.</p>
+            <div class="overflow-x-auto rounded-lg border border-[var(--erp-border)] bg-[var(--erp-surface)]">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="border-b border-[var(--erp-border)] bg-[var(--erp-surface-secondary)]">
+                            <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Label</th>
+                            <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Tipe</th>
+                            <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Node</th>
+                            <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($platformProfiles as $prof)
+                            <tr class="border-b border-[var(--erp-border)]">
+                                <td class="px-6 py-4 text-sm font-semibold text-[var(--erp-text)]">{{ $prof->label ?? 'Tanpa label' }}</td>
+                                <td class="px-6 py-4 text-sm text-[var(--erp-text)]">{{ strtoupper($prof->type) }}</td>
+                                <td class="px-6 py-4 text-sm text-[var(--erp-text)]">{{ $prof->node->name ?? '-' }}</td>
+                                <td class="px-6 py-4 text-sm text-[var(--erp-text)]">{{ ucfirst($prof->status ?? 'ready') }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="px-6 py-8 text-center text-sm text-[var(--erp-text-secondary)]">Belum ada bot milik platform yang terdaftar.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
 

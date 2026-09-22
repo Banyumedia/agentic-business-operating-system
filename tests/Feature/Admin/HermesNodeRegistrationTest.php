@@ -1,0 +1,185 @@
+<?php
+
+namespace Tests\Feature\Admin;
+
+use App\Livewire\Admin\HermesNodeManager;
+use App\Models\HermesNode;
+use App\Models\HermesProfile;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
+use Livewire\Livewire;
+use Tests\TestCase;
+
+/**
+ * T-70: super admin harus bisa **mendaftarkan** node Hermes, bukan hanya
+ * menyuntingnya.
+ *
+ * Sebelum task ini `HermesNodeManager::saveNode()` hanya berjalan bila
+ * `editingNodeId` terisi, sehingga tabel `hermes_nodes` yang kosong **tidak bisa
+ * diisi dari UI sama sekali**. Itu jalan buntu nyata: seluruh integrasi Hermes
+ * bergantung pada satu baris yang tidak punya cara dibuat, dan
+ * `bos:hermes-ping` hanya bisa melaporkan "belum ada node terdaftar".
+ */
+class HermesNodeRegistrationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private User $admin;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->admin = User::factory()->create(['is_platform_admin' => true]);
+        Config::set('hermes.node_secrets', ['ref_uji' => 'rahasia-uji']);
+    }
+
+    public function test_super_admin_can_register_the_first_node(): void
+    {
+        $this->actingAs($this->admin);
+
+        Livewire::test(HermesNodeManager::class)
+            ->set('name', 'Node Lokal')
+            ->set('apiUrl', 'http://127.0.0.1:8642')
+            ->set('apiSecretReference', 'ref_uji')
+            ->set('maxCapacity', 100)
+            ->set('status', 'active')
+            ->call('saveNode')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('hermes_nodes', [
+            'name' => 'Node Lokal',
+            'api_url' => 'http://127.0.0.1:8642',
+            'api_secret_reference' => 'ref_uji',
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_editing_an_existing_node_still_works(): void
+    {
+        $node = $this->node();
+        $this->actingAs($this->admin);
+
+        Livewire::test(HermesNodeManager::class)
+            ->call('editNode', $node->id)
+            ->set('name', 'Node Lokal Baru')
+            ->call('saveNode')
+            ->assertHasNoErrors();
+
+        $this->assertSame('Node Lokal Baru', $node->fresh()->name);
+        $this->assertSame(1, HermesNode::query()->count());
+    }
+
+    public function test_negative_a_non_admin_cannot_register_a_node(): void
+    {
+        $outsider = User::factory()->create(['is_platform_admin' => false]);
+        $this->actingAs($outsider);
+
+        $this->get(route('admin.hermes-nodes'))->assertForbidden();
+        $this->assertSame(0, HermesNode::query()->count());
+    }
+
+    public function test_negative_a_non_http_api_url_is_refused(): void
+    {
+        // Alamat tanpa skema akan ditolak `HermesNodeClient` saat mengirim, jadi
+        // menolaknya di sini mencegah baris yang tampak sah tapi mati.
+        $this->actingAs($this->admin);
+
+        Livewire::test(HermesNodeManager::class)
+            ->set('name', 'Node Salah')
+            ->set('apiUrl', 'node.tanpa.skema')
+            ->set('apiSecretReference', 'ref_uji')
+            ->call('saveNode')
+            ->assertHasErrors('apiUrl');
+
+        $this->assertSame(0, HermesNode::query()->count());
+    }
+
+    public function test_negative_a_node_without_a_secret_reference_is_refused(): void
+    {
+        // Tanpa referensi rahasia, node tidak akan pernah bisa dipanggil - dan
+        // kegagalannya baru terlihat jauh di belakang, saat mengirim.
+        $this->actingAs($this->admin);
+
+        Livewire::test(HermesNodeManager::class)
+            ->set('name', 'Node Tanpa Rahasia')
+            ->set('apiUrl', 'http://127.0.0.1:8642')
+            ->set('apiSecretReference', '')
+            ->call('saveNode')
+            ->assertHasErrors('apiSecretReference');
+
+        $this->assertSame(0, HermesNode::query()->count());
+    }
+
+    public function test_unreachable_node_is_reported_as_failed_not_as_an_error_page(): void
+    {
+        Http::fake(['*' => Http::response('', 500)]);
+
+        $this->node();
+        $this->actingAs($this->admin);
+
+        $component = Livewire::test(HermesNodeManager::class)->call('checkHealth');
+
+        $component->assertOk();
+        $this->assertFalse($component->get('health')[$this->firstNodeId()]['ok']);
+    }
+
+    public function test_reachable_node_is_reported_as_healthy(): void
+    {
+        Http::fake(['*' => Http::response(['ok' => true], 200)]);
+
+        $this->node();
+        $this->actingAs($this->admin);
+
+        $component = Livewire::test(HermesNodeManager::class)->call('checkHealth');
+
+        $this->assertTrue($component->get('health')[$this->firstNodeId()]['ok']);
+    }
+
+    public function test_platform_profiles_are_listed_apart_from_tenant_profiles(): void
+    {
+        // Profil platform (bot dev dan bot CS kita) melayani nol company.
+        // Mencampurnya dengan profil tenant membuat daftar itu menyesatkan.
+        $node = $this->node();
+
+        HermesProfile::factory()->create([
+            'node_id' => $node->id,
+            'type' => 'primary',
+            'label' => 'Bot Dev Platform',
+            'is_platform_provided' => true,
+        ]);
+
+        HermesProfile::factory()->create([
+            'node_id' => $node->id,
+            'type' => 'primary',
+            'label' => 'Bot Tenant',
+            'is_platform_provided' => false,
+        ]);
+
+        $this->actingAs($this->admin);
+
+        $component = Livewire::test(HermesNodeManager::class);
+
+        $this->assertCount(1, $component->get('platformProfiles'));
+        $this->assertCount(1, $component->get('profiles'));
+    }
+
+    private function node(): HermesNode
+    {
+        return HermesNode::create([
+            'name' => 'Node Lokal',
+            'api_url' => 'http://127.0.0.1:8642',
+            'api_secret_reference' => 'ref_uji',
+            'max_capacity' => 100,
+            'active_profiles' => 0,
+            'status' => 'active',
+        ]);
+    }
+
+    private function firstNodeId(): int
+    {
+        return (int) HermesNode::query()->value('id');
+    }
+}
