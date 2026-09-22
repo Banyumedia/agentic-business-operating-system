@@ -58,7 +58,14 @@ class HermesProfile extends Model
                 }
             }
 
-            if ($profile->type === 'addon' && empty($profile->billing_addon_id)) {
+            // Add-on yang **dijual** wajib tertaut ke baris billing-nya. Profil
+            // milik platform (bot dev dan bot CS kita sendiri) tidak punya add-on
+            // berbayar; memaksanya membuat baris billing palsu hanya untuk lolos
+            // aturan ini adalah jebakan, bukan solusi. Kelonggarannya sempit dan
+            // hanya berlaku bila `is_platform_provided` benar.
+            if ($profile->type === 'addon'
+                && empty($profile->billing_addon_id)
+                && ! $profile->is_platform_provided) {
                 throw new LogicException('An addon profile must have a billing_addon_id.');
             }
         });

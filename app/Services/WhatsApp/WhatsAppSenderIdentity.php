@@ -41,6 +41,15 @@ class WhatsAppSenderIdentity
      */
     public function resolve(HermesProfile $profile, string $senderPhone): array
     {
+        // Profil milik platform (bot dev, bot CS platform) tidak melayani company
+        // mana pun, jadi ia tidak boleh pernah mengenali seseorang sebagai anggota
+        // sebuah usaha - bahkan bila nomornya terverifikasi dan ia memang pemilik
+        // usaha lain. Aturan untuk profil platform ditulis terpisah; di sini
+        // fail-closed.
+        if ($profile->is_platform_provided) {
+            return $this->unknown('Profil platform tidak melayani usaha mana pun.');
+        }
+
         $number = $this->normalize($senderPhone);
 
         if ($number === '') {

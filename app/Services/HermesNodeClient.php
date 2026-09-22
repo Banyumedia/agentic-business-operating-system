@@ -158,6 +158,14 @@ class HermesNodeClient
         $profile = HermesProfile::query()
             ->with('node')
             ->where('type', 'primary')
+            // Profil milik platform melayani nol company. Kalaupun seseorang
+            // menautkannya lewat pivot, lajur tenant tidak boleh memakainya:
+            // pesan atas nama tenant harus keluar dari bot tenant itu sendiri,
+            // bukan dari bot platform (D-63).
+            ->where(function ($query) {
+                $query->where('is_platform_provided', false)
+                    ->orWhereNull('is_platform_provided');
+            })
             ->whereHas('companies', fn ($query) => $query->whereKey($company->getKey()))
             ->first();
 
