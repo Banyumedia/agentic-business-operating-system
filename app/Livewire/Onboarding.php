@@ -39,6 +39,13 @@ class Onboarding extends Component
 
     private const TOTAL_STEPS = 3;
 
+    /**
+     * Tarif PPN standar Indonesia saat ini. Disimpan **eksplisit** ke identitas
+     * (bukan mengandalkan default kolom yang sempat menyamar sebagai tarif sah,
+     * cacat TX-01). Perubahan tarif nanti lewat jalur setelan, bukan onboarding.
+     */
+    private const DEFAULT_PPN_RATE = 11;
+
     public int $step = 1;
 
     public string $name = '';
@@ -46,6 +53,15 @@ class Onboarding extends Component
     public string $preset = '';
 
     public bool $acceptPrivacyPolicy = false;
+
+    /**
+     * Pilihan fiskal (D-74). Default non-PKP karena mayoritas target non-PKP
+     * (D-44), tetapi default bukan pengganti pertanyaan: keduanya ditanyakan di
+     * langkah identitas dan dikunci begitu usaha dibuat.
+     */
+    public bool $taxable = false;
+
+    public bool $priceIncludesTax = false;
 
     public ?string $createdSlug = null;
 
@@ -222,15 +238,13 @@ class Onboarding extends Component
         return DB::transaction(function () use ($name, $slug, $ownerId): Company {
             $company = $this->newCompany($name, $slug, $ownerId);
 
-            // D-03/D-44: identitas default non-PKP; `price_includes_tax`
-            // tidak berbahaya untuk usaha non-pajak dan cocok dengan demo JSON.
-            BusinessIdentity::create([
+            // D-74: pilihan fiskal tenant, dikunci begitu usaha dibuat.
+            BusinessIdentity::create(array_merge([
                 'company_id' => $company->id,
                 'legal_name' => $name,
-                'tax_mode' => 'non_taxable',
-                'price_includes_tax' => true,
                 'is_default' => true,
-            ]);
+                'fiscal_locked_at' => Carbon::now(),
+            ], $this->fiscalAttributes()));
 
             // D-19/D-25: baris `module_settings` untuk module `features` kosong
             // (tanpa override) - `FeatureResolver::overrides()` menerima
@@ -257,12 +271,12 @@ class Onboarding extends Component
         try {
             $disk->put(
                 "json/{$slug}/business_identity.json",
-                json_encode([
+                json_encode(array_merge([
                     'id' => 1,
                     'name' => $name,
                     'preset' => $this->preset,
-                    'tax_mode' => 'non_taxable',
-                ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL,
+                    'fiscal_locked_at' => Carbon::now()->toIso8601String(),
+                ], $this->fiscalAttributes()), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL,
             );
             $settingsStore->update($slug, fn (array $settings): array => $settings);
         } catch (Throwable $exception) {
@@ -273,6 +287,35 @@ class Onboarding extends Component
         }
 
         return $company;
+    }
+
+    /**
+     * Atribut fiskal yang ditulis ke identitas, satu bentuk untuk kedua jalur
+     * (Eloquent + JSON) supaya paritas D-42 terjaga.
+     *
+     * Non-PKP tidak menerima `price_includes_tax` yang bermakna maupun tarif
+     * (D-44 zero-bloat: kosakata pajak tidak ada artinya di sana; `tax_rate`
+     * null terbaca sebagai "tidak dikonfigurasi", bukan 0%). PKP menyimpan
+     * tarif **eksplisit** — bukan mengandalkan default kolom yang sempat
+     * menyamar sebagai 0% (cacat TX-01).
+     *
+     * @return array<string, mixed>
+     */
+    private function fiscalAttributes(): array
+    {
+        if (! $this->taxable) {
+            return [
+                'tax_mode' => 'non_taxable',
+                'price_includes_tax' => false,
+                'tax_rate' => null,
+            ];
+        }
+
+        return [
+            'tax_mode' => 'taxable',
+            'price_includes_tax' => $this->priceIncludesTax,
+            'tax_rate' => self::DEFAULT_PPN_RATE,
+        ];
     }
 
     private function newCompany(string $name, string $slug, int $ownerId): Company

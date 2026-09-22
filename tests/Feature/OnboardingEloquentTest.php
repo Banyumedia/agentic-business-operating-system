@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\CompanyContext;
 use App\Livewire\Onboarding;
 use App\Models\BusinessIdentity;
 use App\Models\BusinessPreset;
@@ -9,6 +10,7 @@ use App\Models\Company;
 use App\Models\ModuleSetting;
 use App\Models\User;
 use App\Providers\DataSourceServiceProvider;
+use App\Services\BusinessIdentityStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -71,10 +73,11 @@ class OnboardingEloquentTest extends TestCase
         $identity = BusinessIdentity::query()->where('company_id', $company->id)->first();
         $this->assertNotNull($identity);
         $this->assertSame('Usaha Eloquent Baru', $identity->legal_name);
-        // D-44: default aman - tidak pernah taxable diam-diam.
+        // D-44/D-74: default aman - non-PKP karena tenant tidak menjawab "ya".
         $this->assertSame('non_taxable', $identity->tax_mode);
-        $this->assertTrue($identity->price_includes_tax);
         $this->assertTrue($identity->is_default);
+        // D-74: pilihan fiskal dikunci begitu usaha dibuat.
+        $this->assertNotNull($identity->fiscal_locked_at);
 
         // D-41: konteks aktif adalah kolom users.current_company_id.
         $this->assertSame($company->id, $user->fresh()->current_company_id);
@@ -90,6 +93,101 @@ class OnboardingEloquentTest extends TestCase
         $this->get('/app/contacts')->assertOk()->assertSee('Daftar Kontak');
         $this->get('/app/pos')->assertForbidden();
         $this->get('/app/accounting')->assertForbidden();
+    }
+
+    public function test_taxable_answer_is_stored_with_explicit_rate_and_locked(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Livewire::test(Onboarding::class)
+            ->set('name', 'Usaha Kena Pajak')
+            ->set('preset', 'zz_onboarding_eloquent')
+            ->set('taxable', true)
+            ->set('priceIncludesTax', false)
+            ->set('acceptPrivacyPolicy', true)
+            ->call('submit')
+            ->assertRedirect(route('app.dashboard'));
+
+        $company = Company::query()->where('slug', 'usaha-kena-pajak')->firstOrFail();
+        $identity = BusinessIdentity::query()->where('company_id', $company->id)->firstOrFail();
+
+        $this->assertSame('taxable', $identity->tax_mode);
+        $this->assertFalse((bool) $identity->price_includes_tax);
+        // Tarif tersimpan eksplisit, bukan 0.00 yang menyamar (cacat TX-01).
+        $this->assertSame('11.00', $identity->tax_rate);
+        $this->assertNotNull($identity->fiscal_locked_at);
+    }
+
+    public function test_taxable_inclusive_answer_is_recorded(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Livewire::test(Onboarding::class)
+            ->set('name', 'Usaha Harga Termasuk')
+            ->set('preset', 'zz_onboarding_eloquent')
+            ->set('taxable', true)
+            ->set('priceIncludesTax', true)
+            ->set('acceptPrivacyPolicy', true)
+            ->call('submit')
+            ->assertRedirect(route('app.dashboard'));
+
+        $identity = BusinessIdentity::query()
+            ->where('company_id', Company::query()->where('slug', 'usaha-harga-termasuk')->value('id'))
+            ->firstOrFail();
+
+        $this->assertSame('taxable', $identity->tax_mode);
+        $this->assertTrue((bool) $identity->price_includes_tax);
+        $this->assertSame('11.00', $identity->tax_rate);
+    }
+
+    public function test_non_taxable_ignores_price_inclusive_answer(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // Tenant non-PKP: jawaban inklusif tidak pernah bermakna (D-44).
+        // Meskipun properti priceIncludesTax kebetulan true di komponen,
+        // identitas non-taxable tidak boleh menyimpan tarif pajak.
+        Livewire::test(Onboarding::class)
+            ->set('name', 'Usaha Bukan PKP')
+            ->set('preset', 'zz_onboarding_eloquent')
+            ->set('taxable', false)
+            ->set('priceIncludesTax', true)
+            ->set('acceptPrivacyPolicy', true)
+            ->call('submit')
+            ->assertRedirect(route('app.dashboard'));
+
+        $identity = BusinessIdentity::query()
+            ->where('company_id', Company::query()->where('slug', 'usaha-bukan-pkp')->value('id'))
+            ->firstOrFail();
+
+        $this->assertSame('non_taxable', $identity->tax_mode);
+        $this->assertNull($identity->tax_rate);
+    }
+
+    public function test_taxable_tenant_gets_a_working_tax_profile_after_onboarding(): void
+    {
+        // Menutup cacat inti: tenant taxable yang di-onboard lewat form ini
+        // harus punya TaxProfile yang benar (bukan 0% dari default 0.00).
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Livewire::test(Onboarding::class)
+            ->set('name', 'Usaha Profil Pajak')
+            ->set('preset', 'zz_onboarding_eloquent')
+            ->set('taxable', true)
+            ->set('priceIncludesTax', false)
+            ->set('acceptPrivacyPolicy', true)
+            ->call('submit');
+
+        $company = Company::query()->where('slug', 'usaha-profil-pajak')->firstOrFail();
+        app(CompanyContext::class)->setCurrent((string) $company->id);
+        $profile = app(BusinessIdentityStore::class)->taxProfile((string) $company->id);
+
+        $this->assertTrue($profile->taxable);
+        $this->assertSame(11.0, $profile->rate);
     }
 
     public function test_submit_without_privacy_consent_writes_nothing(): void

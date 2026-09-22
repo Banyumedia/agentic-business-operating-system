@@ -163,6 +163,35 @@ class OnboardingTest extends TestCase
         Storage::disk('company-json')->assertExists("json/{$slug}/settings.json");
     }
 
+    public function test_taxable_answer_is_written_to_json_identity_with_rate_and_lock(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Livewire::test(Onboarding::class)
+            ->set('name', 'Toko Kena Pajak')
+            ->set('preset', 'bengkel')
+            ->set('taxable', true)
+            ->set('priceIncludesTax', true)
+            ->set('acceptPrivacyPolicy', true)
+            ->call('submit')
+            ->assertSet('createdSlug', 'toko-kena-pajak');
+
+        $identity = json_decode(
+            Storage::disk('company-json')->get('json/toko-kena-pajak/business_identity.json'),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+
+        // Jalur JSON dulu tidak pernah menulis price_includes_tax sama sekali;
+        // kini bentuknya sama dengan jalur Eloquent (paritas D-42).
+        $this->assertSame('taxable', $identity['tax_mode']);
+        $this->assertTrue($identity['price_includes_tax']);
+        $this->assertSame(11, $identity['tax_rate']);
+        $this->assertArrayHasKey('fiscal_locked_at', $identity);
+        $this->assertNotNull($identity['fiscal_locked_at']);
+    }
+
     public function test_duplicate_business_name_gets_an_incrementing_unique_slug(): void
     {
         $user = User::factory()->create();

@@ -64,6 +64,54 @@
                     @enderror
                     <p class="mt-2 text-sm text-[var(--erp-text-secondary)]">Nama ini dipakai sebagai identitas usaha Anda di seluruh sistem.</p>
                 </div>
+
+                {{--
+                    Pertanyaan pajak (D-74). Ditanyakan sekali di sini karena
+                    menyangkut pembukuan ke depan dan dikunci setelah usaha
+                    dibuat. Default "tidak" (mayoritas target non-PKP, D-44).
+                    Pertanyaan kedua muncul HANYA bila PKP (zero-bloat, bukan
+                    dinonaktifkan): ia menentukan harga yang dibayar pelanggan,
+                    jadi disertai contoh nominal konkret.
+                --}}
+                <fieldset class="mt-6 rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] p-4">
+                    <legend class="px-1 text-sm font-medium text-[var(--erp-text-secondary)]">Pajak (PPN)</legend>
+
+                    <label for="onboarding-taxable" class="flex cursor-pointer items-start gap-3 text-sm text-[var(--erp-text-primary)]">
+                        <input
+                            id="onboarding-taxable"
+                            type="checkbox"
+                            wire:model.live="taxable"
+                            class="mt-1 size-4 rounded border-[var(--erp-border)] text-[var(--erp-accent)] focus:ring-[var(--erp-focus)]"
+                        >
+                        <span>
+                            <span class="block font-semibold">Usaha Anda memungut PPN (sudah PKP)?</span>
+                            <span class="mt-1 block text-xs text-[var(--erp-text-secondary)]">Biarkan tidak dicentang bila usaha Anda belum Pengusaha Kena Pajak. Pilihan ini dikunci setelah usaha dibuat.</span>
+                        </span>
+                    </label>
+
+                    @if ($taxable)
+                        <div class="mt-4 border-t border-[var(--erp-border)] pt-4" role="radiogroup" aria-label="Cara Anda memasang harga">
+                            <p class="text-sm font-medium text-[var(--erp-text-primary)]">Harga barang/jasa yang Anda masukkan nanti:</p>
+                            <p class="mt-1 text-xs text-[var(--erp-text-secondary)]">Ini menentukan berapa yang dibayar pelanggan Anda. Contoh dengan PPN 11% pada harga tercatat Rp100.000:</p>
+
+                            <label for="onboarding-tax-exclusive" class="mt-3 flex cursor-pointer items-start gap-3 rounded-[var(--erp-radius-sm)] border {{ ! $priceIncludesTax ? 'border-[var(--erp-accent)] bg-[var(--erp-accent-soft)]' : 'border-[var(--erp-border)]' }} p-3 text-sm text-[var(--erp-text-primary)]">
+                                <input id="onboarding-tax-exclusive" type="radio" wire:model.live="priceIncludesTax" value="0" @checked(! $priceIncludesTax) class="mt-1 size-4 border-[var(--erp-border)] text-[var(--erp-accent)] focus:ring-[var(--erp-focus)]">
+                                <span>
+                                    <span class="block font-semibold">Belum termasuk PPN</span>
+                                    <span class="mt-1 block text-xs text-[var(--erp-text-secondary)]">PPN ditambahkan di atas harga: pelanggan membayar <strong>Rp111.000</strong>.</span>
+                                </span>
+                            </label>
+
+                            <label for="onboarding-tax-inclusive" class="mt-2 flex cursor-pointer items-start gap-3 rounded-[var(--erp-radius-sm)] border {{ $priceIncludesTax ? 'border-[var(--erp-accent)] bg-[var(--erp-accent-soft)]' : 'border-[var(--erp-border)]' }} p-3 text-sm text-[var(--erp-text-primary)]">
+                                <input id="onboarding-tax-inclusive" type="radio" wire:model.live="priceIncludesTax" value="1" @checked($priceIncludesTax) class="mt-1 size-4 border-[var(--erp-border)] text-[var(--erp-accent)] focus:ring-[var(--erp-focus)]">
+                                <span>
+                                    <span class="block font-semibold">Sudah termasuk PPN</span>
+                                    <span class="mt-1 block text-xs text-[var(--erp-text-secondary)]">Harga sudah final: pelanggan membayar <strong>Rp100.000</strong>, dengan PPN diuraikan dari dalamnya.</span>
+                                </span>
+                            </label>
+                        </div>
+                    @endif
+                </fieldset>
             @elseif ($step === 2)
                 <fieldset>
                     <legend class="block text-sm font-medium text-[var(--erp-text-secondary)]">Jenis usaha yang paling mendekati</legend>
@@ -100,6 +148,16 @@
                         <p class="text-xs font-medium uppercase tracking-wide text-[var(--erp-text-muted)]">Jenis usaha</p>
                         <p class="mt-1 text-sm font-semibold text-[var(--erp-text-primary)]">
                             {{ collect($presets)->firstWhere('key', $preset)['name'] ?? $preset }}
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium uppercase tracking-wide text-[var(--erp-text-muted)]">Pajak</p>
+                        <p class="mt-1 text-sm font-semibold text-[var(--erp-text-primary)]">
+                            @if ($taxable)
+                                Memungut PPN (PKP) — harga {{ $priceIncludesTax ? 'sudah termasuk PPN' : 'belum termasuk PPN' }}
+                            @else
+                                Tidak memungut PPN (non-PKP)
+                            @endif
                         </p>
                     </div>
                     <div class="rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] p-4">
