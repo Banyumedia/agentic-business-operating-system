@@ -497,8 +497,8 @@ menyisakan satu pelanggaran pre-existing `tests/Feature/LobbyNavigationTest.php`
 
 **Gap yang tercatat — STATUS SETELAH PERBAIKAN 2026-09-20:**
 1. ~~Modul `pos`, `inventory`, `hrd` 403~~ → **FIXED**: akar masalah = `companies.business_preset` tertinggal `eo` (data seed awal), bukan `laundry`. Diperbaiki ke `laundry` → inventory/hrd 200. POS masih 500 karena `BusinessIdentityStore` membaca file JSON `json/1/business_identity.json` yang belum ada → dibuat → POS 200 ("Layar Kasir").
-2. `BuildCompanyExport` hanya mengekspor 4 file — **masih gap** (belum seluruh tabel).
-3. `downloadUrl` tidak muncul di response Livewire — **masih gap** (tautan unduh mungkin tidak ter-render; endpoint download langsung 200).
+2. ~~`BuildCompanyExport` hanya mengekspor 4 file~~ → **FIXED oleh T-55** (Fase 9): entitas diturunkan dari katalog `database/schemas/*.schema.json`, bukan daftar hardcoded.
+3. ~~`downloadUrl` tidak muncul di response Livewire~~ → **BUKAN GAP**: diperiksa saat T-55, view `data-export.blade.php` merendernya.
 4. `/app/group-report` 403 → **BUKAN BUG**: butuh add-on `addon.branches` yang tidak aktif untuk company ini.
 
 **Catatan arsitektur penting:** aplikasi berjalan di **SQLite** (`DB_CONNECTION=sqlite` di .env), BUKAN MySQL. MySQL Laragon yang dinyalakan sebelumnya tidak dipakai aplikasi. CLI tinker dan web server membaca DB sqlite yang sama (`database/database.sqlite`). Jangan keliru mengedit DB MySQL untuk memperbaiki data aplikasi.
