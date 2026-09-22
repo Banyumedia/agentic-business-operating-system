@@ -13,9 +13,11 @@
                 </div>
                 <div class="flex items-center gap-4">
                     <a href="{{ route('login') }}" class="text-sm font-semibold text-[var(--erp-text-secondary)] hover:text-[var(--erp-text-primary)] transition">Login</a>
-                    <a href="https://wa.me/6281234567890" target="_blank" rel="noopener noreferrer" class="inline-flex h-9 items-center justify-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--erp-accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--erp-accent)] transition">
-                        Konsultasi Gratis
-                    </a>
+                    @if ($salesWhatsApp)
+                        <a href="https://wa.me/{{ $salesWhatsApp }}" target="_blank" rel="noopener noreferrer" class="inline-flex h-9 items-center justify-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--erp-accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--erp-accent)] transition">
+                            Konsultasi Gratis
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -39,11 +41,14 @@
                         Bukan sekadar asisten. Agentic BOS memiliki keahlian Business Intelligence tingkat tinggi untuk merencanakan, mengawasi, dan mengoptimalkan seluruh aspek bisnis Anda secara real-time.
                     </p>
                     <div class="mt-10 flex items-center justify-center gap-x-6">
-                        <a href="https://wa.me/6281234567890" target="_blank" rel="noopener noreferrer" class="inline-flex h-12 items-center justify-center gap-2 rounded-[var(--erp-radius-lg)] bg-[var(--erp-accent)] px-8 text-base font-semibold text-white shadow-sm hover:bg-[var(--erp-accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--erp-accent)] transition hover:-translate-y-0.5">
-                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        {{-- Tanpa nomor sales, ajakan tetap ada tapi mengarah ke
+                             pendaftaran. Hero tanpa satu pun tombol lebih buruk
+                             daripada tombol yang berbeda tujuan. --}}
+                        <a href="{{ $salesWhatsApp ? 'https://wa.me/'.$salesWhatsApp : route('register') }}" @if ($salesWhatsApp) target="_blank" rel="noopener noreferrer" @endif class="inline-flex h-12 items-center justify-center gap-2 rounded-[var(--erp-radius-lg)] bg-[var(--erp-accent)] px-8 text-base font-semibold text-white shadow-sm hover:bg-[var(--erp-accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--erp-accent)] transition hover:-translate-y-0.5">
+                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
-                            Mulai Transformasi via WhatsApp
+                            {{ $salesWhatsApp ? 'Mulai Transformasi via WhatsApp' : 'Mulai Sekarang' }}
                         </a>
                     </div>
                 </div>
@@ -163,8 +168,8 @@
                         Diskusikan kebutuhan bisnis Anda langsung dengan pakar kami, dan cari tahu bagaimana Agentic BOS dapat mempercepat pertumbuhan perusahaan Anda.
                     </p>
                     <div class="mt-10 flex items-center justify-center gap-x-6">
-                        <a href="https://wa.me/6281234567890" target="_blank" rel="noopener noreferrer" class="rounded-[var(--erp-radius-lg)] bg-[var(--erp-accent)] px-8 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-[var(--erp-accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--erp-accent)] transition">
-                            Konsultasi via WhatsApp Sekarang
+                        <a href="{{ $salesWhatsApp ? 'https://wa.me/'.$salesWhatsApp : route('register') }}" @if ($salesWhatsApp) target="_blank" rel="noopener noreferrer" @endif class="rounded-[var(--erp-radius-lg)] bg-[var(--erp-accent)] px-8 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-[var(--erp-accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--erp-accent)] transition">
+                            {{ $salesWhatsApp ? 'Konsultasi via WhatsApp Sekarang' : 'Buat Akun Sekarang' }}
                         </a>
                     </div>
                 </div>

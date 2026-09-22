@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Nomor WhatsApp Sales
+    |--------------------------------------------------------------------------
+    |
+    | Dipakai tombol ajakan di halaman publik. Tanpa nilai, tombolnya tidak
+    | dirender - lebih baik tidak ada tombol daripada tombol yang menuju nomor
+    | contoh milik orang lain.
+    |
+    */
+
+    'sales_whatsapp' => env('SALES_WHATSAPP_NUMBER'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

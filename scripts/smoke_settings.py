@@ -1,14 +1,29 @@
 """
-Smoke test untuk halaman Settings (/app/settings) via Playwright
+Smoke test untuk halaman Settings (/app/settings) via Playwright.
+
+Kredensial WAJIB datang dari environment dan tidak punya nilai bawaan. Versi
+pertama skrip ini menuliskan email pilot beserta password apa adanya, dan
+menyasar port 8010 yang di mesin ini dipakai server produksi - kredensial di
+dalam repo tidak boleh jadi kebiasaan, sekecil apa pun lingkupnya.
+
+    $env:SMOKE_BASE_URL = "http://127.0.0.1:8005"
+    $env:SMOKE_EMAIL    = "..."
+    $env:SMOKE_PASSWORD = "..."
+    python scripts/smoke_settings.py
 """
+import os
 import sys
 from playwright.sync_api import sync_playwright
 
-BASE_URL = "http://127.0.0.1:8010"
-EMAIL = "pilot@nalar.army"
-PASSWORD = "Password123!"
+BASE_URL = os.environ.get("SMOKE_BASE_URL", "http://127.0.0.1:8005")
+EMAIL = os.environ.get("SMOKE_EMAIL")
+PASSWORD = os.environ.get("SMOKE_PASSWORD")
 
 def run_smoke():
+    if not EMAIL or not PASSWORD:
+        print("[!] SMOKE_EMAIL dan SMOKE_PASSWORD wajib diisi lewat environment.")
+        sys.exit(2)
+
     print(f"[*] Menghubungkan ke {BASE_URL}...")
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)

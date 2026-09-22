@@ -7,6 +7,7 @@ use App\Contracts\EntityRepository;
 use App\Contracts\PresetSource;
 use App\Services\FeatureResolver;
 use App\Services\TerminologyResolver;
+use InvalidArgumentException;
 use RuntimeException;
 
 class DashboardComposer
@@ -79,14 +80,11 @@ class DashboardComposer
             ];
         }
 
-        if ($this->features->enabled('orders')) {
-            $candidates[] = [
-                'key' => 'orders',
-                'label' => '+ '.$this->terms->resolve('order').' Baru',
-                'url' => url('/app/orders'),
-                'icon' => 'order',
-            ];
-        }
+        // Tidak ada kandidat untuk transaksi/order di sini. `orders` bukan kunci
+        // kapabilitas (lihat `FeatureResolver::CAPABILITIES`), jadi cabang lama
+        // yang memeriksanya selalu bernilai false dan tombolnya tidak pernah
+        // muncul. Jalur transaksi memang lewat `pos` di atas, dan `/app/orders`
+        // juga bukan rute terdaftar.
 
         if ($this->features->enabled('finance.cashbook')) {
             $candidates[] = [

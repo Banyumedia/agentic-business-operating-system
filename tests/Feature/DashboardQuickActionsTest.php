@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Contracts\CompanyContext;
 use App\Livewire\Dashboard;
 use App\Services\Dashboard\DashboardComposer;
+use App\Services\DynamicMenuRegistry;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -30,6 +31,36 @@ class DashboardQuickActionsTest extends TestCase
         $this->assertContains('pos', $keys);
         $this->assertContains('cashbook', $keys);
         $this->assertContains('contacts', $keys);
+    }
+
+    public function test_negative_every_quick_action_points_at_a_registered_menu_path(): void
+    {
+        // Quick action menuliskan path-nya sendiri, jadi ia bisa menyimpang dari
+        // menu tanpa ada yang tahu. Itu yang terjadi pada kandidat `orders`:
+        // memeriksa kapabilitas yang tidak ada dan menunjuk `/app/orders` yang
+        // bukan rute terdaftar - tombolnya tidak pernah muncul, dan kalau
+        // kapabilitasnya pernah ada, tombolnya akan menuju halaman yang tiada.
+        foreach (['bengkel-arka', 'klinik-sehat', 'salon-ayu', 'laundry-bersih'] as $company) {
+            app(CompanyContext::class)->setCurrent($company);
+
+            $registry = app(DynamicMenuRegistry::class);
+            $registered = [];
+            foreach ($registry->visibleModules() as $module) {
+                foreach ($registry->menusFor($module['slug']) as $menu) {
+                    $registered[] = $menu['route'];
+                }
+            }
+
+            foreach (app(DashboardComposer::class)->compose()['quick_actions'] as $action) {
+                $path = parse_url($action['url'], PHP_URL_PATH);
+
+                $this->assertContains(
+                    $path,
+                    $registered,
+                    "Quick action {$action['key']} pada {$company} menunjuk {$path} yang tidak ada di menu.",
+                );
+            }
+        }
     }
 
     public function test_dashboard_renders_quick_actions_bar_in_dom(): void

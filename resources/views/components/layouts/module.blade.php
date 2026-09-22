@@ -96,55 +96,12 @@
             </div>
         </main>
 
-        {{-- Bottom Navigation Bar untuk Mobile (<768px) --}}
+        {{-- Navigasi bawah ponsel. Isinya diturunkan dari DynamicMenuRegistry
+             lewat komponen tersendiri: versi pertama menanam tab Kasir dan Buku
+             Kas tanpa memeriksa kapabilitas, jadi preset tanpa `pos` atau
+             `finance.cashbook` mendapat tab yang berujung 403. --}}
         @unless(request()->is('app/pos*'))
-            <nav
-                aria-label="Navigasi cepat ponsel"
-                class="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-[var(--erp-border)] bg-[var(--erp-bg-secondary)] px-2 shadow-lg md:hidden"
-            >
-                <a
-                    href="{{ route('app.dashboard') }}"
-                    class="flex flex-1 flex-col items-center justify-center py-1 text-[var(--erp-text-secondary)] hover:text-[var(--erp-text-primary)] focus:outline-none {{ request()->routeIs('app.dashboard') ? 'font-semibold text-[var(--erp-accent)]' : '' }}"
-                >
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                        <polyline points="9 22 9 12 15 12 15 22" />
-                    </svg>
-                    <span class="mt-1 text-[11px]">Beranda</span>
-                </a>
-
-                <a
-                    href="{{ url('/app/pos') }}"
-                    class="flex flex-1 flex-col items-center justify-center py-1 text-[var(--erp-text-secondary)] hover:text-[var(--erp-text-primary)] focus:outline-none {{ request()->is('app/pos*') ? 'font-semibold text-[var(--erp-accent)]' : '' }}"
-                >
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <span class="mt-1 text-[11px]">Kasir</span>
-                </a>
-
-                <a
-                    href="{{ url('/app/accounting') }}"
-                    class="flex flex-1 flex-col items-center justify-center py-1 text-[var(--erp-text-secondary)] hover:text-[var(--erp-text-primary)] focus:outline-none {{ request()->is('app/accounting*') ? 'font-semibold text-[var(--erp-accent)]' : '' }}"
-                >
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span class="mt-1 text-[11px]">Buku Kas</span>
-                </a>
-
-                <button
-                    type="button"
-                    x-on:click="openSidebar()"
-                    class="flex flex-1 flex-col items-center justify-center py-1 text-[var(--erp-text-secondary)] hover:text-[var(--erp-text-primary)] focus:outline-none"
-                    aria-label="Buka menu navigasi lengkap"
-                >
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                    <span class="mt-1 text-[11px]">Menu</span>
-                </button>
-            </nav>
+            <livewire:mobile-quick-nav />
         @endunless
     </div>
 
