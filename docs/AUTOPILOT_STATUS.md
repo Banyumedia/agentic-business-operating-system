@@ -791,9 +791,135 @@ dipulihkan via `git checkout`. Test suite kembali hijau setelahnya.
 
 **Catatan tentang klaim "FeatureResolver fail-open":** OpenCode menandai `(! $isPlanActive || in_array(...))` sebagai celah D-52. Setelah Hermes membaca kode: ini **perilaku yang disengaja dan benar** — fitur preset berlaku penuh hanya saat company **tidak punya membership/paket** (keadaan demo/setup), dan `PlanCapabilityGate` memang fail-closed (`[]`) saat membership hilang. Mengubahnya jadi fail-closed global akan mematikan seluruh demo/test. Apakah company tanpa paket harus dibatasi adalah **keputusan produk untuk Bos**, bukan bug untuk diperbaiki sepihak.
 
+## Pasca-Fase 9 — Penutupan Sisa Temuan (SELESAI)
+
+Enam dari sepuluh item pada daftar sisa pasca-Fase 9 ditutup. Empat sisanya
+memang hanya bisa dibuka Bos (kredensial, remote git) atau memuat keputusan
+pihak ketiga.
+
+**Integritas data akuntansi: `DONE`, commit `7ee7402`.** Diselesaikan dengan
+penjaga umum, bukan tambalan satu per satu: `SchemaMigrationParityTest`
+menurunkan pemeriksaannya dari `database/schemas/*.schema.json`, jadi entitas
+baru ikut terjaga tanpa menyunting test (D-31/D-42). Unique atas **bagian** dari
+kunci diterima karena lebih ketat.
+
+- `chart_of_accounts.account_code` dan `accounting_journals.journal_number`
+  menyatakan `unique` sejak T-54 tanpa index apa pun. Dua akun berkode sama atau
+  dua jurnal bernomor sama bisa hidup berdampingan dalam satu usaha; laporan
+  keuangan akan menggandakan angka tanpa terlihat salah.
+- `approval_tickets.operation_id` dideklarasikan sebagai kolom tingkat atas
+  dengan unique ter-scope company, tapi jalur Eloquent menyimpannya **di dalam**
+  `payload` sehingga kolomnya tidak pernah ada. Idempotensi approval hanya
+  dijaga `Company::lockForUpdate()`. Kolomnya kini ada, dibackfill dari payload,
+  dan index unique menjadi lapis kedua. Nilai tetap ditulis ke payload supaya
+  pembaca lama tidak kehilangan apa pun.
+- `production_orders` dan `production_order_lines` **ditolak** `EntitySchema`
+  karena tanpa bagian `attributes`, dan tidak pernah terdeteksi karena
+  `SchemaValidatorTest` memakai daftar entitas yang ditulis tangan. Keduanya kini
+  valid dan terdaftar.
+- **Sengaja tidak diubah:** `invoices.order_id` tetap unique **global**, bukan per
+  company. Itu referensi order dari gateway pembayaran, dan unique global itulah
+  yang mencegah webhook satu usaha mengkreditkan pembayaran usaha lain.
+  Melonggarkannya demi kerapian schema akan menjadi regresi keamanan.
+
+**Rincian jurnal: `DONE`, commit `860db02`.** `accounting_journal_lines` punya
+migration sejak `2026_09_18` tanpa schema JSON, jadi menu Jurnal hanya
+menampilkan nomor, tanggal, dan keterangan — debit dan kredit, satu-satunya
+angka di entitas itu, tidak punya layar sama sekali. Schema ditambahkan dan item
+menu "Rincian Jurnal" mengikuti pola Termin & Opname (T-45): baris punya layarnya
+sendiri, bukan memaksa layar induk merender anak.
+
+**Penyalaan kapabilitas D-64: `DONE`, commit `86505b0`.** Aturannya sengaja tidak
+memuat penilaian industri: `hr.payroll` menyala di setiap preset yang sudah punya
+`hr.employees` (31 preset), `finance.accounting` di setiap preset yang sudah punya
+`finance.cashbook` (35 preset). Yang membatasi akses tetap gerbang paket D-52 —
+`hr.payroll` Pro+Enterprise, `finance.accounting` Enterprise, keduanya sudah
+terdaftar di `BosSeedPlans`. Memutuskan di sini bahwa jenis usaha tertentu tidak
+akan pernah butuh buku besar justru mengembalikan "industri = kode" yang dilarang
+D-31. `PresetCapabilityReachTest` mengunci aturan itu dua arah. Berkas preset
+disunting per baris karena round-trip `json_encode` tidak byte-stable untuk 24
+dari 40 preset.
+
+**Fixture demo akuntansi & payroll: `DONE`.** 12 akun standar, 5 jurnal, 10 baris
+jurnal, dan payroll dua periode untuk empat tenant demo. Setiap jurnal seimbang
+debit-kredit **dan diuji**, supaya data demo tidak mengajari bentuk jurnal yang
+salah. `accounting_journals` dikeluarkan dari daftar entitas "tanpa fixture" di
+`JsonDataSourceTest` sehingga referensinya kini benar-benar diperiksa (48 → 60
+berkas). `AccountingDemoDataTest` membuka keempat layar dan memastikan angkanya
+terbaca, bukan hanya lolos validator.
+
+**Pint bersih: `DONE`, commit `c3f44a2`.** Enam pelanggaran terakhir dibereskan;
+lima berasal dari suntingan `max_users` di T-51, satu (`class_attributes_separation`
+di `LobbyNavigationTest`) sudah lama dibiarkan karena writer lain memegang
+berkasnya. `vendor/bin/pint --test` kini **PASS 516 berkas** — pertama kali bersih
+sepenuhnya.
+
+### Review `b0ef5b0` (WIP writer lain): lima cacat ditemukan dan ditutup
+
+Commit itu di-simpan apa adanya atas instruksi Bos dan belum pernah direview.
+Semua temuan di bawah terlihat pengguna, bukan catatan gaya.
+
+1. **Navigasi bawah ponsel menawarkan modul yang tidak dimiliki usaha.** Tab
+   Kasir (`/app/pos`) dan Buku Kas (`/app/accounting`) ditanam di layout tanpa
+   memeriksa kapabilitas. Preset `klinik` tidak punya `pos`, jadi klinik yang
+   membuka aplikasi dari ponsel melihat tab Kasir dan mendapat **403** saat
+   menekannya. Isinya kini diturunkan dari `DynamicMenuRegistry` lewat komponen
+   `MobileQuickNav` — sumber yang sama dengan sidebar. Registry yang gagal
+   diselesaikan menghasilkan **nol tab**, bukan halaman jatuh.
+2. **Nomor WhatsApp contoh di halaman publik.** `6281234567890` ditanam di tiga
+   tombol ajakan utama. Halamannya terlihat normal, jadi setiap klik calon
+   pelanggan mengarah ke nomor milik orang lain tanpa ada yang tahu. Nomor kini
+   dibaca dari `config('app.sales_whatsapp')`; tanpa nilai, ajakan mengarah ke
+   pendaftaran.
+3. **Quick action dashboard punya cabang mati.** Kandidat "order baru" memeriksa
+   kapabilitas `orders` yang tidak ada di `FeatureResolver::CAPABILITIES` dan
+   menunjuk `/app/orders` yang bukan rute terdaftar. Dihapus, dan ada test yang
+   menahan setiap quick action tetap menunjuk path yang ada di menu.
+4. **Kredensial di dalam repo.** `scripts/smoke_settings.py` menuliskan email
+   pilot beserta password apa adanya dan menyasar port 8010 — port server
+   produksi di mesin ini. Kredensial kini wajib dari environment, tanpa nilai
+   bawaan.
+5. **Duplikat test.** `tests/Feature/Livewire/Public/IndustryListTest.php` adalah
+   himpunan bagian dari `tests/Feature/Public/IndustryListTest.php`; dihapus.
+
+Sekalian ditutup: `DashboardComposer` memakai `InvalidArgumentException` **tanpa
+meng-import-nya** di dua cabang fail-closed yang tidak pernah diuji, jadi data
+runtime yang menyimpang dari preset akan memunculkan "kelas tidak ditemukan"
+alih-alih pesan fail-closed — tepat di jalur yang seharusnya menjelaskan masalah.
+
+Catatan positif dari review: pin `DATA_SOURCE=json` di `phpunit.xml` membuat suite
+**deterministik tanpa menyetel environment lebih dulu**. Diverifikasi dengan
+menjalankan suite tanpa variabel itu.
+
+**Paritas MySQL (T-21b) diverifikasi ulang: `DONE`, commit `5595738`.**
+Verifikasi awal T-21b dilakukan sebelum Fase 8/9, jadi `customer_invoices`,
+`cash_entries`, tiga entitas akuntansi, unique index baru, dan
+`approval_tickets.operation_id` belum pernah diuji di MySQL sama sekali.
+
+- Diuji pada **MySQL 8.4.3**: seluruh migration jalan, kolom uang menyimpan sen
+  secara utuh — termasuk `1234567890123.45` yang di SQLite kembali sebagai
+  `1234567890123.40` — dan unique ter-scope company yang ditambahkan lewat
+  `Schema::table()` benar-benar ditegakkan.
+- **Kesimpulan presisi:** batas sen yang tercatat sejak T-42 memang milik SQLite,
+  bukan schema. Dikarakterisasi eksplisit di test, bukan disembunyikan.
+- Koneksi `mysql_parity` dipisah dari `mysql` supaya pemeriksaan ini tidak pernah
+  menyentuh basis data aplikasi; basis data ujinya dibuat sendiri bila belum ada.
+  Test melewati dirinya bila MySQL tidak tersedia, jadi mesin dan CI tanpa MySQL
+  tetap hijau. `migrate:fresh` sekali per kelas (16s, bukan 50s).
+
+**Gate penutup:** `DATA_SOURCE=json php artisan test` **1.118 passed / 5.474
+assertions, 0 gagal**; `vendor/bin/pint --test` **PASS 516 berkas**;
+`migrate:fresh --seed --force` OK; `npm run build` PASS.
+
+**Yang tetap terbuka dan hanya Bos yang bisa membukanya:** kredensial Hermes
+produksi (`HUMAN:SECRET`), remote git untuk push, dan pengiriman tagihan langsung
+ke nomor pelanggan (menyentuh persetujuan pihak ketiga serta reputasi nomor WA
+tenant — keputusan bisnis, bukan task).
+
 ## READY Berikutnya
 Fase 8 (T-41..T-47) dan Fase 9 (T-48..T-58) selesai penuh; Fase 6b/katalog D-56
-sudah dibangun seluruhnya (T-28..T-35).
+sudah dibangun seluruhnya (T-28..T-35). Sisa temuan pasca-Fase 9 juga sudah
+ditutup (lihat bagian di atas).
 
 Satu-satunya task `READY` yang tersisa di `EXECUTION_PLAN.md` adalah **T-36 NLU
 Intent Router (WA)** di §Fase 7 (D-60 masih *draft*). T-37..T-40 `BLOCKED` di
@@ -801,14 +927,12 @@ belakangnya. Catatan yang relevan: D-66 menjadikan T-37 (pemilih konteks company
 prasyarat untuk melonggarkan fail-closed nomor WA yang terdaftar di lebih dari
 satu usaha.
 
-Kandidat lain, belum diqueue dan belum diputuskan Bos:
+Menunggu Bos, bukan menunggu pekerjaan:
 
-- Unique index untuk `chart_of_accounts.account_code` dan
-  `accounting_journals.journal_number` — schema menyatakan `unique`, migration
-  belum menegakkannya (gap data finansial, temuan T-54).
-- `accounting_journal_lines.schema.json` supaya debit/kredit terlihat layar
-  generik, plus fixture demo untuk tiga entitas T-54 (kini kosong di tenant demo).
-- Penyalaan `finance.accounting` + `hr.payroll` di preset mengikuti gerbang paket
-  D-52 (`hr.payroll` Pro+Enterprise, `finance.accounting` Enterprise).
-- Review `b0ef5b0` (WIP writer lain yang di-commit apa adanya).
-- Aktivasi Hermes produksi untuk T-49/T-51/T-58 — `HUMAN:SECRET`, butuh Bos.
+- Aktivasi Hermes produksi untuk T-49/T-51/T-58 — `HUMAN:SECRET`. Sampai itu ada,
+  ketiganya hanya terbukti lewat `FakeHermesNodeClient`.
+- Remote git belum dikonfigurasi; seluruh pekerjaan masih commit lokal.
+- Pengiriman tagihan langsung ke nomor pelanggan (UR-05) — menyentuh persetujuan
+  pihak ketiga dan reputasi nomor WA tenant.
+- Satu putaran manual dari HP pada tenant nyata. Ini sisa risiko terbesar:
+  1.118 test hijau tidak pernah salah menekan tombol di layar sempit.
