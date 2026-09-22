@@ -9,7 +9,9 @@
         "inventory": true,
         "pos": true,
         "finance.cashbook": true,
+        "finance.accounting": true,
         "hr.employees": true,
+        "hr.payroll": true,
         "system.ai_agent": true,
         "approval_flow": true
     },

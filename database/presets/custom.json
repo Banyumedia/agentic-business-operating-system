@@ -5,6 +5,7 @@
     "capabilities": {
         "contacts": true,
         "finance.cashbook": true,
+        "finance.accounting": true,
         "approval_flow": true
     },
     "terminology": {

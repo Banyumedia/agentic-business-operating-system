@@ -9,6 +9,7 @@
         "pos": true,
         "milestone_billing": true,
         "hr.employees": true,
+        "hr.payroll": true,
         "approval_flow": true,
         "system.ai_agent": true
     },

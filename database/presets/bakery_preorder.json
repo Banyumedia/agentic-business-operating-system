@@ -9,6 +9,7 @@
         "inventory.batch_expiry": true,
         "pos": true,
         "hr.employees": true,
+        "hr.payroll": true,
         "approval_flow": true,
         "system.ai_agent": true
     },

@@ -11,6 +11,7 @@
         "pharmacy.prescription": true,
         "pos": true,
         "finance.cashbook": true,
+        "finance.accounting": true,
         "approval_flow": true,
         "system.ai_agent": true
     },

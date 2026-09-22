@@ -10,7 +10,9 @@
         "pos": true,
         "approval_flow": true,
         "finance.cashbook": true,
+        "finance.accounting": true,
         "hr.employees": true,
+        "hr.payroll": true,
         "system.ai_agent": true
     },
     "terminology": {

@@ -7,7 +7,9 @@
         "deals": true,
         "milestone_billing": true,
         "finance.cashbook": true,
+        "finance.accounting": true,
         "hr.employees": true,
+        "hr.payroll": true,
         "approval_flow": true,
         "system.ai_agent": true
     },

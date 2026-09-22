@@ -8,7 +8,8 @@
         "bookings.deposit": true,
         "projects": true,
         "approval_flow": true,
-        "finance.cashbook": true
+        "finance.cashbook": true,
+        "finance.accounting": true
     },
     "terminology": {
         "contact": "Klien",
