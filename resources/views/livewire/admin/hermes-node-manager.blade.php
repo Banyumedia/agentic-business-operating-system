@@ -51,9 +51,31 @@
                 </div>
 
                 <div>
-                    <label for="node-secret-ref" class="block text-sm font-medium text-[var(--erp-text)]">Referensi Rahasia</label>
-                    <input id="node-secret-ref" type="text" wire:model="apiSecretReference" placeholder="node_lokal" class="mt-1 w-full min-h-11 rounded border border-[var(--erp-border)] bg-[var(--erp-surface)] px-3 font-mono text-sm text-[var(--erp-text)]">
+                    <label for="node-secret-ref" class="block text-sm font-medium text-[var(--erp-text)]">Referensi Rahasia Bridge</label>
+                    <input id="node-secret-ref" type="text" wire:model="apiSecretReference" placeholder="node_lokal atau none" class="mt-1 w-full min-h-11 rounded border border-[var(--erp-border)] bg-[var(--erp-surface)] px-3 font-mono text-sm text-[var(--erp-text)]">
                     @error('apiSecretReference') <p class="mt-1 text-sm text-[var(--erp-danger)]">{{ $message }}</p> @enderror
+                </div>
+
+                {{-- Control plane adalah proses lain di port lain, dan tokennya setara
+                     terminal di host Hermes. Kolomnya sengaja dipisah dari bridge supaya
+                     token tidak pernah terkirim ke port yang tidak memintanya. --}}
+                <div class="md:col-span-2 grid grid-cols-1 gap-4 md:grid-cols-2 rounded border border-dashed border-[var(--erp-border)] p-4">
+                    <div class="md:col-span-2">
+                        <h3 class="text-sm font-semibold text-[var(--erp-text)]">Control Plane (dashboard API Hermes)</h3>
+                        <p class="mt-1 text-xs text-[var(--erp-text-secondary)]">
+                            Opsional. Kosongkan bila node ini hanya menjalankan bridge WhatsApp. Berbeda dari alamat bridge di atas: port ini butuh token, dan tokennya berwenang luas di host Hermes — jangan pernah diekspos ke internet tanpa autentikasi.
+                        </p>
+                    </div>
+                    <div>
+                        <label for="node-control-url" class="block text-sm font-medium text-[var(--erp-text)]">Alamat Control Plane</label>
+                        <input id="node-control-url" type="text" wire:model="controlUrl" placeholder="http://127.0.0.1:8765" class="mt-1 w-full min-h-11 rounded border border-[var(--erp-border)] bg-[var(--erp-surface)] px-3 font-mono text-sm text-[var(--erp-text)]">
+                        @error('controlUrl') <p class="mt-1 text-sm text-[var(--erp-danger)]">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="node-control-secret-ref" class="block text-sm font-medium text-[var(--erp-text)]">Referensi Rahasia Control Plane</label>
+                        <input id="node-control-secret-ref" type="text" wire:model="controlSecretReference" placeholder="control_lokal" class="mt-1 w-full min-h-11 rounded border border-[var(--erp-border)] bg-[var(--erp-surface)] px-3 font-mono text-sm text-[var(--erp-text)]">
+                        @error('controlSecretReference') <p class="mt-1 text-sm text-[var(--erp-danger)]">{{ $message }}</p> @enderror
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -107,6 +129,14 @@
                             </span>
                         </div>
                         <p class="mt-1 font-mono text-xs text-[var(--erp-text-secondary)] truncate">{{ $node->api_url }}</p>
+                        {{-- Nama referensi rahasianya saja; nilainya tidak pernah dibaca di sini. --}}
+                        <p class="mt-1 text-xs {{ $node->control_url ? 'text-[var(--erp-text-secondary)]' : 'text-[var(--erp-text-secondary)] italic' }}">
+                            @if ($node->control_url)
+                                Control plane: <span class="font-mono">{{ $node->control_url }}</span>
+                            @else
+                                Control plane belum diisi — node ini hanya menjalankan bridge.
+                            @endif
+                        </p>
 
                         @if (isset($health[$node->id]))
                             <p class="mt-2 text-xs {{ $health[$node->id]['ok'] ? 'text-[var(--erp-success)]' : 'text-[var(--erp-danger)]' }}">

@@ -166,6 +166,83 @@ class HermesNodeRegistrationTest extends TestCase
         $this->assertCount(1, $component->get('profiles'));
     }
 
+    public function test_super_admin_can_record_the_control_plane_address(): void
+    {
+        // T-82/D-72: alamat control plane **terpisah** dari alamat bridge. Tanpa kolom
+        // sendiri, satu-satunya cara mengisinya adalah lewat basis data.
+        $this->actingAs($this->admin);
+
+        Livewire::test(HermesNodeManager::class)
+            ->set('name', 'Host Lokal')
+            ->set('apiUrl', 'http://127.0.0.1:3000')
+            ->set('apiSecretReference', 'none')
+            ->set('controlUrl', 'https://kontrol.uji.test')
+            ->set('controlSecretReference', 'control_lokal')
+            ->call('saveNode')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('hermes_nodes', [
+            'name' => 'Host Lokal',
+            'api_url' => 'http://127.0.0.1:3000',
+            'control_url' => 'https://kontrol.uji.test',
+            'control_secret_reference' => 'control_lokal',
+        ]);
+    }
+
+    public function test_a_node_may_run_only_a_bridge_without_a_control_plane(): void
+    {
+        // Keadaan hari ini: bridge ada, dashboard API belum bisa dipanggil mesin
+        // (menunggu H-05). Node seperti itu tetap sah.
+        $this->actingAs($this->admin);
+
+        Livewire::test(HermesNodeManager::class)
+            ->set('name', 'Bridge Saja')
+            ->set('apiUrl', 'http://127.0.0.1:3000')
+            ->set('apiSecretReference', 'none')
+            ->set('controlUrl', '')
+            ->set('controlSecretReference', '')
+            ->call('saveNode')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('hermes_nodes', ['name' => 'Bridge Saja', 'control_url' => null]);
+    }
+
+    public function test_negative_a_public_control_plane_without_a_secret_reference_is_refused(): void
+    {
+        // Aturan yang sama dengan yang ditegakkan `HermesControlPlaneClient`. Menolaknya
+        // di sini mencegah baris yang tampak sah tetapi selalu gagal saat dipakai -
+        // dan yang lebih buruk, mencegah operator menyangka control plane publik tanpa
+        // token itu keadaan yang wajar. Token dashboard setara terminal di host Hermes.
+        $this->actingAs($this->admin);
+
+        Livewire::test(HermesNodeManager::class)
+            ->set('name', 'Kontrol Telanjang')
+            ->set('apiUrl', 'http://127.0.0.1:3000')
+            ->set('apiSecretReference', 'none')
+            ->set('controlUrl', 'https://kontrol.publik.test')
+            ->set('controlSecretReference', '')
+            ->call('saveNode')
+            ->assertHasErrors('controlSecretReference');
+
+        $this->assertSame(0, HermesNode::query()->count());
+    }
+
+    public function test_negative_a_control_plane_address_without_a_scheme_is_refused(): void
+    {
+        $this->actingAs($this->admin);
+
+        Livewire::test(HermesNodeManager::class)
+            ->set('name', 'Kontrol Salah')
+            ->set('apiUrl', 'http://127.0.0.1:3000')
+            ->set('apiSecretReference', 'none')
+            ->set('controlUrl', 'kontrol.tanpa.skema')
+            ->set('controlSecretReference', 'control_lokal')
+            ->call('saveNode')
+            ->assertHasErrors('controlUrl');
+
+        $this->assertSame(0, HermesNode::query()->count());
+    }
+
     public function test_super_admin_can_refresh_profile_status_from_the_page(): void
     {
         // Status profil tidak boleh hanya bisa diubah lewat basis data atau lewat

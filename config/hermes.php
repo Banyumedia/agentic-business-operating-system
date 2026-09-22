@@ -75,6 +75,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Control Plane (dashboard API Hermes)
+    |--------------------------------------------------------------------------
+    |
+    | Alamat dan rahasia control plane **terpisah** dari bridge (D-72 butir 4).
+    | `hermes_nodes.api_url` adalah bridge WhatsApp: loopback, tanpa autentikasi,
+    | satu port per nomor. Dashboard API adalah proses lain, di port lain, dan
+    | butuh token bearer - token yang setara eksekusi kode di host Hermes, karena
+    | port yang sama juga menyajikan tulis-berkas dan terminal.
+    |
+    | Karena itu: nilai rahasia **tidak pernah** di basis data, hanya namanya;
+    | daftar path yang boleh dipanggil adalah konstanta di `ControlPlanePaths`,
+    | bukan konfigurasi yang bisa diubah lewat `.env`.
+    |
+    */
+
+    'control' => [
+        'timeout' => (int) env('HERMES_CONTROL_TIMEOUT', 10),
+    ],
+
+    'control_secrets' => array_filter([
+        'control_lokal' => env('HERMES_CONTROL_LOKAL_SECRET'),
+        'control_01' => env('HERMES_CONTROL_01_SECRET'),
+    ]),
+
+    /*
+    |--------------------------------------------------------------------------
     | Hermes Scoped Profiles & Guardrails Architecture
     |--------------------------------------------------------------------------
     |

@@ -46,6 +46,23 @@ class HermesNodeManager extends Component
      */
     public string $apiSecretReference = '';
 
+    /**
+     * Alamat **dashboard API** Hermes, bukan bridge (D-72 butir 4).
+     *
+     * `apiUrl` di atas adalah bridge WhatsApp: loopback, tanpa autentikasi, satu port
+     * per nomor. Control plane adalah proses lain di port lain yang **butuh token**,
+     * dan token itu setara terminal di host Hermes - karena port yang sama juga
+     * menyajikan tulis-berkas dan `/api/tools/terminal/*`. Karena itu keduanya tidak
+     * boleh berbagi kolom: satu salah isi berarti token dikirim ke port yang tidak
+     * memintanya.
+     *
+     * Boleh kosong: node yang hanya menjalankan bridge tetap sah, dan itu keadaan
+     * hari ini selama H-05 belum mendarat.
+     */
+    public string $controlUrl = '';
+
+    public string $controlSecretReference = '';
+
     public int $maxCapacity = 100;
 
     public string $status = 'active';
@@ -138,8 +155,19 @@ class HermesNodeManager extends Component
         $this->name = $node->name;
         $this->apiUrl = $node->api_url;
         $this->apiSecretReference = (string) $node->api_secret_reference;
+        $this->controlUrl = (string) ($node->control_url ?? '');
+        $this->controlSecretReference = (string) ($node->control_secret_reference ?? '');
         $this->maxCapacity = (int) $node->max_capacity;
         $this->status = $node->status;
+    }
+
+    private function controlIsLoopback(): bool
+    {
+        return in_array(
+            parse_url($this->controlUrl, PHP_URL_HOST),
+            ['127.0.0.1', 'localhost', '::1', '[::1]'],
+            true,
+        );
     }
 
     public function cancelEdit(): void
@@ -159,14 +187,29 @@ class HermesNodeManager extends Component
             // Tanpa referensi rahasia node tidak akan pernah bisa dipanggil, dan
             // kegagalannya baru terlihat jauh di belakang saat mengirim.
             'apiSecretReference' => ['required', 'string', 'max:191'],
+            // Control plane opsional - node yang hanya menjalankan bridge tetap sah.
+            'controlUrl' => ['nullable', 'url:http,https', 'max:191'],
+            'controlSecretReference' => ['nullable', 'string', 'max:191'],
             'maxCapacity' => ['required', 'integer', 'min:1'],
             'status' => ['required', 'in:active,maintenance,down'],
         ]);
+
+        // Aturan yang sama ditegakkan `HermesControlPlaneClient`: control plane tanpa
+        // token hanya sah pada loopback. Menolaknya di sini bukan duplikasi yang
+        // mubazir - tanpa ini operator menyimpan baris yang selalu gagal saat dipakai,
+        // dan bisa menyangka control plane publik tanpa token itu keadaan yang wajar.
+        if ($this->controlUrl !== '' && trim($this->controlSecretReference) === '' && ! $this->controlIsLoopback()) {
+            $this->addError('controlSecretReference', 'Control plane non-loopback wajib punya referensi rahasia.');
+
+            return;
+        }
 
         $attributes = [
             'name' => $this->name,
             'api_url' => $this->apiUrl,
             'api_secret_reference' => $this->apiSecretReference,
+            'control_url' => $this->controlUrl !== '' ? $this->controlUrl : null,
+            'control_secret_reference' => trim($this->controlSecretReference) !== '' ? $this->controlSecretReference : null,
             'max_capacity' => $this->maxCapacity,
             'status' => $this->status,
         ];
@@ -190,6 +233,8 @@ class HermesNodeManager extends Component
         $this->name = '';
         $this->apiUrl = '';
         $this->apiSecretReference = '';
+        $this->controlUrl = '';
+        $this->controlSecretReference = '';
         $this->maxCapacity = 100;
         $this->status = 'active';
     }
