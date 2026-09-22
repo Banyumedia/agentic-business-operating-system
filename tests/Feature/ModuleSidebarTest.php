@@ -4,11 +4,13 @@ namespace Tests\Feature;
 
 use App\Contracts\CompanyContext;
 use App\Contracts\CompanySettingsStore;
+use App\Http\Controllers\App\ModuleController;
 use App\Livewire\CommandPalette;
 use App\Livewire\Screens\ListScreen;
 use App\Services\DynamicMenuRegistry;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use ReflectionMethod;
 use Tests\TestCase;
 
 class ModuleSidebarTest extends TestCase
@@ -65,7 +67,9 @@ class ModuleSidebarTest extends TestCase
                 ->assertViewHas('screenComponent', $expected);
         }
 
-        // Pola yang belum punya komponen tidak boleh error: jatuh ke kartu kontrak.
+        // T-54: pola `report` sekarang punya komponennya, jadi Laporan Keuangan
+        // tidak lagi jatuh ke kartu kontrak. Konvensinya sama - tidak ada daftar
+        // pola di ModuleController maupun di Blade yang perlu disunting.
         app(CompanySettingsStore::class)->update('bengkel-arka', static function (array $settings): array {
             $settings['features']['finance.accounting'] = true;
 
@@ -74,9 +78,21 @@ class ModuleSidebarTest extends TestCase
 
         $this->get('/app/accounting/reports?company=bengkel-arka')
             ->assertOk()
-            ->assertViewHas('screenComponent', null)
-            ->assertSee('Kontrak layar aktif')
-            ->assertSee('report');
+            ->assertViewHas('screenComponent', 'screens.report-screen')
+            ->assertDontSee('Kontrak layar aktif');
+    }
+
+    public function test_screen_pattern_without_a_component_falls_back_to_the_contract_card(): void
+    {
+        // Jaring pengaman konvensi: pola yang komponennya belum ada tidak boleh
+        // error. Seluruh pola di katalog registry sudah punya komponen, jadi
+        // fallback-nya dibuktikan lewat definisi pola buatan - kalau `screen`
+        // berikutnya ditambahkan sebelum kelasnya, halamannya tetap terbuka.
+        $controller = new ReflectionMethod(ModuleController::class, 'screenComponent');
+
+        $this->assertSame('screens.list-screen', $controller->invoke(new ModuleController, 'list'));
+        $this->assertNull($controller->invoke(new ModuleController, 'belum-ada'));
+        $this->assertNull($controller->invoke(new ModuleController, '../Admin/Anything'));
     }
 
     public function test_unknown_module_and_unknown_subpath_are_not_found(): void

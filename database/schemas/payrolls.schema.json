@@ -1,0 +1,138 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "payrolls",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "employee_id",
+    "period_month",
+    "gross_salary",
+    "net_salary"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "employee_id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "period_month": {
+      "type": "string",
+      "length": 7
+    },
+    "gross_salary": {
+      "type": "number",
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "deductions": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "bpjs_kesehatan": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "bpjs_ketenagakerjaan": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "pph21": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "net_salary": {
+      "type": "number",
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "status": {
+      "type": "string",
+      "default": "draft",
+      "length": 16,
+      "enum": [
+        "draft",
+        "paid"
+      ]
+    },
+    "paid_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [
+    {
+      "fields": [
+        "period_month"
+      ],
+      "company_scoped": true
+    },
+    {
+      "fields": [
+        "status"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [
+    {
+      "fields": [
+        "employee_id",
+        "period_month"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "references": {
+    "employee_id": {
+      "entity": "employees",
+      "on_delete": "cascade",
+      "assignable": true,
+      "term": "staff"
+    }
+  }
+}

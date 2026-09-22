@@ -1,0 +1,84 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "chart_of_accounts",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "account_code",
+    "name",
+    "type"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "account_code": {
+      "type": "string",
+      "length": 32
+    },
+    "name": {
+      "type": "string",
+      "length": 191
+    },
+    "type": {
+      "type": "string",
+      "length": 32,
+      "enum": [
+        "asset",
+        "liability",
+        "equity",
+        "revenue",
+        "expense"
+      ]
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "length": 191
+    },
+    "external_reference": {
+      "type": "string",
+      "nullable": true,
+      "length": 128
+    },
+    "custom": {
+      "type": "object",
+      "nullable": true
+    }
+  },
+  "indexes": [
+    {
+      "fields": [
+        "type"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [
+    {
+      "fields": [
+        "account_code"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "references": {}
+}

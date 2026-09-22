@@ -312,9 +312,22 @@ class DynamicMenuRegistry
                     // terbitkan ke pelanggannya, BUKAN `invoices` yang merupakan
                     // tagihan langganan platform (D-23).
                     $this->item('invoices', ['term' => 'invoices'], '/app/accounting/invoices', 'contract', 'customer_invoices', [], ['milestone_billing', 'pos']),
+                    // Laporannya basis kas (D-62), jadi entity-nya memang buku
+                    // kas: judul dan sumber angkanya harus sepakat.
                     $this->item('reports', 'Laporan Keuangan', '/app/accounting/reports', 'report', 'cash_entries', ['finance.accounting']),
-                    $this->item('coa', 'Bagan Akun', '/app/accounting/coa', 'list', 'cash_entries', ['finance.accounting']),
-                    $this->item('journals', 'Jurnal', '/app/accounting/journals', 'ledger', 'cash_entries', ['finance.accounting']),
+                    // D-64: sebelumnya menunjuk `cash_entries`, sehingga layar
+                    // berjudul Bagan Akun menyajikan entri kas - operator tidak
+                    // punya jalan melihat maupun menambah akun sama sekali.
+                    $this->item('coa', 'Bagan Akun', '/app/accounting/coa', 'list', 'chart_of_accounts', ['finance.accounting']),
+                    // Jurnal juga menunjuk `cash_entries` dengan pola `ledger`.
+                    // Dua-duanya salah: entity-nya menduplikasi Buku Kas, dan
+                    // `ledger` menurunkan kolom nilai dari schema - header
+                    // jurnal tidak punya kolom uang (debit/kredit ada di
+                    // `accounting_journal_lines`), jadi saldo berjalannya
+                    // menjumlahkan id. Pola `list` menyajikan dokumennya apa
+                    // adanya; keseimbangan debit-kredit tetap dijaga
+                    // JournalService, bukan layar.
+                    $this->item('journals', 'Jurnal', '/app/accounting/journals', 'list', 'accounting_journals', ['finance.accounting']),
                 ],
             ],
             'hrd' => [
@@ -325,7 +338,11 @@ class DynamicMenuRegistry
                     $this->item(null, ['term' => 'staffs', 'prefix' => 'Data '], '/app/hrd', 'list', 'employees', ['hr.employees']),
                     $this->item('employees', ['term' => 'staffs', 'prefix' => 'Data '], '/app/hrd/employees', 'list', 'employees', ['hr.employees'], [], false),
                     $this->item('attendance', 'Presensi & Cuti', '/app/hrd/attendance', 'list', 'timesheet_entries', ['hr.employees']),
-                    $this->item('payroll', 'Payroll', '/app/hrd/payroll', 'list', 'employees', ['hr.payroll']),
+                    // D-64: sebelumnya menunjuk `employees`, jadi Payroll hanya
+                    // menampilkan daftar orang - periode, gaji, dan status bayar
+                    // tidak ada tempatnya. Entity `payrolls` yang memegang angka
+                    // per periode.
+                    $this->item('payroll', 'Payroll', '/app/hrd/payroll', 'list', 'payrolls', ['hr.payroll']),
                 ],
             ],
             'settings' => [
