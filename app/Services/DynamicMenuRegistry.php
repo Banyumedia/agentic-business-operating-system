@@ -328,6 +328,12 @@ class DynamicMenuRegistry
                     // adanya; keseimbangan debit-kredit tetap dijaga
                     // JournalService, bukan layar.
                     $this->item('journals', 'Jurnal', '/app/accounting/journals', 'list', 'accounting_journals', ['finance.accounting']),
+                    // Debit dan kredit hidup di baris, bukan di header jurnal.
+                    // Tanpa item ini angka jurnal tidak punya layar sama sekali:
+                    // "Jurnal" hanya menampilkan nomor, tanggal, dan keterangan.
+                    // Pola yang sama dengan Termin & Opname (T-45) - baris punya
+                    // layar `list` sendiri, bukan memaksa layar induk merender anak.
+                    $this->item('journal-lines', 'Rincian Jurnal', '/app/accounting/journal-lines', 'list', 'accounting_journal_lines', ['finance.accounting']),
                 ],
             ],
             'hrd' => [

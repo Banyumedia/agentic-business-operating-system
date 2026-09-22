@@ -1,0 +1,90 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "accounting_journal_lines",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "journal_id",
+    "account_id",
+    "debit",
+    "credit"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "journal_id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "account_id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "project_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "debit": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "credit": {
+      "type": "number",
+      "default": 0,
+      "precision": 18,
+      "scale": 2,
+      "minimum": 0
+    },
+    "description": {
+      "type": "string",
+      "nullable": true,
+      "length": 1000
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {},
+  "indexes": [
+    {
+      "fields": [
+        "journal_id"
+      ],
+      "company_scoped": true
+    },
+    {
+      "fields": [
+        "account_id"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [],
+  "references": {
+    "journal_id": {
+      "entity": "accounting_journals",
+      "on_delete": "cascade"
+    },
+    "account_id": {
+      "entity": "chart_of_accounts",
+      "on_delete": "restrict",
+      "assignable": true,
+      "label": "Akun"
+    },
+    "project_id": {
+      "entity": "projects",
+      "on_delete": "set_null",
+      "assignable": true,
+      "term": "project"
+    }
+  }
+}
