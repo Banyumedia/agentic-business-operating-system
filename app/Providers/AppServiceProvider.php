@@ -8,7 +8,7 @@ use App\Http\Middleware\EnsureCompanyAccess;
 use App\Http\Middleware\SetCurrentCompany;
 use App\Services\CompanyPresetResolver;
 use App\Services\FeatureResolver;
-use App\Services\Hermes\FakeHermesNodeClient;
+use App\Services\Hermes\PlatformHermesNodeClient;
 use App\Services\TerminologyResolver;
 use App\Services\ThemeRegistry;
 use Illuminate\Support\Facades\Blade;
@@ -31,7 +31,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(CompanyPresetResolver::class);
         $this->app->scoped(FeatureResolver::class);
         $this->app->scoped(TerminologyResolver::class);
-        $this->app->singleton(HermesNodeClient::class, FakeHermesNodeClient::class);
+        // Lajur WhatsApp platform (dunning langganan D-23/D-49). Sebelum T-69 ini
+        // dibind ke `FakeHermesNodeClient` yang hanya menulis log lalu
+        // mengembalikan `true`, sehingga tidak ada pelanggan yang pernah menerima
+        // peringatan dan tidak ada yang tahu. Fake-nya tetap ada dan dipakai test
+        // yang memang menguji tangga dunning, bukan transportnya - tetapi harus
+        // **dinyatakan** di test itu, bukan menjadi bawaan aplikasi.
+        $this->app->singleton(HermesNodeClient::class, PlatformHermesNodeClient::class);
     }
 
     /**

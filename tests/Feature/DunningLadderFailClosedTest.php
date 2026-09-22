@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Contracts\CompanyContext;
+use App\Contracts\HermesNodeClient;
 use App\Models\Company;
 use App\Models\CompanyMembership;
 use App\Models\MembershipPlan;
 use App\Models\User;
 use App\Services\Billing\DunningLadder;
 use App\Services\Eloquent\EloquentCompanyContext;
+use App\Services\Hermes\FakeHermesNodeClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
@@ -45,6 +47,14 @@ class DunningLadderFailClosedTest extends TestCase
         parent::setUp();
         config(['agentic.data_source' => 'eloquent']);
         $this->app->bind(CompanyContext::class, EloquentCompanyContext::class);
+
+        // T-69: transport WhatsApp platform dipalsukan **secara eksplisit**. Yang
+        // diuji di berkas ini adalah penegakan status dan pencatatan peringatan,
+        // bukan apakah pesannya benar-benar keluar; lajur sungguhannya diuji
+        // `Tests\Feature\Hermes\PlatformDeliveryTest`. Sejak T-69 pencatatan
+        // peringatan bergantung pada keberhasilan kirim, jadi transport yang
+        // berhasil harus dinyatakan, tidak lagi diwarisi dari bawaan aplikasi.
+        $this->app->instance(HermesNodeClient::class, new FakeHermesNodeClient);
 
         $this->owner = User::factory()->create(['wa_number' => '08123456789']);
         $this->plan = MembershipPlan::factory()->create(['features' => ['contacts', 'deals', 'pos']]);

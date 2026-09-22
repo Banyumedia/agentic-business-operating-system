@@ -22,15 +22,28 @@ class BillingCheckExpiring extends Command
             ->whereDate('due_date', Carbon::now()->addDays(3)->toDateString())
             ->get();
 
+        $undelivered = 0;
+
         foreach ($h3Invoices as $invoice) {
             $company = $invoice->company;
             $owner = $company->owner;
             if ($owner && $owner->wa_number) {
-                $hermesClient->sendWhatsApp($owner->wa_number, sprintf(
+                $delivered = $hermesClient->sendWhatsApp($owner->wa_number, sprintf(
                     'Tagihan langganan BOS Anda (Invoice %s) akan jatuh tempo dalam 3 hari. Segera lakukan pembayaran.',
                     $invoice->order_id
                 ));
+
+                // Hasilnya diperiksa, bukan dibuang. Sebelum T-69 lajur platform
+                // selalu mengembalikan `true` tanpa mengirim apa pun, jadi peringatan
+                // H-3 yang tidak pernah sampai tidak meninggalkan jejak sama sekali.
+                $undelivered += $delivered ? 0 : 1;
             }
+        }
+
+        if ($undelivered > 0) {
+            // Bukan kegagalan perintah: tagihan tetap harus diproses walau
+            // notifikasinya gagal, dan penjadwal tidak perlu dibanjiri alarm.
+            $this->warn("Peringatan H-3 gagal terkirim untuk {$undelivered} tagihan. Periksa log lajur WhatsApp platform.");
         }
 
         // 2. Process overdue invoices for Dunning Ladder

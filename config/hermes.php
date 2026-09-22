@@ -48,6 +48,26 @@ return [
         'ready_statuses' => ['paired', 'connected', 'active'],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Bot Milik Platform
+    |--------------------------------------------------------------------------
+    |
+    | Kita punya dua nomor: bot dev (`primary`, internal, toolset penuh) dan bot
+    | CS (`addon`, publik, baca-saja). Pesan platform ke pelanggan - dunning
+    | langganan D-23/D-49 - keluar dari **bot CS**.
+    |
+    | Memakai bot dev untuk itu punya dua akibat yang tidak bisa ditarik kembali:
+    | nomor internal kita beredar ke pelanggan, dan pelanggan mendapat kanal ke
+    | bot yang berwenang menjalankan perintah. Karena itu tidak ada jatuh kembali
+    | ke `primary` - lihat `PlatformHermesNodeClient`.
+    |
+    */
+
+    'platform' => [
+        'sender_profile_type' => env('HERMES_PLATFORM_SENDER_TYPE', 'addon'),
+    ],
+
     'node_secrets' => array_filter([
         'node_lokal' => env('HERMES_NODE_LOKAL_SECRET'),
         'node_01' => env('HERMES_NODE_01_SECRET'),

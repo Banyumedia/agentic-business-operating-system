@@ -29,24 +29,21 @@ class DunningLadder
             if ($membership->status !== 'frozen') {
                 $membership->update(['status' => 'frozen']);
             }
-            if ($daysOverdue === 30) {
-                $this->notify($company, 'Peringatan 1: Akun Anda dibekukan karena tagihan menunggak 30 hari.');
+            if ($daysOverdue === 30 && $this->notify($company, 'Peringatan 1: Akun Anda dibekukan karena tagihan menunggak 30 hari.')) {
                 $this->recordNotification($membership);
             }
         } elseif ($daysOverdue >= 60 && $daysOverdue < 83) {
             if ($membership->status !== 'frozen') {
                 $membership->update(['status' => 'frozen']);
             }
-            if ($daysOverdue === 60) {
-                $this->notify($company, 'Peringatan 2: Akun Anda menunggak 60 hari. Data Anda berisiko dihapus dalam 30 hari.');
+            if ($daysOverdue === 60 && $this->notify($company, 'Peringatan 2: Akun Anda menunggak 60 hari. Data Anda berisiko dihapus dalam 30 hari.')) {
                 $this->recordNotification($membership);
             }
         } elseif ($daysOverdue >= 83 && $daysOverdue < 90) {
             if ($membership->status !== 'frozen') {
                 $membership->update(['status' => 'frozen']);
             }
-            if ($daysOverdue === 83) {
-                $this->notify($company, 'Peringatan 3: H-7 penghapusan data permanen. Segera lakukan pembayaran.');
+            if ($daysOverdue === 83 && $this->notify($company, 'Peringatan 3: H-7 penghapusan data permanen. Segera lakukan pembayaran.')) {
                 $this->recordNotification($membership);
             }
         } elseif ($daysOverdue >= 90) {
@@ -78,12 +75,30 @@ class DunningLadder
         $this->notify($company, 'Pembayaran berhasil. Layanan telah aktif kembali.');
     }
 
-    private function notify(Company $company, string $message): void
+    /**
+     * Mengembalikan apakah pesannya **benar-benar** terkirim.
+     *
+     * Penting karena `recordNotification()` menulis `dunning_notified_at`, dan
+     * cabang H+90 memakai "sudah 3 peringatan" sebagai dasar company boleh dihapus.
+     * Selama lajur platform dilayani fake yang selalu berhasil, perbedaan ini tidak
+     * terlihat; dengan lajur yang nyata (T-69), peringatan yang gagal terkirim tidak
+     * boleh ikut dihitung. Akibat yang diterima sadar: tanpa bot platform yang siap,
+     * tangga ini tidak akan pernah sampai ke penghapusan data - dan itu arah yang
+     * benar.
+     */
+    private function notify(Company $company, string $message): bool
     {
         $owner = $company->owner;
-        if ($owner && $owner->wa_number) {
-            $this->hermesClient->sendWhatsApp($owner->wa_number, $message);
+
+        if (! $owner || ! $owner->wa_number) {
+            Log::warning('Notifikasi dunning tidak dikirim: owner tidak punya nomor WhatsApp.', [
+                'company_id' => $company->id,
+            ]);
+
+            return false;
         }
+
+        return $this->hermesClient->sendWhatsApp($owner->wa_number, $message);
     }
 
     private function recordNotification($membership): void

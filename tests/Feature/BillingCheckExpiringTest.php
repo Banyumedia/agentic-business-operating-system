@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\HermesNodeClient;
 use App\Models\Company;
 use App\Models\CompanyMembership;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Services\Hermes\FakeHermesNodeClient;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +16,21 @@ use Tests\TestCase;
 class BillingCheckExpiringTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // T-69: bawaan `App\Contracts\HermesNodeClient` sekarang
+        // `PlatformHermesNodeClient` yang benar-benar memanggil bridge. Test ini
+        // menguji **tangga dunning**, bukan transportnya, jadi transport dipalsukan
+        // di sini secara **eksplisit**.
+        //
+        // Sebelumnya fake itu adalah bawaan aplikasi, dan test ini mengunci teks
+        // "FAKE WA to ..." - artinya yang terbukti selama ini adalah fake-nya, bukan
+        // lajurnya. Lajur sungguhan diuji `Tests\Feature\Hermes\PlatformDeliveryTest`.
+        $this->app->instance(HermesNodeClient::class, new FakeHermesNodeClient);
+    }
 
     public function test_h3_warning_sent(): void
     {
