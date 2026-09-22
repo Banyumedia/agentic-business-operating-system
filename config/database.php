@@ -64,6 +64,30 @@ return [
             ]) : [],
         ],
 
+        /*
+         * Koneksi khusus pemeriksaan paritas MySQL (T-21b, B-01).
+         *
+         * Dev dan test berjalan di SQLite, jadi tidak ada yang membuktikan
+         * migration Schema Builder benar-benar jalan di MySQL maupun bahwa
+         * kolom uang menyimpan sen secara utuh di sana. Koneksi ini memakai
+         * basis data terpisah dan sengaja dipisahkan dari `mysql` agar
+         * pemeriksaan paritas tidak pernah menyentuh basis data aplikasi.
+         */
+        'mysql_parity' => [
+            'driver' => 'mysql',
+            'host' => env('PARITY_DB_HOST', '127.0.0.1'),
+            'port' => env('PARITY_DB_PORT', '3306'),
+            'database' => env('PARITY_DB_DATABASE', 'agentic_bos_parity'),
+            'username' => env('PARITY_DB_USERNAME', 'root'),
+            'password' => env('PARITY_DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),
