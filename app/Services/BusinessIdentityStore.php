@@ -91,9 +91,24 @@ class BusinessIdentityStore
             return TaxProfile::nonTaxable();
         }
 
-        $rate = $identity['tax_rate'] ?? self::DEFAULT_RATE;
+        // Tarif untuk tenant taxable wajib eksplisit. Sebelumnya tarif yang
+        // hilang jatuh ke DEFAULT_RATE lewat `?? 0.11`, tetapi cabang itu tidak
+        // menyala untuk nilai `0.0` (kolom Eloquent berdefault `0.00`), sehingga
+        // tenant taxable diam-diam memungut 0% sementara jalur JSON tanpa tarif
+        // menampilkan 11% — dua sumber data menjawab beda. PKP yang memungut 0%
+        // adalah konfigurasi mustahil, jadi tarif null maupun 0 DITOLAK, bukan
+        // ditambal default (D-74/TX-01).
+        $rate = $identity['tax_rate'] ?? null;
+        if ($rate === null) {
+            throw new InvalidArgumentException("Tarif pajak wajib diisi untuk usaha ber-PPN: {$company}");
+        }
+
         if (! is_int($rate) && ! is_float($rate)) {
             throw new InvalidArgumentException("Tarif pajak identitas usaha tidak valid: {$company}");
+        }
+
+        if ((float) $rate <= 0.0) {
+            throw new InvalidArgumentException("Tarif pajak usaha ber-PPN tidak boleh nol: {$company}");
         }
 
         $includes = $identity['price_includes_tax'] ?? false;
