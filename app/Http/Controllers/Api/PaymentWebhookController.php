@@ -69,7 +69,21 @@ class PaymentWebhookController extends Controller
                     return 'membership_not_found';
                 }
 
-                $tokenAmount = (int) ($lockedInvoice->token_amount_granted ?? 1);
+                // BS-02: tidak ada lagi fallback `?? 1`. Grant token wajib diketahui
+                // sejak invoice dibuat (subscription dari kuota paket, topup dari
+                // mapping nominal). Invoice tanpa grant berarti ada yang salah di jalur
+                // pembuatannya - lebih baik menolak dan meninggalkan jejak daripada
+                // mengkredit angka karangan lalu menyembunyikan cacatnya.
+                $tokenAmount = $lockedInvoice->token_amount_granted;
+
+                if ($tokenAmount === null || (int) $tokenAmount < 1) {
+                    // Belum ada perubahan yang ditulis di dalam transaksi ini, jadi
+                    // melempar membatalkan seluruhnya: invoice tetap pending, tanpa
+                    // ledger, tanpa aktivasi.
+                    return 'no_token_grant';
+                }
+
+                $tokenAmount = (int) $tokenAmount;
 
                 $lockedInvoice->update([
                     'payment_status' => 'paid',
@@ -116,6 +130,10 @@ class PaymentWebhookController extends Controller
 
             if ($result === 'membership_not_found') {
                 return response()->json(['error' => 'Company membership not found'], 422);
+            }
+
+            if ($result === 'no_token_grant') {
+                return response()->json(['error' => 'Invoice has no token grant'], 422);
             }
         }
 

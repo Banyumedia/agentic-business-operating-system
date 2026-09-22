@@ -83,6 +83,11 @@ class InvoiceCreationService
             'payment_status' => 'pending',
             'order_id' => $orderId,
             'amount' => $plan->monthly_price,
+            // Grant token diisi sejak invoice dibuat (BS-02). Untuk langganan, jumlahnya
+            // adalah kuota bulanan paket. Sebelumnya kolom ini dibiarkan kosong dan
+            // webhook settlement jatuh ke fallback `?? 1`; setelah fallback itu dihapus,
+            // invoice tanpa grant ditolak - jadi grant wajib ada di sini.
+            'token_amount_granted' => (int) $plan->monthly_token_quota,
             'company_membership_id' => $pendingMembership->id, // terikat ke plan sejak awal
             'due_date' => now()->addHours((int) config('billing.manual_payment.expiration_hours', 24))->toDate(),
         ]);

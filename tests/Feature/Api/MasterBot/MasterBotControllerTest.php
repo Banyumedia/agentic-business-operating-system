@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\MasterBot;
 
 use App\Models\Company;
 use App\Models\CompanyMembership;
+use App\Models\Invoice;
 use App\Models\MembershipPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -171,11 +172,56 @@ class MasterBotControllerTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonStructure(['status', 'invoice_id', 'payment_url']);
 
-        $this->assertDatabaseHas('invoices', [
-            'company_id' => $company->id,
-            'type' => 'topup',
-            'amount' => 150000,
-            'payment_status' => 'pending',
+        // BS-02: invoice topup WAJIB membawa grant token sejak dibuat. Tanpa ini,
+        // settlement-nya jatuh ke fallback `?? 1` di webhook - dulu tersembunyi,
+        // sekarang fail-closed 422. Grant diturunkan dari nominal lewat mapping,
+        // bukan dikarang saat settlement.
+        $invoice = Invoice::where('type', 'topup')->first();
+        $this->assertNotNull($invoice->token_amount_granted);
+        $this->assertGreaterThan(0, (int) $invoice->token_amount_granted);
+    }
+
+    public function test_negative_a_topup_with_a_nonpositive_amount_is_refused(): void
+    {
+        // Nominal nol atau negatif tidak punya arti sebagai pembelian token, dan
+        // membiarkannya lolos akan membuat grant nol lalu ditolak jauh di belakang
+        // saat settlement. Tolak di pintu masuk.
+        $company = Company::factory()->create();
+        User::factory()->create([
+            'wa_number' => '6281234567890',
+            'current_company_id' => $company->id,
         ]);
+        $plan = MembershipPlan::factory()->create();
+        CompanyMembership::factory()->create(['company_id' => $company->id, 'plan_id' => $plan->id]);
+
+        foreach ([0, -5000] as $amount) {
+            $this->postJson('/api/bot/master/topup', [
+                'wa_number' => '6281234567890',
+                'amount' => $amount,
+            ], ['X-Master-Bot-Key' => 'test-master-secret'])->assertStatus(422);
+        }
+
+        $this->assertSame(0, Invoice::where('type', 'topup')->count());
+    }
+
+    public function test_the_topup_grant_follows_the_amount(): void
+    {
+        // Dua nominal berbeda harus menghasilkan grant berbeda, dan yang lebih besar
+        // mendapat lebih banyak - kalau tidak, mappingnya bukan mapping.
+        $company = Company::factory()->create();
+        User::factory()->create([
+            'wa_number' => '6281234567890',
+            'current_company_id' => $company->id,
+        ]);
+        $plan = MembershipPlan::factory()->create();
+        CompanyMembership::factory()->create(['company_id' => $company->id, 'plan_id' => $plan->id]);
+
+        $this->postJson('/api/bot/master/topup', ['wa_number' => '6281234567890', 'amount' => 50000], ['X-Master-Bot-Key' => 'test-master-secret'])->assertOk();
+        $kecil = (int) Invoice::where('type', 'topup')->latest('id')->first()->token_amount_granted;
+
+        $this->postJson('/api/bot/master/topup', ['wa_number' => '6281234567890', 'amount' => 200000], ['X-Master-Bot-Key' => 'test-master-secret'])->assertOk();
+        $besar = (int) Invoice::where('type', 'topup')->latest('id')->first()->token_amount_granted;
+
+        $this->assertGreaterThan($kecil, $besar);
     }
 }

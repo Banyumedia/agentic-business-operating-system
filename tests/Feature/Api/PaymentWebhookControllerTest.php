@@ -67,6 +67,10 @@ class PaymentWebhookControllerTest extends TestCase
             'order_id' => 'INV-001',
             'payment_status' => 'pending',
             'type' => 'subscription',
+            // BS-02: grant wajib diisi sejak invoice dibuat. Test ini dulu
+            // mengandalkan fallback `?? 1` yang kini dihapus, dan bahkan mengunci
+            // `amount => 1` - artinya ia membuktikan bug, bukan perilaku yang benar.
+            'token_amount_granted' => 1000,
         ]);
 
         $payload = [
@@ -90,7 +94,7 @@ class PaymentWebhookControllerTest extends TestCase
             'company_id' => $company->id,
             'company_membership_id' => $membership->id,
             'direction' => 'credit',
-            'amount' => 1,
+            'amount' => 1000,
             'source' => 'midtrans_payment',
         ]);
     }

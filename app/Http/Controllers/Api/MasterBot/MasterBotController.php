@@ -10,6 +10,20 @@ use Illuminate\Http\Request;
 
 class MasterBotController extends Controller
 {
+    /**
+     * Mengubah nominal rupiah menjadi jumlah token dari mapping konfigurasi.
+     *
+     * Dibulatkan ke bawah: pelanggan tidak pernah dikreditkan lebih dari yang ia
+     * bayar. Rasionya di `config/billing.php` supaya harga token bisa disetel tanpa
+     * menyentuh kode.
+     */
+    private function tokensForAmount(float $amount): int
+    {
+        $rate = (float) config('billing.topup.tokens_per_rupiah', 1);
+
+        return (int) floor($amount * $rate);
+    }
+
     private function resolveCompany(Request $request)
     {
         $waNumber = $request->input('wa_number');
@@ -75,7 +89,10 @@ class MasterBotController extends Controller
     {
         $payload = $request->validate([
             'wa_number' => 'required|string',
-            'amount' => 'required|numeric',
+            // `gt:0` ditegakkan di pintu masuk: nominal nol/negatif tidak punya arti
+            // sebagai pembelian token, dan meloloskannya hanya menunda penolakan
+            // sampai settlement (BS-02).
+            'amount' => 'required|numeric|gt:0',
         ]);
 
         $company = $this->resolveCompany($request);
@@ -85,11 +102,22 @@ class MasterBotController extends Controller
             return response()->json(['error' => 'No active membership found'], 404);
         }
 
+        // Grant token diturunkan dari nominal di sini, saat invoice dibuat - bukan
+        // dikarang saat settlement. Inilah yang menutup fallback `?? 1` di webhook:
+        // begitu grant selalu terisi, webhook bisa menolak invoice tanpa grant
+        // sebagai kesalahan, bukan menebak angka.
+        $tokenGrant = $this->tokensForAmount((float) $payload['amount']);
+
+        if ($tokenGrant < 1) {
+            return response()->json(['error' => 'Nominal terlalu kecil untuk dikonversi menjadi token.'], 422);
+        }
+
         $invoice = $company->invoices()->create([
             'company_membership_id' => $membership->id,
             'type' => 'topup',
             'order_id' => 'TOPUP-'.time().'-'.rand(1000, 9999),
             'amount' => $payload['amount'],
+            'token_amount_granted' => $tokenGrant,
             'payment_status' => 'pending',
         ]);
 

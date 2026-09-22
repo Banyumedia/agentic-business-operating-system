@@ -448,6 +448,42 @@ class PaymentWebhookSecurityTest extends TestCase
         ]);
     }
 
+    public function test_negative_settlement_without_a_token_grant_is_refused_fail_closed(): void
+    {
+        // BS-02: fallback `?? 1` di webhook menyembunyikan invoice yang lupa mengisi
+        // `token_amount_granted` - pelanggan membayar penuh lalu dikredit **satu**
+        // token. Lebih baik menolak dan meninggalkan jejak daripada mengkredit angka
+        // karangan: settlement tanpa grant harus gagal tanpa mengubah apa pun.
+        $plan = MembershipPlan::factory()->create();
+        $company = Company::factory()->create();
+        $membership = CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'active',
+            'current_token_balance' => 0,
+        ]);
+        Invoice::factory()->create([
+            'company_id' => $company->id,
+            'company_membership_id' => $membership->id,
+            'type' => 'topup',
+            'order_id' => 'ORDER-NOGRANT',
+            'payment_status' => 'pending',
+            'token_amount_granted' => null,
+        ]);
+
+        $this->settle('ORDER-NOGRANT')->assertStatus(422);
+
+        $invoice = Invoice::where('order_id', 'ORDER-NOGRANT')->first();
+        $this->assertSame('pending', $invoice->payment_status, 'Invoice tidak boleh berubah saat grant tidak diketahui.');
+        $this->assertNull($invoice->paid_at);
+        $this->assertSame(0, (int) $membership->fresh()->current_token_balance);
+
+        // Dan tidak ada satu pun baris ledger yang dibuat.
+        $entries = $this->app->make('App\Models\TokenLedgerEntry')
+            ->whereJsonContains('metadata->order_id', 'ORDER-NOGRANT')->get();
+        $this->assertCount(0, $entries);
+    }
+
     /**
      * Capture with fraud_status='challenge' or 'deny' must NOT credit.
      */

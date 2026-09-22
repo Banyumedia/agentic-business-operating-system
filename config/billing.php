@@ -3,6 +3,26 @@
 return [
     /*
     |--------------------------------------------------------------------------
+    | Topup: nominal rupiah -> jumlah token
+    |--------------------------------------------------------------------------
+    |
+    | Mapping ini adalah **satu-satunya** sumber jumlah token untuk invoice topup
+    | (BS-02). Sebelumnya jumlahnya tidak pernah diisi, dan webhook settlement
+    | jatuh ke fallback `?? 1` - pelanggan membayar penuh lalu dikredit satu token.
+    | Fallback itu sekarang dihapus dan menolak fail-closed, jadi grant wajib
+    | ditentukan saat invoice dibuat, bukan dikarang saat settlement.
+    |
+    | `tokens_per_rupiah` sengaja dinyatakan sebagai rasio yang bisa dikonfigurasi
+    | supaya harga token bisa disetel tanpa menyentuh kode. Pembulatan ke bawah:
+    | pelanggan tidak pernah dikreditkan lebih dari yang ia bayar.
+    |
+    */
+    'topup' => [
+        'tokens_per_rupiah' => (float) env('TOPUP_TOKENS_PER_RUPIAH', 1),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Free Tier Configuration
     |--------------------------------------------------------------------------
     |
