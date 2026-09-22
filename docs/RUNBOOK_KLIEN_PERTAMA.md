@@ -65,10 +65,21 @@ tidak bisa memakainya.
 
 ```powershell
 php artisan bos:hermes-ping
+php artisan bos:hermes-profile-status
+php artisan bos:hermes-send --platform --to=<nomor Anda sendiri> --message="Uji bot CS."
 ```
 
-Harus `OK`. Kalau `Node hidup tetapi WhatsApp disconnected`, pairing-nya belum
-jadi — bukan masalah konfigurasi Agentic BOS.
+`bos:hermes-ping` harus `OK`; kalau `Node hidup tetapi WhatsApp disconnected`,
+pairing-nya belum jadi dan itu bukan masalah konfigurasi Agentic BOS.
+`bos:hermes-profile-status` harus melaporkan profil CS `paired`.
+`bos:hermes-send` adalah pembuktian terakhir: ia mengirim satu pesan sungguhan ke
+nomor Anda sendiri. Kirim ke nomor Anda dulu, bukan ke calon pelanggan — kalau
+ada yang salah, yang menerimanya Anda.
+
+Nomor CS ini juga yang dipakai **pesan platform**: peringatan tagihan langganan
+dan tangga dunning (D-23/D-49) keluar dari sini, bukan dari bot dev. Selama profil
+CS belum `paired`, lajur itu menolak mengirim dan mencatat sebabnya di log —
+sengaja, karena bot dev punya toolset penuh dan nomornya internal.
 
 **Yang belum ada dan perlu Anda putuskan:** bot CS akan ditanya oleh **calon**
 pelanggan yang belum punya company. MasterBot API menolak pemanggil tanpa company
@@ -141,7 +152,8 @@ bukan masalah basis data.
 | Isolasi tenant | panggil dengan `company_id` tenant **lain** | **403** |
 | Bot menjawab japri owner | owner japri nomor tenant | dijawab |
 | Japri orang asing | nomor lain japri | **ditolak** (D-66) |
-| Kita bisa mengirim | jalankan pengingat piutang | pesan masuk ke WhatsApp owner |
+| Kita bisa mengirim | `bos:hermes-send --company=<id> --to=<nomor owner> --message="Uji"` | pesan masuk ke WhatsApp owner |
+| Pengingat piutang | jalankan `bos:remind-receivables` | pesan masuk, dan tidak dobel bila dijalankan dua kali |
 
 Langkah "isolasi tenant" adalah yang paling tidak boleh dilewati. Kalau ia lolos,
 satu tenant bisa membaca data tenant lain, dan itu kerusakan yang tidak bisa
