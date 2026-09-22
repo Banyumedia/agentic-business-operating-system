@@ -169,6 +169,104 @@
             </div>
         </div>
 
+        {{-- Cermin profil node (T-83) + keadaan kanal (T-84). Read-through: tidak ada
+             tabel bayangan, setiap angka membawa stempel kapan diambil, dan tidak ada
+             penghapusan otomatis atas penyimpangan yang terlihat di sini. --}}
+        <div>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-[var(--erp-text)]">Cermin Profil di Node</h2>
+                    <p class="text-sm text-[var(--erp-text-secondary)]">
+                        Dibaca langsung dari node setiap kali diminta — bukan salinan yang disimpan. Profil <strong>yatim</strong> berarti ada bot berjalan di luar pembukuan; <strong>hilang di node</strong> berarti pemetaan kita menunjuk profil yang tidak ada. Tidak ada yang dihapus otomatis.
+                    </p>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" wire:click="loadMirror" class="min-h-11 rounded border border-[var(--erp-border)] px-4 text-sm text-[var(--erp-text)] hover:bg-[var(--erp-surface-secondary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                        Muat Cermin
+                    </button>
+                    <button type="button" wire:click="refreshMirror" class="min-h-11 rounded border border-[var(--erp-border)] px-4 text-sm text-[var(--erp-text)] hover:bg-[var(--erp-surface-secondary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                        Segarkan Paksa
+                    </button>
+                </div>
+            </div>
+
+            @forelse ($mirror as $nodeId => $cermin)
+                <div class="mb-6 rounded-lg border border-[var(--erp-border)] bg-[var(--erp-surface)] p-5">
+                    <div class="flex flex-wrap items-baseline justify-between gap-2">
+                        <h3 class="font-bold text-[var(--erp-text)]">{{ $cermin['node_name'] }}</h3>
+                        <span class="text-xs font-mono text-[var(--erp-text-secondary)]">diambil {{ $cermin['diambil_pada'] }}</span>
+                    </div>
+
+                    @if (! $cermin['ok'])
+                        {{-- Sebabnya dibedakan sampai ke layar: "belum berwenang" dan "node
+                             mati" mengirim operator ke tempat yang berbeda. --}}
+                        <p class="mt-3 rounded border border-[var(--erp-border)] bg-[var(--erp-surface-secondary)] p-3 text-sm text-[var(--erp-text)]">
+                            <span class="font-semibold">{{ str_replace('_', ' ', $cermin['sebab']) }}</span> — {{ $cermin['pesan'] }}
+                        </p>
+                    @else
+                        <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                            @foreach ([['cocok', 'Cocok'], ['yatim', 'Yatim (di node, tidak di pembukuan)'], ['hilang_di_node', 'Hilang di node']] as [$kelompok, $judul])
+                                <div>
+                                    <h4 class="text-sm font-semibold text-[var(--erp-text)] mb-2">{{ $judul }} ({{ count($cermin[$kelompok]) }})</h4>
+                                    <ul class="space-y-1 text-xs">
+                                        @forelse ($cermin[$kelompok] as $baris)
+                                            <li class="rounded border border-[var(--erp-border)] p-2">
+                                                <span class="font-mono text-[var(--erp-text)]">{{ $baris['nama_profil_node'] ?? $baris['instance_id'] }}</span>
+                                                @if ($baris['bawaan_node'])
+                                                    <span class="ml-1 rounded bg-gray-100 px-1 text-gray-700">bawaan node</span>
+                                                @endif
+                                                @if ($baris['milik_platform'])
+                                                    <span class="ml-1 rounded bg-indigo-100 px-1 text-indigo-800">platform</span>
+                                                @endif
+                                                <span class="block text-[var(--erp-text-secondary)]">
+                                                    {{ $baris['label'] ?: 'tanpa label' }}
+                                                    @if ($baris['companies'])
+                                                        — {{ implode(', ', $baris['companies']) }}
+                                                    @endif
+                                                </span>
+                                                {{-- Dua sumber keadaan sengaja tidak diperas jadi satu:
+                                                     gateway hidup sementara nomornya lepas adalah keadaan
+                                                     yang paling perlu terlihat. --}}
+                                                <span class="block text-[var(--erp-text-secondary)]">
+                                                    status nomor: {{ $baris['status'] ?: '-' }} ·
+                                                    gateway: {{ is_null($baris['berjalan_di_node']) ? 'tidak dinyatakan' : ($baris['berjalan_di_node'] ? 'hidup' : 'mati') }}
+                                                </span>
+                                            </li>
+                                        @empty
+                                            <li class="text-[var(--erp-text-secondary)]">—</li>
+                                        @endforelse
+                                    </ul>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if (! empty($fleet[$nodeId]))
+                        <div class="mt-5 pt-4 border-t border-[var(--erp-border)]">
+                            <h4 class="text-sm font-semibold text-[var(--erp-text)] mb-2">Keadaan kanal per profil</h4>
+                            <ul class="space-y-1 text-xs">
+                                @foreach ($fleet[$nodeId] as $keadaan)
+                                    <li>
+                                        <span class="font-mono text-[var(--erp-text)]">{{ $keadaan['label'] ?: $keadaan['profil'] }}</span>
+                                        <span class="ml-1 rounded px-1 {{ $keadaan['keadaan'] === 'sehat' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800' }}">
+                                            {{ str_replace('_', ' ', $keadaan['keadaan']) }}
+                                        </span>
+                                        @if ($keadaan['pesan'])
+                                            <span class="block text-[var(--erp-text-secondary)]">{{ $keadaan['pesan'] }}</span>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                </div>
+            @empty
+                <div class="rounded-lg border border-[var(--erp-border)] bg-[var(--erp-surface)] p-6 text-center text-sm text-[var(--erp-text-secondary)]">
+                    Tekan "Muat Cermin" untuk membaca profil dari node. Sengaja tidak dimuat otomatis: node yang mati akan menahan halaman sepanjang timeout-nya.
+                </div>
+            @endforelse
+        </div>
+
         {{-- Profil milik platform: bot dev dan bot CS kita. Melayani nol company,
              jadi dipisahkan supaya daftar tenant tidak menyesatkan. --}}
         <div>

@@ -4,6 +4,8 @@ namespace App\Livewire\Admin;
 
 use App\Models\HermesNode;
 use App\Models\HermesProfile;
+use App\Services\Hermes\FleetMonitor;
+use App\Services\Hermes\ProfileMirror;
 use App\Services\Hermes\ProfileStatusRefresher;
 use App\Services\HermesNodeClient;
 use Illuminate\Contracts\View\View;
@@ -69,6 +71,21 @@ class HermesNodeManager extends Component
 
     /** @var array<int, array{ok: bool, status: int|null, detail: string}> */
     public array $health = [];
+
+    /**
+     * Cermin profil node (T-83) dan keadaan kanalnya (T-84), per node.
+     *
+     * **Tidak** dimuat di `mount()`: kalau dimuat otomatis, setiap kunjungan halaman
+     * menembak seluruh armada, dan pada node yang mati operator menunggu seluruh
+     * timeout sebelum satu piksel pun tampil. Dimuat saat diminta, dan setiap hasil
+     * membawa stempel waktunya sendiri supaya angka basi tidak menyamar sebagai baru.
+     *
+     * @var array<int, array<string, mixed>>
+     */
+    public array $mirror = [];
+
+    /** @var array<int, list<array<string, mixed>>> */
+    public array $fleet = [];
 
     public function mount(): void
     {
@@ -146,6 +163,39 @@ class HermesNodeManager extends Component
         $this->loadData();
 
         session()->flash('success', "Status profil disegarkan: {$paired} tersambung, {$notReady} belum siap, {$withoutBridge} tanpa alamat bridge.");
+    }
+
+    /**
+     * Memuat cermin profil + keadaan kanal untuk setiap node yang punya control plane.
+     *
+     * Node tanpa control plane dilewati tanpa permintaan apa pun: alamat bridge bukan
+     * penggantinya, dan menembaknya hanya menghasilkan galat yang menyesatkan.
+     *
+     * Kegagalan **tidak** menjatuhkan halaman - `ProfileMirror` dan `FleetMonitor`
+     * mengembalikan sebabnya sebagai data, dan sebab itu yang dirender. Keadaan hari
+     * ini adalah `belum_berwenang` (H-05 belum terpasang di Hermes), dan itu harus
+     * terbaca berbeda dari "node mati".
+     */
+    public function loadMirror(bool $fresh = false): void
+    {
+        $mirror = app(ProfileMirror::class);
+        $monitor = app(FleetMonitor::class);
+
+        $hasilCermin = [];
+        $hasilArmada = [];
+
+        foreach (HermesNode::query()->whereNotNull('control_url')->get() as $node) {
+            $hasilCermin[(int) $node->id] = $mirror->forNode($node, $fresh);
+            $hasilArmada[(int) $node->id] = $monitor->forNode($node);
+        }
+
+        $this->mirror = $hasilCermin;
+        $this->fleet = $hasilArmada;
+    }
+
+    public function refreshMirror(): void
+    {
+        $this->loadMirror(fresh: true);
     }
 
     public function editNode(int $id): void

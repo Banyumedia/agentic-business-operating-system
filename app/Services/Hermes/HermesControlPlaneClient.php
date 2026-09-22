@@ -211,6 +211,67 @@ class HermesControlPlaneClient
     }
 
     /**
+     * Keadaan kanal pesan satu profil (T-84).
+     *
+     * Ter-scope profil lewat query. Jawabannya memuat lebih banyak daripada yang
+     * dibutuhkan pemantauan - `env_path`, perintah start gateway, dan daftar env yang
+     * sudah diredaksi Hermes - jadi pemanggil wajib menyaring, bukan meneruskan.
+     *
+     * @return array<mixed>
+     *
+     * @throws ControlPlaneException
+     */
+    public function messagingPlatforms(HermesNode $node, string $profile): array
+    {
+        return $this->call($node, 'GET', '/api/messaging/platforms', profile: $profile);
+    }
+
+    /**
+     * Seluruh profil yang benar-benar ada di node.
+     *
+     * **Tidak** ter-scope profil, dan itu memang intinya: cermin T-83 harus melihat
+     * juga profil yang **tidak** ada di pembukuan kita. Endpoint yang ter-scope hanya
+     * bisa mengonfirmasi apa yang sudah kita ketahui, sehingga bot yang berjalan di
+     * luar pembukuan tidak akan pernah muncul.
+     *
+     * Bentuk jawabannya (dibaca dari `hermes_cli/web_routers/profiles.py`, bukan
+     * ditebak): `{"profiles": [{"name", "path", "is_default", "model", "provider",
+     * "has_env", "skill_count", "gateway_running", "description", ...}]}`. Hermes
+     * **tidak pernah** 404 di sini - saat pembacaan internalnya gagal ia jatuh ke
+     * pemindaian direktori, jadi daftar kosong berarti benar-benar kosong.
+     *
+     * @return array<mixed>
+     *
+     * @throws ControlPlaneException
+     */
+    public function profiles(HermesNode $node): array
+    {
+        return $this->call($node, 'GET', '/api/profiles');
+    }
+
+    /**
+     * SOUL satu profil.
+     *
+     * Sengaja **satu** profil per panggilan, bukan versi massal: satu panggilan per
+     * profil saat memuat daftar adalah N+1 ke node, dan isi SOUL memuat aturan bisnis
+     * serta identitas white-label (D-68) - bukan bahan daftar. Karena itu pula `soul`
+     * dan `content` ada di `REDACTED_KEYS`: isinya tidak masuk log walau panggilannya
+     * gagal.
+     *
+     * Jawabannya `{"content": string, "exists": bool}`; profil tanpa `SOUL.md`
+     * menjawab **200** dengan `exists: false`, jadi 404 di sini berarti **profilnya**
+     * yang tidak ada.
+     *
+     * @return array<mixed>
+     *
+     * @throws ControlPlaneException
+     */
+    public function profileSoul(HermesNode $node, string $profileName): array
+    {
+        return $this->call($node, 'GET', '/api/profiles/{name}/soul', ['name' => $profileName]);
+    }
+
+    /**
      * Memetakan kode status ke pengecualian yang **berbeda-beda**.
      *
      * Menyatukannya menjadi satu galat membuat layar berbohong: 410 dan 429 adalah

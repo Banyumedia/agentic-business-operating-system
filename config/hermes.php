@@ -92,6 +92,16 @@ return [
 
     'control' => [
         'timeout' => (int) env('HERMES_CONTROL_TIMEOUT', 10),
+
+        // Umur cache cermin profil (T-83), dalam **detik**.
+        //
+        // Sengaja pendek. Cermin bersifat read-through justru supaya tidak ada salinan
+        // yang bisa menyimpang diam-diam (D-72 butir 2); nilai yang besar mengubah
+        // cache ini menjadi tabel bayangan dengan nama lain, dan halaman akan
+        // menampilkan keadaan yang sudah lewat tanpa mengatakannya. Yang perlu ditahan
+        // hanyalah beberapa panggilan dalam satu render halaman. Tombol "segarkan"
+        // selalu menembusnya, dan setiap hasil membawa stempel `diambil_pada`.
+        'mirror_ttl' => (int) env('HERMES_CONTROL_MIRROR_TTL', 20),
     ],
 
     'control_secrets' => array_filter([

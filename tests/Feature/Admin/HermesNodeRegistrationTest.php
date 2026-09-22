@@ -166,6 +166,63 @@ class HermesNodeRegistrationTest extends TestCase
         $this->assertCount(1, $component->get('profiles'));
     }
 
+    public function test_the_page_shows_the_profile_mirror_and_the_fleet_state(): void
+    {
+        // T-83 + T-84 bertemu di satu halaman: cermin menjawab "profil mana yang
+        // ada di node", pemantauan menjawab "kanalnya hidup atau tidak".
+        Http::fake(['*' => Http::response(['profiles' => [['name' => 'bot-liar']]], 200)]);
+
+        $node = $this->node();
+        $node->update(['control_url' => 'http://127.0.0.1:9119', 'control_secret_reference' => 'none']);
+
+        $this->actingAs($this->admin);
+
+        $component = Livewire::test(HermesNodeManager::class)->call('loadMirror');
+
+        $component->assertOk();
+
+        $cermin = $component->get('mirror')[$node->id];
+        $this->assertTrue($cermin['ok']);
+        $this->assertSame(['bot-liar'], array_column($cermin['yatim'], 'nama_profil_node'));
+    }
+
+    public function test_negative_an_unreachable_control_plane_does_not_break_the_page(): void
+    {
+        // Pola `checkHealth()` yang sudah terbukti: laman pemantauan yang mati justru
+        // menghilangkan satu-satunya cara melihat bahwa ada node bermasalah.
+        Http::fake(['*' => Http::response(['detail' => 'Unauthorized'], 401)]);
+
+        $node = $this->node();
+        $node->update(['control_url' => 'http://127.0.0.1:9119', 'control_secret_reference' => 'none']);
+
+        $this->actingAs($this->admin);
+
+        $component = Livewire::test(HermesNodeManager::class)->call('loadMirror');
+
+        $component->assertOk();
+
+        $cermin = $component->get('mirror')[$node->id];
+        $this->assertFalse($cermin['ok']);
+        // "Belum berwenang" harus tetap bisa dibedakan dari "node mati" sampai ke layar.
+        $this->assertSame('belum_berwenang', $cermin['sebab']);
+    }
+
+    public function test_negative_the_mirror_is_not_loaded_until_it_is_asked_for(): void
+    {
+        // Memuat cermin di `mount()` berarti setiap kunjungan halaman menembak seluruh
+        // armada - dan pada node yang mati, menunggu seluruh timeout sebelum satu
+        // piksel pun tampil.
+        Http::fake();
+
+        $this->node()->update(['control_url' => 'http://127.0.0.1:9119', 'control_secret_reference' => 'none']);
+
+        $this->actingAs($this->admin);
+
+        Livewire::test(HermesNodeManager::class)->assertOk();
+
+        Http::assertNothingSent();
+    }
+
     public function test_super_admin_can_record_the_control_plane_address(): void
     {
         // T-82/D-72: alamat control plane **terpisah** dari alamat bridge. Tanpa kolom
