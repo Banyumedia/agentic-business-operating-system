@@ -1159,3 +1159,285 @@ Menunggu Bos, bukan menunggu pekerjaan:
   pihak ketiga dan reputasi nomor WA tenant.
 - Satu putaran manual dari HP pada tenant nyata. Ini sisa risiko terbesar:
   1.118 test hijau tidak pernah salah menekan tombol di layar sempit.
+
+## Riset control plane Hermes → D-72 + T-82..T-87 (2026-09-22, sesi Kiro)
+
+**Tidak ada kode aplikasi yang disentuh.** Yang berubah hanya dokumen:
+`docs/HERMES_NODE_CONTRACT.md`, `docs/00-DECISIONS.md` (D-72 + amandemen Q-11),
+`docs/EXECUTION_PLAN.md` (H-01..H-03 dicabut, H-05 baru, gelombang 5 T-82..T-87,
+status T-69/T-72/T-77 disesuaikan), dan berkas ini. Karena tidak ada PHP/Blade/JS
+yang berubah, gate `php artisan test` / `pint --test` / `npm run build` **tidak
+dijalankan** — dinyatakan apa adanya, bukan diklaim PASS.
+
+**Pemicu:** Bos menanyakan apakah bisa membuat "MCP ke Hermes" supaya setting
+dilakukan dari software kita, lalu menegaskan arahnya: profil Hermes muncul dan
+bisa dipantau di software kita, **mesin tetap Hermes**.
+
+**Tiga temuan yang membatalkan catatan sebelumnya**, semuanya dari membuka berkas
+di `%LOCALAPPDATA%\hermes\hermes-agent`, bukan dari grep:
+
+1. **Bridge Baileys adalah servis HTTP.** `scripts/whatsapp-bridge/bridge.js`
+   (Express) `app.listen(PORT, '127.0.0.1')`, default 3000, dengan `POST /send`,
+   `/send-media`, `/send-poll`, `/send-location`, `/edit`, `/typing`, `/read`,
+   `GET /messages`, `/chat/:id`, `/health`. §1.3 kontrak sebelumnya menulis
+   "bukan servis HTTP" — salah, dan kode kita sendiri (T-69, T-81) sudah
+   membuktikannya salah. Mode `--pair-only` memang tidak menyalakan server HTTP;
+   itu kemungkinan asal salah bacanya.
+2. **Dashboard Hermes adalah control plane HTTP yang lengkap.**
+   `hermes_cli/web_server.py` menyajikan profil (CRUD + SOUL + model), device
+   pairing + **QR** (`/api/messaging/whatsapp/onboarding/*`, membalas
+   `qr_payload`), user pairing (`/api/pairing*`), config/env, kendali gateway,
+   dan pemantauan — semuanya profile-scoped. Jadi **H-01, H-02, dan H-03 dicabut**;
+   T-72 dan T-77 tidak lagi terhalang ketiadaan endpoint.
+3. **MCP tidak menjawab kebutuhan setting.** `mcp_serve.py` memuat 10 tool dan
+   semuanya messaging (nol tool profil/config/pairing), transport **stdio saja**.
+   Sebaliknya Hermes **mendukung MCP server remote** (`--url` + bearer + filter
+   `tools.include`, didaftarkan per profil lewat `POST /api/mcp/servers`), yang
+   berguna untuk arah sebaliknya — kita provider, Hermes klien (T-87).
+
+**Satu prasyarat baru yang nyata (H-05):** `_require_token` hanya menerima
+`_SESSION_TOKEN` ephemeral yang disuntik ke HTML SPA atau menyerah pada gate
+cookie. Seam bearer generik ada di `hermes_cli/dashboard_auth/token_auth.py`,
+tetapi satu-satunya rute terdaftar adalah `/api/gateway/drain`
+(`plugins/dashboard_auth/drain/__init__.py:280`). Kerja sisi Hermes = satu plugin
+`dashboard_auth`, **bukan** patch core.
+
+**Risiko yang dicatat, bukan diselesaikan:**
+
+- Port dashboard yang sama menyajikan `/api/fs/write-text`, `/api/files/upload`,
+  `/api/tools/terminal/*`, `/api/git/*`, `/api/profiles/{name}/open-terminal`.
+  Token dashboard = eksekusi kode di host Hermes. D-72 menjawabnya dengan
+  daftar-putih path + penjaga arsitektur T-86; tanpa itu D-69 menjadi hiasan.
+- Rute `/api/*` dashboard **tidak berversi**. Pembaruan Hermes bisa
+  memindahkannya; dikurung dalam satu kelas klien (T-82) + test kontrak.
+- Inventaris rute yang saya susun **belum tentu lengkap**: `web_routers/sessions.py`
+  memakai router bernama (`list_router`, `search_router`, `manage_router`)
+  sehingga lolos dari pola pencarian dekorator yang pertama saya pakai. Klaim
+  "tidak ada endpoint kirim di dashboard" sudah diulang dengan pencarian yang
+  lebih luas di seluruh pohon, tetapi klaim "tidak ada" tentang repo lain
+  sebaiknya tetap diperlakukan sebagai dapat dibantah.
+- `POST /api/messaging/platforms/{id}/test` belum dibaca — jangan diandalkan
+  sebagai jalur kirim sampai seseorang membukanya.
+
+**Next READY:** T-82 (serial, menyentuh migration). Setelahnya T-83 + T-84 boleh
+paralel, T-86 menyusul. Menunggu Bos: Q-11 (H-05 ditambal lokal atau diusulkan
+upstream) dan `HUMAN:APPROVAL` dependency untuk T-87.
+
+### Susulan sesi yang sama: topologi armada → Q-14 + T-88/T-89
+
+Bos mengarahkan "satu Hermes akhirnya mengelola banyak Hermes, dan pusat ini kita
+kendalikan". Pembacaan kode memberi satu koreksi arah:
+
+- **Orkestrator armada Hermes sudah ada, tetapi pusatnya Nous.**
+  `hermes_cli/gateway_enroll.py` mendaftarkan gateway ke **relay connector**
+  dengan token `portal.nousresearch.com`; tenant otoritatif diturunkan dari **org
+  Nous** lewat `GET /api/oauth/account`, "never from anything the gateway
+  asserts"; instalasi managed **tidak** self-enroll karena **NAS** yang mint
+  secret dan menstempelnya ke env container; `hermes_cli/dashboard_register.py`
+  mendaftarkan klien OAuth dashboard ke portal yang sama. Dokumentasinya sendiri
+  menyebut skema auth relay **EXPERIMENTAL, dapat berubah tanpa siklus
+  deprecation**. Jadi memakai jalur itu memindahkan pusat ke Nous, bukan ke kita,
+  dan menyentuh D-68.
+- **Yang benar-benar berarti "kita kendalikan"** adalah dua mekanisme lain:
+  **managed scope** (`hermes_cli/managed_scope.py` — `$HERMES_MANAGED_DIR` atau
+  `/etc/hermes`, menang atas config pengguna per-leaf-key) dan **profile
+  distribution** (`hermes_cli/profile_distribution.py` — profil sebagai repo git,
+  `install`/`update`, memori dan kredensial lokal tidak disentuh). Keduanya cocok
+  dengan cara kita sudah bekerja (D-69: artefak produk hidup di repo).
+- **Dua peringatan yang tidak boleh hilang.** Managed scope v1 "enforcement is
+  filesystem permissions only", POSIX-first — di Windows ia **konvensi, bukan
+  penjagaan**; dan pembacaannya **fail-open**, berkas rusak dicatat keras lalu
+  tidak diterapkan, sehingga kebijakan bisa berhenti berlaku tanpa disadari.
+  Karena itu T-88 mewajibkan pemeriksaan "nilai yang kita paksa masih aktif?"
+  dari sisi kita, bukan keyakinan bahwa berkasnya ada.
+- **`max_capacity` = 100 adalah angka yang ditebak.** Kenyataannya satu nomor WA
+  butuh satu port bridge sendiri dan satu proses gateway melayani banyak profil,
+  jadi satu proses jatuh menjatuhkan semua tenant di host itu. T-89 mengubahnya
+  menjadi angka berdasar, sekalian menjadikan alokasi port bridge sumber daya
+  yang dikelola — sekarang port dipilih tangan dan dua profil berport sama akan
+  saling menendang tanpa pesan jelas.
+
+Tercatat: **Q-14** (topologi armada — keputusan Bos), **T-88** `READY` (riset
+managed scope + distribution, tidak memblokir T-83/T-84), **T-89** `BLOCKED` T-84.
+Kontrak Hermes dapat **§7 Armada** (tiga mekanisme dibedakan) dan §8 bertambah
+tiga butir "belum diuji". Masih dokumen saja — tidak ada kode aplikasi tersentuh,
+gate test/pint/build tidak dijalankan.
+
+### Batas kerja Hermes + kesiapan banyak host → T-105, T-106 (sesi yang sama)
+
+Bos khawatir Hermes punya batas kerja sehingga kita harus siap menangani banyak
+gateway. **Kekhawatiran itu berdasar, dan angkanya bukan satu.** Dari
+`hermes_cli/config_defaults.py` dan `gateway/platforms/api_server.py`:
+
+- `max_live_sessions: 16` — batas LRU **lunak** atas sesi in-memory; yang digusur
+  hanya sesi **detached** dan dipulihkan dari disk, jadi bukan kehilangan data,
+  tetapi ia langit-langit "berapa yang benar-benar bekerja serentak".
+- `max_concurrent_sessions: None` — knop batas global tersedia, **bawaannya tanpa
+  batas**.
+- `gateway.api_server.max_concurrent_runs` — run agent yang melebihi dijawab
+  respons "concurrency limited".
+- `agent.restart_drain_timeout: 0`, dengan kontrak tertulis di kodenya: "if you
+  restart the gateway, in-flight work stops" (plus `gateway_timeout: 1800`,
+  `max_turns: 500`).
+
+**Ketiga batas pertama berlaku per proses gateway.** Dan `/api/status` melaporkan
+`gateway_mode` = `multiplex` (satu proses melayani banyak profil, lewat
+`profiles_to_serve(True)`) / `multiple` (gateway per profil) / `single` / `none`,
+beserta `{"profile","ports","served_profiles"}` per gateway hidup — jadi mode dan
+port bisa **dibaca**, tidak perlu dicatat tangan. Rekomendasi yang dicatat di §7.1
+kontrak: tenant berbayar memakai `multiple`, `multiplex` untuk internal/demo.
+
+**Bahaya yang belum diverifikasi dan wajib diuji sebelum dua tenant berbagi satu
+proses:** `POST /api/messaging/whatsapp/onboarding/{id}/apply` me-restart gateway
+sendiri. Bila di mode `multiplex` restart itu menjatuhkan seluruh
+`served_profiles`, maka memasangkan WhatsApp satu tenant memutus pekerjaan tenant
+lain. T-89 wajib menjawabnya.
+
+**Tiga cacat di sisi kita yang terbukti dari kode, bukan dugaan:**
+
+1. **Tidak ada penempatan node.** `HermesProfileProvisioner::ensurePrimaryProfile()`
+   — satu-satunya jalur yang dipakai onboarding — **tidak pernah mengisi
+   `node_id`** (kolomnya nullable), sehingga profil lahir tanpa node dan
+   `HermesNodeClient` menolak dengan "Profil Hermes belum ditempatkan pada node".
+   Tenant baru akan mendapat bot yang tidak pernah bisa mengirim, dan gejalanya
+   muncul jauh dari penyebabnya.
+2. **`active_profiles` hanya bisa naik.** `HermesProvisionProfile` memanggil
+   `increment('active_profiles')`; tidak ada satu pun jalur yang menurunkannya.
+   Penghitung yang menyimpang ke atas akan melaporkan node penuh padahal lowong —
+   tepat pada angka yang dipakai untuk memutuskan penempatan.
+3. **Port bridge tidak dimodelkan.** `hermes_profiles.api_url` menyimpan
+   `host:port` sebagai string bebas; dua profil pada satu node bisa memakai port
+   yang sama dan saling menendang tanpa pesan jelas. Webhook Cloud API bawaannya
+   8090, jadi tabrakan dengan platform lain juga mungkin.
+
+Sekalian: `hermes_nodes.status` hanya `active|maintenance|down` — tidak ada
+`draining`, padahal Hermes punya `POST /api/gateway/drain`. Tanpa keadaan itu,
+memindahkan tenant dari satu host berarti mematikannya mendadak.
+
+Tercatat: **T-105** `READY` (penempatan + alokasi port + kapasitas yang tidak bisa
+berbohong + status `draining`; **serial**, menyentuh migration), **T-106**
+`BLOCKED` T-105/T-88 (runbook + supervisi host Hermes kedua, termasuk prosedur
+drain dan bagian "belum diverifikasi"). T-89 diperketat: alokasi port dipindah ke
+T-105, dan uji isolasi `multiplex` ditambahkan sebagai pertanyaan yang harus
+dijawab tegas. Masih dokumen saja — tidak ada kode aplikasi tersentuh.
+
+**Writer lain aktif bersamaan, dan tulisannya belum di-commit.** Saat sesi ini
+menulis, `docs/EXECUTION_PLAN.md` + `docs/00-DECISIONS.md` sudah memuat **D-73 +
+gelombang 6 (T-90..T-104)** milik writer lain, sementara `git show HEAD` pada
+kedua berkas itu **tidak memuat D-72 maupun D-73** — artinya pekerjaan dua writer
+sekarang **bercampur sebagai perubahan belum ter-commit di berkas yang sama**.
+Konsekuensi operasional yang harus dipatuhi: **jangan commit keempat berkas dokumen
+ini tanpa koordinasi**, karena commit apa pun dari salah satu writer akan
+menyertakan tulisan writer lain yang belum direview — pola yang sama dengan
+`b0ef5b0`. Berkas baru `docs/worker-reports/PROMPT_QA_FASE10_HERMES.md` juga bukan
+tulisan sesi ini; dicatat, tidak disentuh (HERMES §Writing Rules). Karena itu nomor task sesi ini digeser ke **T-105/T-106**; nomor
+T-90/T-91 yang sempat saya tulis lebih dulu sudah dibetulkan di tempat. Ada satu
+catatan untuk peninjau: D-73 memakai lajur `resmi` untuk pesan transaksional,
+sedangkan §7.1 kontrak Hermes menyimpulkan tenant berbayar sebaiknya memakai
+gateway **per profil** — keduanya tidak bertabrakan, tetapi keputusan kapasitas
+(Q-14) sekarang menyentuh dua gelombang sekaligus.
+
+## Riset kanal WhatsApp resmi → D-73 + T-90..T-104 (2026-09-22, sesi Kiro)
+
+**Tidak ada kode aplikasi yang disentuh.** Yang berubah hanya dokumen:
+`docs/00-DECISIONS.md` (D-73 baru, D-71 dicabut sebagian, Q-10 ditutup, Q-13
+diturunkan), `docs/EXECUTION_PLAN.md` (state T-71/T-73 → `DIGANTIKAN`,
+T-74/T-75 → `DITURUNKAN`, dua butir "Catatan risiko Fase 10" dikoreksi,
+gelombang 6 T-90..T-104 ditulis), dan berkas ini. Karena tidak ada PHP/Blade/JS
+yang berubah, gate `php artisan test` / `pint --test` / `npm run build` **tidak
+dijalankan** — dinyatakan apa adanya, bukan diklaim PASS. Belum di-commit.
+
+**Pemicu:** Bos meminta riset kirimdev — bisakah kita jadi reseller, memakai
+platform mereka di tempat kita, atau jadi white-label. Lalu, setelah temuannya
+keluar, Bos mengambil empat keputusan yang menjadi D-73.
+
+**Temuan yang menentukan, dari dokumentasi Meta dan kirimdev (bukan dari
+halaman pemasaran):**
+
+1. **Meta mengenal tiga tingkat otorisasi**, dan itulah yang menentukan
+   segalanya, bukan pilihan vendornya: *Tech Provider* (akses API + hosting
+   Embedded Signup), *Tech Partner* (+ badge), *Solution Partner* (ex-BSP, +
+   **lini kredit Meta**). Dokumentasi Embedded Signup menyatakan pembagian lini
+   kredit **"hanya Mitra Solusi"**. Kirimdev menyatakan dirinya **bukan BSP**.
+   Jadi **D-71 tidak dapat dijalankan lewat penyedia kelas Tech Provider mana
+   pun** — bukan kekurangan produk kirimdev, tapi sifat tingkatannya.
+2. **Aset Embedded Signup selalu milik klien.** *"Pelanggan bisnis… memiliki
+   semua aset WhatsApp mereka… juga memiliki akses penuh ke Pengelola WhatsApp.
+   Ingat, Anda tidak bisa membatasi akses ini dengan cara apa pun."* Rumusan
+   D-71 "WABA di bawah portfolio kita" karena itu **mustahil**, bukan sekadar
+   sulit. Yang bisa berpindah hanyalah lini kreditnya. **Q-10 tertutup.**
+3. **HMAC kirimdev tidak sepadan dengan Meta** — menutup butir terbuka §7
+   `HERMES_NODE_CONTRACT.md`. `X-Kirim-Signature: t=…,v1=…` atas
+   `"{t}.{raw_body}"` gaya Stripe, versus `X-Hub-Signature-256: sha256=<hex>`
+   atas raw body. Konsekuensinya rekomendasi lama **opsi A** (tambal
+   `GRAPH_API_BASE`) hanya menyelesaikan outbound dan membuat inbound ditolak.
+   Ada **opsi D** yang lebih baik bila kirimdev dipakai: plugin resmi
+   `kirimdev-hermes`, yang menangani tanda tangannya sendiri.
+4. **Ekonomi Solution Partner tidak cocok untuk pasar kita.** 360dialog (Meta
+   Solution Partner, program ISV/reseller eksplisit, zero message markup)
+   €250–1.000/bulan + €15–49 per channel ≈ **Rp870rb/tenant/bulan** di 10
+   tenant, dibanding ≈ **Rp20rb/tenant** di kelas Tech Provider. Selisih ~40x.
+   Itu yang membuat Bos memilih Struktur A.
+5. **Kebutuhan yang belum tercakup task mana pun:** di luar jendela 24 jam Cloud
+   API **wajib template disetujui Meta per WABA**. Baileys mengirim teks bebas,
+   jadi kebutuhan ini hanya muncul di lajur resmi — tanpa T-97, pengingat piutang
+   akan gagal di produksi.
+
+**Empat keputusan Bos (D-73):** nomor wajib milik klien atas dasar privasi;
+tagihan Meta ke klien (**Struktur A**, membalik D-71); tujuan akhir **kita
+sendiri jadi Tech Provider langsung ke Meta** sehingga kode wajib netral
+penyedia; dan **layar pilihan kanal ada** dengan kanal belum siap berlabel
+**"Sedang disiapkan"** — mencabut amandemen D-70 butir (e).
+
+**Koreksi atas kesalahan saya sendiri di sesi ini, dicatat supaya tidak
+terulang.** Rencana gelombang 6 versi pertama disusun di atas premis "jalur kirim
+mati, empat fitur transaksional hanya terbukti lewat fake, menunggu H-01".
+Premis itu **sudah tidak berlaku** dan saya baru menemukannya saat hendak menulis
+ke antrean: H-01 dicabut, `config/hermes.php` menunjuk `POST /send` bridge yang
+nyata, T-69/T-80/T-81 sudah mendarat (HEAD `a9747d9`). Penyebabnya: pembacaan
+`config/hermes.php` dan `HermesNodeClient.php` di awal sesi **basi** dibanding
+keadaan repo, dan saya sempat menyusun rencana di atasnya. Saya juga sempat
+merencanakan nomor `D-72` dan `T-80..T-94` yang **semuanya sudah terpakai**.
+Pelajarannya, dan ini pelengkap catatan "grep tidak menjangkau luar workspace"
+yang sudah ada dua kali: **sebelum menulis ke antrean, ID tertinggi dan keadaan
+kode wajib diverifikasi ke `git log` + berkasnya**, bukan ke ingatan sesi.
+
+**Risiko yang dicatat, bukan diselesaikan:**
+
+- **Biaya pindah penyedia tumbuh seiring jumlah tenant**, karena setiap migrasi
+  menuntut Embedded Signup diulang per tenant **dengan OTP** — sesi berdampingan,
+  tidak bisa diotomasi. Ini risiko utama gelombang ini, ditekan oleh seam netral
+  penyedia (T-93) dan batas jumlah tenant (T-101). Secara hukum kita tidak
+  terkurung; secara operasional kita terkurung.
+- **Penularan pelanggaran.** ToS penyedia menaruh pelanggaran AUP end-customer
+  pada Operator Platform, dan memberi mereka hak menangguhkan akun kita. Satu
+  tenant yang blast promosi bisa menjatuhkan **semua** tenant lajur resmi. T-98
+  menutup sisi kita; blast radius akunnya tetap milik kita.
+- **Plafon laju dan kuota onboarding mungkin dipakai bersama.** Write per menit
+  dibagi seluruh tenant dan dilarang ditambah dengan mencetak kunci API baru.
+  Bila app Facebook yang menjalankan Embedded Signup milik penyedia, batas Meta
+  10/200 klien baru per 7 hari kemungkinan dibagi dengan operator lain — belum
+  terverifikasi, pertanyaan pertama di T-92.
+- **Batas tanggung jawab penyedia ≈ 3 bulan langganan.** Untuk paket Rp199rb itu
+  sekitar Rp600rb, dan tanpa jaminan uptime. Untuk kanal yang menjadi inti
+  produk, itu seluruh recourse — salah satu alasan tujuan akhirnya Tech Provider
+  sendiri.
+- **Tenggat keras: Embedded Signup v2/v3 disetop 15 Oktober 2026.** Berlaku untuk
+  jalur langsung maupun perantara.
+- **Umur penyedia.** Changelog kirimdev dimulai 26 Mei 2026 ("initial release"),
+  ToS terakhir diperbarui 5 Juni 2026, dan harganya jauh di bawah kelas partner
+  internasional. Dari luar tidak bisa dibedakan antara strategi pasar lokal yang
+  agresif dan harga yang belum menemukan biayanya.
+
+**Next `READY`:** T-91 (koreksi kontrak) dan T-92 (checklist Tech Provider +
+tujuh pertanyaan penyedia) — keduanya dokumen. Lalu T-93 di sisi kode, yang
+seluruhnya dapat di-TDD dengan `Http::fake()` tanpa akun penyedia. **Butir terbuka terakhir sudah ditutup Bos** dan menjadi
+D-73 butir 9: lajur `resmi` hanya untuk **bot CS dan hal yang berhubungan dengan
+publik**, dan aturannya dirumuskan berbasis **penerima**, bukan fitur — penerima
+di luar organisasi tenant boleh `resmi`, penerima internal tetap `bawaan`. Jadi
+**pengingat piutang masuk**, sedangkan **undangan staf, `notify_owner_wa`, dan
+dunning langganan platform tidak**. Alasan dirumuskan berbasis penerima: daftar
+putih per fitur akan usang saat fitur baru ditambah, sementara pertanyaan "apakah
+penerima ini orang luar" tetap terjawab untuk fitur yang belum ditulis. T-93 dan
+T-95 sudah disesuaikan: kelas penerima eksplisit dengan default `internal`, dan
+`resmi` **menolak** penerima internal walau company itu sudah mengaktifkannya.

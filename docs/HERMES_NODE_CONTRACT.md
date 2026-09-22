@@ -109,15 +109,109 @@ proteksi replay lewat cache `wamid` (5000 entri, FIFO), jendela percakapan
 24 jam + fallback template, unggah/unduh media dengan batas ukuran per tipe
 sesuai Meta, dan konversi voice-note opus.
 
-### 1.3 Baileys adalah subprocess Node, bukan servis HTTP
+### 1.3 Baileys adalah subprocess Node **yang menyajikan HTTP** (koreksi)
 
-`plugins/platforms/whatsapp/adapter.py` menjalankan **bridge Node.js sebagai
-subprocess** (jejaknya `%LOCALAPPDATA%\hermes\whatsapp\bridge.log`). QR muncul di
-CLI atau dashboard. Tidak ada endpoint HTTP untuk memulai sesi, mengambil QR,
-atau membaca status.
+Versi sebelumnya bagian ini berbunyi "bukan servis HTTP ... tidak ada endpoint
+HTTP untuk memulai sesi, mengambil QR, atau membaca status". **Itu salah**, dan
+kesalahannya sudah terlihat dari kode kita sendiri: T-69 mengarahkan
+`App\Services\HermesNodeClient` ke `POST /send` + `GET /health`, dan T-81
+menurunkan status profil dari `/health` — keduanya mustahil kalau bridge bukan
+servis HTTP.
 
-**Konsekuensi:** T-72 (layar pairing QR di web kita) **wajib** didahului
-pekerjaan di sisi Hermes. Tidak ada jalan memutar.
+Yang sebenarnya, dibaca dari `scripts/whatsapp-bridge/bridge.js` (44 KB, Express):
+
+```
+node bridge.js --port 3000 --session <session dir>     (baris 19)
+const PORT = parseInt(getArg('port', '3000'), 10);     (baris 82)
+app.listen(PORT, '127.0.0.1', ...)                     (baris 1179)
+
+GET  /messages     POST /send          POST /edit        POST /send-media
+POST /send-poll    POST /send-location POST /typing      POST /read
+GET  /chat/:id     GET  /health
+```
+
+Jadi: **ada** servis HTTP, **hanya loopback** (`127.0.0.1`), **tanpa
+autentikasi** — itulah sebabnya `config/hermes.php` punya
+`no_auth_reference` dan `HermesNodeClient` hanya mengizinkannya untuk loopback.
+QR bukan cuma dicetak ke terminal: `emitPairEvent({ event: 'qr', qr })`
+(baris 450) mengalirkannya ke gateway Python. Mode `--pair-only` memang tidak
+menyalakan server HTTP (baris 1163), dan kemungkinan itulah asal salah baca yang
+lama.
+
+**Konsekuensi:** T-72 (layar pairing QR di web kita) **tidak** memerlukan
+endpoint baru di Hermes. Lihat §1.4.
+
+### 1.4 Dashboard Hermes adalah control plane HTTP yang sudah lengkap
+
+`hermes_cli/web_server.py` (FastAPI, ~695 KB) + `hermes_cli/web_routers/*`
+menyajikan API yang dipakai SPA dashboard Hermes sendiri. SPA itu **hanya salah
+satu klien**; API-nya sama-sama terbuka untuk klien lain. Yang relevan untuk
+kita, semuanya **profile-scoped** lewat parameter/`body.profile` +
+`_config_profile_scope`:
+
+| Keperluan | Endpoint |
+|---|---|
+| Provisioning profil | `GET/POST /api/profiles`, `PATCH/DELETE /api/profiles/{name}`, `GET/POST /api/profiles/active` |
+| SOUL white-label, model, deskripsi | `GET/PUT /api/profiles/{name}/soul`, `PUT .../model`, `PUT .../description` |
+| Device pairing + QR | `POST /api/messaging/whatsapp/onboarding/start` → `{pairing_id, status, qr_payload, expires_at, account_phone}`; `GET .../{pairing_id}`; `POST .../{pairing_id}/apply`; `DELETE .../{pairing_id}` |
+| Pairing pengguna | `GET /api/pairing`, `POST /api/pairing/approve` (`request_id` **atau** `code`; lockout → 429), `/revoke`, `/clear-pending` |
+| Konfigurasi & env | `GET/PUT /api/config`, `/api/config/raw`, `/api/config/schema`, `GET/PUT/DELETE /api/env`, `POST /api/env/reveal` |
+| Kendali gateway | `POST /api/gateway/start|stop|restart|drain` |
+| Pemantauan | `GET /api/status`, `/api/health`, `/api/system/stats`, `/api/logs`, `/api/messaging/platforms` (+ `POST .../{id}/test`), `/api/sessions`, `/api/analytics/usage`, `/api/analytics/models` |
+| Skill & cron per profil | `/api/skills`, `/api/skills/toggle`, `/api/cron/jobs...` |
+| MCP server per profil | `GET/POST/PUT /api/mcp/servers`, `/{name}/enabled`, `/{name}/test` |
+
+`apply` pada onboarding WhatsApp bukan sekadar penanda: ia menulis
+`WHATSAPP_MODE`, `WHATSAPP_DM_POLICY=pairing`, `WHATSAPP_ALLOWED_USERS`,
+`WHATSAPP_ENABLED=true`, menyalakan platform, lalu **me-restart gateway**.
+
+**Dua hal yang harus dibaca bersamaan dengan tabel di atas:**
+
+1. **Autentikasinya belum untuk mesin.** `_require_token` hanya menerima
+   `_SESSION_TOKEN` ephemeral yang disuntikkan ke HTML SPA (bind loopback), atau
+   menyerah pada gate cookie OAuth/password (bind non-loopback). Seam bearer
+   generik memang ada (`hermes_cli/dashboard_auth/token_auth.py`) — tetapi
+   satu-satunya rute yang terdaftar adalah `/api/gateway/drain`, lewat
+   `plugins/dashboard_auth/drain/__init__.py:280`. Jadi panggilan
+   server-ke-server **belum mungkin tanpa satu plugin `dashboard_auth` baru**
+   (provider + `register_token_route` per path). Plugin drain itu contoh kerja
+   yang lengkap, termasuk gerbang entropi rahasia.
+2. **Port yang sama adalah permukaan eksekusi kode.** Di situ juga hidup
+   `/api/fs/write-text`, `/api/files/upload`, `/api/tools/terminal/*`,
+   `/api/git/*`, dan `/api/profiles/{name}/open-terminal`. Token ke dashboard
+   sama dengan RCE di host Hermes. Karena itu pemakaian dari pihak kita wajib
+   **daftar-putih per path** (seam-nya memang exact-match, cocok), scope
+   terpisah dari drain, dan bind loopback di balik proxy — bukan token umum yang
+   dipegang kode layar.
+
+### 1.5 Tiga permukaan HTTP, jangan dicampur
+
+| Permukaan | Isi | Auth | Catatan |
+|---|---|---|---|
+| **Bridge Baileys** (`scripts/whatsapp-bridge/bridge.js`, `127.0.0.1:<port>`) | kirim pesan/media/poll/lokasi, `/health`, `/messages` | **tidak ada** | satu bridge = satu nomor = satu port → alamat milik profil (§5). Jalur pengiriman tenant hari ini. |
+| **Dashboard** (`hermes_cli/web_server.py`) | profil, SOUL, pairing, QR, config/env, gateway, monitoring, MCP, **juga fs/terminal/git** | token SPA ephemeral / cookie gate | control plane. §1.4. |
+| **api_server** (`gateway/platforms/api_server.py`, `:8642`) | `/v1/chat/completions`, `/v1/runs`, `/health`, prefiks `/p/<profil>/` | `API_SERVER_KEY` | hanya *mengobrol* dengan agent. Tidak ada primitif messaging. `platforms.api_server.enabled` masih `false`. |
+
+### 1.6 MCP di Hermes: dua arah, keduanya bukan konfigurasi
+
+- **Hermes sebagai MCP server** — `mcp_serve.py` (`hermes mcp serve`) memuat
+  tepat 10 tool dan semuanya *messaging*: `conversations_list`,
+  `conversation_get`, `messages_read`, `attachments_fetch`, `events_poll`,
+  `events_wait`, `messages_send`, `channels_list`, `permissions_list_open`,
+  `permissions_respond`. **Nol tool untuk profil, config, atau pairing.**
+  Transportnya **stdio saja** (`server.run_stdio_async()`, baris 1029), jadi
+  memakainya dari Laravel berarti men-spawn proses di host Hermes dengan akses ke
+  home Hermes — objeksi yang sama dengan menjalankan CLI (§8). `messages_send`
+  juga tidak ter-scope profil: ia mengikuti `HERMES_HOME`/profil aktif proses itu.
+- **Hermes sebagai MCP client** — mendukung server **remote**:
+  `hermes mcp add <name> --url <endpoint>`, atau `POST /api/mcp/servers` yang
+  profile-scoped, dengan bearer token (`_save_bearer_auth_token`), filter
+  `tools.include`/`exclude`, dan toggle `enabled`. Ini jalur yang sesuai arah
+  D-68/D-70: **kita** tool provider, Hermes yang memanggil.
+
+Kesimpulan praktis: "bikin MCP ke Hermes untuk setting-setting" tidak bisa
+dipenuhi MCP — konfigurasi hidup di dashboard API (§1.4). MCP berguna untuk arah
+sebaliknya (menaikkan T-17b dari REST bernama-`mcp_*` menjadi MCP server nyata).
 
 ---
 
@@ -130,9 +224,11 @@ pekerjaan di sisi Hermes. Tidak ada jalan memutar.
 | Health check node | **Ada** | `GET /health`, `/health/detailed` |
 | Auth ke node | **Ada** | `API_SERVER_KEY` |
 | Approval run dari luar | **Ada** | `POST /v1/runs/{id}/approval` |
-| **Kirim WhatsApp dari luar** | **TIDAK ADA** | perlu endpoint baru di Hermes, atau `hermes send` (CLI) |
-| **Mulai sesi WA + ambil QR + status** | **TIDAK ADA** | perlu endpoint baru di Hermes |
-| **Pairing pengguna dari luar** | **TIDAK ADA** (CLI saja) | `hermes pairing list\|approve\|revoke\|clear-pending`, `gateway.pairing.PairingStore` |
+| **Kirim WhatsApp dari luar** | **Ada** (koreksi §1.3) | `POST /send` di bridge Baileys, loopback, tanpa auth. Dipakai T-69. |
+| **Mulai sesi WA + ambil QR + status** | **Ada** (koreksi §1.4) | `POST /api/messaging/whatsapp/onboarding/start` → `qr_payload`; status via `GET .../{pairing_id}` dan `/health` bridge |
+| **Pairing pengguna dari luar** | **Ada** (koreksi §1.4) | `GET /api/pairing`, `POST /api/pairing/approve|revoke|clear-pending` — HTTP, bukan hanya CLI |
+| **Auth server-ke-server ke dashboard** | **TIDAK ADA** | satu-satunya token route: `/api/gateway/drain`. Perlu plugin `dashboard_auth` baru. |
+| Tool MCP untuk konfigurasi | **TIDAK ADA** | `hermes mcp serve` hanya messaging (§1.6) |
 | Kirim lewat Cloud API resmi | **Ada, tapi terpaku Meta** | `GRAPH_API_BASE` hardcoded |
 
 ## 3. Pairing pengguna (lapisan 2) — sudah lengkap di Hermes
@@ -148,7 +244,9 @@ Isi `whatsapp-approved.json` saat ini: satu nomor, `6282136888005`, label `bot`.
 
 Ini **bentuk yang sama** dengan T-51 kita (kode sekali pakai, kedaluwarsa, bisa
 dicabut). D-70 memutuskan Hermes yang memegang; T-77 menjadikan T-51 antarmuka
-di atasnya. Yang belum ada: permukaan HTTP-nya.
+di atasnya. Permukaan HTTP-nya **ada** — `/api/pairing*` di §1.4, membungkus
+`PairingStore` yang sama. Yang menahan T-77 tinggal autentikasi mesin (§1.4
+butir 1), bukan ketiadaan endpoint.
 
 ## 4. Status platform pada instalasi ini
 
@@ -188,22 +286,140 @@ diambil dari field `status`, bukan dari kode HTTP.
 
 ## 6. Pekerjaan sisi Hermes yang sekarang menjadi prasyarat
 
-Ketiganya memblokir task di Fase 10 dan **bukan** pekerjaan Laravel:
+Daftar ini **menyusut dari empat menjadi dua** setelah §1.3/§1.4 dibaca
+sungguhan. Yang dulu tercatat sebagai "endpoint kirim pesan" (butir 1),
+"endpoint sesi WhatsApp + QR" (butir 2), dan "endpoint pairing pengguna"
+(butir 3) **semuanya sudah ada**; T-69 dan T-81 bahkan sudah memakai yang
+pertama. Yang tersisa:
 
-1. **Endpoint kirim pesan** (memblokir T-69, T-71). Minimal: kirim teks ke satu
-   nomor pada satu profil, mengembalikan konfirmasi terkirim yang bisa dibedakan
-   dari "diterima tapi gagal".
-2. **Endpoint sesi WhatsApp** (memblokir T-72): mulai sesi, ambil QR, baca
-   status, logout.
-3. **Endpoint pairing pengguna** (memblokir T-77): list, approve, revoke —
-   membungkus `PairingStore` yang sudah ada.
-4. **Override base URL Cloud API** (memblokir T-71 jalur resmi): satu konstanta
+1. **Auth server-ke-server untuk dashboard API** (memblokir T-72, T-77, dan
+   setiap layar pantau profil). Bentuk terkecilnya: satu plugin
+   `dashboard_auth` bergaya `plugins/dashboard_auth/drain` yang mendaftarkan
+   provider bearer + `register_token_route()` **hanya** untuk path yang kita
+   pakai. Tanpa itu satu-satunya cara masuk adalah token SPA ephemeral atau
+   login cookie — keduanya bukan jalur mesin.
+2. **Override base URL Cloud API** (memblokir T-71 jalur resmi): `GRAPH_API_BASE`
    dijadikan konfigurasi.
 
-Keempatnya kecil secara kode, tetapi semuanya di repo lain dan perlu keputusan
-Bos: ditambal lokal (utang pemeliharaan) atau diusulkan ke upstream (menunggu).
+Keduanya kecil secara kode tetapi ada di repo lain, jadi tetap perlu keputusan
+Bos: ditambal/di-plugin lokal (utang pemeliharaan) atau diusulkan ke upstream
+(menunggu). Catatan penting untuk butir 1: menambah plugin **tidak** boleh
+berarti membuka seluruh dashboard API — daftar-putih per path dan alasannya ada
+di §1.4 butir 2.
 
-## 7. Yang belum dibaca dan masih perlu dipastikan
+## 7. Armada: tiga hal berbeda yang mudah tertukar
+
+Pertanyaan "satu Hermes mengelola banyak Hermes, dan pusatnya kita kendalikan"
+menyentuh tiga mekanisme yang berbeda. Membedakannya penting karena hanya dua
+yang menjadi milik kita.
+
+### 7.1 Satu Hermes, banyak **profil** (sudah ada, terkendali penuh)
+
+`gateway.multiplex_profiles` + prefiks `/p/<profil>/` membuat satu listener
+melayani banyak profil, dan `profiles/<nama>/` adalah rumah terisolasi (§5).
+Ini **bukan** "banyak Hermes": satu proses, satu host. Batas yang harus disadari:
+satu bridge WhatsApp = satu nomor = **satu port** (T-81), setiap profil punya
+`state.db` sendiri, dan satu proses gateway jatuh berarti seluruh tenant di host
+itu jatuh bersamaan. `hermes_nodes.max_capacity` bawaan kita **100** adalah angka
+yang belum pernah diuji terhadap kenyataan ini.
+
+**Hermes mengenal empat mode gateway, dan ia melaporkannya sendiri.**
+`/api/status` mengembalikan `gateway_mode` berisi salah satu dari:
+
+| Mode | Arti | Konsekuensi multi-tenant |
+|---|---|---|
+| `multiplex` | satu gateway default melayani beberapa profil (`profiles_to_serve(True)`) | termurah, tetapi tenant **berbagi satu proses**: satu GIL, satu jatah memori, satu restart |
+| `multiple` | gateway independen **per profil** | isolasi per tenant; biayanya satu proses Python per tenant |
+| `single` | satu gateway hidup | satu profil aktif |
+| `none` | tidak ada yang jalan | — |
+
+Bersama itu, tiap gateway yang hidup dilaporkan sebagai
+`{"profile", "ports", "served_profiles"?}` — jadi **port yang dipakai tiap profil
+bisa dibaca dari luar**, tidak perlu ditebak atau dicatat tangan.
+
+**Batas kerja yang nyata, dari `hermes_cli/config_defaults.py`.** Tidak ada satu
+angka "maksimal tenant"; yang ada empat batas berbeda, dan ketiga yang pertama
+berlaku **per proses gateway** — artinya di mode `multiplex` batas itu **dibagi
+bersama oleh semua tenant pada proses itu**:
+
+- **`max_live_sessions: 16`** — batas LRU lunak atas sesi in-memory. Melebihi itu,
+  gateway **menggusur** sesi ter-lama yang **detached** (tanpa klien hidup); sesi
+  itu dipulihkan dari disk saat dibuka lagi, jadi ini **bukan** kehilangan data,
+  tetapi ia **adalah** langit-langit "berapa banyak yang benar-benar bekerja
+  serentak". `0`/`null` mematikannya.
+- **`max_concurrent_sessions: None`** — batas global sesi chat aktif lintas CLI,
+  TUI/dashboard, dan messaging. Bawaannya **tanpa batas**, jadi ia knop yang
+  tersedia, bukan perlindungan yang sudah menyala.
+- **`gateway.api_server.max_concurrent_runs`** — batas run agent yang dibagi
+  seluruh endpoint pelayan agent; melebihinya dijawab respons "concurrency
+  limited". `0` mematikan batas.
+- **`agent.restart_drain_timeout: 0`** dengan kontrak yang dinyatakan eksplisit:
+  "if you restart the gateway, in-flight work stops". Plus
+  `agent.gateway_timeout: 1800` (idle) dan `agent.max_turns: 500`.
+
+Gabungan dua fakta terakhir adalah alasan paling kuat untuk **tidak** menumpuk
+banyak tenant pada satu proses: di mode `multiplex`, restart gateway — yang antara
+lain **dipicu sendiri** oleh `POST /api/messaging/whatsapp/onboarding/{id}/apply`
+— menghentikan pekerjaan yang sedang jalan. Apakah restart itu benar-benar
+menjatuhkan seluruh `served_profiles` atau hanya profil yang diminta **belum
+diverifikasi** (`_spawn_gateway_restart(profile)` menerima nama profil, tetapi di
+mode multiplex profil itu dilayani proses default). Ini harus diuji sebelum dua
+tenant berbagi satu proses — lihat T-89.
+
+**Rekomendasi yang mengikuti dari fakta di atas:** tenant berbayar dijalankan
+dengan gateway **per profil** (`multiple`), bukan `multiplex`. Biayanya satu
+proses per tenant, dan itulah yang membuat "banyak host" menjadi kebutuhan
+infrastruktur, bukan kemewahan. `multiplex` tetap masuk akal untuk profil internal
+dan demo. Keputusan mana yang dipakai per host adalah bagian **Q-14**.
+
+### 7.2 Banyak host Hermes, pusatnya **Agentic BOS** (jalur D-72)
+
+Inilah yang sudah masuk antrean: `hermes_nodes` + `HermesControlPlaneClient`
+(T-82) memanggil dashboard API tiap host. Yang menjadi "pusat" adalah **produk
+kita**, bukan sebuah Hermes. Pemetaan tenant, kuota, dan paket memang sudah hidup
+di sisi kita (D-37, `max_capacity`, D-52), jadi menaruh kendali armada di situ
+tidak memindahkan aturan bisnis ke mesin — persis batas yang D-69 tegakkan untuk
+skill.
+
+### 7.3 Hermes pusat sebagai orkestrator — **ada, tetapi pusatnya bukan kita**
+
+Hermes memang punya orkestrator armada. Namanya **NAS**, dan ia milik Nous:
+
+- `hermes_cli/gateway_enroll.py` — `hermes gateway enroll` mendaftarkan gateway
+  self-hosted ke **relay connector**: token Nous Portal dari `~/.hermes/auth.json`
+  membuktikan **org Nous mana** yang memiliki pemanggil, connector menurunkan
+  tenant otoritatif lewat `GET /api/oauth/account` (**tidak pernah** dari apa yang
+  diakui gateway), lalu mengembalikan `GATEWAY_RELAY_ID`/`_SECRET`/`_DELIVERY_KEY`.
+  Dokumentasinya menyebut **EXPERIMENTAL: skema auth relay dapat berubah tanpa
+  siklus deprecation.**
+- Instalasi *managed/hosted* **tidak** self-enroll: "the orchestrator (NAS) mints
+  the secret directly and stamps it into the container env", dan perintahnya
+  menolak jalan di bawah `is_managed()`.
+- `hermes_cli/dashboard_register.py` — klien OAuth dashboard didaftarkan ke
+  `portal.nousresearch.com/api/oauth/self-hosted-client`, dimiliki org pemanggil.
+
+Konsekuensinya untuk kita: memakai jalur ini berarti tenant kita terdaftar di
+bawah **org Nous**, jalur kendali melewati connector mereka, onboarding menyentuh
+merek Nous (bertabrakan dengan D-68), dan kontraknya sendiri dinyatakan
+eksperimental. Jadi "Hermes pusat" **tidak** memberi kita pusat — ia memberi Nous
+pusatnya. Ini bukan alasan teknis semata: armada adalah tempat kuota dan paket
+ditegakkan, dan itu milik produk kita.
+
+### 7.4 Dua mekanisme Hermes yang **benar-benar** berarti "kita kendalikan"
+
+| Mekanisme | Isi | Batas yang harus jujur |
+|---|---|---|
+| **Managed scope** (`hermes_cli/managed_scope.py`) | Direktori config/env yang **menang atas** `~/.hermes/config.yaml` dan `.env` milik pengguna, per-leaf-key. Resolusinya: `$HERMES_MANAGED_DIR` (override deployment, **tidak** pernah ditulis ke .env mana pun) lalu `/etc/hermes`. | (a) "v1 enforcement is filesystem permissions only", **POSIX-first**; di Windows direktorinya hanya ditunjuk env var, jadi kendalinya **konvensi, bukan penjagaan**. (b) Bacaannya **fail-open**: berkas managed yang rusak dicatat keras lalu **tidak diterapkan** — kebijakan kita bisa berhenti berlaku tanpa ada yang menyadari. Kalau mekanisme ini dipakai sebagai penjaga, ia butuh pemantauan dari sisi kita (apakah nilai yang kita paksa benar-benar aktif), bukan keyakinan bahwa berkasnya ada. |
+| **Profile distribution** (`hermes_cli/profile_distribution.py`) | Profil dipaket sebagai **repo git** + `distribution.yaml`; `hermes profile install <git-url>#<ref>`, `update`, `info`. Memori/sesi/kredensial lokal tidak disentuh saat update. | Cocok dengan cara kita sudah bekerja (D-69: artefak produk hidup di repo, di-deploy, lewat review + riwayat git). Yang perlu diputuskan: apakah template profil tenant menjadi distribution resmi di repo kita, dan bagaimana `--force-config` berinteraksi dengan penyesuaian per tenant. Belum diuji. |
+
+Kesimpulan yang dicatat supaya tidak ditemukan ulang: **hub = Agentic BOS**
+(§7.2), **kendali konfigurasi = managed scope + distribution** (§7.4), dan
+**relay/NAS tidak dipakai** (§7.3). Satu bentuk "Hermes pusat" yang tetap masuk
+akal adalah **profil operator internal** untuk diagnosa armada — dikecualikan
+white-label (D-68) dan tanpa tool tulis ke node tenant; itu memantau, bukan
+mengendalikan.
+
+## 8. Yang belum dibaca dan masih perlu dipastikan
 
 Supaya tidak ada yang mengira dokumen ini lebih lengkap dari kenyataannya:
 
@@ -213,10 +429,30 @@ Supaya tidak ada yang mengira dokumen ini lebih lengkap dari kenyataannya:
   jadi ini bukan jalur produk.
 - `gateway/delivery.py`, `delivery_ledger.py` — apakah ada primitif kirim yang
   layak dibungkus endpoint.
-- `hermes_cli/web_server.py` + `web_routers/` — tempat paling wajar menambahkan
-  router pairing/whatsapp; `web_routers/` sekarang hanya `cron, git, mcp,
-  profiles, sessions, skills, tools`.
 - Dokumentasi kirimdev: bentuk payload webhook, nama header HMAC, dan apakah
   benar-benar sepadan dengan `X-Hub-Signature-256` milik Meta.
+- **Kestabilan kontrak dashboard API.** Rutenya tidak berversi dan sebagian
+  besar masih di dalam `web_server.py` (sisanya baru diekstrak "verbatim" ke
+  `web_routers/`). Pembaruan Hermes bisa memindahkan atau mengubahnya tanpa
+  peringatan. Belum diperiksa: apakah ada janji kompatibilitas apa pun untuk
+  `/api/*`. Sampai itu jelas, anggap ini utang pemeliharaan dan kurung
+  pemakaiannya dalam satu kelas klien + test kontrak terhadap node hidup.
+- Apakah `POST /api/messaging/platforms/{id}/test` benar-benar mengirim pesan
+  uji atau hanya memeriksa konfigurasi — belum dibaca, jangan diandalkan
+  sebagai jalur kirim.
+- **Managed scope di Windows belum diuji.** Mekanismenya jelas dari kode
+  (`$HERMES_MANAGED_DIR` diperiksa lebih dulu dan hanya butuh direktori yang ada,
+  jadi lintas-OS), tetapi belum pernah dibuktikan bahwa satu nilai yang kita
+  paksa benar-benar **menang** atas `config.yaml` profil pada instalasi ini. Ini
+  yang menentukan apakah "kita kendalikan" berarti penjagaan atau hanya niat.
+  Lihat T-88.
+- **Profile distribution belum diuji.** `hermes profile install <git-url>#<ref>` /
+  `update` belum dijalankan sekali pun dari sini, dan perilaku `--force-config`
+  terhadap penyesuaian per tenant belum diketahui. Lihat T-88.
+- **Relay connector / NAS sengaja tidak ditelusuri lebih jauh.** Keputusan
+  §7.3 adalah tidak memakainya; berkas `gateway_enroll.py` dan
+  `dashboard_register.py` dibaca hanya sampai cukup untuk memastikan pusatnya
+  memang Nous. Bila kelak dipertimbangkan ulang, mulai dari
+  `docs/connector-gateway-auth-design.md` di repo connector.
 - **Q-10**: apakah WABA pelanggan berada di bawah portfolio kita (menentukan
   D-71 bisa dijalankan).
