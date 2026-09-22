@@ -11,5 +11,9 @@ Artisan::command('inspire', function () {
 Schedule::command('billing:check-expiring')->daily();
 
 // UR-06: backup harian terenkripsi + health check dengan alert log.
+// D-63/T-49: pengingat piutang pelanggan. Dijalankan pagi supaya pemilik usaha
+// menerimanya di awal hari kerja; idempoten, jadi aman bila terpanggil ulang.
+Schedule::command('bos:remind-receivables')->dailyAt('07:30');
+
 Schedule::command('bos:backup-mysql')->dailyAt('02:30');
 Schedule::command('bos:health')->everyFiveMinutes();

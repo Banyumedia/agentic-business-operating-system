@@ -93,6 +93,12 @@ class Company extends Model
         return $this->hasMany(CompanyInvitation::class);
     }
 
+    /** Tagihan yang usaha ini terbitkan ke pelanggannya (D-62). */
+    public function customerInvoices(): HasMany
+    {
+        return $this->hasMany(CustomerInvoice::class);
+    }
+
     /**
      * The invoices associated with this company.
      */
