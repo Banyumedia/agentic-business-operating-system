@@ -409,8 +409,56 @@ ditegakkan, dan itu milik produk kita.
 
 | Mekanisme | Isi | Batas yang harus jujur |
 |---|---|---|
-| **Managed scope** (`hermes_cli/managed_scope.py`) | Direktori config/env yang **menang atas** `~/.hermes/config.yaml` dan `.env` milik pengguna, per-leaf-key. Resolusinya: `$HERMES_MANAGED_DIR` (override deployment, **tidak** pernah ditulis ke .env mana pun) lalu `/etc/hermes`. | (a) "v1 enforcement is filesystem permissions only", **POSIX-first**; di Windows direktorinya hanya ditunjuk env var, jadi kendalinya **konvensi, bukan penjagaan**. (b) Bacaannya **fail-open**: berkas managed yang rusak dicatat keras lalu **tidak diterapkan** — kebijakan kita bisa berhenti berlaku tanpa ada yang menyadari. Kalau mekanisme ini dipakai sebagai penjaga, ia butuh pemantauan dari sisi kita (apakah nilai yang kita paksa benar-benar aktif), bukan keyakinan bahwa berkasnya ada. |
-| **Profile distribution** (`hermes_cli/profile_distribution.py`) | Profil dipaket sebagai **repo git** + `distribution.yaml`; `hermes profile install <git-url>#<ref>`, `update`, `info`. Memori/sesi/kredensial lokal tidak disentuh saat update. | Cocok dengan cara kita sudah bekerja (D-69: artefak produk hidup di repo, di-deploy, lewat review + riwayat git). Yang perlu diputuskan: apakah template profil tenant menjadi distribution resmi di repo kita, dan bagaimana `--force-config` berinteraksi dengan penyesuaian per tenant. Belum diuji. |
+| **Managed scope** (`hermes_cli/managed_scope.py`) | Direktori config/env yang **menang atas** `~/.hermes/config.yaml` dan `.env` milik pengguna, per-leaf-key. Resolusinya: `$HERMES_MANAGED_DIR` (override deployment, **tidak** pernah ditulis ke .env mana pun) lalu `/etc/hermes`. | (a) "v1 enforcement is filesystem permissions only", **POSIX-first**; di Windows direktorinya hanya ditunjuk env var, jadi kendalinya **konvensi, bukan penjagaan**. (b) Bacaannya **fail-open** — **diuji, bukan dugaan** (T-88, §7.4a): berkas managed yang rusak dicatat keras (`IGNORING this managed file. Admin policy ... NOT being applied. Fix and restart.`) lalu `load_managed_config()` mengembalikan `{}`. Kebijakan kita berhenti berlaku tanpa satu galat pun ke pemanggil. Kalau dipakai sebagai penjaga, ia **wajib** dipantau dari sisi kita (`GET /api/status`/`/api/config`, T-84), bukan diandalkan pada keberadaan berkas. |
+| **Profile distribution** (`hermes_cli/main.py`, cmd `profile install/update/info`) | Profil dipaket sebagai **repo git** + `distribution.yaml`; `hermes profile install <git-url>#<ref>`, `update`, `info`. | **Kontrak `update` dibaca dari keluaran CLI-nya sendiri** (T-88, §7.4b): file dist-owned **ditimpa** (`SOUL.md`, `skills/`, `cron/`, `mcp.json`); `config.yaml` **dipertahankan** kecuali `--force-config`; dan `memories, sessions, auth.json, .env` **tidak pernah disentuh**. Ini menjawab tiga pertanyaan T-85 vs D-69: template profil tenant **bisa** menjadi artefak repo, dan penyesuaian per tenant (`config.yaml`, kredensial, riwayat) aman selama `--force-config` tidak dipakai. Belum dijalankan penuh di sini — lihat catatan di bawah. |
+
+#### 7.4a Bukti uji T-88 (dijalankan pada instalasi ini, bukan dugaan)
+
+Uji terhadap sistem luar, jadi buktinya transkrip perintah, bukan test PHPUnit.
+Dijalankan lewat interpreter Hermes sendiri (`venv\Scripts\python.exe`) di
+`%LOCALAPPDATA%\hermes\hermes-agent`, dengan `$HERMES_MANAGED_DIR` menunjuk
+direktori sementara yang dihapus setelah uji. **Managed scope resolve di Windows** —
+mematahkan keraguan "POSIX-first mungkin tidak jalan di sini":
+
+```
+MANAGED_DIR=C:\Users\...\Temp\hermes-managed-t88
+MANAGED_CFG={"gateway": {"log_level": "MANAGED_WINS"}}
+```
+
+**(a) Menang per-leaf, bukan mengganti seluruh cabang.** User config punya dua leaf
+di bawah `gateway` + satu key tak terkait; managed hanya memaksa `log_level`:
+
+```
+input : {'gateway': {'log_level': 'USER_VALUE', 'other_key': 'USER_KEEP'}, 'unrelated': 'KEEP2'}
+overlay: {"gateway": {"log_level": "MANAGED_WINS", "other_key": "USER_KEEP"}, "unrelated": "KEEP2"}
+```
+
+`log_level` menang; `other_key` dan `unrelated` utuh. Jadi managed scope bisa
+memaku **satu** nilai tanpa mengambil alih sisa konfigurasi tenant — itu yang
+membuatnya berguna sebagai penjaga selektif.
+
+**(b) Fail-open terbukti, dan ini bahayanya.** `config.yaml` managed dirusak
+(YAML tak lengkap), cache di-invalidate, lalu dibaca ulang:
+
+```
+managed scope: failed to parse ...config.yaml: ... IGNORING this managed file.
+Admin policy from this file is NOT being applied. Fix and restart.
+MALFORMED_CFG={}
+```
+
+Ia berteriak di log, tetapi **`load_managed_config()` tetap mengembalikan `{}`** dan
+resolusi config lanjut tanpa kebijakan kita. Konsekuensinya untuk kita keras: satu
+salah-ketik pada berkas managed **mematikan seluruh penjagaan** di node itu tanpa
+menghentikan apa pun. Karena itu managed scope **tidak boleh** dianggap penjagaan
+yang berdiri sendiri; ia harus dipasangkan dengan pemeriksaan "nilai yang kita paksa
+masih aktif?" dari `GET /api/status` (T-84).
+
+**Distribution: kontraknya dibaca, siklus install/update penuh sengaja tidak
+dijalankan** terhadap agen Hermes yang hidup — ia akan menimpa berkas dist-owned
+profil nyata, aksi yang sulit ditarik kembali pada instalasi produktif. Yang
+dipastikan adalah **kontrak `update` dari keluaran CLI-nya sendiri** (lihat tabel
+§7.4). Menjalankan siklus penuh layak dilakukan pada profil uji yang dibuang, bukan
+pada `%LOCALAPPDATA%\hermes` yang sedang dipakai.
 
 Kesimpulan yang dicatat supaya tidak ditemukan ulang: **hub = Agentic BOS**
 (§7.2), **kendali konfigurasi = managed scope + distribution** (§7.4), dan
@@ -440,15 +488,19 @@ Supaya tidak ada yang mengira dokumen ini lebih lengkap dari kenyataannya:
 - Apakah `POST /api/messaging/platforms/{id}/test` benar-benar mengirim pesan
   uji atau hanya memeriksa konfigurasi — belum dibaca, jangan diandalkan
   sebagai jalur kirim.
-- **Managed scope di Windows belum diuji.** Mekanismenya jelas dari kode
-  (`$HERMES_MANAGED_DIR` diperiksa lebih dulu dan hanya butuh direktori yang ada,
-  jadi lintas-OS), tetapi belum pernah dibuktikan bahwa satu nilai yang kita
-  paksa benar-benar **menang** atas `config.yaml` profil pada instalasi ini. Ini
-  yang menentukan apakah "kita kendalikan" berarti penjagaan atau hanya niat.
-  Lihat T-88.
-- **Profile distribution belum diuji.** `hermes profile install <git-url>#<ref>` /
-  `update` belum dijalankan sekali pun dari sini, dan perilaku `--force-config`
-  terhadap penyesuaian per tenant belum diketahui. Lihat T-88.
+- ~~**Managed scope di Windows belum diuji.**~~ **DIUJI (T-88, §7.4a):** resolve di
+  Windows, menang per-leaf, dan **fail-open** saat berkasnya rusak (mengembalikan
+  `{}` sambil berteriak di log). Kesimpulan: "kita kendalikan" lewat managed scope
+  hanya berarti penjagaan **bila** disertai pemantauan `GET /api/status` — berkas
+  sendirian bukan jaminan.
+- **Profile distribution: kontraknya dibaca, siklus penuh belum dijalankan.**
+  Kontrak `update` sudah dipastikan dari keluaran CLI Hermes (T-88, §7.4:
+  dist-owned ditimpa; `config.yaml` dipertahankan tanpa `--force-config`;
+  memori/sesi/auth/.env tidak disentuh). Yang **belum** dilakukan adalah siklus
+  `install` → ubah repo → `update` sungguhan, karena itu menimpa berkas pada agen
+  Hermes yang hidup — layak diuji pada profil buang, bukan pada `%LOCALAPPDATA%\hermes`
+  yang dipakai. Cukup untuk memutuskan T-85: template profil tenant boleh jadi
+  artefak repo (D-69).
 - **Relay connector / NAS sengaja tidak ditelusuri lebih jauh.** Keputusan
   §7.3 adalah tidak memakainya; berkas `gateway_enroll.py` dan
   `dashboard_register.py` dibaca hanya sampai cukup untuk memastikan pusatnya
