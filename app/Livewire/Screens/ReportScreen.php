@@ -48,11 +48,23 @@ class ReportScreen extends Component
     #[Locked]
     public string $company;
 
+    /** Periode `YYYY-MM` yang sedang disorot, atau `all`. */
+    public string $period = self::ALL;
+
+    private const ALL = 'all';
+
+    private const UNCATEGORIZED = 'Tanpa kategori';
+
     public function mount(string $module, ?string $submodule = null): void
     {
         $this->module = $module;
         $this->submodule = $submodule;
         $this->company = app(CompanyContext::class)->current();
+    }
+
+    public function resetPeriod(): void
+    {
+        $this->period = self::ALL;
     }
 
     public function render(): View
@@ -63,17 +75,26 @@ class ReportScreen extends Component
             ->all();
 
         $periods = $this->periods($entries);
-        $rows = [];
+        $selected = $this->activePeriod($periods);
+
+        $allRows = [];
         $balance = 0.0;
-        $totalIn = 0.0;
-        $totalOut = 0.0;
+        $allTimeIn = 0.0;
+        $allTimeOut = 0.0;
+        $shownIn = 0.0;
+        $shownOut = 0.0;
+        $rows = [];
 
         foreach ($periods as $period => $totals) {
+            // Saldo berjalan selalu diakumulasi dari awal supaya angkanya adalah
+            // posisi kas nyata pada akhir bulan itu - bukan isi bulan. Menyaring
+            // periode hanya menyembunyikan baris, tidak pernah menulis ulang
+            // saldo, sama seperti Buku Kas.
             $balance += $totals['in'] - $totals['out'];
-            $totalIn += $totals['in'];
-            $totalOut += $totals['out'];
+            $allTimeIn += $totals['in'];
+            $allTimeOut += $totals['out'];
 
-            $rows[] = [
+            $row = [
                 'period' => $period,
                 'label' => $this->periodLabel($period),
                 'income' => round($totals['in'], 2),
@@ -81,15 +102,120 @@ class ReportScreen extends Component
                 'net' => round($totals['in'] - $totals['out'], 2),
                 'balance' => round($balance, 2),
             ];
+
+            $allRows[] = $row;
+
+            if ($selected === self::ALL || $selected === $period) {
+                $rows[] = $row;
+                $shownIn += $totals['in'];
+                $shownOut += $totals['out'];
+            }
         }
 
         return view('livewire.screens.report', [
             'label' => $definition['label'],
             'rows' => $rows,
-            'totalIncome' => round($totalIn, 2),
-            'totalExpense' => round($totalOut, 2),
-            'balance' => round($totalIn - $totalOut, 2),
+            // Total header mengikuti apa yang sedang dilihat, supaya "uang
+            // masuk/keluar" sepakat dengan tabel di bawahnya.
+            'totalIncome' => round($shownIn, 2),
+            'totalExpense' => round($shownOut, 2),
+            // Saldo kas adalah posisi akhir seluruh riwayat: itu jumlah uang
+            // yang benar-benar ada, tidak berubah karena operator menyaring.
+            'balance' => round($allTimeIn - $allTimeOut, 2),
+            'periods' => $this->periodOptions($periods),
+            'period' => $selected,
+            'filtered' => $selected !== self::ALL,
+            'expenseComposition' => $this->composition($entries, $selected, 'out'),
         ]);
+    }
+
+    /**
+     * Rincian uang keluar per kategori untuk periode yang sedang disorot.
+     *
+     * Kategori adalah data yang dimasukkan operator, bukan istilah industri:
+     * layar tidak pernah menyebut nama kategori tertentu di kode. Entri tanpa
+     * kategori dikelompokkan, tidak dibuang, supaya jumlah komposisi selalu
+     * sama dengan total uang keluar - kalau tidak, sebagian biaya lenyap dari
+     * pandangan tanpa jejak.
+     *
+     * @param  list<array<string, mixed>>  $entries
+     * @return list<array{label: string, amount: float, share: float}>
+     */
+    private function composition(array $entries, string $selected, string $direction): array
+    {
+        $totals = [];
+
+        foreach ($entries as $entry) {
+            if (($entry['direction'] ?? null) !== $direction) {
+                continue;
+            }
+
+            $period = $this->periodOf($entry['entry_date'] ?? null);
+            if ($period === null || ($selected !== self::ALL && $period !== $selected)) {
+                continue;
+            }
+
+            $category = $entry['category'] ?? null;
+            $label = is_string($category) && trim($category) !== '' ? $category : self::UNCATEGORIZED;
+            $totals[$label] = ($totals[$label] ?? 0.0) + (float) ($entry['amount'] ?? 0);
+        }
+
+        $sum = array_sum($totals);
+        if ($sum <= 0.0) {
+            return [];
+        }
+
+        // Urut nilai menurun; kategori terbesar lebih dulu. Nama kategori jadi
+        // pemutus seri supaya urutannya tetap (deterministik) walau nilainya sama.
+        uksort($totals, static function (string $left, string $right) use ($totals): int {
+            return [$totals[$right], $left] <=> [$totals[$left], $right];
+        });
+
+        $composition = [];
+        foreach ($totals as $label => $amount) {
+            $composition[] = [
+                'label' => $label,
+                'amount' => round($amount, 2),
+                'share' => round($amount / $sum * 100, 1),
+            ];
+        }
+
+        return $composition;
+    }
+
+    /**
+     * Periode `YYYY-MM` yang sah untuk disorot. Nilai tak dikenal dikembalikan
+     * ke "semua": filter bukan pintu data, jadi nilai asing cukup diabaikan,
+     * bukan menampilkan tabel kosong yang membingungkan.
+     *
+     * @param  array<string, array{in: float, out: float}>  $periods
+     */
+    private function activePeriod(array $periods): string
+    {
+        return array_key_exists($this->period, $periods) ? $this->period : self::ALL;
+    }
+
+    /**
+     * Pilihan periode diturunkan dari data yang punya transaksi, terbaru dulu.
+     * Bulan kosong sisipan (dari `monthsBetween`) tidak ditawarkan sebagai
+     * pilihan karena tidak ada yang bisa dilihat di sana.
+     *
+     * @param  array<string, array{in: float, out: float}>  $periods
+     * @return list<array{value: string, label: string}>
+     */
+    private function periodOptions(array $periods): array
+    {
+        $withActivity = array_keys(array_filter(
+            $periods,
+            static fn (array $totals): bool => $totals['in'] > 0.0 || $totals['out'] > 0.0,
+        ));
+
+        rsort($withActivity);
+
+        return array_map(fn (string $period): array => [
+            'value' => $period,
+            'label' => $this->periodLabel($period),
+        ], $withActivity);
     }
 
     /**

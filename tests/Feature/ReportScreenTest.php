@@ -198,17 +198,125 @@ class ReportScreenTest extends TestCase
         $this->assertStringContainsString('basis kas', $source);
     }
 
+    public function test_period_filter_narrows_rows_without_changing_all_time_running_balance(): void
+    {
+        $this->cash('in', 5000000, '2026-01-10');
+        $this->cash('out', 1000000, '2026-02-10');
+        $this->cash('in', 2000000, '2026-03-10');
+
+        $component = $this->screen()->set('period', '2026-02');
+        $rows = $component->viewData('rows');
+
+        // Hanya periode terpilih yang ditampilkan.
+        $this->assertSame(['2026-02'], array_column($rows, 'period'));
+        // Namun saldo berjalan pada baris itu tetap posisi kas seluruh riwayat
+        // sampai akhir Februari (5jt masuk - 1jt keluar), bukan hanya isi bulan.
+        $this->assertSame(4000000.0, $rows[0]['balance']);
+        $this->assertSame(-1000000.0, $rows[0]['net']);
+
+        // Total di header ikut periode terpilih supaya "uang masuk/keluar"
+        // konsisten dengan tabel yang sedang dilihat.
+        $this->assertSame(0.0, $component->viewData('totalIncome'));
+        $this->assertSame(1000000.0, $component->viewData('totalExpense'));
+        // Saldo kas selalu posisi akhir seluruh riwayat, diberi label demikian.
+        $this->assertSame(6000000.0, $component->viewData('balance'));
+    }
+
+    public function test_unknown_period_filter_falls_back_to_all_periods(): void
+    {
+        $this->cash('in', 1000000, '2026-01-10');
+        $this->cash('in', 1000000, '2026-02-10');
+
+        $rows = $this->screen()
+            ->set('period', '../secret')
+            ->assertOk()
+            ->viewData('rows');
+
+        $this->assertSame(['2026-01', '2026-02'], array_column($rows, 'period'));
+    }
+
+    public function test_period_options_come_from_recorded_entries_newest_first(): void
+    {
+        $this->cash('in', 1000, '2026-01-05');
+        $this->cash('in', 1000, '2026-03-05');
+        $this->cash('in', 1000, '2026-03-20');
+
+        $periods = $this->screen()->viewData('periods');
+
+        $this->assertSame(['2026-03', '2026-01'], array_column($periods, 'value'));
+        $this->assertSame('Maret 2026', $periods[0]['label']);
+    }
+
+    public function test_composition_breaks_expenses_down_by_category(): void
+    {
+        $this->cash('out', 400000, '2026-01-05', 'Sparepart');
+        $this->cash('out', 100000, '2026-01-06', 'Sparepart');
+        $this->cash('out', 250000, '2026-01-07', 'Gaji');
+        $this->cash('in', 900000, '2026-01-08', 'Servis');
+
+        $composition = $this->screen()->viewData('expenseComposition');
+
+        // Diurut nilai menurun; kategori terbesar di atas.
+        $this->assertSame(['Sparepart', 'Gaji'], array_column($composition, 'label'));
+        $this->assertSame([500000.0, 250000.0], array_column($composition, 'amount'));
+        // Pemasukan tidak ikut ke komposisi biaya.
+        $this->assertNotContains('Servis', array_column($composition, 'label'));
+    }
+
+    public function test_entries_without_a_category_are_grouped_not_dropped(): void
+    {
+        $this->cash('out', 300000, '2026-01-05', 'Sparepart');
+        $this->cash('out', 150000, '2026-01-06', null);
+
+        $composition = $this->screen()->viewData('expenseComposition');
+
+        $labels = array_column($composition, 'label');
+        $this->assertContains('Tanpa kategori', $labels);
+        // Jumlah komposisi = total uang keluar; tidak ada yang hilang diam-diam.
+        $this->assertSame(450000.0, array_sum(array_column($composition, 'amount')));
+    }
+
+    public function test_composition_follows_the_selected_period(): void
+    {
+        $this->cash('out', 400000, '2026-01-05', 'Sparepart');
+        $this->cash('out', 999000, '2026-02-05', 'Sewa');
+
+        $composition = $this->screen()
+            ->set('period', '2026-01')
+            ->viewData('expenseComposition');
+
+        $this->assertSame(['Sparepart'], array_column($composition, 'label'));
+        $this->assertSame([400000.0], array_column($composition, 'amount'));
+    }
+
+    public function test_composition_share_sums_to_one_hundred_percent(): void
+    {
+        $this->cash('out', 750000, '2026-01-05', 'Sparepart');
+        $this->cash('out', 250000, '2026-01-06', 'Gaji');
+
+        $composition = $this->screen()->viewData('expenseComposition');
+
+        $this->assertSame(75.0, $composition[0]['share']);
+        $this->assertSame(25.0, $composition[1]['share']);
+    }
+
     private function screen(): Testable
     {
         return Livewire::test(ReportScreen::class, ['module' => 'accounting', 'submodule' => 'reports']);
     }
 
-    private function cash(string $direction, float $amount, string $date): void
+    private function cash(string $direction, float $amount, string $date, ?string $category = null): void
     {
-        app(EntityRepository::class)->for(app(CompanyContext::class)->current(), 'cash_entries')->save([
+        $record = [
             'entry_date' => $date,
             'direction' => $direction,
             'amount' => $amount,
-        ]);
+        ];
+
+        if ($category !== null) {
+            $record['category'] = $category;
+        }
+
+        app(EntityRepository::class)->for(app(CompanyContext::class)->current(), 'cash_entries')->save($record);
     }
 }
