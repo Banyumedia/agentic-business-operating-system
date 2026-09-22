@@ -25,6 +25,12 @@ class Settings extends Component
      *
      * @var array<string, string>
      */
+    /**
+     * Batas panjang label istilah. Cukup untuk frasa seperti "Surat Perintah
+     * Kerja" tanpa memecah navigasi sempit di layar 360 px.
+     */
+    private const TERMINOLOGY_MAX_LENGTH = 40;
+
     private const TERMINOLOGY_PAIRS = [
         'contact' => 'contacts',
         'deal' => 'deals',
@@ -160,6 +166,17 @@ class Settings extends Component
             return;
         }
 
+        // Label muncul di navigasi, judul kolom, dan kalimat empty-state. Label
+        // yang terlalu panjang memecah tata letak sempit; batasnya dijaga di
+        // sini, bukan hanya lewat `maxlength` HTML yang bisa dilewati permintaan
+        // Livewire rakitan tangan.
+        if (mb_strlen($value) > self::TERMINOLOGY_MAX_LENGTH) {
+            $this->featuresFailure = 'Label istilah terlalu panjang (maksimal '.self::TERMINOLOGY_MAX_LENGTH.' karakter).';
+            $this->refreshTerminologyForm();
+
+            return;
+        }
+
         $plural = self::TERMINOLOGY_PAIRS[$key];
 
         app(CompanySettingsStore::class)->update(
@@ -176,6 +193,35 @@ class Settings extends Component
 
         $this->refreshTerminologyForm();
         $this->featuresNotice = 'Istilah tersimpan.';
+    }
+
+    /**
+     * Mengembalikan satu istilah ke bawaan preset dengan menghapus override-nya
+     * (kedua bentuk tunggal & jamak). Menghapus, bukan menimpa dengan nilai
+     * preset: menyalin nilai preset akan membeku bila preset kemudian berubah
+     * istilahnya, sedangkan override yang absen selalu mengikuti preset.
+     */
+    public function resetTerminology(string $key, CompanyContext $companyContext): void
+    {
+        $this->resetFeaturesFeedback();
+        $activeCompany = $this->assertOwnerOfActiveCompany($companyContext);
+        abort_unless(array_key_exists($key, self::TERMINOLOGY_PAIRS), 404);
+
+        $plural = self::TERMINOLOGY_PAIRS[$key];
+
+        app(CompanySettingsStore::class)->update(
+            $activeCompany,
+            function (array $settings) use ($key, $plural): array {
+                $terminology = is_array($settings['terminology'] ?? null) ? $settings['terminology'] : [];
+                unset($terminology[$key], $terminology[$plural]);
+                $settings['terminology'] = $terminology;
+
+                return $settings;
+            },
+        );
+
+        $this->refreshTerminologyForm();
+        $this->featuresNotice = 'Istilah kembali ke bawaan.';
     }
 
     public function render(PresetSource $presets)
