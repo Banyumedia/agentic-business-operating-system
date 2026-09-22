@@ -792,10 +792,16 @@ dipulihkan via `git checkout`. Test suite kembali hijau setelahnya.
 **Catatan tentang klaim "FeatureResolver fail-open":** OpenCode menandai `(! $isPlanActive || in_array(...))` sebagai celah D-52. Setelah Hermes membaca kode: ini **perilaku yang disengaja dan benar** — fitur preset berlaku penuh hanya saat company **tidak punya membership/paket** (keadaan demo/setup), dan `PlanCapabilityGate` memang fail-closed (`[]`) saat membership hilang. Mengubahnya jadi fail-closed global akan mematikan seluruh demo/test. Apakah company tanpa paket harus dibatasi adalah **keputusan produk untuk Bos**, bukan bug untuk diperbaiki sepihak.
 
 ## READY Berikutnya
-Tidak ada task `READY` tersisa. Fase 8 (T-41..T-47) dan Fase 9 (T-48..T-58)
-selesai penuh; Fase 6b/katalog D-56 sudah dibangun seluruhnya (T-28..T-35).
+Fase 8 (T-41..T-47) dan Fase 9 (T-48..T-58) selesai penuh; Fase 6b/katalog D-56
+sudah dibangun seluruhnya (T-28..T-35).
 
-Kandidat antrean berikutnya, belum diqueue dan belum diputuskan Bos:
+Satu-satunya task `READY` yang tersisa di `EXECUTION_PLAN.md` adalah **T-36 NLU
+Intent Router (WA)** di §Fase 7 (D-60 masih *draft*). T-37..T-40 `BLOCKED` di
+belakangnya. Catatan yang relevan: D-66 menjadikan T-37 (pemilih konteks company)
+prasyarat untuk melonggarkan fail-closed nomor WA yang terdaftar di lebih dari
+satu usaha.
+
+Kandidat lain, belum diqueue dan belum diputuskan Bos:
 
 - Unique index untuk `chart_of_accounts.account_code` dan
   `accounting_journals.journal_number` — schema menyatakan `unique`, migration
@@ -804,7 +810,5 @@ Kandidat antrean berikutnya, belum diqueue dan belum diputuskan Bos:
   generik, plus fixture demo untuk tiga entitas T-54 (kini kosong di tenant demo).
 - Penyalaan `finance.accounting` + `hr.payroll` di preset mengikuti gerbang paket
   D-52 (`hr.payroll` Pro+Enterprise, `finance.accounting` Enterprise).
-- T-37 pemilih konteks company — sampai ini ada, nomor WA yang menjadi anggota di
-  lebih dari satu usaha fail-closed (D-66).
 - Review `b0ef5b0` (WIP writer lain yang di-commit apa adanya).
 - Aktivasi Hermes produksi untuk T-49/T-51/T-58 — `HUMAN:SECRET`, butuh Bos.
