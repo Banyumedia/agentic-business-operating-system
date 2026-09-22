@@ -166,6 +166,45 @@ class HermesNodeRegistrationTest extends TestCase
         $this->assertCount(1, $component->get('profiles'));
     }
 
+    public function test_super_admin_can_refresh_profile_status_from_the_page(): void
+    {
+        // Status profil tidak boleh hanya bisa diubah lewat basis data atau lewat
+        // penjadwal: operator yang baru memasang nomor perlu membuktikannya saat itu
+        // juga, dari halaman yang sama tempat ia melihat armadanya.
+        Http::fake(['*' => Http::response(['status' => 'connected'], 200)]);
+
+        $node = $this->node();
+        HermesProfile::factory()->create([
+            'node_id' => $node->id,
+            'api_url' => 'http://127.0.0.1:3000',
+            'status' => 'unpaired',
+        ]);
+
+        $this->actingAs($this->admin);
+
+        Livewire::test(HermesNodeManager::class)
+            ->call('refreshProfileStatus')
+            ->assertOk();
+
+        $this->assertSame('paired', HermesProfile::query()->first()->status);
+    }
+
+    public function test_negative_refreshing_a_profile_without_a_bridge_does_not_break_the_page(): void
+    {
+        Http::fake();
+
+        HermesProfile::factory()->create(['node_id' => null, 'api_url' => null, 'status' => 'unpaired']);
+
+        $this->actingAs($this->admin);
+
+        Livewire::test(HermesNodeManager::class)
+            ->call('refreshProfileStatus')
+            ->assertOk();
+
+        $this->assertSame('unpaired', HermesProfile::query()->first()->status);
+        Http::assertNothingSent();
+    }
+
     private function node(): HermesNode
     {
         return HermesNode::create([

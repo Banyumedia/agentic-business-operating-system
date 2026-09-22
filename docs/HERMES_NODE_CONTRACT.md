@@ -174,6 +174,18 @@ Sesi Baileys **ada** di `platforms/whatsapp/session/` (`creds.json`, ratusan
 sesi WhatsApp + satu daftar pengguna disetujui + satu gateway**, sesuai
 `COMMERCIAL_AND_AI_AGENTIC_SPEC.md` dan `hermes_nodes.max_capacity`.
 
+Karena setiap profil membawa bridge-nya sendiri di **port sendiri**, alamat itu
+disimpan per profil: `hermes_profiles.api_url` (T-81), nullable dan jatuh kembali
+ke `hermes_nodes.api_url`. Pembagiannya: **node = host atau klaster**, **profil =
+satu nomor pada satu port**. Menaruh alamat hanya di node memaksa satu baris node
+per nomor, yang membuat `max_capacity` — "berapa profil yang muat pada satu host" —
+kehilangan arti.
+
+Status profil juga tidak diketik tangan: `bos:hermes-profile-status` membacanya
+dari `GET /health` bridge masing-masing dan menulis `paired`/`unpaired`. Ingat
+bahwa endpoint itu menjawab **200 walau WhatsApp terputus**, jadi keputusannya
+diambil dari field `status`, bukan dari kode HTTP.
+
 ## 6. Pekerjaan sisi Hermes yang sekarang menjadi prasyarat
 
 Ketiganya memblokir task di Fase 10 dan **bukan** pekerjaan Laravel:

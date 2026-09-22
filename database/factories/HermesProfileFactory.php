@@ -23,6 +23,10 @@ class HermesProfileFactory extends Factory
         return [
             'owner_user_id' => User::factory(),
             'node_id' => HermesNode::factory(),
+            // Alamat bridge dibiarkan kosong: bawaannya jatuh ke alamat node,
+            // sehingga test yang tidak peduli soal alamat tetap bekerja seperti
+            // sebelum kolom ini ada.
+            'api_url' => null,
             'type' => 'primary',
             'label' => 'Primary Bot',
             'instance_id' => Str::uuid()->toString(),

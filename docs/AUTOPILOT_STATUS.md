@@ -1084,11 +1084,65 @@ bisa jalan: T-70 tidak lagi menunggu T-69 (`bos:hermes-ping` sudah ada sejak
 kita, ringan) + T-63b (profil Hermes, gelombang 3). Gelombang 2 kini T-61 + T-79;
 gelombang 4 berisi yang ditunda: T-71, T-73, T-74, T-75, T-76.
 
+**Jalur klien pertama: T-69, T-80, T-81 + runbook.** Mandat Bos berubah arah dari
+"selesaikan antrean" menjadi "nomor CS untuk proyek ini, lalu coba satu klien",
+dan ketiga task ini adalah yang benar-benar menghalangi itu.
+
+- **T-69 `72923c2`** kontrak bridge diganti dari asumsi menjadi fakta, dibaca
+  langsung dari `scripts/whatsapp-bridge/bridge.js`: `POST /send` dengan
+  `{chatId, message}` dan `chatId` berformat `628xxx@s.whatsapp.net`, `GET /health`,
+  port 3000, **tanpa autentikasi apa pun**. Dua konsekuensi yang tidak bisa
+  ditawar: (a) `/health` menjawab **HTTP 200 walau WhatsApp terputus**, jadi
+  memeriksa kode HTTP saja akan melaporkan bridge mati sebagai sehat — `ping()`
+  sekarang membaca field `status`; (b) ketiadaan autentikasi harus **dinyatakan**
+  lewat `api_secret_reference = 'none'` dan hanya sah untuk loopback. Memaksa
+  operator mengisi referensi rahasia palsu supaya lolos aturan kita berarti
+  menyimpan kebohongan di basis data dan menyembunyikan bahwa jalur itu tidak
+  terlindungi. **H-01 dicoret**: endpoint kirim ternyata sudah ada sejak awal.
+- **T-80 `272ff0d`** jalur pembuatan profil. `ensurePrimaryProfile()` ada sejak
+  lama tetapi **tidak pernah dipanggil dari mana pun**, jadi tidak ada satu cara
+  pun membuat baris `hermes_profiles` — dan tanpa baris itu `HermesNodeClient`
+  selalu menolak, bot tenant tidak punya token, bot CS platform tidak bisa
+  didaftarkan. Bentuk cacat yang sama dengan `hermes_nodes` sebelum T-70: skema
+  siap, jalurnya tidak ada. `bos:hermes-profile` melayani dua jalur (tenant dan
+  platform), idempoten, menghormati `max_capacity`, dan mencetak token sekali di
+  terminal tanpa menulisnya ke log. 11 test. Satu test yang saya rencanakan
+  dibatalkan: "company tanpa owner" mustahil karena `companies.owner_user_id`
+  NOT NULL — alasannya dicatat di berkas test supaya tidak dicoba lagi.
+- **T-81** dua utang runbook dibayar. **(a)** Alamat bridge menjadi milik profil
+  (`hermes_profiles.api_url`, nullable, jatuh kembali ke node). Satu bridge = satu
+  nomor = satu port; selama alamat hanya ada di `hermes_nodes`, setiap nomor
+  memaksa satu baris node dan `max_capacity` jadi dekorasi. **(b)** Status profil
+  diturunkan dari bridge lewat `ProfileStatusRefresher` — `bos:hermes-profile-status`,
+  tombol di `/admin/hermes-nodes`, dan penjadwal tiap sepuluh menit. Status yang
+  diketik tangan bisa berbohong: profil bertanda `paired` padahal nomornya lepas
+  membuat setiap pengiriman dicoba lalu gagal tanpa petunjuk. Sisi tulis hanya
+  mengenal `paired`/`unpaired`; sisi baca tetap permisif supaya baris lama tidak
+  mendadak berhenti mengirim. Profil tanpa alamat tidak dihubungi sama sekali dan
+  dilaporkan dilewati, bukan menjatuhkan pemeriksaan seluruh armada. 11 test.
+- **Runbook `cf97bed`** `docs/RUNBOOK_KLIEN_PERTAMA.md`: urutan konkret untuk nomor
+  CS dan klien pertama, beserta §5 "yang belum diverifikasi" dan §6 utang. Runbook
+  itu **belum pernah dijalankan dari awal sampai akhir** — ia disusun dari kontrak
+  yang dibaca di kode, dan klien pertama adalah ujinya.
+
+**Gate:** `DATA_SOURCE=json php artisan test` **1.181 passed / 5.643 assertions,
+0 gagal**; `vendor/bin/pint --test` **PASS 532 berkas**; `migrate:fresh --seed
+--force` OK; `npm run build` PASS.
+
+**Yang masih menghalangi klien pertama, dan bukan pekerjaan kode:** allowlist
+Hermes. Siapa yang boleh bicara dengan bot ditentukan dua gerbang bertumpuk —
+allowlist di sisi Hermes lalu otorisasi kita (D-66) — dan gerbang pertama hanya
+bisa disetel dari sisi Hermes. Untuk klien pertama berarti **hanya nomor owner
+yang jalan**; mengundang staf lewat T-51 baru berguna setelah H-03. Pada instalasi
+sekarang allowlist kosong, jadi bridge jatuh ke mode self-chat dan menolak semua
+orang dengan `self_chat_mode_rejects_non_self`.
+
 ## READY Berikutnya
 Fase 8 (T-41..T-47) dan Fase 9 (T-48..T-58) selesai penuh; Fase 6b/katalog D-56
 sudah dibangun seluruhnya (T-28..T-35). Sisa temuan pasca-Fase 9 juga sudah
-ditutup. Fase 10 baru dimulai: T-59, T-60, T-66, T-67 selesai; sisanya terhalang
-H-01..H-04 dan tiga keputusan Bos (Q-10, Q-11, Q-12).
+ditutup. Fase 10: T-59, T-60, T-63a, T-65, T-66, T-67, T-68, T-69, T-70, T-79,
+T-80, T-81 selesai; sisanya terhalang H-02/H-03 dan keputusan Bos (Q-09, Q-10,
+Q-11, Q-13).
 
 Satu-satunya task `READY` yang tersisa di `EXECUTION_PLAN.md` adalah **T-36 NLU
 Intent Router (WA)** di §Fase 7 (D-60 masih *draft*). T-37..T-40 `BLOCKED` di

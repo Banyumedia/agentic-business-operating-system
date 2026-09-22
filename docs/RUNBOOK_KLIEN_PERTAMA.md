@@ -1,8 +1,8 @@
 # Runbook: Klien Pertama & Nomor CS
 
 Urutan konkret untuk dua hal: **nomor CS untuk Agentic BOS** dan **satu klien
-percobaan**. Ditulis setelah T-69/T-70/T-80, jadi semua langkah di sisi Laravel
-sudah ada perintahnya.
+percobaan**. Ditulis setelah T-69/T-70/T-80/T-81, jadi semua langkah di sisi
+Laravel sudah ada perintahnya.
 
 Yang dipakai: bridge WhatsApp Hermes (`bawaan`, Baileys). Jalur resmi Meta manual
 ada di `RUNBOOK_WABA_MANUAL.md` dan **tidak** dibutuhkan untuk percobaan ini.
@@ -13,10 +13,11 @@ ada di `RUNBOOK_WABA_MANUAL.md` dan **tidak** dibutuhkan untuk percobaan ini.
 
 **Satu bridge = satu nomor = satu port.** Bridge mendengarkan di port **3000**
 (bawaan) dan menyimpan sesinya di satu direktori. Dua nomor berarti **dua bridge
-di dua port berbeda**, masing-masing di profil Hermes sendiri. Karena
-`hermes_nodes` menyimpan satu `api_url`, untuk sekarang **satu baris node per
-bridge**. Itu memang bukan maksud asli kolom `max_capacity`, dan tidak akan
-berskala — dicatat di §6 sebagai utang.
+di dua port berbeda**, masing-masing di profil Hermes sendiri. Sejak T-81 alamat
+bridge disimpan **per profil** (`hermes_profiles.api_url`), jadi satu baris node
+bisa memegang banyak bridge dan `max_capacity` kembali bermakna. Kolom itu
+nullable: profil yang dibiarkan kosong memakai `hermes_nodes.api_url` seperti
+sebelumnya.
 
 **Bridge tidak punya autentikasi.** Tidak ada token di port 3000. Karena itu
 `api_secret_reference` diisi literal `none`, dan `HermesNodeClient` hanya
@@ -43,14 +44,18 @@ jatuh ke **mode self-chat** dan menolak semua orang dengan alasan
 **1.4 Daftarkan di Agentic BOS**
 
 ```powershell
-# node untuk bridge CS (ganti portnya sesuai 1.1)
-# lewat /admin/hermes-nodes, atau langsung:
-#   name=Bridge CS, api_url=http://127.0.0.1:3001,
+# Satu baris node untuk host ini, dipakai bersama semua bridge di mesin yang sama.
+# Lewat /admin/hermes-nodes, atau langsung:
+#   name=Host Lokal, api_url=http://127.0.0.1:3000,
 #   api_secret_reference=none, status=active
 
 php artisan bos:hermes-profile --platform --owner=<id-super-admin> `
-    --node=<id-node-cs> --type=addon --label="Bot CS Agentic BOS"
+    --node=<id-node> --type=addon --label="Bot CS Agentic BOS" `
+    --api-url=http://127.0.0.1:3001
 ```
+
+`--api-url` adalah port bridge CS dari langkah 1.1. Kosongkan hanya bila bridge
+itu memang memakai alamat node.
 
 `--type=addon` membuatnya baca-saja untuk publik dan tidak melayani grup.
 `--platform` membuatnya sah tanpa `billing_addon_id` dan memastikan lajur tenant
@@ -90,11 +95,9 @@ kita menolaknya (D-66) walau Hermes meloloskannya.
 **2.5 Daftarkan di Agentic BOS**
 
 ```powershell
-# node untuk bridge tenant
-#   name=Bridge <tenant>, api_url=http://127.0.0.1:3002,
-#   api_secret_reference=none, status=active
-
-php artisan bos:hermes-profile --company=<company_id> --node=<id-node-tenant>
+# Node yang sama dengan 1.4 - yang berbeda hanya port bridge-nya.
+php artisan bos:hermes-profile --company=<company_id> --node=<id-node> `
+    --api-url=http://127.0.0.1:3002
 ```
 
 Perintah itu mencetak `secret reference`. **Itulah token** yang dipakai bot untuk
@@ -115,15 +118,25 @@ POST /api/bot/tenant/deals
 POST /api/bot/tenant/destructive-action
 ```
 
-**2.7 Ubah status profil menjadi siap.** `HermesNodeClient` menolak profil
-`unpaired`; setelah QR berhasil, ubah `hermes_profiles.status` menjadi `paired`.
-Belum ada UI untuk ini — masih lewat basis data, dan itu utang yang dicatat di §6.
+**2.7 Segarkan status profil.** `HermesNodeClient` menolak profil `unpaired`.
+Setelah QR berhasil, statusnya **tidak** diketik tangan — ia dibaca dari bridge:
+
+```powershell
+php artisan bos:hermes-profile-status
+```
+
+Atau tekan **Segarkan Status Profil** di `/admin/hermes-nodes`. Penjadwal juga
+menjalankannya tiap sepuluh menit, jadi nomor yang lepas sendiri akan turun ke
+`unpaired` tanpa perlu ada yang menyadarinya lebih dulu. Profil yang tetap
+`unpaired` berarti bridge-nya menjawab selain `connected` — itu masalah pairing,
+bukan masalah basis data.
 
 **2.8 Verifikasi berurutan, dari yang tidak mengganggu siapa pun**
 
 | Langkah | Perintah / aksi | Yang diharapkan |
 |---|---|---|
 | Node hidup | `php artisan bos:hermes-ping` | `OK` untuk node tenant |
+| Profil siap | `php artisan bos:hermes-profile-status` | status `paired` untuk profil tenant |
 | Bot mengenali usaha | bot memanggil `/capabilities` | 200, daftar kapabilitas tenant itu |
 | Isolasi tenant | panggil dengan `company_id` tenant **lain** | **403** |
 | Bot menjawab japri owner | owner japri nomor tenant | dijawab |
@@ -146,8 +159,11 @@ Urutan diagnosis, dari yang paling sering:
    jadi bridge jatuh ke mode self-chat dan menolak semua orang.
 3. Bot dijawab tetapi tidak tahu data usaha? token `Bearer` salah, atau profil
    belum ditautkan ke company, atau preset tenant tidak punya `system.ai_agent`.
-4. Kita tidak bisa mengirim? `hermes_profiles.status` masih `unpaired`, atau
-   `api_secret_reference` bukan `none` padahal bridge tidak punya autentikasi.
+4. Kita tidak bisa mengirim? jalankan `bos:hermes-profile-status`. Kalau ia
+   melaporkan `unpaired`, masalahnya di bridge. Kalau ia melaporkan "tanpa alamat
+   bridge", profil itu belum diberi `api_url` dan node-nya pun tidak punya alamat.
+   Kemungkinan lain: `api_secret_reference` bukan `none` padahal bridge tidak punya
+   autentikasi.
 
 ## 4. Cacat yang sudah diketahui di instalasi ini
 
@@ -168,11 +184,21 @@ Urutan diagnosis, dari yang paling sering:
 
 ## 6. Utang yang dicatat, bukan disembunyikan
 
-- **Satu baris `hermes_nodes` per bridge** adalah penyalahgunaan model: `max_capacity`
-  jadi tidak bermakna. Yang benar: alamat bridge disimpan **per profil**, bukan per
-  node. Layak jadi task tersendiri sebelum tenant ketiga.
-- **`hermes_profiles.status` diubah lewat basis data.** Belum ada UI maupun
-  perintah, dan tiga kata dipakai untuk keadaan siap yang sama (`paired`,
-  `connected`, `active`) tanpa ada yang memvalidasinya.
+Dua utang yang semula tercatat di sini **sudah dibayar oleh T-81**: alamat bridge
+sekarang milik profil (`hermes_profiles.api_url`), dan status profil diturunkan
+dari bridge lewat `bos:hermes-profile-status` serta tombol di panel admin.
+
+Yang masih terbuka:
+
+- **Kosakata status masih permisif di sisi baca.** `hermes.delivery.ready_statuses`
+  tetap menerima `paired`, `connected`, dan `active` supaya baris lama tidak
+  mendadak berhenti mengirim. Sisi tulis hanya pernah menulis `paired`/`unpaired`,
+  jadi sinonim itu akan habis sendiri; membersihkannya sekarang berarti memigrasi
+  baris yang belum tentu ada.
 - **Pairing masih manual di terminal.** Layar QR untuk tenant (T-72) menunggu
   endpoint sesi di Hermes (H-02).
+- **Allowlist Hermes di luar jangkauan tenant.** Siapa yang boleh bicara dengan bot
+  ditentukan di dua gerbang bertumpuk: allowlist di sisi Hermes, lalu otorisasi
+  kita (D-66). Gerbang pertama hanya bisa disetel dari sisi Hermes, jadi untuk
+  klien pertama **hanya nomor owner yang jalan**. Mengundang staf (T-51) baru
+  berguna setelah H-03.

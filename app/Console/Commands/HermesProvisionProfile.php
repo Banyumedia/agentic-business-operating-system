@@ -33,7 +33,8 @@ class HermesProvisionProfile extends Command
         {--owner= : ID user pemilik profil; wajib untuk --platform}
         {--node= : ID hermes_nodes tempat profil ditempatkan}
         {--type=primary : primary atau addon}
-        {--label= : Label yang tampil di panel super admin}';
+        {--label= : Label yang tampil di panel super admin}
+        {--api-url= : Alamat bridge WhatsApp milik profil ini; kosong berarti memakai alamat node}';
 
     protected $description = 'Membuat profil Hermes untuk tenant atau untuk platform';
 
@@ -43,6 +44,16 @@ class HermesProvisionProfile extends Command
 
         if ($node === null) {
             $this->error('Node Hermes tidak ditemukan. Daftarkan dulu di /admin/hermes-nodes.');
+
+            return self::FAILURE;
+        }
+
+        // Alamat tanpa skema akan ditolak `HermesNodeClient` saat mengirim.
+        // Menolaknya sekarang mencegah baris yang tampak sah tapi mati saat dipakai.
+        $bridge = trim((string) $this->option('api-url'));
+
+        if ($bridge !== '' && ! str_starts_with($bridge, 'http://') && ! str_starts_with($bridge, 'https://')) {
+            $this->error('Alamat bridge harus diawali http:// atau https://.');
 
             return self::FAILURE;
         }
@@ -67,6 +78,7 @@ class HermesProvisionProfile extends Command
 
         $this->info('Profil siap: #'.$profile->id.' ('.$profile->type.')');
         $this->line('  instance_id      : '.$profile->instance_id);
+        $this->line('  bridge           : '.($profile->api_url ?: $node->api_url.' (dari node)'));
         // Token hanya ditampilkan di sini karena inilah satu-satunya saat operator
         // membutuhkannya: ia harus dipasang di sisi Hermes. Tidak ditulis ke log.
         $this->line('  secret reference : '.$profile->webhook_secret_reference);
@@ -97,6 +109,7 @@ class HermesProvisionProfile extends Command
                 ['owner_user_id' => $owner->id, 'type' => 'primary'],
                 [
                     'node_id' => $node->id,
+                    'api_url' => $this->bridgeAddress(),
                     'label' => $this->option('label') ?: 'Asisten '.$company->name,
                     'instance_id' => $this->instanceId('tenant', $owner->id),
                     'webhook_secret_reference' => $this->secretReference(),
@@ -145,6 +158,7 @@ class HermesProvisionProfile extends Command
             $profile = HermesProfile::create([
                 'owner_user_id' => $owner->id,
                 'node_id' => $node->id,
+                'api_url' => $this->bridgeAddress(),
                 'type' => $type,
                 'label' => $this->option('label') ?: 'Bot Platform',
                 'instance_id' => $this->instanceId('platform', $owner->id),
@@ -159,6 +173,18 @@ class HermesProvisionProfile extends Command
 
             return $profile;
         });
+    }
+
+    /**
+     * Alamat bridge milik profil, atau null bila ia memakai alamat node.
+     * Nullable dan bukan string kosong: kolom kosong berarti "belum diisi", bukan
+     * "alamatnya kosong".
+     */
+    private function bridgeAddress(): ?string
+    {
+        $bridge = trim((string) $this->option('api-url'));
+
+        return $bridge === '' ? null : $bridge;
     }
 
     private function instanceId(string $kind, int $ownerId): string

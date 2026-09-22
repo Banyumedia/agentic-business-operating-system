@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\HermesNode;
 use App\Models\HermesProfile;
+use App\Services\Hermes\ProfileStatusRefresher;
 use App\Services\HermesNodeClient;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -92,6 +93,42 @@ class HermesNodeManager extends Component
         }
 
         $this->health = $health;
+    }
+
+    /**
+     * Menyegarkan status setiap profil dari bridge WhatsApp-nya.
+     *
+     * Bedanya dengan `checkHealth()`: yang itu memeriksa **node** (host) dan tidak
+     * menulis apa pun; yang ini memeriksa **profil** (nomor) dan menyimpan
+     * hasilnya, sehingga status yang terlihat di halaman ini tidak bisa berbohong
+     * tentang nomor yang sudah lepas.
+     *
+     * Profil tanpa alamat bridge dihitung terpisah, bukan dilaporkan sebagai gagal:
+     * profil yang belum ditempatkan pada node mana pun memang belum punya apa pun
+     * untuk diperiksa.
+     */
+    public function refreshProfileStatus(): void
+    {
+        $refresher = app(ProfileStatusRefresher::class);
+        $paired = 0;
+        $notReady = 0;
+        $withoutBridge = 0;
+
+        foreach (HermesProfile::with('node')->get() as $profile) {
+            $result = $refresher->refresh($profile);
+
+            if ($result['address'] === '') {
+                $withoutBridge++;
+
+                continue;
+            }
+
+            $result['ok'] ? $paired++ : $notReady++;
+        }
+
+        $this->loadData();
+
+        session()->flash('success', "Status profil disegarkan: {$paired} tersambung, {$notReady} belum siap, {$withoutBridge} tanpa alamat bridge.");
     }
 
     public function editNode(int $id): void

@@ -73,8 +73,9 @@ class HermesNodeClient
             throw new RuntimeException('Node Hermes tidak aktif: '.($node->status ?? 'tidak diketahui').'.');
         }
 
-        $url = $this->endpoint((string) $node->api_url, (string) config('hermes.delivery.send_path', '/send'));
-        $headers = $this->authHeaders((string) $node->api_secret_reference, (string) $node->api_url);
+        $address = $this->addressForProfile($profile);
+        $url = $this->endpoint($address, (string) config('hermes.delivery.send_path', '/send'));
+        $headers = $this->authHeaders((string) $node->api_secret_reference, $address);
 
         try {
             $response = Http::asJson()
@@ -168,6 +169,26 @@ class HermesNodeClient
             'status' => $response->status(),
             'detail' => 'Node menjawab: '.mb_substr((string) $response->body(), 0, 200),
         ];
+    }
+
+    /**
+     * Alamat bridge yang dipakai sebuah profil.
+     *
+     * Satu bridge WhatsApp = satu nomor = satu port, jadi alamatnya milik
+     * **profil**. `hermes_nodes.api_url` tinggal jadi cadangan untuk penyebaran
+     * satu-bridge-satu-host dan untuk baris lama yang belum diisi - kalau alamat
+     * itu satu-satunya tempat, setiap nomor baru memaksa satu baris node baru dan
+     * `max_capacity` kehilangan arti.
+     */
+    public function addressForProfile(HermesProfile $profile): string
+    {
+        $own = trim((string) ($profile->api_url ?? ''));
+
+        if ($own !== '') {
+            return $own;
+        }
+
+        return trim((string) ($profile->node->api_url ?? ''));
     }
 
     private function profileFor(string $companyId): HermesProfile

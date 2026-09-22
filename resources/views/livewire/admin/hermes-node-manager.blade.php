@@ -85,6 +85,11 @@
                     <button type="button" wire:click="checkHealth" class="min-h-11 rounded border border-[var(--erp-border)] px-4 text-[var(--erp-text)] hover:bg-[var(--erp-surface-secondary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
                         Periksa Kesehatan Node
                     </button>
+                    {{-- Status profil diturunkan dari bridge, bukan diketik tangan:
+                         status yang diketik bisa berbohong tentang nomor yang sudah lepas. --}}
+                    <button type="button" wire:click="refreshProfileStatus" class="min-h-11 rounded border border-[var(--erp-border)] px-4 text-[var(--erp-text)] hover:bg-[var(--erp-surface-secondary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                        Segarkan Status Profil
+                    </button>
                 </div>
             </form>
         </div>
@@ -146,6 +151,7 @@
                             <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Label</th>
                             <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Tipe</th>
                             <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Node</th>
+                            <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Bridge</th>
                             <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Status</th>
                         </tr>
                     </thead>
@@ -154,12 +160,13 @@
                             <tr class="border-b border-[var(--erp-border)]">
                                 <td class="px-6 py-4 text-sm font-semibold text-[var(--erp-text)]">{{ $prof->label ?? 'Tanpa label' }}</td>
                                 <td class="px-6 py-4 text-sm text-[var(--erp-text)]">{{ strtoupper($prof->type) }}</td>
-                                <td class="px-6 py-4 text-sm text-[var(--erp-text)]">{{ $prof->node->name ?? '-' }}</td>
+                                <td class="px-6 py-4 text-sm text-[var(--erp-text)]">{{ $prof->node->name ?? 'Belum ditempatkan' }}</td>
+                                <td class="px-6 py-4 font-mono text-xs text-[var(--erp-text-secondary)]">{{ $prof->api_url ?: ($prof->node->api_url ?? '-') }}</td>
                                 <td class="px-6 py-4 text-sm text-[var(--erp-text)]">{{ ucfirst($prof->status ?? 'ready') }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="px-6 py-8 text-center text-sm text-[var(--erp-text-secondary)]">Belum ada bot milik platform yang terdaftar.</td>
+                                <td colspan="5" class="px-6 py-8 text-center text-sm text-[var(--erp-text-secondary)]">Belum ada bot milik platform yang terdaftar.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -177,6 +184,7 @@
                             <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Owner & Perusahaan</th>
                             <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Tipe Bot</th>
                             <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Node Provider</th>
+                            <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Bridge</th>
                             <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Status Bot</th>
                             <th class="px-6 py-3 text-sm font-semibold text-[var(--erp-text)]">Terakhir Aktif</th>
                         </tr>
@@ -196,10 +204,18 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-[var(--erp-text)]">
-                                    {{ $prof->node->name ?? 'Default Node' }}
+                                    {{ $prof->node->name ?? 'Belum ditempatkan' }}
+                                </td>
+                                {{-- Satu bridge = satu nomor = satu port, jadi alamatnya milik
+                                     profil. Kosong berarti ia memakai alamat node-nya. --}}
+                                <td class="px-6 py-4 font-mono text-xs text-[var(--erp-text-secondary)]">
+                                    {{ $prof->api_url ?: ($prof->node->api_url ?? '-') }}
                                 </td>
                                 <td class="px-6 py-4 text-sm">
-                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ $prof->status === 'connected' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800' }}">
+                                    @php
+                                        $siap = in_array((string) $prof->status, (array) config('hermes.delivery.ready_statuses', ['paired']), true);
+                                    @endphp
+                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ $siap ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800' }}">
                                         {{ ucfirst($prof->status ?? 'ready') }}
                                     </span>
                                 </td>
@@ -209,7 +225,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-8 text-center text-sm text-[var(--erp-text-secondary)]">Belum ada profil asisten yang terdaftar.</td>
+                                <td colspan="6" class="px-6 py-8 text-center text-sm text-[var(--erp-text-secondary)]">Belum ada profil asisten yang terdaftar.</td>
                             </tr>
                         @endforelse
                     </tbody>

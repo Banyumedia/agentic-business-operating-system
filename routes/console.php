@@ -17,3 +17,10 @@ Schedule::command('bos:remind-receivables')->dailyAt('07:30');
 
 Schedule::command('bos:backup-mysql')->dailyAt('02:30');
 Schedule::command('bos:health')->everyFiveMinutes();
+
+// T-81: status profil diturunkan dari bridge, bukan dari ketikan. Nomor WhatsApp
+// bisa lepas sendiri (sesi kedaluwarsa, perangkat dicabut) tanpa ada yang memberi
+// tahu kita; tanpa penyegaran berkala, `status = paired` akan tetap terpasang dan
+// setiap pengiriman dicoba lalu gagal. Sepuluh menit cukup rapat untuk menangkapnya
+// sebelum pesan menumpuk, cukup jarang untuk tidak membebani bridge.
+Schedule::command('bos:hermes-profile-status')->everyTenMinutes();

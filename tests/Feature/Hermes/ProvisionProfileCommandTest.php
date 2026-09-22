@@ -160,6 +160,41 @@ class ProvisionProfileCommandTest extends TestCase
         $this->assertSame(2, (int) $node->fresh()->active_profiles);
     }
 
+    public function test_a_profile_can_be_given_its_own_bridge_address(): void
+    {
+        // Satu bridge WhatsApp = satu nomor = satu port. Kalau alamat itu hanya bisa
+        // disimpan di node, nomor kedua pada host yang sama memaksa baris node kedua
+        // dan `max_capacity` kehilangan arti.
+        $owner = User::factory()->create();
+        $company = Company::factory()->create(['owner_user_id' => $owner->id]);
+        $node = $this->node();
+
+        $this->artisan('bos:hermes-profile', [
+            '--company' => $company->id,
+            '--node' => $node->id,
+            '--api-url' => 'http://127.0.0.1:3002',
+        ])->assertSuccessful();
+
+        $this->assertSame('http://127.0.0.1:3002', HermesProfile::query()->first()->api_url);
+    }
+
+    public function test_negative_a_bridge_address_without_a_scheme_is_refused(): void
+    {
+        // `HermesNodeClient::endpoint()` menolak alamat tanpa skema saat mengirim.
+        // Menerimanya di sini hanya menunda kegagalan sampai pesan pertama.
+        $owner = User::factory()->create();
+        $company = Company::factory()->create(['owner_user_id' => $owner->id]);
+        $node = $this->node();
+
+        $this->artisan('bos:hermes-profile', [
+            '--company' => $company->id,
+            '--node' => $node->id,
+            '--api-url' => '127.0.0.1:3002',
+        ])->assertFailed();
+
+        $this->assertSame(0, HermesProfile::query()->count());
+    }
+
     private function provisionTenant(?HermesNode $node = null): HermesProfile
     {
         $node ??= $this->node();
