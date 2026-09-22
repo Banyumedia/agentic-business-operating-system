@@ -19,6 +19,13 @@
         "item_id",
         "target_qty"
     ],
+    "attributes": {},
+    "indexes": [
+        {
+            "fields": ["stage"],
+            "company_scoped": true
+        }
+    ],
     "references": {
         "item_id": { "entity": "items", "on_delete": "restrict" }
     },

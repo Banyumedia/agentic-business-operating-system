@@ -112,7 +112,7 @@ class ApprovalRequest implements WorkflowEffect
                 ->where('company_id', $context['company'])
                 ->find($result['ticket_id'] ?? null);
             if ($ticket === null
-                || ($ticket->payload['operation_id'] ?? null) !== ($result['operation_id'] ?? null)) {
+                || ($ticket->operation_id ?? $ticket->payload['operation_id'] ?? null) !== ($result['operation_id'] ?? null)) {
                 throw new LogicException('Approval ticket Eloquent tidak cocok dengan operasi workflow.');
             }
             if ($ticket->status === 'pending') {
@@ -185,6 +185,11 @@ class ApprovalRequest implements WorkflowEffect
             $operationId = hash('sha256', $operationBase.':attempt:'.($related->count() + 1));
             $ticket = ApprovalTicket::create([
                 'company_id' => $context['company'],
+                // Ditulis ke kolom **dan** tetap ke payload: kolomnya memberi
+                // index unique sebagai lapis kedua di atas lock baris company,
+                // sementara payload dipertahankan supaya pembaca lama tidak
+                // kehilangan nilainya.
+                'operation_id' => $operationId,
                 'code' => $this->generateCode((string) $context['company']),
                 'action_type' => 'workflow.transition',
                 'subject_type' => null,
@@ -208,7 +213,9 @@ class ApprovalRequest implements WorkflowEffect
             'effect' => $this->key(),
             'status' => 'pending',
             'ticket_id' => (string) $ticket->id,
-            'operation_id' => (string) $ticket->payload['operation_id'],
+            // Kolom lebih dipercaya daripada payload; payload hanya cadangan
+            // untuk tiket yang dibuat sebelum kolomnya ada.
+            'operation_id' => (string) ($ticket->operation_id ?? $ticket->payload['operation_id']),
         ];
     }
 

@@ -9,6 +9,10 @@ class ApprovalTicket extends Model
 {
     protected $fillable = [
         'company_id',
+        // Kunci idempoten satu operasi approval. Dulu hanya hidup di dalam
+        // `payload`, padahal schema menyatakannya sebagai kolom tingkat atas
+        // dengan unique ter-scope company - jalur JSON memang begitu.
+        'operation_id',
         'code',
         'action_type',
         'subject_type',

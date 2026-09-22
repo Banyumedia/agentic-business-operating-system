@@ -17,6 +17,14 @@
         "component_item_id",
         "planned_qty"
     ],
+    "attributes": {},
+    "indexes": [
+        {
+            "fields": ["production_order_id"],
+            "company_scoped": true
+        }
+    ],
+    "unique": [],
     "references": {
         "production_order_id": { "entity": "production_orders", "on_delete": "cascade" },
         "component_item_id": { "entity": "items", "on_delete": "restrict" }
