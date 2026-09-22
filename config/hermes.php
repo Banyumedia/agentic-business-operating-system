@@ -3,6 +3,43 @@
 return [
     /*
     |--------------------------------------------------------------------------
+    | Pengiriman ke Node Hermes
+    |--------------------------------------------------------------------------
+    |
+    | `hermes_nodes.api_url` menyimpan alamat node, dan `api_secret_reference`
+    | menyimpan **nama** rahasianya - bukan nilainya (COMMERCIAL §Hermes Profile).
+    | Nilainya dipetakan di sini dari environment, jadi basis data tetap bebas
+    | kredensial dan config cache tetap bekerja.
+    |
+    | Contoh: node dengan `api_secret_reference = 'node_lokal'` mengambil
+    | nilainya dari `HERMES_NODE_LOKAL_SECRET`.
+    |
+    */
+
+    'delivery' => [
+        'send_path' => env('HERMES_SEND_PATH', '/api/wa/send'),
+        'health_path' => env('HERMES_HEALTH_PATH', '/api/health'),
+        'timeout' => (int) env('HERMES_TIMEOUT', 10),
+
+        // Profil `unpaired` belum menempel ke nomor WhatsApp mana pun, jadi ia
+        // tidak boleh dianggap siap mengirim.
+        //
+        // Tiga kata dipakai untuk keadaan "siap" yang sama di tempat berbeda:
+        // `paired` (CleanupExpiredTrials), `connected` (factory), dan `active`.
+        // Tidak ada yang memvalidasi kosakata ini, jadi daftarnya dibuat
+        // permisif **untuk keadaan siap** dan ketat untuk `unpaired`.
+        // Menyeragamkannya layak jadi task sendiri; menebak satu kata yang
+        // "benar" di sini justru bisa mematikan pengiriman yang sah.
+        'ready_statuses' => ['paired', 'connected', 'active'],
+    ],
+
+    'node_secrets' => array_filter([
+        'node_lokal' => env('HERMES_NODE_LOKAL_SECRET'),
+        'node_01' => env('HERMES_NODE_01_SECRET'),
+    ]),
+
+    /*
+    |--------------------------------------------------------------------------
     | Hermes Scoped Profiles & Guardrails Architecture
     |--------------------------------------------------------------------------
     |
