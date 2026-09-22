@@ -1485,3 +1485,65 @@ T-84 (pemantauan armada), T-88 (uji managed scope + distribution), T-105
 (penempatan node + alokasi port; **serial**, menyentuh migration). Masih menunggu
 Bos: **Q-11** (H-05 ditambal lokal atau upstream), **Q-14** (topologi armada),
 dan `HUMAN:APPROVAL` dependency untuk T-87.
+
+## Sesi maraton control plane + hardening bug scout (SELESAI sampai batas non-manusia)
+
+Delapan task diselesaikan tanpa intervensi Bos, berhenti tepat di batas
+`HUMAN:SECRET` / `HUMAN:DECISION` / repo Hermes. Urut commit:
+
+- **`0888cf1` T-83 + T-84** — cermin profil node (read-through, rekonsiliasi
+  yatim/hilang, tanpa penghapusan otomatis) + pemantauan kanal armada
+  (`bos:hermes-fleet-status`, keadaan mati disalin dari `_PLATFORM_DEAD_STATES`
+  Hermes, tidak menulis `hermes_profiles.status`). Laporan
+  `docs/worker-reports/T-83_T-84_MIRROR_AND_FLEET.md`.
+- **`abb6756` BS-01** — settlement gateway mengaktifkan membership (dulu hanya
+  `paid` + kredit token; pelanggan Midtrans membayar tetapi layanannya tidak
+  menyala).
+- **`e84b321` BS-03** — `AuthenticateTenantBot` menegakkan D-66 (`wa_is_verified`
+  + normalisasi `08`↔`628`); normalisasi dikonsolidasi ke `User::normalizeWaNumber()`.
+- **`da84cad` BS-02** — fallback token `?? 1` dihapus (fail-closed 422); grant
+  diisi sejak invoice dibuat (subscription dari kuota paket, topup dari mapping
+  `billing.topup.tokens_per_rupiah`).
+- **`51e6fe9` T-105** — penempatan node otomatis (`NodePlacement`, kunci baris,
+  menolak bila tak ada node layak), port bridge sebagai sumber daya
+  (`bridge_port` unique per node, rentang dikonfigurasi), status `draining`
+  (melayani profil lama, menolak penempatan baru).
+- **`4d23fa2` T-88** — riset managed scope + distribution, diuji pada instalasi
+  ini: managed scope resolve di Windows, menang per-leaf, **fail-open** saat
+  berkas rusak; kontrak `profile update` dibaca dari CLI Hermes. `HERMES_NODE_CONTRACT`
+  §7.4 + §7.4a.
+
+Sebelumnya di sesi yang sama: **`0ca4e7f`** menutup lima temuan QA independen
+Fase 10 (idempotensi profil platform, penghitung `active_profiles` yang
+menyimpang, redirect Guzzle yang melewati aturan loopback, penjaga arsitektur
+yang bocor) dan mengamankan token bot dengan hash SHA-256 (keputusan Bos).
+
+**Gate akhir sesi:** `DATA_SOURCE=json php artisan test` **1.290 passed / 5.954
+assertions, 0 gagal**; `vendor/bin/pint --test` **PASS 562 berkas**;
+`migrate --force` DONE (3 migration baru: control plane, pencabutan token
+plaintext, penempatan). `npm run build` tidak dijalankan pada T-88/T-105 (tidak
+ada perubahan Blade/CSS/JS di dua task itu; view T-83/T-84 dibangun di `0888cf1`).
+
+**Catatan status tabel `EXECUTION_PLAN.md`:** T-69, T-83, T-84, T-88, T-105,
+BS-01, BS-02, BS-03 masih tertulis `READY` di tabel karena penandaan tabel
+dikerjakan sesi antrean, bukan sesi writer ini — laporan per task ada di
+`docs/worker-reports/`. Semua sudah `DONE` di kode.
+
+**Yang tersisa di antrean, semuanya di luar jangkauan autopilot:**
+- **Gelombang 6 (T-90..T-104, D-73 kanal WhatsApp resmi Meta)** — mandat Bos
+  "yang berat belakangan, coming soon". Tidak dikerjakan.
+- **T-36** (NLU intent router) — D-60 masih *draft*.
+- **T-61** (bot dev WA) / **nomor CS** — `HUMAN:SECRET`, scan QR.
+- **T-62/T-63b/T-64** — rantai SOUL, butuh bot hidup untuk verifikasi.
+- **T-72/T-77/T-85** dan seluruh **aksi tulis control plane** — menunggu **H-05**
+  (auth server-ke-server dashboard API) di repo `hermes-agent`.
+- **T-87** — `HUMAN:APPROVAL` dependency.
+- Keputusan Bos yang membuka lanjutan: **Q-11** (H-05 tambal lokal vs upstream),
+  **Q-14** (topologi armada), ambang mode pajak D-74 bila menyentuh onboarding.
+
+**Utang yang dicatat, bukan disembunyikan:** suite test **tidak aman dijalankan
+dua proses bersamaan** — berbagi `storage/framework/testing` menghasilkan
+`UnableToWriteFile`/galat identitas usaha yang berubah antar-jalankan dan
+menyesatkan. Muncul berkali-kali sesi ini; setiap kali hijau saat diisolasi.
+Gate yang hasilnya berubah antar-jalankan tidak bisa dipakai sebagai gate —
+layak jadi task tersendiri (isolasi disk test per proses).
