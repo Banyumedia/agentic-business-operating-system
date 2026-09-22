@@ -35,7 +35,7 @@
 - **Gate:** `DATA_SOURCE=json php artisan test` **993 passed / 4.809 assertions**; `migrate:fresh --seed` OK; Pint PASS pada file Fase 8; `npm run build` PASS. Pint masih menyisakan pelanggaran pre-existing `tests/Feature/LobbyNavigationTest.php` milik writer lain (dicatat, tidak disentuh).
 - **Sisa risiko:** rangkaian ini belum pernah dijalankan dari HP pada tenant produksi; belum ada cetak/kirim tagihan ke pelanggan.
 
-## Fase 9 — Pengerasan Sisi Tenant (antrean, belum dikerjakan)
+## Fase 9 — Pengerasan Sisi Tenant (SELESAI, T-48..T-58)
 
 Audit sisi tenant pasca-Fase 8 (2026-09-22) menghasilkan delapan temuan, semuanya
 berbukti di kode. Sudah masuk antrean `EXECUTION_PLAN.md` §Fase 9 sebagai
@@ -66,6 +66,144 @@ T-48..T-56. Ringkas:
 - **Sisa Fase 9:** hanya T-49, T-51, T-54 yang menunggu keputusan Bos (kanal pengingat; model peran + kanal undangan; apakah akuntansi penuh & payroll dijual). Seluruh task `READY` Fase 9 sudah selesai.
 
 **Catatan:** WIP writer lain (polesan UX mobile, landing publik, quick actions dashboard, pin `DATA_SOURCE=json` di phpunit.xml) di-commit apa adanya di `b0ef5b0` atas instruksi Bos supaya tidak hilang dan supaya T-56 tidak terhalang file kotor — belum direview, bukan tulisan sesi ini.
+
+### Keputusan yang membuka empat task terakhir
+
+Bos memutuskan: pengingat piutang lewat **WhatsApp via Hermes** (D-63), akuntansi
+penuh dan payroll **dijual** (D-64), keanggotaan tim **dua peran di pivot
+`company_user`** (D-65), dan japri staf ke bot internal **diizinkan baca-saja**
+(D-66). Keempatnya tercatat LOCKED di `00-DECISIONS.md` (`d425c38`, `0a5bb00`).
+D-65 menolak peran per-modul dengan alasan konkret: `PresetDefinitionValidator`
+(baris 209) mengunci kosakata `['owner','staff','system']` dan 40 preset
+memakainya, jadi memperluasnya sekelas D-32 — izin halus nanti lewat kolom izin
+per anggota, bukan peran baru.
+
+**T-57 japri owner ke bot internal: `DONE`, commit `5967ca1`.** Cacat produksi,
+bukan peningkatan.
+
+- Filter membandingkan pengirim dengan `$profile->owner?->phone`, tapi `User`
+  **tidak punya kolom `phone`** — yang ada `wa_number` + `wa_is_verified`
+  (migration `2026_09_17_222052`). `$cleanOwner` selalu kosong, cabang
+  fail-closed selalu menyala, jadi **owner tidak pernah bisa japri bot-nya
+  sendiri**.
+- Test lama `primary profile allows dm from owner` hijau karena menulis
+  `$owner->phone` pada model belum tersimpan: Eloquent menerima atribut sembarang
+  di memori, jadi test itu membuktikan kolom yang tidak ada di skema. Pelajaran
+  yang dicatat: test yang menulis atribut ke model tak tersimpan tidak
+  membuktikan skema.
+- Test negatif baru mengunci ketiga arah: nomor hanya sah dari `wa_number`
+  (sengaja diisi ke `phone` saja supaya regresi langsung merah), nomor cocok tapi
+  `wa_is_verified` salah tetap ditolak, dan owner tanpa nomor tidak pernah
+  "cocok" dengan pengirim tanpa nomor (dua string kosong).
+
+**T-51 tab Tim & Akses: `DONE`, commit `b6bce50`.** Tab `team` sebelumnya stub
+berbadge "Segera", jadi usaha ber-staf menjalankan semuanya dari satu akun owner.
+
+- Pivot `company_user` (`owner|staff`), `company_invitations` (kode sekali pakai,
+  kedaluwarsa 72 jam, dapat dicabut), dan `max_users` pada `plans` +
+  `company_memberships`. `CompanyRoleResolver` membaca pivot, bukan hanya
+  `owner_user_id`.
+- Kuota ditegakkan `UserQuotaGate` **sebelum** undangan dibuat, bukan saat
+  penerimaan — kalau tidak, kuota bisa terlampaui oleh undangan yang sudah
+  beredar. Tier gratis 1, Starter 3, Pro 10, Enterprise 100.
+- Kosakata peran tidak diperluas: **nol sentuhan ke 40 preset**.
+- Temuan saat kerja: `max_users` `NOT NULL` tanpa default membuat tiga jalur
+  provisioning gagal (`TrialProvisioner`, `InvoiceCreationService`,
+  `InvoiceConfirmationService`) — ditutup dengan `$plan->max_users ?? 1`.
+- Test negatif: undangan tidak bisa menambah staf ke company lain, staf tidak
+  bisa menaikkan perannya sendiri, pencabutan berlaku seketika, kuota penuh
+  menolak undangan (fail-closed), kode kedaluwarsa/terpakai ditolak.
+
+**T-54 akuntansi penuh & payroll: `DONE`, commit `ed84b7f` + `5849035`
+(didelegasikan ke sub-agent).** Urutan D-64 diikuti: schema dulu, layar, lalu
+repoint menu — penyalaan di preset ikut gerbang paket D-52 dan **di luar lingkup
+task ini**.
+
+- `chart_of_accounts.schema.json`, `accounting_journals.schema.json`, dan
+  `payrolls.schema.json` dibuat; `ReportScreen` dibangun supaya pola `report`
+  tidak jatuh ke kartu kontrak; item menu `accounting/coa`,
+  `accounting/journals`, `hrd/payroll` di-repoint ke entitas yang benar
+  (sebelumnya "Bagan Akun" menunjuk `cash_entries` dan "Payroll" menunjuk
+  `employees` — layar menampilkan entity berbeda dari judulnya).
+- **Koreksi terhadap rencana:** pola layar `accounting/journals` diganti
+  `ledger` → `list`. `LedgerScreen::amountField()` akan fallback ke `'id'` untuk
+  entitas ini dan **menjumlahkan id baris sebagai "saldo"** — angka finansial
+  palsu, bukan sekadar tampilan salah.
+- `ModuleSidebarTest` disunting: asersi `/app/accounting/reports` yang dulu jatuh
+  ke kartu kontrak diganti, dan jaminan fallback dipindah ke test baru
+  `test_screen_pattern_without_a_component_falls_back_to_the_contract_card`
+  supaya jaminannya tidak hilang bersama asersi lama.
+- **Empat temuan di luar lingkup, sengaja TIDAK diperbaiki** (perlu task
+  sendiri):
+  1. `unique` di schema `chart_of_accounts.account_code` dan
+     `accounting_journals.journal_number` **belum punya unique index di
+     migration** — jalur Eloquent/MySQL masih menerima duplikat. Ini gap data
+     finansial, bukan kosmetik.
+  2. `accounting_journal_lines` belum punya schema JSON, jadi debit/kredit tidak
+     terlihat layar generik.
+  3. Belum ada fixture demo untuk tiga entitas baru — layar Bagan Akun, Jurnal,
+     dan Payroll kosong di tenant demo.
+  4. Penyalaan kapabilitas di preset belum dilakukan (memang milik D-52).
+
+**T-49 pengingat piutang otomatis: `DONE`, commit `7986662`.** Menutup janji SOP
+bawaan Karyawan AI yang sejak T-48 harus ditulis ulang karena belum ada
+implementasinya.
+
+- **Penerima adalah pemilik usaha, bukan pelanggan.** Mengirim langsung ke
+  pelanggan menyentuh persetujuan pihak ketiga dan reputasi nomor WA tenant, jadi
+  itu keputusan terpisah — bukan efek samping sebuah task pengingat.
+- `config/receivables.php` mengatur tahap (H-3, H, H+3, H+7) dan batas harian.
+  `customer_invoice_reminders` menyimpan satu baris per (tagihan, tahap) sebagai
+  kunci idempoten, jadi scheduler yang jalan dua kali tidak bisa mengirim dua
+  kali. Command `bos:remind-receivables` dijadwalkan `dailyAt 07:30`.
+- Pengiriman lewat `HermesNodeClient::sendWhatsAppMessage()` yang company-scoped
+  dan fail-closed (D-63) — bukan `sendWhatsApp()` yang tidak ter-scope, dan bukan
+  `DunningLadder`/`BillingCheckExpiring` yang melayani tagihan langganan platform
+  (D-23).
+- 12 test, negatif lebih dulu: replay tidak mengirim dua kali, nomor belum
+  terverifikasi fail-closed, tagihan lunas/draf tidak pernah diingatkan, isolasi
+  tenant.
+- **Aktivasi produksi tetap `HUMAN:SECRET`** — kredensial Hermes belum dipasang,
+  jadi jalur ini belum pernah mengirim dari tenant nyata.
+
+**T-58 identitas WA per orang: `DONE`, commit `2ba77c7`.** Sebelumnya bot tidak
+punya identitas per orang: japri hanya dibandingkan dengan nomor owner, dan di
+grup bot tidak tahu siapa yang bicara sehingga peran tak pernah bisa diterapkan.
+
+- `WhatsAppSenderIdentity` menautkan nomor terverifikasi ke keanggotaan
+  `company_user` dengan tiga penjaga: `wa_is_verified` wajib benar (nomor WA
+  berpindah tangan, jadi kecocokan bukan bukti identitas), keanggotaan wajib
+  aktif (pencabutan menutup akses WA seketika tanpa menyentuh apa pun di sisi
+  WA), dan satu nomor di lebih dari satu company **fail-closed** sampai T-37
+  menghadirkan pemilih konteks — menebak company berarti berisiko menjawab
+  dengan data usaha yang salah.
+- Japri staf **baca-saja** (D-66). Tidak ada tabel izin terpisah untuk WA: aksi
+  bot melewati pintu otorisasi yang sama dengan web, sehingga WA tidak menjadi
+  jalan memutar aturan owner-only T-50. Aturan grup WA-04 tidak dilonggarkan.
+- **Cacat produksi kedua yang ikut tertutup:** filter memanggil
+  `$company->moduleSettings()`, sementara relasinya bernama `settings()` —
+  `BadMethodCallException` setiap ada pesan grup dengan konteks company. Tidak
+  pernah terlihat karena test lama **selalu** mengirim `$company = null`. Pola
+  yang sama dengan cacat T-57: test lolos karena memakai nilai fabrikasi.
+- `WhatsAppInteractionFilterTest` dipindah dari `tests/Unit/` ke
+  `tests/Feature/WhatsApp/` dengan `RefreshDatabase`, karena jalur "bukan owner"
+  sekarang menyentuh basis data.
+
+**Gate penutup Fase 9:** `DATA_SOURCE=json php artisan test` **1.082 passed /
+5.128 assertions, 0 gagal**; `migrate:fresh --seed --force` OK;
+`vendor/bin/pint` PASS pada file T-49 + T-58; `npm run build` PASS. Pint masih
+menyisakan satu pelanggaran pre-existing `tests/Feature/LobbyNavigationTest.php`
+(`class_attributes_separation`) milik writer lain — dicatat, tidak disentuh.
+
+**Sisa risiko Fase 9:**
+
+- Seluruh rangkaian belum pernah dijalankan dari HP pada tenant produksi.
+- Aktivasi Hermes produksi untuk T-49, T-51 (undangan WA), dan T-58 menunggu
+  `HUMAN:SECRET`; sampai itu ada, ketiganya hanya terbukti lewat
+  `FakeHermesNodeClient`.
+- Empat temuan T-54 di atas masih terbuka, yang paling berisiko adalah unique
+  index yang belum ada untuk `account_code` dan `journal_number`.
+- `b0ef5b0` (WIP writer lain) belum direview.
 
 ## UR  Product Usage Readiness (docs/plans/product-usage-readiness-plan.md)
 
@@ -654,6 +792,19 @@ dipulihkan via `git checkout`. Test suite kembali hijau setelahnya.
 **Catatan tentang klaim "FeatureResolver fail-open":** OpenCode menandai `(! $isPlanActive || in_array(...))` sebagai celah D-52. Setelah Hermes membaca kode: ini **perilaku yang disengaja dan benar** — fitur preset berlaku penuh hanya saat company **tidak punya membership/paket** (keadaan demo/setup), dan `PlanCapabilityGate` memang fail-closed (`[]`) saat membership hilang. Mengubahnya jadi fail-closed global akan mematikan seluruh demo/test. Apakah company tanpa paket harus dibatasi adalah **keputusan produk untuk Bos**, bukan bug untuk diperbaiki sepihak.
 
 ## READY Berikutnya
-Tidak ada task READY tersisa di `EXECUTION_PLAN.md` §Fase 6b. Katalog D-56
-sudah dibangun seluruhnya (T-28..T-35). Langkah lanjutan menunggu instruksi
-Bos (add-on baru, ekspansi preset, atau prioritas lain).
+Tidak ada task `READY` tersisa. Fase 8 (T-41..T-47) dan Fase 9 (T-48..T-58)
+selesai penuh; Fase 6b/katalog D-56 sudah dibangun seluruhnya (T-28..T-35).
+
+Kandidat antrean berikutnya, belum diqueue dan belum diputuskan Bos:
+
+- Unique index untuk `chart_of_accounts.account_code` dan
+  `accounting_journals.journal_number` — schema menyatakan `unique`, migration
+  belum menegakkannya (gap data finansial, temuan T-54).
+- `accounting_journal_lines.schema.json` supaya debit/kredit terlihat layar
+  generik, plus fixture demo untuk tiga entitas T-54 (kini kosong di tenant demo).
+- Penyalaan `finance.accounting` + `hr.payroll` di preset mengikuti gerbang paket
+  D-52 (`hr.payroll` Pro+Enterprise, `finance.accounting` Enterprise).
+- T-37 pemilih konteks company — sampai ini ada, nomor WA yang menjadi anggota di
+  lebih dari satu usaha fail-closed (D-66).
+- Review `b0ef5b0` (WIP writer lain yang di-commit apa adanya).
+- Aktivasi Hermes produksi untuk T-49/T-51/T-58 — `HUMAN:SECRET`, butuh Bos.
