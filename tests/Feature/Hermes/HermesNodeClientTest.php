@@ -33,26 +33,102 @@ class HermesNodeClientTest extends TestCase
         parent::setUp();
 
         Config::set('hermes.node_secrets', ['ref_uji' => 'rahasia-uji']);
-        Config::set('hermes.delivery.send_path', '/api/wa/send');
 
         $this->client = new HermesNodeClient;
     }
 
-    public function test_message_is_sent_to_the_node_that_serves_the_company(): void
+    public function test_message_is_sent_using_the_real_bridge_contract(): void
     {
-        Http::fake(['*' => Http::response(['ok' => true], 200)]);
+        // Kontrak nyata bridge WhatsApp Hermes (dibaca dari
+        // scripts/whatsapp-bridge/bridge.js): POST /send dengan {chatId, message},
+        // sukses ditandai `success: true`. Bentuk `/api/wa/send` dengan
+        // `instance_id` yang dipakai sebelumnya adalah karangan dan tidak pernah
+        // ada di Hermes.
+        Http::fake(['*' => Http::response(['success' => true, 'messageId' => 'ABC'], 200)]);
 
         $company = $this->companyWithProfile();
 
         $this->client->sendWhatsAppMessage((string) $company->id, '0812-3456-7890', 'Tagihan jatuh tempo besok.');
 
         Http::assertSent(function ($request) {
-            // Nomor dinormalkan ke format internasional sebelum dikirim.
-            return $request->url() === 'https://node.uji.test/api/wa/send'
-                && $request->header('X-Hermes-Secret')[0] === 'rahasia-uji'
-                && $request['to'] === '6281234567890'
+            // Nomor dinormalkan lalu dijadikan JID WhatsApp.
+            return $request->url() === 'https://node.uji.test/send'
+                && $request['chatId'] === '6281234567890@s.whatsapp.net'
                 && $request['message'] === 'Tagihan jatuh tempo besok.';
         });
+    }
+
+    public function test_negative_a_bridge_that_is_not_connected_fails_closed(): void
+    {
+        // Bridge menjawab 503 {"error":"Not connected to WhatsApp"} saat sesi
+        // WhatsApp terputus. Itu keadaan nyata: `/health` pada instalasi ini
+        // melaporkan `disconnected` sekarang.
+        Http::fake(['*' => Http::response(['error' => 'Not connected to WhatsApp'], 503)]);
+
+        $company = $this->companyWithProfile();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('HTTP 503');
+
+        $this->client->sendWhatsAppMessage((string) $company->id, '6281234567890', 'Halo');
+    }
+
+    public function test_negative_ping_reports_a_disconnected_bridge_as_unhealthy(): void
+    {
+        // Jebakan yang ditutup di sini: `/health` menjawab **HTTP 200** walau
+        // WhatsApp-nya terputus. Memeriksa kode HTTP saja akan melaporkan bridge
+        // mati sebagai sehat, dan itu justru kebohongan yang paling merugikan -
+        // operator akan mencari masalah di tempat lain.
+        Http::fake(['*' => Http::response(['status' => 'disconnected', 'queueLength' => 0], 200)]);
+
+        $result = $this->client->ping('https://node.uji.test', 'ref_uji');
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('disconnected', $result['detail']);
+    }
+
+    public function test_ping_reports_a_connected_bridge_as_healthy(): void
+    {
+        Http::fake(['*' => Http::response(['status' => 'connected', 'queueLength' => 0], 200)]);
+
+        $result = $this->client->ping('https://node.uji.test', 'ref_uji');
+
+        $this->assertTrue($result['ok']);
+    }
+
+    public function test_a_loopback_node_may_declare_it_has_no_authentication(): void
+    {
+        // Bridge WhatsApp Hermes **tidak punya autentikasi** sama sekali di port
+        // 3000 - tidak ada token, tidak ada header. Memaksa referensi rahasia
+        // palsu hanya supaya lolos aturan kita adalah kebohongan yang tersimpan
+        // di basis data. Jadi ketiadaan itu dinyatakan **eksplisit** dengan
+        // referensi `none`.
+        Http::fake(['*' => Http::response(['success' => true], 200)]);
+
+        $company = $this->companyWithProfile(apiUrl: 'http://127.0.0.1:3000', secretReference: 'none');
+
+        $this->client->sendWhatsAppMessage((string) $company->id, '6281234567890', 'Halo');
+
+        Http::assertSent(fn ($request) => $request->header('X-Hermes-Secret') === []);
+    }
+
+    public function test_negative_a_no_auth_node_is_refused_when_it_is_not_loopback(): void
+    {
+        // Node tanpa autentikasi hanya boleh di loopback. Mengarahkannya ke alamat
+        // publik berarti siapa pun di internet bisa mengirim WhatsApp sebagai
+        // nomor tenant.
+        Http::fake();
+
+        $company = $this->companyWithProfile(apiUrl: 'https://node.publik.test', secretReference: 'none');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('tanpa autentikasi');
+
+        try {
+            $this->client->sendWhatsAppMessage((string) $company->id, '6281234567890', 'Halo');
+        } finally {
+            Http::assertNothingSent();
+        }
     }
 
     public function test_negative_company_without_a_serving_profile_is_refused(): void
@@ -185,13 +261,13 @@ class HermesNodeClientTest extends TestCase
 
     public function test_ping_reports_health_without_sending_any_message(): void
     {
-        Http::fake(['*' => Http::response(['ok' => true, 'version' => '1.0'], 200)]);
+        Http::fake(['*' => Http::response(['status' => 'connected'], 200)]);
 
         $result = $this->client->ping('https://node.uji.test', 'ref_uji');
 
         $this->assertTrue($result['ok']);
         $this->assertSame(200, $result['status']);
-        Http::assertSent(fn ($request) => $request->url() === 'https://node.uji.test/api/health'
+        Http::assertSent(fn ($request) => $request->url() === 'https://node.uji.test/health'
             && $request->method() === 'GET');
     }
 
@@ -210,13 +286,14 @@ class HermesNodeClientTest extends TestCase
         string $profileStatus = 'paired',
         string $nodeStatus = 'active',
         string $apiUrl = 'https://node.uji.test',
+        string $secretReference = 'ref_uji',
     ): Company {
         $owner = User::factory()->create(['wa_number' => '6281234567890', 'wa_is_verified' => true]);
         $company = Company::factory()->create(['owner_user_id' => $owner->id]);
 
         $node = HermesNode::factory()->create([
             'api_url' => $apiUrl,
-            'api_secret_reference' => 'ref_uji',
+            'api_secret_reference' => $secretReference,
             'status' => $nodeStatus,
         ]);
 

@@ -17,9 +17,24 @@ return [
     */
 
     'delivery' => [
-        'send_path' => env('HERMES_SEND_PATH', '/api/wa/send'),
-        'health_path' => env('HERMES_HEALTH_PATH', '/api/health'),
+        // Kontrak nyata bridge WhatsApp Hermes, dibaca dari
+        // `scripts/whatsapp-bridge/bridge.js`: `POST /send` dengan
+        // `{chatId, message, replyTo?}`, dan `GET /health`.
+        'send_path' => env('HERMES_SEND_PATH', '/send'),
+        'health_path' => env('HERMES_HEALTH_PATH', '/health'),
         'timeout' => (int) env('HERMES_TIMEOUT', 10),
+
+        // `/health` menjawab **HTTP 200 walau WhatsApp terputus**, dengan
+        // `status` berisi keadaan sambungannya. Memeriksa kode HTTP saja akan
+        // melaporkan bridge mati sebagai sehat.
+        'healthy_statuses' => ['connected'],
+
+        // Nilai referensi rahasia yang berarti "node ini memang tidak punya
+        // autentikasi". Bridge WhatsApp Hermes tidak punya token sama sekali di
+        // port 3000; memaksa referensi palsu hanya supaya lolos aturan kita
+        // adalah kebohongan yang tersimpan di basis data. Hanya sah untuk
+        // loopback - lihat `HermesNodeClient`.
+        'no_auth_reference' => 'none',
 
         // Profil `unpaired` belum menempel ke nomor WhatsApp mana pun, jadi ia
         // tidak boleh dianggap siap mengirim.

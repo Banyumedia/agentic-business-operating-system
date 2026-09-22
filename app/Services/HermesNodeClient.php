@@ -73,17 +73,17 @@ class HermesNodeClient
             throw new RuntimeException('Node Hermes tidak aktif: '.($node->status ?? 'tidak diketahui').'.');
         }
 
-        $secret = $this->secretFor((string) $node->api_secret_reference);
-        $url = $this->endpoint((string) $node->api_url, (string) config('hermes.delivery.send_path', '/api/wa/send'));
+        $url = $this->endpoint((string) $node->api_url, (string) config('hermes.delivery.send_path', '/send'));
+        $headers = $this->authHeaders((string) $node->api_secret_reference, (string) $node->api_url);
 
         try {
             $response = Http::asJson()
                 ->acceptJson()
-                ->withHeaders(['X-Hermes-Secret' => $secret])
+                ->withHeaders($headers)
                 ->timeout((int) config('hermes.delivery.timeout', 10))
                 ->post($url, [
-                    'instance_id' => $profile->instance_id,
-                    'to' => $recipient,
+                    // Bridge menerima JID WhatsApp, bukan nomor telanjang.
+                    'chatId' => $recipient.'@s.whatsapp.net',
                     'message' => $message,
                 ]);
         } catch (Throwable $exception) {
@@ -106,7 +106,10 @@ class HermesNodeClient
         // sebagai pengingat terkirim dan tidak pernah dicoba ulang.
         $body = $response->json();
 
-        if (! is_array($body) || ($body['ok'] ?? $body['sent'] ?? false) !== true) {
+        // Bridge menjawab `{success: true, messageId, messageIds}`. `ok` dan
+        // `sent` diterima sebagai padanan supaya gateway lain bisa dipakai tanpa
+        // mengubah kelas ini.
+        if (! is_array($body) || ($body['success'] ?? $body['ok'] ?? $body['sent'] ?? false) !== true) {
             throw new RuntimeException('Node Hermes tidak mengonfirmasi pesan terkirim.');
         }
     }
@@ -122,28 +125,48 @@ class HermesNodeClient
     public function ping(string $apiUrl, string $secretReference): array
     {
         try {
-            $secret = $this->secretFor($secretReference);
+            $headers = $this->authHeaders($secretReference, $apiUrl);
+            $url = $this->endpoint($apiUrl, (string) config('hermes.delivery.health_path', '/health'));
         } catch (RuntimeException $exception) {
             return ['ok' => false, 'status' => null, 'detail' => $exception->getMessage()];
         }
 
-        $url = $this->endpoint($apiUrl, (string) config('hermes.delivery.health_path', '/api/health'));
-
         try {
             $response = Http::acceptJson()
-                ->withHeaders(['X-Hermes-Secret' => $secret])
+                ->withHeaders($headers)
                 ->timeout((int) config('hermes.delivery.timeout', 10))
                 ->get($url);
         } catch (Throwable $exception) {
             return ['ok' => false, 'status' => null, 'detail' => $exception->getMessage()];
         }
 
+        if (! $response->successful()) {
+            return [
+                'ok' => false,
+                'status' => $response->status(),
+                'detail' => 'Node menjawab HTTP '.$response->status().'.',
+            ];
+        }
+
+        // HTTP 200 belum berarti WhatsApp tersambung: bridge tetap menjawab 200
+        // dengan `status: disconnected`. Melaporkannya sebagai sehat akan membuat
+        // operator mencari masalah di tempat yang salah.
+        $body = $response->json();
+        $connection = is_array($body) ? (string) ($body['status'] ?? '') : '';
+        $healthy = (array) config('hermes.delivery.healthy_statuses', ['connected']);
+
+        if ($connection !== '' && ! in_array($connection, $healthy, true)) {
+            return [
+                'ok' => false,
+                'status' => $response->status(),
+                'detail' => 'Node hidup tetapi WhatsApp '.$connection.'.',
+            ];
+        }
+
         return [
-            'ok' => $response->successful(),
+            'ok' => true,
             'status' => $response->status(),
-            'detail' => $response->successful()
-                ? 'Node menjawab: '.mb_substr((string) $response->body(), 0, 200)
-                : 'Node menjawab HTTP '.$response->status().'.',
+            'detail' => 'Node menjawab: '.mb_substr((string) $response->body(), 0, 200),
         ];
     }
 
@@ -180,6 +203,41 @@ class HermesNodeClient
         }
 
         return $profile;
+    }
+
+    /**
+     * Header autentikasi untuk node, atau kosong bila node itu **menyatakan
+     * secara eksplisit** bahwa ia tidak punya autentikasi.
+     *
+     * Bridge WhatsApp Hermes memang tidak punya token apa pun di port 3000 -
+     * sudah diperiksa pada sumbernya. Memaksa operator mengisi referensi rahasia
+     * palsu hanya supaya lolos aturan kita akan menyimpan kebohongan di basis
+     * data, dan menyembunyikan fakta bahwa jalur itu tidak terlindungi.
+     *
+     * Karena itu ketiadaan autentikasi harus **dinyatakan**, dan hanya sah untuk
+     * loopback: node tanpa autentikasi pada alamat publik berarti siapa pun bisa
+     * mengirim WhatsApp sebagai nomor tenant.
+     *
+     * @return array<string, string>
+     */
+    private function authHeaders(string $reference, string $apiUrl): array
+    {
+        if ($reference === (string) config('hermes.delivery.no_auth_reference', 'none')) {
+            if (! $this->isLoopback($apiUrl)) {
+                throw new RuntimeException('Node tanpa autentikasi hanya diizinkan pada alamat loopback.');
+            }
+
+            return [];
+        }
+
+        return ['X-Hermes-Secret' => $this->secretFor($reference)];
+    }
+
+    private function isLoopback(string $apiUrl): bool
+    {
+        $host = parse_url($apiUrl, PHP_URL_HOST);
+
+        return in_array($host, ['127.0.0.1', 'localhost', '::1', '[::1]'], true);
     }
 
     /**
