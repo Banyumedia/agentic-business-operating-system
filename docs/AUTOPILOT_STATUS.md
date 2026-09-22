@@ -1609,3 +1609,53 @@ STATUS ini.
 harus langsung di `main`), lalu MP-01/02/03/08/09/10 yang bergantung padanya, dan
 MP-12 (barrier penutup). MP-02 (integritas POS: stok + jurnal saat checkout)
 adalah yang paling berdampak dan sebaiknya didahulukan setelah MP-00 mendarat.
+
+## Empat keputusan Bos + D-76 lead capture (2026-09-22, lanjutan sesi)
+
+Bos menjawab empat keputusan yang menghalangi:
+
+1. **Q-11 → D-75: H-05 tambal lokal.** Temuan saat mencatat: kerangka
+   `dashboard_auth` **sudah lengkap** di Hermes (`register_token_route`,
+   provider stacking, fail-closed) — H-05 tinggal satu plugin (provider bearer
+   + registrasi path daftar-putih), bukan sistem auth baru. Di repo
+   `hermes-agent`, di luar workspace ini.
+2. **Q-14 → ditunda** sampai host pertama penuh; tidak menghalangi klien
+   pertama.
+3. **Gelombang 6 (T-90..T-104)** tetap "coming soon", tidak dibuka.
+4. **Q-09 → D-76: bot CS boleh mencatat prospek**, layaknya CS; eksekusi lanjut
+   masuk antrean. **Dikerjakan sesi ini** (`0e0abb4`): `POST /api/bot/master/leads`,
+   tabel `leads` minimal (nomor, pesan, sumber, status), `updateOrCreate` per
+   nomor supaya satu prospek satu kartu. Tidak menyentuh `support_tickets`
+   maupun company.
+
+**Gate akhir setelah D-76:** `DATA_SOURCE=json php artisan test` **1.317 passed
+/ 6.037 assertions, 0 gagal**; `vendor/bin/pint --test` **PASS 565 berkas**;
+migration `create_leads_table` DONE.
+
+**Insiden proses yang perlu diketahui sesi berikutnya:**
+
+- **Tiga worktree paralel aktif** di `agentic-bos-ux-a`, `agentic-bos-ux-b`,
+  `agentic-bos-worker-ui`. Mereka menjelaskan sebagian kontensi test yang
+  tercatat sesi-sesi sebelumnya.
+- **`public/build/manifest.json` bukan per-worktree** — build salah satu
+  worktree bisa menimpa manifest yang dipakai worktree lain, menghasilkan
+  `Unable to locate file in Vite manifest` di **puluhan** test sekaligus
+  (terjadi sesi ini: 68 gagal, semuanya 500 karena manifest, nol berkaitan
+  dengan kode yang sedang dikerjakan). **Diagnosis, bukan tebakan:** dikonfirmasi
+  dengan `npm run build` ulang lalu re-run — langsung hijau. Kalau gate tiba-tiba
+  merah masif dengan pesan Vite manifest, jalankan `npm run build` dulu sebelum
+  mencurigai kode.
+- **Dua kali kena artefak editing tool** yang menyisipkan 2-3 karakter sampah
+  tepat sebelum `<?php` pada berkas yang baru disunting (`Settings.php`,
+  `MasterBotController.php`), membuat parse error yang mengaku "1 gagal"
+  padahal seluruh file testnya tidak jalan. Terdeteksi lewat `php -l` per
+  berkas yang baru diubah — kebiasaan yang layak dipertahankan setelah setiap
+  `str_replace` pada baris pembuka berkas.
+- Utang lama tetap berlaku: suite tidak aman dijalankan berbarengan dengan
+  proses `php artisan test` lain (beda soal dari manifest di atas — ini soal
+  `storage/framework/testing` yang dibagi).
+
+**Antrean sekarang benar-benar habis untuk pekerjaan tanpa Bos.** Sisa yang ada:
+gelombang 6 (ditunda), H-05 (repo lain, keputusan sudah dijawab tapi
+eksekusinya manual), `HUMAN:SECRET` nomor CS, dan Q-14 (menunggu data kapasitas
+nyata).
