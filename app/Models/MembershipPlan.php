@@ -11,7 +11,7 @@ class MembershipPlan extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'slug', 'monthly_price', 'annual_price', 'max_wa_groups',
+        'name', 'slug', 'monthly_price', 'annual_price', 'max_wa_groups', 'max_users',
         'monthly_token_quota', 'emergency_token_quota', 'trial_token_quota',
         'features', 'is_active',
     ];
@@ -20,6 +20,7 @@ class MembershipPlan extends Model
         'monthly_price' => 'decimal:2',
         'annual_price' => 'decimal:2',
         'max_wa_groups' => 'integer',
+        'max_users' => 'integer',
         'monthly_token_quota' => 'integer',
         'emergency_token_quota' => 'integer',
         'trial_token_quota' => 'integer',

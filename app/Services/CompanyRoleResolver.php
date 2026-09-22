@@ -3,7 +3,10 @@
 namespace App\Services;
 
 use App\Models\Company;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Peran efektif company aktif dari sumber tepercaya (D-41), bukan dari
@@ -31,17 +34,65 @@ class CompanyRoleResolver
             return self::ROLE_STAFF;
         }
 
-        $isOwner = Company::query()
-            ->where('id', $companyId)
-            ->where('owner_user_id', $user->id)
-            ->exists();
-
-        return $isOwner ? self::ROLE_OWNER : self::ROLE_STAFF;
+        return $this->roleFor($user, $companyId);
     }
 
     public function isOwnerOfActiveCompany(): bool
     {
         return $this->roleForActiveCompany() === self::ROLE_OWNER;
+    }
+
+    /**
+     * Apakah pengguna anggota company ini - sebagai owner maupun staf (D-65).
+     *
+     * Sebelum ada `company_user`, satu-satunya hubungan yang tercatat adalah
+     * kepemilikan, sehingga staf tidak punya keanggotaan untuk diperiksa.
+     */
+    public function isMemberOfCompany(string|int $companyId): bool
+    {
+        $user = Auth::user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->roleFor($user, $companyId) === self::ROLE_OWNER
+            || $this->membershipRole($user, $companyId) !== null;
+    }
+
+    /**
+     * Peran efektif: kepemilikan selalu menang, lalu baris keanggotaan, dan
+     * bila tidak ada keduanya jatuh ke staf - peran paling terbatas yang masih
+     * berhak login (fail-closed).
+     */
+    private function roleFor(User $user, string|int $companyId): string
+    {
+        $isOwner = Company::query()
+            ->whereKey($companyId)
+            ->where('owner_user_id', $user->id)
+            ->exists();
+
+        if ($isOwner) {
+            return self::ROLE_OWNER;
+        }
+
+        $membershipRole = $this->membershipRole($user, $companyId);
+
+        return $membershipRole === self::ROLE_OWNER ? self::ROLE_OWNER : self::ROLE_STAFF;
+    }
+
+    private function membershipRole(User $user, string|int $companyId): ?string
+    {
+        if (! Schema::hasTable('company_user')) {
+            return null;
+        }
+
+        $role = DB::table('company_user')
+            ->where('company_id', $companyId)
+            ->where('user_id', $user->id)
+            ->value('role');
+
+        return is_string($role) ? $role : null;
     }
 
     public function isOwnerOfCompany(string|int $companyId): bool

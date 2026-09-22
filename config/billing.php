@@ -12,6 +12,13 @@ return [
     */
     'free_tier' => [
         /*
+        | Kuota pengguna tier gratis (D-65). Satu orang = owner saja; orang
+        | kedua adalah tanda usaha mulai serius, momen paling wajar untuk
+        | menaikkan paket (strategi kuota D-60/D-61).
+        */
+        'max_users' => (int) env('FREE_TIER_MAX_USERS', 1),
+
+        /*
         | Capabilities available in free tier
         | All operational capabilities + system.ai_agent enabled
         */

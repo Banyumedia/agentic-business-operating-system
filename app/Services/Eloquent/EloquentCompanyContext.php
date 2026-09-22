@@ -6,6 +6,8 @@ use App\Contracts\CompanyContext;
 use App\Models\AdminImpersonationSession;
 use App\Models\Company;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use LogicException;
 
 class EloquentCompanyContext implements CompanyContext
@@ -98,6 +100,17 @@ class EloquentCompanyContext implements CompanyContext
         }
 
         if ((int) $company->owner_user_id === (int) $user->id) {
+            return;
+        }
+
+        // Anggota tim (D-65). Sebelum ada `company_user`, hanya kepemilikan
+        // yang tercatat, sehingga staf tidak punya keanggotaan untuk diperiksa
+        // dan tidak bisa membuka halaman tenant sama sekali.
+        if (Schema::hasTable('company_user')
+            && DB::table('company_user')
+                ->where('company_id', $company->id)
+                ->where('user_id', $user->id)
+                ->exists()) {
             return;
         }
 

@@ -13,7 +13,7 @@ class CompanyMembership extends Model
 
     protected $fillable = [
         'company_id', 'plan_id', 'status', 'starts_at', 'expires_at', 'trial_ends_at',
-        'max_wa_groups', 'monthly_token_quota', 'emergency_token_quota', 'emergency_balance', 'current_token_balance',
+        'max_wa_groups', 'max_users', 'monthly_token_quota', 'emergency_token_quota', 'emergency_balance', 'current_token_balance',
         'metadata',
     ];
 
@@ -22,6 +22,7 @@ class CompanyMembership extends Model
         'expires_at' => 'datetime',
         'trial_ends_at' => 'datetime',
         'max_wa_groups' => 'integer',
+        'max_users' => 'integer',
         'monthly_token_quota' => 'integer',
         'emergency_token_quota' => 'integer',
         'emergency_balance' => 'integer',

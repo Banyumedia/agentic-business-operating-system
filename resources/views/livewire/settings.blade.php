@@ -248,6 +248,8 @@
                 @livewire(\App\Livewire\Settings\DataExport::class)
             @elseif ($tab['id'] === 'erasure')
                 @livewire(\App\Livewire\Settings\DataErasure::class)
+            @elseif ($tab['id'] === 'team')
+                @livewire(\App\Livewire\Settings\TeamAccess::class)
             @else
                 @php
                     // Teks bantu per-tab untuk pemilik usaha awam, bahasa

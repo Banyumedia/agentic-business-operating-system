@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -73,6 +74,23 @@ class Company extends Model
     public function memberships(): HasMany
     {
         return $this->hasMany(CompanyMembership::class);
+    }
+
+    /**
+     * Anggota manusia usaha ini (D-65). Berbeda dari `memberships()` yang
+     * merupakan langganan paket, dan berbeda dari entity `employees` yang
+     * merupakan data HRD tentang orang - anggota di sini punya akun login.
+     */
+    public function members(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'company_user')
+            ->withPivot(['role', 'invited_by_user_id', 'accepted_at'])
+            ->withTimestamps();
+    }
+
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(CompanyInvitation::class);
     }
 
     /**

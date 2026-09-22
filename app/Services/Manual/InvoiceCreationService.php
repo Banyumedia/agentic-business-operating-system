@@ -70,6 +70,7 @@ class InvoiceCreationService
             'starts_at' => now(),
             'expires_at' => now()->addMonth(),
             'max_wa_groups' => $plan->max_wa_groups,
+                        'max_users' => $plan->max_users ?? 1,
             'monthly_token_quota' => $plan->monthly_token_quota,
             'emergency_token_quota' => $plan->emergency_token_quota ?? 0,
             'current_token_balance' => 0,

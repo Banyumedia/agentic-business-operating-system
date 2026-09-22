@@ -6,6 +6,8 @@ use App\Models\AdminImpersonationSession;
 use App\Models\Company;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureCompanyAccess
@@ -42,9 +44,17 @@ class EnsureCompanyAccess
             return redirect()->route('onboarding');
         }
 
-        // Verify the user belongs to this company (via owner for now, could be via roles table later)
         $ownsCompany = Company::where('id', $companyId)->where('owner_user_id', $user->id)->exists();
-        $hasAccess = $ownsCompany;
+
+        // Keanggotaan tim (D-65): staf yang diundang berhak membuka usaha ini
+        // walau bukan pemiliknya. Perannya tetap staf - lihat penulisan
+        // `company_role` di bawah.
+        $isMember = $ownsCompany || (Schema::hasTable('company_user') && DB::table('company_user')
+            ->where('company_id', $companyId)
+            ->where('user_id', $user->id)
+            ->exists());
+
+        $hasAccess = $isMember;
         if (! $hasAccess && session()->has('admin_impersonation_id')) {
             // F2 (QA MQ-01): fail-closed - baris tanpa expires_at atau sudah
             // kedaluwarsa tidak memberi akses.
