@@ -347,36 +347,10 @@ class ControlPlaneClientTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_the_control_plane_has_exactly_one_door(): void
-    {
-        // D-72: satu kelas, supaya perubahan rute Hermes muncul sebagai satu test
-        // merah. Berkas lain yang menuliskan path dashboard sendiri akan melewati
-        // daftar-putih sekaligus pemetaan galatnya.
-        $allowed = [
-            'app/Services/Hermes/ControlPlanePaths.php',
-            'app/Services/Hermes/HermesControlPlaneClient.php',
-        ];
-
-        $violations = [];
-
-        foreach (glob(app_path('**/*.php')) + glob(app_path('**/**/*.php')) + glob(app_path('**/**/**/*.php')) as $file) {
-            $relative = str_replace('\\', '/', substr($file, strlen(base_path()) + 1));
-
-            if (in_array($relative, $allowed, true)) {
-                continue;
-            }
-
-            $source = (string) file_get_contents($file);
-
-            foreach (['/api/profiles', '/api/pairing', '/api/messaging', '/api/system/stats'] as $needle) {
-                if (str_contains($source, $needle)) {
-                    $violations[] = $relative.' memuat '.$needle;
-                }
-            }
-        }
-
-        $this->assertSame([], $violations);
-    }
+    // Penjaga "satu pintu" dipindah ke `Tests\Architecture\ControlPlaneBoundaryTest`
+    // (T-86): versi di sana memindai `app/`, `routes/`, dan `config/` secara rekursif,
+    // sedangkan versi lama di berkas ini memakai glob berlapis yang melewatkan
+    // direktori yang lebih dalam. Dua penjaga untuk satu aturan pasti menyimpang.
 
     private function node(
         string $controlUrl = 'https://kontrol.uji.test',

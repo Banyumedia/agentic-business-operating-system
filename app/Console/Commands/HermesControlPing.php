@@ -15,8 +15,8 @@ use Illuminate\Console\Command;
  * butuh token bearer). Node bisa sehat pada yang satu dan mati pada yang lain, dan
  * menyatukan keduanya akan membuat operator mencari masalah di tempat yang salah.
  *
- * Hanya memanggil endpoint yang tidak ter-scope profil (`/api/health`,
- * `/api/system/stats`) supaya tidak pernah menyentuh konfigurasi tenant mana pun.
+ * Hanya memanggil endpoint kesehatan dan statistik yang tidak ter-scope profil,
+ * supaya tidak pernah menyentuh konfigurasi tenant mana pun.
  */
 class HermesControlPing extends Command
 {
@@ -41,7 +41,9 @@ class HermesControlPing extends Command
 
         foreach ($nodes as $node) {
             try {
-                $health = $client->call($node, 'GET', '/api/health');
+                // Perintah ini tidak menuliskan path dashboard: rutenya hidup di satu
+                // tempat saja (T-86 penjaga a).
+                $health = $client->health($node);
                 $stats = $this->statsOrNull($client, $node);
 
                 $this->info('OK   '.$node->name.' — '.$this->describe($health, $stats));
@@ -56,15 +58,16 @@ class HermesControlPing extends Command
     }
 
     /**
-     * `/api/system/stats` bersifat tambahan: node yang sehat tetapi belum
-     * mengekspornya tidak boleh dilaporkan gagal.
+     * Statistik sistem bersifat tambahan: node yang sehat tetapi belum
+     * mengekspornya - atau yang menolaknya karena belum berwenang - tidak boleh
+     * dilaporkan gagal.
      *
      * @return array<mixed>|null
      */
     private function statsOrNull(HermesControlPlaneClient $client, HermesNode $node): ?array
     {
         try {
-            return $client->call($node, 'GET', '/api/system/stats');
+            return $client->systemStats($node);
         } catch (ControlPlaneException) {
             return null;
         }

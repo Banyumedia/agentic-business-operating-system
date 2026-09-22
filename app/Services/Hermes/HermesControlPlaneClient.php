@@ -145,6 +145,51 @@ class HermesControlPlaneClient
     }
 
     /**
+     * Keadaan node, tanpa menyentuh profil mana pun.
+     *
+     * Metode bernama seperti ini ada supaya **tidak ada berkas lain yang menuliskan
+     * path dashboard** (T-86 penjaga a). Kalau setiap pemanggil menulis templatenya
+     * sendiri, satu perubahan rute di Hermes harus diperbaiki di banyak tempat - dan
+     * yang terlewat akan mati diam-diam. Ditambahkan **saat dipakai**, bukan 19
+     * sekaligus: metode yang tidak dipakai siapa pun adalah izin yang menumpuk tanpa
+     * pernah diperiksa bentuknya.
+     *
+     * @return array<mixed>
+     *
+     * @throws ControlPlaneException
+     */
+    public function health(HermesNode $node): array
+    {
+        return $this->call($node, 'GET', '/api/health');
+    }
+
+    /**
+     * Versi, versi config, dan apakah Hermes bisa diperbarui.
+     *
+     * Ter-scope profil: Hermes membaca `profile` dari query. Tanpa nama profil,
+     * jawabannya adalah tentang profil yang **sedang aktif** - dan itu bisa berubah
+     * kapan saja.
+     *
+     * @return array<mixed>
+     *
+     * @throws ControlPlaneException
+     */
+    public function status(HermesNode $node, string $profile): array
+    {
+        return $this->call($node, 'GET', '/api/status', profile: $profile);
+    }
+
+    /**
+     * @return array<mixed>
+     *
+     * @throws ControlPlaneException
+     */
+    public function systemStats(HermesNode $node): array
+    {
+        return $this->call($node, 'GET', '/api/system/stats');
+    }
+
+    /**
      * Memetakan kode status ke pengecualian yang **berbeda-beda**.
      *
      * Menyatukannya menjadi satu galat membuat layar berbohong: 410 dan 429 adalah

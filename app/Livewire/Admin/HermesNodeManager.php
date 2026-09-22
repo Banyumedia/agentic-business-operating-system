@@ -52,8 +52,8 @@ class HermesNodeManager extends Component
      * `apiUrl` di atas adalah bridge WhatsApp: loopback, tanpa autentikasi, satu port
      * per nomor. Control plane adalah proses lain di port lain yang **butuh token**,
      * dan token itu setara terminal di host Hermes - karena port yang sama juga
-     * menyajikan tulis-berkas dan `/api/tools/terminal/*`. Karena itu keduanya tidak
-     * boleh berbagi kolom: satu salah isi berarti token dikirim ke port yang tidak
+     * menyajikan tulis-berkas dan eksekusi perintah. Karena itu keduanya tidak boleh
+     * berbagi kolom: satu salah isi berarti token dikirim ke port yang tidak
      * memintanya.
      *
      * Boleh kosong: node yang hanya menjalankan bridge tetap sah, dan itu keadaan
