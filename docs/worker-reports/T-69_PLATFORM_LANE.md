@@ -116,3 +116,24 @@ Perintah pembuktiannya sudah ada dan satu baris:
 ```powershell
 php artisan bos:hermes-send --platform --to=628... --message="Uji"
 ```
+
+## Tindak lanjut: QA independen
+
+Pekerjaan Fase 10 yang sudah mendarat (`90a42e9`..`d25a6c8`) diserahkan ke QA
+independen di sesi terpisah supaya writer tidak menilai pekerjaannya sendiri.
+
+- Prompt: `docs/worker-reports/PROMPT_QA_FASE10_HERMES.md`
+- Temuan ditulis QA ke: `docs/worker-reports/QA_FASE10_HERMES_FINDINGS.md`
+
+Tiga hal yang paling perlu mata kedua, dan alasannya:
+
+1. **Perubahan perilaku `DunningLadder`** (peringatan dicatat hanya bila terkirim).
+   Ia menyentuh dasar keputusan penghapusan data, dan arahnya bisa dibantah.
+2. **Refactor lajur tenant ke `BridgeGateway`.** Klaimnya "perilaku tidak berubah";
+   klaim seperti itu paling sering salah pada urutan pemeriksaan dan pesan galat.
+3. **Semua bukti pengiriman memakai `Http::fake()`.** Tidak ada satu pesan pun yang
+   pernah benar-benar keluar, jadi yang terbukti adalah bentuk permintaan dan rantai
+   penolakannya — bukan pengirimannya.
+
+Status temuan (`BARU` → `DITERIMA` / `DITOLAK` / `DIPERBAIKI <hash>`) diperbarui
+writer di berkas temuan itu, bukan di sini.
