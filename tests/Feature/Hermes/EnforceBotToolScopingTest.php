@@ -32,9 +32,13 @@ class EnforceBotToolScopingTest extends TestCase
         $this->app->bind(PresetSource::class, EloquentPresetSource::class);
         $this->seed(BusinessPresetSeeder::class);
 
+        // Owner default-nya terverifikasi: jalur bahagia yang sudah ada
+        // memang mewakili pemanggil bot yang sah, dan D-66 mensyaratkan
+        // `wa_is_verified = true` agar nomor dianggap bukti identitas.
         $this->owner = User::factory()->create([
             'email' => 'owner_bot@example.com',
             'wa_number' => '6281234567890',
+            'wa_is_verified' => true,
         ]);
 
         $this->company = Company::factory()->create([
@@ -119,5 +123,78 @@ class EnforceBotToolScopingTest extends TestCase
         ])->getJson('/api/bot/tenant/capabilities?company_id='.$this->company->id);
 
         $response->assertOk();
+    }
+
+    /**
+     * D-66: nomor cocok tapi `wa_is_verified = false` BUKAN bukti identitas —
+     * nomor WA berpindah tangan. Middleware ini sempat lebih longgar daripada
+     * `WhatsAppSenderIdentity`/`WhatsAppInteractionFilter` yang sudah menegakkan
+     * flag verifikasi, sehingga bearer sah + nomor kebetulan cocok tetap lolos.
+     * Rute mutasi harus menolak dengan 403, bukan meloloskan.
+     */
+    public function test_unverified_number_is_rejected_on_mutation_route(): void
+    {
+        $this->owner->forceFill(['wa_is_verified' => false])->save();
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer token_primary_secret',
+            'X-Caller-Wa-Number' => '6281234567890',
+        ])->putJson('/api/bot/tenant/settings', [
+            'company_id' => $this->company->id,
+            'features' => ['contacts' => true],
+        ]);
+
+        $response->assertStatus(403);
+    }
+
+    /**
+     * Aturan verifikasi berlaku sama untuk rute baca: tidak boleh ada celah di
+     * mana pembacaan lolos sementara mutasi ditolak (atau sebaliknya).
+     */
+    public function test_unverified_number_is_rejected_on_read_route(): void
+    {
+        $this->owner->forceFill(['wa_is_verified' => false])->save();
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer token_primary_secret',
+            'X-Caller-Wa-Number' => '6281234567890',
+        ])->getJson('/api/bot/tenant/capabilities?company_id='.$this->company->id);
+
+        $response->assertStatus(403);
+    }
+
+    /**
+     * Nomor disimpan `628...` tetapi pemanggil mengirim format lokal `08...`.
+     * Consumer WA lain menormalkan `08`→`628` sebelum membandingkan; middleware
+     * ini harus konsisten agar nomor sah tidak ditolak hanya karena beda format.
+     */
+    public function test_local_format_number_is_recognized_via_normalization(): void
+    {
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer token_primary_secret',
+            'X-Caller-Wa-Number' => '081234567890',
+        ])->putJson('/api/bot/tenant/settings', [
+            'company_id' => $this->company->id,
+            'features' => ['contacts' => true],
+        ]);
+
+        $response->assertOk();
+    }
+
+    /**
+     * Bearer sah tetapi nomor tidak dimiliki user mana pun → 403. Token yang
+     * benar tidak boleh cukup sendirian; identitas pemanggil tetap wajib.
+     */
+    public function test_unknown_number_is_rejected(): void
+    {
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer token_primary_secret',
+            'X-Caller-Wa-Number' => '6289999999999',
+        ])->putJson('/api/bot/tenant/settings', [
+            'company_id' => $this->company->id,
+            'features' => ['contacts' => true],
+        ]);
+
+        $response->assertStatus(403);
     }
 }

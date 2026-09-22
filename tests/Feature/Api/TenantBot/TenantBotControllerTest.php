@@ -32,7 +32,9 @@ class TenantBotControllerTest extends TestCase
 
     public function test_mcp_configure_modules_omits_sensitive_capabilities_without_privacy_consent()
     {
-        $user = User::factory()->create(['wa_number' => '12345']);
+        // D-66: pemanggil bot yang sah harus terverifikasi; nomor cocok saja
+        // tidak cukup karena nomor WA berpindah tangan.
+        $user = User::factory()->create(['wa_number' => '12345', 'wa_is_verified' => true]);
 
         $company = Company::factory()->create([
             'owner_user_id' => $user->id,
@@ -60,7 +62,9 @@ class TenantBotControllerTest extends TestCase
 
     public function test_tenant_bot_reports_unavailable_if_capability_disabled()
     {
-        $user = User::factory()->create(['wa_number' => '12345']);
+        // D-66: pemanggil bot yang sah harus terverifikasi; nomor cocok saja
+        // tidak cukup karena nomor WA berpindah tangan.
+        $user = User::factory()->create(['wa_number' => '12345', 'wa_is_verified' => true]);
 
         $company = Company::factory()->create([
             'owner_user_id' => $user->id,
@@ -92,7 +96,9 @@ class TenantBotControllerTest extends TestCase
 
     public function test_mcp_blocks_all_payloads_when_ai_agent_disabled()
     {
-        $user = User::factory()->create(['wa_number' => '12345']);
+        // D-66: pemanggil bot yang sah harus terverifikasi; nomor cocok saja
+        // tidak cukup karena nomor WA berpindah tangan.
+        $user = User::factory()->create(['wa_number' => '12345', 'wa_is_verified' => true]);
         $company = Company::factory()->create([
             'owner_user_id' => $user->id,
             'business_preset' => 'bengkel',
@@ -123,7 +129,9 @@ class TenantBotControllerTest extends TestCase
 
     public function test_create_deal_rejects_contact_from_another_tenant_without_mutation()
     {
-        $user = User::factory()->create(['wa_number' => '12345']);
+        // D-66: pemanggil bot yang sah harus terverifikasi; nomor cocok saja
+        // tidak cukup karena nomor WA berpindah tangan.
+        $user = User::factory()->create(['wa_number' => '12345', 'wa_is_verified' => true]);
 
         // Preset klinik punya kapabilitas deals; bengkel tidak.
         $companyA = Company::factory()->create([
@@ -166,7 +174,9 @@ class TenantBotControllerTest extends TestCase
 
     public function test_create_deal_accepts_contact_owned_by_the_same_company()
     {
-        $user = User::factory()->create(['wa_number' => '12345']);
+        // D-66: pemanggil bot yang sah harus terverifikasi; nomor cocok saja
+        // tidak cukup karena nomor WA berpindah tangan.
+        $user = User::factory()->create(['wa_number' => '12345', 'wa_is_verified' => true]);
 
         $company = Company::factory()->create([
             'owner_user_id' => $user->id,

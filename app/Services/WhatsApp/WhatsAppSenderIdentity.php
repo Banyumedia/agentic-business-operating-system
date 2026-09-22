@@ -198,15 +198,12 @@ class WhatsAppSenderIdentity
         ];
     }
 
-    /** Menyeragamkan nomor: buang non-digit, ubah awalan lokal `08` ke `628`. */
+    /**
+     * Menyeragamkan nomor lewat sumber tunggal di model User, supaya normalisasi
+     * `08`→`628` tidak pernah menyimpang antar consumer WA (D-66).
+     */
     private function normalize(?string $number): string
     {
-        $digits = preg_replace('/[^0-9]/', '', (string) $number) ?? '';
-
-        if (str_starts_with($digits, '08')) {
-            return '628'.substr($digits, 2);
-        }
-
-        return $digits;
+        return User::normalizeWaNumber($number);
     }
 }

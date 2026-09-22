@@ -43,7 +43,15 @@ class AuthenticateTenantBot
             return response()->json(['error' => 'company_id is required'], 400);
         }
 
-        $user = User::where('wa_number', $waNumber)->first();
+        // D-66: nomor WA berpindah tangan, jadi kecocokan nomor saja BUKAN
+        // bukti identitas. Lookup wajib nomor yang sudah `wa_is_verified = true`
+        // dan dinormalkan (`08...` ↔ `628...`) agar sejajar dengan consumer WA
+        // lain (WhatsAppSenderIdentity, WhatsAppInteractionFilter). Sebelumnya
+        // middleware ini lebih longgar: bearer sah + nomor kebetulan cocok tapi
+        // belum terverifikasi tetap lolos, dan nomor sah beda format ditolak.
+        // Keduanya digabung di User::findVerifiedByWaNumber() supaya tidak ada
+        // salinan logika normalisasi yang bisa menyimpang.
+        $user = User::findVerifiedByWaNumber($waNumber);
         if (! $user) {
             return response()->json(['error' => 'User not found'], 403);
         }

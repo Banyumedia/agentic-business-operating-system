@@ -4,6 +4,7 @@ namespace App\Services\WhatsApp;
 
 use App\Models\Company;
 use App\Models\HermesProfile;
+use App\Models\User;
 use App\Services\CompanyRoleResolver;
 
 class WhatsAppInteractionFilter
@@ -131,12 +132,8 @@ class WhatsAppInteractionFilter
      */
     private function normalizePhone(?string $phone): string
     {
-        $digits = preg_replace('/[^0-9]/', '', (string) $phone) ?? '';
-
-        if (str_starts_with($digits, '08')) {
-            return '628'.substr($digits, 2);
-        }
-
-        return $digits;
+        // Sumber tunggal di model User: normalisasi `08`→`628` sama persis untuk
+        // semua consumer WA (D-66), tidak ada salinan yang bisa menyimpang.
+        return User::normalizeWaNumber($phone);
     }
 }

@@ -43,7 +43,9 @@ class AiContextControllerTest extends TestCase
 
         $profile->companies()->attach($company->id);
 
-        $owner->update(['wa_number' => '1234567890']);
+        // D-66: pemanggil bot yang sah harus terverifikasi; nomor cocok saja
+        // tidak cukup karena nomor WA berpindah tangan.
+        $owner->update(['wa_number' => '1234567890', 'wa_is_verified' => true]);
 
         return $profile;
     }
@@ -203,7 +205,10 @@ class AiContextControllerTest extends TestCase
             'webhook_secret_reference' => HermesProfile::hashBotToken('test-token'),
         ]);
         $profile->companies()->attach($company->id);
-        $notOwner->update(['wa_number' => '9998887776']);
+        // Terverifikasi agar pemanggil lolos AuthenticateTenantBot (D-66) dan
+        // penolakan benar-benar datang dari guard owner-only di controller,
+        // bukan dari middleware.
+        $notOwner->update(['wa_number' => '9998887776', 'wa_is_verified' => true]);
 
         ModuleSetting::create([
             'company_id' => $company->id,
