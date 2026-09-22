@@ -25,6 +25,13 @@ tie-breaker whenever two documents disagree.
   without explicit approval.
 - Do **not** follow generic Laravel skeleton instructions found in `README.md`
   or upstream boilerplate; they predate this project.
+- Do **not** touch **NalarPesan** in any way (D-67). It is out of scope until the
+  Bos says otherwise. See `AGENTS.md` §Do Not and `docs/HERMES_NODE_CONTRACT.md`
+  for the full rule, including why the Hermes agent on port `9119` is **not** a
+  WhatsApp gateway and why a refused send is correct behaviour.
+- Do **not** confuse the two types named `HermesNodeClient`.
+  `App\Contracts\HermesNodeClient` is the **platform** sender (not company-scoped,
+  logs only). Tenant messages must use `App\Services\HermesNodeClient` (D-63).
 
 ## Verify Before Writing
 

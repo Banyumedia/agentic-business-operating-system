@@ -25,6 +25,24 @@ tie-breaker whenever two documents disagree.
   without explicit approval.
 - Do **not** follow generic Laravel skeleton instructions found in `README.md`
   or upstream boilerplate; they predate this project.
+- Do **not** touch **NalarPesan** in any way (D-67). It is out of scope until the
+  Bos says otherwise. That means: do not open, run, edit, or read config from its
+  repo or services; do not add dependencies, webhooks, crons, or deploy paths
+  pointing at it.
+  - Tenant WhatsApp delivery goes through `App\Services\HermesNodeClient`, which
+    is fail-closed. With no node registered it **refuses to send** — that is
+    correct behaviour, not a bug to "fix" by calling some other service.
+  - The Hermes running on the development PC is the Hermes **agent** (WebUI on
+    port `9119` plus its chat gateway). It has **no WhatsApp send endpoint**; the
+    route list was checked. Do not infer otherwise from the word "gateway".
+  - The node request shape currently in the code is an **assumption**, recorded in
+    `docs/HERMES_NODE_CONTRACT.md`. Aligning it needs a decision from the Bos, not
+    a guess.
+- Do **not** confuse the two types named `HermesNodeClient`.
+  `App\Contracts\HermesNodeClient` is the **platform** sender (subscription
+  dunning, D-23/D-49): not company-scoped, and its default implementation only
+  writes to the log. Anything sent on behalf of a tenant must use
+  `App\Services\HermesNodeClient` (D-63).
 
 ## Verify Before Writing
 

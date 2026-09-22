@@ -29,6 +29,14 @@ other docs. Step-by-step procedure lives in skill `agentic-bos-autopilot`.
   per D-37). Migrations use portable Schema Builder (B-01).
 - Search for an existing implementation before creating any model, table,
   route, component, or service.
+- **NalarPesan is out of scope (D-67).** Do not open, run, edit, or read config
+  from its repo or services, and do not add dependencies, webhooks, crons, or
+  deploy paths pointing at it. Tenant WhatsApp goes through
+  `App\Services\HermesNodeClient`, which is fail-closed: with no node registered
+  it refuses to send, and that is correct. The Hermes on the dev PC is the
+  **agent** (WebUI `9119` + chat gateway), not a WhatsApp gateway. The node
+  request shape in code is an assumption recorded in
+  `docs/HERMES_NODE_CONTRACT.md`; aligning it is an owner decision.
 
 ## Task States And Gates
 
