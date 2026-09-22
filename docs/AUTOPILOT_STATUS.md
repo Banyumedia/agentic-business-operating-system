@@ -1441,3 +1441,47 @@ putih per fitur akan usang saat fitur baru ditambah, sementara pertanyaan "apaka
 penerima ini orang luar" tetap terjawab untuk fitur yang belum ditulis. T-93 dan
 T-95 sudah disesuaikan: kelas penerima eksplisit dengan default `internal`, dan
 `resmi` **menolak** penerima internal walau company itu sudah mengaktifkannya.
+
+### Antrean control plane: status nyata setelah writer lain bekerja (2026-09-22)
+
+Tulisan sesi riset (D-72, §7 kontrak, gelombang 5) **sudah masuk `main`** — tetapi
+bukan sebagai commit sendiri: ia tersapu ke dalam commit writer lain `3ac7e5f` dan
+`73725f8` karena keduanya menyetel `git add` pada berkas dokumen yang sama.
+Dicatat apa adanya, bukan diperbaiki dengan menulis ulang riwayat.
+
+Sejak itu writer lain **sudah mengeksekusi dua baris antrean itu**:
+
+- **T-82 `DONE 75a2cd7`** — `HermesControlPlaneClient`, `ControlPlanePaths`, tujuh
+  exception spesifik (401/404/410/429/5xx/"node tanpa control plane" tidak lagi
+  menjadi satu galat tak dikenal), migration `control_url` +
+  `control_secret_reference`, `bos:hermes-control-ping`, form node di
+  `/admin/hermes-nodes`, `ControlPlaneClientTest`, laporan
+  `docs/worker-reports/T-82_CONTROL_PLANE.md`.
+- **T-86 `DONE 4f49670`** — `ControlPlaneBoundaryTest` +
+  `ControlPlanePathCoverageTest` (termasuk penjaga "setiap path pada daftar-putih
+  wajib dipakai satu test", supaya daftar itu tidak menumpuk izin mati) dan
+  prosedur rotasi rahasia di `RUNBOOK_RUNTIME_SERVICE.md`.
+
+Kedua baris itu masih tertulis `READY` di `EXECUTION_PLAN.md` padahal kodenya
+sudah mendarat; statusnya dibetulkan di sesi ini beserta rujukan commit.
+
+**Satu cacat rujukan yang saya perbaiki, milik tulisan saya sendiri:** state T-106
+menyebut ketergantungan "T-90". Nomor itu sejak `73725f8` menjadi milik gelombang 6
+(D-73), sehingga rujukannya berubah arti menjadi task yang sama sekali lain.
+Dependensinya adalah penempatan node = **T-105**.
+
+**Gate yang saya jalankan sendiri di `main` (bukan laporan delegasi):**
+`php artisan test` **1.226 passed / 5.771 assertions**, `vendor/bin/pint --test`
+**PASS 551 berkas**. `npm run build` tidak dijalankan — tidak ada perubahan
+Blade/CSS/JS di sesi ini.
+
+**Sisa yang bukan tulisan sesi ini dan tidak disentuh:**
+`storage/app/json/1/workflow_log.json` termodifikasi, plus `qa_test_output.txt`,
+`qa_pint_output.txt`, `qa_build_output.txt` sebagai berkas baru di akar repo —
+artefak putaran QA writer lain. Dicatat, tidak ikut di-commit.
+
+**Next `READY` di jalur control plane:** T-83 (cermin profil + rekonsiliasi yatim),
+T-84 (pemantauan armada), T-88 (uji managed scope + distribution), T-105
+(penempatan node + alokasi port; **serial**, menyentuh migration). Masih menunggu
+Bos: **Q-11** (H-05 ditambal lokal atau upstream), **Q-14** (topologi armada),
+dan `HUMAN:APPROVAL` dependency untuk T-87.
