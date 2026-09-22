@@ -1,14 +1,20 @@
 <?php
 
-namespace Tests\Unit\WhatsApp;
+namespace Tests\Feature\WhatsApp;
 
 use App\Models\HermesProfile;
 use App\Models\User;
 use App\Services\WhatsApp\WhatsAppInteractionFilter;
-use PHPUnit\Framework\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class WhatsAppInteractionFilterTest extends TestCase
 {
+    // Jalur "bukan owner" memanggil WhatsAppSenderIdentity, yang membaca tabel
+    // `users` dan `company_user`. Tanpa skema, test itu gagal karena tabelnya
+    // tidak ada - bukan karena aturannya salah.
+    use RefreshDatabase;
+
     private WhatsAppInteractionFilter $filter;
 
     protected function setUp(): void

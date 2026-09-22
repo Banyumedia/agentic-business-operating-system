@@ -4,11 +4,16 @@ namespace App\Services\WhatsApp;
 
 use App\Models\Company;
 use App\Models\HermesProfile;
+use App\Services\CompanyRoleResolver;
 
 class WhatsAppInteractionFilter
 {
     /**
      * Memeriksa apakah pesan masuk layak diproses atau harus diabaikan (fail-closed).
+     *
+     * Hasilnya dapat memuat `role` dan `read_only` untuk pengirim yang dikenali
+     * (D-66). `read_only = true` berarti pemanggil WAJIB menolak aksi tulis:
+     * bot tidak boleh melakukan apa pun yang web larang untuk orang itu.
      *
      * @param  HermesProfile  $profile  Profil bot penerima
      * @param  string  $chatId  Nomor JID (grup format @g.us, DM format @s.whatsapp.net)
@@ -41,30 +46,55 @@ class WhatsAppInteractionFilter
                 $cleanSender = $this->normalizePhone($senderPhone);
                 $cleanOwner = $this->normalizePhone($owner?->wa_number);
 
-                if ($cleanOwner === '' || $cleanSender !== $cleanOwner) {
+                if ($cleanOwner !== '' && $cleanSender === $cleanOwner) {
+                    // Nomor yang cocok tapi belum terverifikasi tetap ditolak:
+                    // nomor WA berpindah tangan, jadi kecocokan saja bukan bukti
+                    // identitas (fail-closed, D-66).
+                    if (($owner?->wa_is_verified ?? false) !== true) {
+                        return [
+                            'allow' => false,
+                            'reason' => 'Nomor pemilik usaha belum terverifikasi.',
+                        ];
+                    }
+
                     return [
-                        'allow' => false,
-                        'reason' => 'DM ke bot internal hanya diizinkan untuk nomor pemilik usaha (Owner).',
+                        'allow' => true,
+                        'reason' => 'Owner direct message.',
+                        'role' => CompanyRoleResolver::ROLE_OWNER,
+                        'read_only' => false,
                     ];
                 }
 
-                // Nomor yang cocok tapi belum terverifikasi tetap ditolak:
-                // nomor WA berpindah tangan, jadi kecocokan saja bukan bukti
-                // identitas (fail-closed, D-66).
-                if (($owner?->wa_is_verified ?? false) !== true) {
+                // Bukan owner: coba kenali sebagai anggota tim (D-65/D-66).
+                // Japri staf diizinkan tetapi BACA-SAJA, dan aksi apa pun tetap
+                // melewati otorisasi yang sama dengan web - WA tidak boleh
+                // menjadi jalan memutar aturan owner-only (T-50).
+                $identity = app(WhatsAppSenderIdentity::class)->resolve($profile, $senderPhone);
+
+                if (! $identity['known']) {
                     return [
                         'allow' => false,
-                        'reason' => 'Nomor pemilik usaha belum terverifikasi.',
+                        'reason' => $identity['ambiguous']
+                            ? $identity['reason']
+                            : 'DM ke bot internal hanya diizinkan untuk nomor pemilik usaha (Owner) atau anggota tim terdaftar.',
                     ];
                 }
 
-                return ['allow' => true, 'reason' => 'Owner direct message.'];
+                return [
+                    'allow' => true,
+                    'reason' => 'Anggota tim dikenali; japri dibatasi baca-saja.',
+                    'role' => $identity['role'],
+                    'read_only' => $identity['role'] !== CompanyRoleResolver::ROLE_OWNER,
+                ];
             }
 
             // B. Pesan di Grup Tim Internal
             if ($isGroup && $company) {
-                // Periksa setting group_tag_only
-                $moduleSetting = $company->moduleSettings()->where('module_name', 'assistant')->first();
+                // Relasinya bernama `settings()`, bukan `moduleSettings()`.
+                // Pemanggilan sebelumnya melempar BadMethodCallException setiap
+                // ada pesan grup dengan konteks company - tidak pernah terlihat
+                // karena test lama selalu mengirim company null.
+                $moduleSetting = $company->settings()->where('module_name', 'assistant')->first();
                 $tagOnly = $moduleSetting?->settings_json['group_tag_only'] ?? true;
 
                 if ($tagOnly && ! $isMentioned && ! str_contains($messageText, '@bot')) {
