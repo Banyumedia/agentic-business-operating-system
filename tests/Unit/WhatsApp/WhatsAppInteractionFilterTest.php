@@ -19,9 +19,7 @@ class WhatsAppInteractionFilterTest extends TestCase
 
     public function test_primary_profile_rejects_dm_from_stranger(): void
     {
-        $owner = new User;
-        $owner->id = 1;
-        $owner->phone = '6281234567890';
+        $owner = $this->owner();
 
         $profile = new HermesProfile;
         $profile->type = 'primary';
@@ -43,9 +41,7 @@ class WhatsAppInteractionFilterTest extends TestCase
 
     public function test_primary_profile_allows_dm_from_owner(): void
     {
-        $owner = new User;
-        $owner->id = 1;
-        $owner->phone = '6281234567890';
+        $owner = $this->owner();
 
         $profile = new HermesProfile;
         $profile->type = 'primary';
@@ -99,5 +95,103 @@ class WhatsAppInteractionFilterTest extends TestCase
 
         $this->assertFalse($eval['allow']);
         $this->assertStringContainsString('tidak melayani percakapan grup', $eval['reason']);
+    }
+
+    public function test_negative_owner_number_is_read_from_the_column_that_actually_exists(): void
+    {
+        // Cacat T-57: filter dulu membaca `phone`, kolom yang tidak ada di
+        // skema `users`. Test lama tetap hijau karena menulis atribut itu ke
+        // model belum tersimpan. Di sini nomor SENGAJA hanya diisi pada
+        // `phone`, jadi bila implementasi kembali membacanya, test ini gagal.
+        $owner = new User;
+        $owner->id = 1;
+        $owner->phone = '6281234567890';
+        $owner->wa_is_verified = true;
+
+        $profile = new HermesProfile;
+        $profile->type = 'primary';
+        $profile->setRelation('owner', $owner);
+
+        $eval = $this->filter->evaluate(
+            $profile,
+            '6281234567890@s.whatsapp.net',
+            '6281234567890',
+            'Berapa omzet hari ini?',
+            null,
+            false
+        );
+
+        $this->assertFalse($eval['allow'], 'Nomor owner hanya sah bila tersimpan di kolom wa_number.');
+    }
+
+    public function test_negative_unverified_owner_number_is_rejected(): void
+    {
+        // Nomor WA berpindah tangan, jadi kecocokan saja bukan bukti identitas (D-66).
+        $owner = $this->owner(verified: false);
+
+        $profile = new HermesProfile;
+        $profile->type = 'primary';
+        $profile->setRelation('owner', $owner);
+
+        $eval = $this->filter->evaluate(
+            $profile,
+            '6281234567890@s.whatsapp.net',
+            '6281234567890',
+            'Berapa omzet hari ini?',
+            null,
+            false
+        );
+
+        $this->assertFalse($eval['allow']);
+        $this->assertStringContainsString('belum terverifikasi', $eval['reason']);
+    }
+
+    public function test_negative_owner_without_a_number_never_matches(): void
+    {
+        // Tanpa penjaga nilai kosong, pengirim tanpa nomor bisa "cocok" dengan
+        // owner tanpa nomor - keduanya menjadi string kosong.
+        $owner = new User;
+        $owner->id = 1;
+        $owner->wa_number = null;
+        $owner->wa_is_verified = true;
+
+        $profile = new HermesProfile;
+        $profile->type = 'primary';
+        $profile->setRelation('owner', $owner);
+
+        $eval = $this->filter->evaluate($profile, '@s.whatsapp.net', '', 'Halo', null, false);
+
+        $this->assertFalse($eval['allow']);
+    }
+
+    public function test_local_prefix_is_normalised_on_both_sides(): void
+    {
+        $owner = $this->owner(number: '081234567890');
+
+        $profile = new HermesProfile;
+        $profile->type = 'primary';
+        $profile->setRelation('owner', $owner);
+
+        // Owner tersimpan dengan awalan 08, pengirim datang sebagai 628.
+        $eval = $this->filter->evaluate(
+            $profile,
+            '6281234567890@s.whatsapp.net',
+            '6281234567890',
+            'Cek stok',
+            null,
+            false
+        );
+
+        $this->assertTrue($eval['allow']);
+    }
+
+    private function owner(string $number = '6281234567890', bool $verified = true): User
+    {
+        $owner = new User;
+        $owner->id = 1;
+        $owner->wa_number = $number;
+        $owner->wa_is_verified = $verified;
+
+        return $owner;
     }
 }

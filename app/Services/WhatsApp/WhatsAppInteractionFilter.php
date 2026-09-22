@@ -33,23 +33,28 @@ class WhatsAppInteractionFilter
             // A. Pesan Langsung (DM/Japri)
             if (! $isGroup) {
                 $owner = $profile->owner;
-                // Owner phone check
-                $ownerPhone = $owner?->phone ?? '';
-                $cleanSender = preg_replace('/[^0-9]/', '', $senderPhone);
-                $cleanOwner = preg_replace('/[^0-9]/', '', $ownerPhone);
 
-                // Normalisasi awalan 08 -> 628
-                if (str_starts_with($cleanSender, '08')) {
-                    $cleanSender = '628'.substr($cleanSender, 2);
-                }
-                if (str_starts_with($cleanOwner, '08')) {
-                    $cleanOwner = '628'.substr($cleanOwner, 2);
-                }
+                // Kolomnya `wa_number`, bukan `phone` (migration
+                // 2026_09_17_222052). Sebelumnya di sini terbaca `phone` yang
+                // tidak ada di skema `users`, sehingga pembandingnya selalu
+                // kosong dan owner TIDAK PERNAH bisa japri bot-nya sendiri.
+                $cleanSender = $this->normalizePhone($senderPhone);
+                $cleanOwner = $this->normalizePhone($owner?->wa_number);
 
-                if (empty($cleanOwner) || $cleanSender !== $cleanOwner) {
+                if ($cleanOwner === '' || $cleanSender !== $cleanOwner) {
                     return [
                         'allow' => false,
                         'reason' => 'DM ke bot internal hanya diizinkan untuk nomor pemilik usaha (Owner).',
+                    ];
+                }
+
+                // Nomor yang cocok tapi belum terverifikasi tetap ditolak:
+                // nomor WA berpindah tangan, jadi kecocokan saja bukan bukti
+                // identitas (fail-closed, D-66).
+                if (($owner?->wa_is_verified ?? false) !== true) {
+                    return [
+                        'allow' => false,
+                        'reason' => 'Nomor pemilik usaha belum terverifikasi.',
                     ];
                 }
 
@@ -87,5 +92,21 @@ class WhatsAppInteractionFilter
         }
 
         return ['allow' => false, 'reason' => 'Unknown profile type.'];
+    }
+
+    /**
+     * Menyeragamkan nomor sebelum dibandingkan: buang non-digit lalu ubah
+     * awalan lokal `08` menjadi `628`. Nilai kosong tetap kosong supaya
+     * pemanggil dapat memperlakukannya sebagai gagal, bukan cocok.
+     */
+    private function normalizePhone(?string $phone): string
+    {
+        $digits = preg_replace('/[^0-9]/', '', (string) $phone) ?? '';
+
+        if (str_starts_with($digits, '08')) {
+            return '628'.substr($digits, 2);
+        }
+
+        return $digits;
     }
 }
