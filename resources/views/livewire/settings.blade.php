@@ -121,7 +121,7 @@
                     <div>
                         <div class="mb-4">
                             <h3 class="text-lg font-semibold text-[var(--erp-text-primary)]">Istilah</h3>
-                            <p class="mt-1 text-sm text-[var(--erp-text-secondary)]">Sesuaikan label yang tampil di seluruh layar.</p>
+                            <p class="mt-1 text-sm text-[var(--erp-text-secondary)]">Sesuaikan label yang tampil di seluruh layar. Kosongkan lalu tekan Simpan tidak berlaku &mdash; gunakan "Bawaan" untuk mengembalikan ke istilah preset.</p>
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-2">
@@ -134,6 +134,7 @@
                                             id="term-{{ $singular }}"
                                             wire:model="terminologyForm.{{ $singular }}"
                                             value="{{ $terminologyForm[$singular] ?? '' }}"
+                                            maxlength="40"
                                             @disabled(! $canManageTheme)
                                             class="min-h-11 flex-1 rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] bg-[var(--erp-bg-elevated)] px-3 text-[var(--erp-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
                                         >
@@ -146,6 +147,15 @@
                                             >
                                                 <span wire:loading.remove wire:target="updateTerminology">Simpan</span>
                                                 <span wire:loading wire:target="updateTerminology" class="sr-only">Menyimpan…</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                wire:click="resetTerminology('{{ $singular }}')"
+                                                wire:loading.attr="disabled"
+                                                title="Kembalikan {{ ucfirst($singular) }} ke istilah bawaan preset"
+                                                class="min-h-11 rounded-[var(--erp-radius-sm)] border border-[var(--erp-border)] px-3 text-sm font-medium text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60"
+                                            >
+                                                Bawaan
                                             </button>
                                         @endif
                                     </div>

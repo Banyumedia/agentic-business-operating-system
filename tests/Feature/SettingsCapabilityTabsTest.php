@@ -133,6 +133,83 @@ class SettingsCapabilityTabsTest extends TestCase
         Storage::disk('company-json')->assertMissing('json/bengkel-arka/settings.json');
     }
 
+    public function test_terminology_over_the_length_limit_is_rejected_without_writing(): void
+    {
+        $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'owner']);
+
+        // Label yang terlalu panjang merusak tata letak navigasi dan tabel;
+        // ditolak sebelum menyentuh penyimpanan.
+        Livewire::test(Settings::class)
+            ->set('terminologyForm.contact', str_repeat('a', 41))
+            ->call('updateTerminology', 'contact')
+            ->assertSee('terlalu panjang');
+
+        Storage::disk('company-json')->assertMissing('json/bengkel-arka/settings.json');
+    }
+
+    public function test_terminology_at_the_length_limit_is_accepted(): void
+    {
+        $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'owner']);
+
+        $label = str_repeat('a', 40);
+
+        Livewire::test(Settings::class)
+            ->set('terminologyForm.contact', $label)
+            ->call('updateTerminology', 'contact')
+            ->assertSet('terminologyForm.contact', $label);
+
+        $settings = json_decode(
+            Storage::disk('company-json')->get('json/bengkel-arka/settings.json'),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+        $this->assertSame($label, $settings['terminology']['contact']);
+    }
+
+    public function test_owner_can_reset_a_single_term_to_the_preset_default(): void
+    {
+        $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'owner']);
+
+        // Bengkel menyebut kontak "Pelanggan" lewat preset. Override lalu reset
+        // harus kembali ke istilah preset, bukan ke default global "Kontak".
+        $component = Livewire::test(Settings::class)
+            ->set('terminologyForm.contact', 'Jemaah')
+            ->call('updateTerminology', 'contact')
+            ->assertSet('terminologyForm.contact', 'Jemaah')
+            ->call('resetTerminology', 'contact')
+            ->assertSet('terminologyForm.contact', 'Pelanggan')
+            ->assertSee('kembali ke bawaan');
+
+        $settings = json_decode(
+            Storage::disk('company-json')->get('json/bengkel-arka/settings.json'),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+        // Override dibersihkan untuk kedua bentuk; tidak menyisakan kunci hantu.
+        $this->assertArrayNotHasKey('contact', $settings['terminology'] ?? []);
+        $this->assertArrayNotHasKey('contacts', $settings['terminology'] ?? []);
+    }
+
+    public function test_staff_cannot_reset_terminology(): void
+    {
+        $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'staff']);
+
+        Livewire::test(Settings::class)
+            ->call('resetTerminology', 'contact')
+            ->assertStatus(403);
+
+        Storage::disk('company-json')->assertMissing('json/bengkel-arka/settings.json');
+    }
+
+    public function test_resetting_terminology_with_unknown_key_is_not_found(): void
+    {
+        $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'owner']);
+
+        Livewire::test(Settings::class)
+            ->call('resetTerminology', 'unknown_key')
+            ->assertStatus(404);
+    }
+
     public function test_staff_cannot_update_terminology_or_preset(): void
     {
         $this->withSession(['active_company' => 'bengkel-arka', 'company_role' => 'staff']);
