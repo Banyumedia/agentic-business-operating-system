@@ -1044,6 +1044,35 @@ Struktur B menaruh tagihan Meta di pihak kita sejak pesan pertama, sedangkan
 penagihan manual tidak punya penjaga teknis — hanya disiplin; ambang kapan meter
 wajib mendarat belum ditentukan.
 
+**Gelombang 1 SELESAI — empat task, semuanya Laravel murni.**
+
+- **T-70 `41f3b77`** super admin bisa **mendaftarkan** node, bukan hanya
+  menyunting. Jalan buntu nyata ditutup: `saveNode()` dulu berhenti bila
+  `editingNodeId` kosong, sehingga tabel `hermes_nodes` yang kosong **tidak bisa
+  diisi dari UI sama sekali** — seluruh integrasi Hermes bergantung pada satu
+  baris yang tidak punya cara dibuat. Ditambah tombol periksa kesehatan (node
+  tidak terjangkau dilaporkan gagal, **tidak** menjatuhkan halaman) dan pemisahan
+  profil platform dari profil tenant. 8 test.
+- **T-68 `816a734`** profil milik platform melayani nol company. Kelonggaran
+  `billing_addon_id` **sempit** — hanya bila `is_platform_provided`, karena
+  memalsukan baris billing adalah jebakan; add-on **tenant** tanpa billing tetap
+  ditolak dan D-37 tidak dilonggarkan. `HermesNodeClient` menolak profil platform
+  di lajur tenant walau ditautkan lewat pivot, dan `WhatsAppSenderIdentity`
+  fail-closed padanya. 6 test.
+- **T-63a `bee5986`** lima penjaga arsitektur atas permukaan tulis bot. **Hijau
+  sejak awal**, jadi characterization test — tidak ada cacat yang ditemukan, dan
+  itu dicatat apa adanya. Satu penjaganya langsung terbukti berguna: ia mewajibkan
+  rute bot baru terdaftar di `ROUTE_TOOL_MAP`, dan T-65 memang menambah rute.
+- **T-65** standar dokumen per tenant + `GET /api/bot/tenant/document-standards`,
+  disimpan di `module_settings`. Bawaannya **didokumentasikan** karena tenant baru
+  belum menyetel apa pun dan itu keadaan mayoritas; standar tersimpan ditimpakan
+  di atas bawaan per jenis dokumen sehingga menyetel `tone` saja tidak
+  menghilangkan `sections`. Baca-saja bagi bot, dan test menguncinya. 6 test.
+
+**Gate gelombang 1:** `DATA_SOURCE=json php artisan test` **1.156 passed / 5.582
+assertions, 0 gagal**; `vendor/bin/pint --test` **PASS 526 berkas**;
+`migrate:fresh --seed --force` OK; `npm run build` PASS.
+
 **Urutan kerja disusun ulang atas mandat Bos "yang berat belakangan"**
 (`EXECUTION_PLAN.md` §Urutan pengerjaan). Empat gelombang: (1) ringan dan Laravel
 murni — **T-68, T-70, T-65, T-63a**, nol prasyarat luar; (2) ringan tapi butuh Bos
