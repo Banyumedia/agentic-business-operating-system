@@ -1547,3 +1547,65 @@ dua proses bersamaan** — berbagi `storage/framework/testing` menghasilkan
 menyesatkan. Muncul berkali-kali sesi ini; setiap kali hijau saat diisolasi.
 Gate yang hasilnya berubah antar-jalankan tidak bisa dipakai sebagai gate —
 layak jadi task tersendiri (isolasi disk test per proses).
+
+## Fase 11 — Paritas Modul: tiga lajur mandiri mendarat (MP-06, MP-04, MP-11)
+
+Dikerjakan paralel sementara lajur Hermes aktif di `main`, masing-masing di
+worktree sendiri, bukti di `docs/worker-reports/MP-0*.md` + `MP-11.md`. Ketiganya
+dipilih justru karena file target-nya **disjoint** dari lajur Hermes (tidak ada
+migration, dependency, route, registry, atau berkas Hermes yang disentuh) — jadi
+tidak menunggu MP-00 dan tidak bertabrakan. Merged serial ke `main` setelah lajur
+Hermes berhenti (`8ff1051`), `merge-tree` bersih untuk ketiganya, gate penuh
+dijalankan **setelah tiap merge**.
+
+- **MP-06 Buku Kas** (`3e69c82` → merge). Dua cacat yang muncul saat menulis
+  test, bukan dugaan: kolom "Keterangan" menampilkan `entry_date` karena
+  `SchemaPresenter::titleField()` jatuh ke kolom string pertama, sehingga
+  keterangan operator tak pernah terlihat; dan baris berarah di luar `in|out`
+  dihitung sebagai uang masuk (cabang lama hanya cek `=== 'out'`), membuat Buku
+  Kas berselisih dengan Laporan Keuangan. Total kini lewat `CashFlowCalculator`
+  (sen integer, kontrak yang sama dengan Dashboard) dan baris tertolak
+  ditampilkan bertanda, tidak disembunyikan. Ditambah penyaring
+  periode/arah/relasi (relasi dari `references.assignable`, label lewat
+  `term()`), pilihan periode dari data. **Saldo tidak pernah ditulis ulang oleh
+  penyaring**; kolom saldo berjalan wajib cocok dengan agregat atau layar
+  berhenti. 16 test (6 lama tak disentuh).
+- **MP-04 Laporan Keuangan** (`884726b` → merge). Layar sebelumnya nol `wire:*`.
+  Ditambah pemilihan periode (opsi dari bulan yang punya transaksi, terbaru
+  dulu) dan komposisi uang keluar per kategori dengan persentase. Saldo berjalan
+  tetap kumulatif dan saldo kas header selalu posisi seluruh riwayat — menyaring
+  hanya menyembunyikan baris (pola sama dengan MP-06). Entri tanpa kategori
+  dikelompokkan bukan dibuang sehingga komposisi = total keluar. Basis kas D-62
+  tetap, tanpa nama kategori di kode. 17 test (10 lama tak disentuh). Sisa: "5
+  item terlaris" mockup menuntut `order_lines` (di luar basis kas), ditunda.
+- **MP-11 Istilah di Pengaturan** (`be0215c` → merge). **Koreksi premis:**
+  kustomisasi istilah sudah ada di tab Fitur Bisnis (`updateTerminology`,
+  `TerminologyResolver` bervalidasi), jadi task dipersempit ke dua yang benar
+  hilang: `resetTerminology()` (menghapus override, bukan menimpa nilai preset,
+  supaya tetap ikut preset bila istilahnya berganti; owner-only) dan batas 40
+  karakter yang ditegakkan server-side, bukan hanya `maxlength` HTML. 16 test
+  (10 lama tak disentuh).
+
+**Gate penutup di `main` pasca tiga merge:** `php vendor/phpunit/phpunit/phpunit`
+**1.311 passed / 6.019 assertions** (3 PHPUnit Notices pre-existing),
+`vendor/bin/pint --test` **PASS 562 file**, `npm run build` **PASS**.
+
+**MP-05 sengaja dilewati, bukan dilupakan.** Premis rencananya ("board check-in
+belum bisa dijalankan") keliru: `BoardScreen` sengaja baca-saja (docblock-nya
+eksplisit — transisi tahap tinggal di pola `pipeline`), dan
+`BookingsDepositCollect`/`Settle` **tidak terdaftar** di `WorkflowEngine` maupun
+didekларasikan preset mana pun. Menuliskan aksi tulis di board menduplikasi jalur
+transisi yang kode itu larang. **Perlu dirumuskan ulang Bos** sebelum dikerjakan.
+
+**Temuan di luar lingkup (dicatat, TIDAK diperbaiki):**
+`JsonCompanySettingsStore::update()` menulis lewat `Storage::disk()->path()` +
+`fopen`/`Filesystem::replace` native, melewati `Storage::fake`. Kelemahan isolasi
+test yang sudah ada; tidak mengubah perilaku produksi. (Gejala: `php artisan
+test` yang terputus bisa meninggalkan `settings.json` nyata; `phpunit` bersih
+hijau.) Beririsan dengan task isolasi disk test per proses yang sudah dicatat di
+STATUS ini.
+
+**Sisa Fase 11 (belum bisa jalan otonom):** MP-00 (serial, seam menu/route —
+harus langsung di `main`), lalu MP-01/02/03/08/09/10 yang bergantung padanya, dan
+MP-12 (barrier penutup). MP-02 (integritas POS: stok + jurnal saat checkout)
+adalah yang paling berdampak dan sebaiknya didahulukan setelah MP-00 mendarat.
