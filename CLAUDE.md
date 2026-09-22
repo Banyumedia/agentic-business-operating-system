@@ -26,9 +26,18 @@ tie-breaker whenever two documents disagree.
 - Do **not** follow generic Laravel skeleton instructions found in `README.md`
   or upstream boilerplate; they predate this project.
 - Do **not** touch **NalarPesan** in any way (D-67). It is out of scope until the
-  Bos says otherwise. See `AGENTS.md` §Do Not and `docs/HERMES_NODE_CONTRACT.md`
-  for the full rule, including why the Hermes agent on port `9119` is **not** a
-  WhatsApp gateway and why a refused send is correct behaviour.
+  Bos says otherwise; `NoNewNalarPesanCouplingTest` enforces it. Nalarin is **not**
+  NalarPesan.
+- **Hermes is the engine, Agentic BOS is the product** (D-68/D-70). The Hermes
+  WhatsApp channel is the sanctioned path. An earlier version of this file said the
+  local Hermes has no WhatsApp send endpoint — **that was wrong**; hermes-webui has
+  none but the Hermes agent ships Baileys and `whatsapp_cloud`. Root cause:
+  `grep_search` does not reach outside the workspace. Read
+  `docs/HERMES_NODE_CONTRACT.md` before any Hermes work; it separates verified
+  facts from what is still unverified.
+- White-label is mandatory on customer-facing surfaces including the bot's own
+  identity answer (D-68); internal dev profiles are exempt. Skills live in Hermes
+  but hold no business rules and reach data only via the TenantBot API (D-69).
 - Do **not** confuse the two types named `HermesNodeClient`.
   `App\Contracts\HermesNodeClient` is the **platform** sender (not company-scoped,
   logs only). Tenant messages must use `App\Services\HermesNodeClient` (D-63).

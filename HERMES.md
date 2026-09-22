@@ -31,12 +31,24 @@ other docs. Step-by-step procedure lives in skill `agentic-bos-autopilot`.
   route, component, or service.
 - **NalarPesan is out of scope (D-67).** Do not open, run, edit, or read config
   from its repo or services, and do not add dependencies, webhooks, crons, or
-  deploy paths pointing at it. Tenant WhatsApp goes through
-  `App\Services\HermesNodeClient`, which is fail-closed: with no node registered
-  it refuses to send, and that is correct. The Hermes on the dev PC is the
-  **agent** (WebUI `9119` + chat gateway), not a WhatsApp gateway. The node
-  request shape in code is an assumption recorded in
-  `docs/HERMES_NODE_CONTRACT.md`; aligning it is an owner decision.
+  deploy paths pointing at it. Nalarin is not NalarPesan.
+- **Hermes is the engine, Agentic BOS is the product (D-68/D-70).** The Hermes
+  WhatsApp channel is sanctioned. Tenant delivery goes through
+  `App\Services\HermesNodeClient`, fail-closed: with no node registered it refuses
+  to send, and that is correct. One tenant = one Hermes **profile** = one soul +
+  one WA session + one approved-user list + one gateway. Hermes is the **client**,
+  we are the **tool provider** (MasterBot + TenantBot in `routes/api.php`).
+  Read `docs/HERMES_NODE_CONTRACT.md` first — it lists verified facts and, just as
+  importantly, what is still unverified. Missing in Hermes today: HTTP endpoints to
+  send, to pair a WA session / fetch a QR, and to approve user pairing.
+- **A grep that finds nothing outside the workspace proves nothing.** `grep_search`
+  is workspace-scoped and returns "no matches" without warning. This already put a
+  false claim into steering ("Hermes has no WhatsApp endpoint"). Conclusions about
+  other repos must come from opening files.
+- **White-label (D-68) and the skill boundary (D-69).** Customer-facing surfaces
+  answer as Agentic BOS, including the identity question; internal dev profiles are
+  exempt. Skills live in Hermes but hold no business rules and reach data only via
+  the TenantBot API; customer-facing profiles carry no terminal/file/git tools.
 
 ## Task States And Gates
 

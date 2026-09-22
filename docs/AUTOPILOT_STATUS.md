@@ -953,10 +953,113 @@ mesin ini, jadi belum ada satu pesan pun yang benar-benar terkirim. Begitu kontr
 endpoint node diketahui, `HERMES_SEND_PATH` dan satu baris di `hermes_nodes` sudah
 cukup — tanpa perubahan kode.
 
+## Fase 10 — Kanal WhatsApp Hermes, White-Label, & Skill Bisnis (BARU, sebagian jalan)
+
+Antrean T-59..T-78 ditulis di `EXECUTION_PLAN.md` §Fase 10 beserta D-68..D-71 di
+`00-DECISIONS.md`. **Tiga task selesai; sisanya terhalang hal yang tidak bisa
+diselesaikan dari dalam repo ini.**
+
+**T-60 `DONE` — D-68..D-71 dicatat.** White-label wajib di permukaan percakapan
+(dev internal dikecualikan); skill di Hermes tanpa aturan bisnis dan hanya lewat
+TenantBot API; transport WhatsApp sebagai data per company dengan jalur resmi
+**hanya untuk CS**; Struktur B untuk WABA (nomor klien, portfolio kita,
+pembayaran lewat kita) beserta tiga konsekuensi yang diterima sadar: risiko
+kredit, status kita sebagai pemroses data, dan portabilitas keluar yang sulit.
+Sekalian: klausa (d) D-67 yang salah **dicabut di tempat** supaya dokumen
+tie-breaker tidak memuat dua pernyataan yang bertabrakan.
+
+**T-59 `DONE` — koreksi steering.** `AGENTS.md`, `CLAUDE.md`, `HERMES.md`, dan
+D-67 diperbaiki. Klaim lama "Hermes di PC ini tidak punya endpoint kirim
+WhatsApp" **salah**: hermes-webui memang tidak punya, tetapi **Hermes agent
+punya** kanal Baileys dan `whatsapp_cloud`. Akar masalahnya dicatat sebagai
+aturan proses, bukan hanya diperbaiki: `grep_search` tidak menjangkau luar
+workspace dan mengembalikan "no matches" tanpa peringatan, jadi kesimpulan
+"tidak ada" tentang repo lain wajib datang dari membuka berkas.
+
+**T-66 + T-67 `DONE` — `docs/HERMES_NODE_CONTRACT.md` diganti dari asumsi menjadi
+fakta.** Dua asumsi besar batal:
+
+1. **`api_server` bukan API pengiriman.** Ia API kompatibel OpenAI untuk
+   *mengobrol dengan agent*: `/v1/chat/completions`, `/v1/responses`, `/v1/runs`
+   (+ SSE events, approval, stop), `/api/sessions/*`, `/health`. Auth
+   `API_SERVER_KEY`, port bawaan 8642, multi-profil lewat prefiks `/p/<profil>/`
+   bila `gateway.multiplex_profiles` aktif. **Nol** endpoint kirim, pairing, atau
+   QR. Bentuk `POST /api/wa/send` yang dipakai `HermesNodeClient` karena itu tidak
+   cocok dengan apa pun yang ada di Hermes hari ini.
+2. **`whatsapp_cloud` tidak bisa diarahkan ke kirimdev.**
+   `GRAPH_API_BASE = "https://graph.facebook.com"` adalah konstanta modul dan
+   daftar env var-nya tidak punya override base URL.
+
+Temuan positif: prefiks `/p/<profil>/` adalah cara mengalamatkan profil per
+tenant lewat satu listener — persis yang dibutuhkan model "satu tenant = satu
+profil", dan tidak perlu dibangun.
+
+**Empat prasyarat sisi Hermes (H-01..H-04)** kini tercatat di `EXECUTION_PLAN.md`:
+endpoint kirim pesan (memblokir T-69, T-71), endpoint sesi WA + QR (memblokir
+T-72), endpoint pairing pengguna (memblokir T-77 — logikanya sudah lengkap di
+`PairingStore`, hanya pembungkus HTTP yang belum ada), dan override base URL
+Cloud API (memblokir jalur resmi T-71). Semuanya di repo `hermes-agent`.
+
+**Tiga keputusan Bos yang menghalangi sisanya:** Q-11 (H-01..H-04 ditambal lokal
+atau diusulkan upstream), Q-12 (jalur resmi opsi A/B/C — opsi B mengubah
+arsitektur karena melahirkan otak kedua), Q-10 (portfolio WABA di kirimdev, yang
+menentukan D-71 bisa dijalankan).
+
+**Yang tidak bisa dikerjakan dari mode ini dan alasannya:** T-61 butuh scan QR
+fisik dan menyunting berkas di luar workspace; task kode wajib TDD sedangkan
+eksekusi perintah (`php artisan test`, Pint, build, git) tidak tersedia di sesi
+ini — menulis kode tanpa bisa menjalankan 1.131 test yang ada bertentangan dengan
+HERMES.md §Verification.
+
+**Amandemen D-70 (Bos): jalur resmi dikerjakan manual, penyembunyian kirimdev
+dibatalkan.** Ini menyederhanakan, bukan sekadar menunda. Karena manual, jalur
+resmi memakai **Meta Cloud API langsung** — dan adaptor `whatsapp_cloud` Hermes
+sudah lengkap untuk itu (outbound Graph API, webhook verify-token, HMAC
+`X-Hub-Signature-256`, proteksi replay `wamid`, media, jendela 24 jam + fallback
+template). `GRAPH_API_BASE = "https://graph.facebook.com"` yang tadinya penghalang
+**justru sudah benar**. Akibatnya: **H-04 keluar dari jalur kritis**; **T-71 tidak
+diperlukan** karena transport adalah konfigurasi Hermes per profil dan tidak
+terlihat kode kita; **T-73 ditunda** karena kanal ditentukan kita, bukan dipilih
+tenant; **T-74 + T-75 ditunda**. Penggantinya satu task ringan: **T-79 runbook
+manual WABA resmi** (dokumen, nol kode). kirimdev ditunda menjadi keputusan
+tersendiri, dan nanti pertimbangannya adalah kenyamanan onboarding, bukan
+kemampuan mengirim.
+
+**T-79 `DONE` — `docs/RUNBOOK_WABA_MANUAL.md`.** Prosedur manual jalur resmi per
+tenant: prasyarat Meta (System User token permanen dengan
+`whatsapp_business_messaging` + `whatsapp_business_management`, App Secret, verify
+token), env per profil di `profiles/<tenant>/.env` karena adaptor membaca lewat
+secret scope per profil, pendaftaran webhook, dan **tujuh langkah verifikasi yang
+bisa dijalankan orang lain**. Langkah yang paling tidak boleh dilewati: §4.4 —
+POST dengan `X-Hub-Signature-256` sembarang **harus** ditolak, karena kalau lolos
+siapa pun bisa menyuntikkan pesan palsu ke bot tenant. Juga dicatat: reverse proxy
+tidak boleh mengubah badan permintaan karena HMAC diverifikasi atas raw body.
+Dua hal belum terpenuhi dan tertulis di §9 runbook: demo (belum ada tenant yang
+benar-benar dipasang) dan **perilaku bentrok port `8090` antar profil** — bawaannya
+sama untuk semua profil, jadi tenant **kedua** akan bertabrakan; tenant pertama
+tidak terpengaruh.
+
+**Risiko yang tetap hidup dan tercatat sebagai Q-13:**
+Struktur B menaruh tagihan Meta di pihak kita sejak pesan pertama, sedangkan
+penagihan manual tidak punya penjaga teknis — hanya disiplin; ambang kapan meter
+wajib mendarat belum ditentukan.
+
+**Urutan kerja disusun ulang atas mandat Bos "yang berat belakangan"**
+(`EXECUTION_PLAN.md` §Urutan pengerjaan). Empat gelombang: (1) ringan dan Laravel
+murni — **T-68, T-70, T-65, T-63a**, nol prasyarat luar; (2) ringan tapi butuh Bos
+— T-61; (3) menunggu H-01..H-04 + Q-11/Q-12 — T-69, T-72, T-77, T-71, T-62,
+T-63b, T-64; (4) berat + menunggu Q-10 dan nomor WA kedua — T-74, T-75, T-73,
+T-76. Tiga ketergantungan yang terlalu ketat dilepas supaya gelombang 1 benar-benar
+bisa jalan: T-70 tidak lagi menunggu T-69 (`bos:hermes-ping` sudah ada sejak
+`90a42e9`), T-65 dibalik mendahului T-64, dan T-63 dipecah menjadi T-63a (sisi
+kita, ringan) + T-63b (profil Hermes, gelombang 3). Gelombang 2 kini T-61 + T-79;
+gelombang 4 berisi yang ditunda: T-71, T-73, T-74, T-75, T-76.
+
 ## READY Berikutnya
 Fase 8 (T-41..T-47) dan Fase 9 (T-48..T-58) selesai penuh; Fase 6b/katalog D-56
 sudah dibangun seluruhnya (T-28..T-35). Sisa temuan pasca-Fase 9 juga sudah
-ditutup (lihat bagian di atas).
+ditutup. Fase 10 baru dimulai: T-59, T-60, T-66, T-67 selesai; sisanya terhalang
+H-01..H-04 dan tiga keputusan Bos (Q-10, Q-11, Q-12).
 
 Satu-satunya task `READY` yang tersisa di `EXECUTION_PLAN.md` adalah **T-36 NLU
 Intent Router (WA)** di §Fase 7 (D-60 masih *draft*). T-37..T-40 `BLOCKED` di

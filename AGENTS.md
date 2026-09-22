@@ -28,16 +28,41 @@ tie-breaker whenever two documents disagree.
 - Do **not** touch **NalarPesan** in any way (D-67). It is out of scope until the
   Bos says otherwise. That means: do not open, run, edit, or read config from its
   repo or services; do not add dependencies, webhooks, crons, or deploy paths
-  pointing at it.
+  pointing at it. `NoNewNalarPesanCouplingTest` enforces this.
+  - **Nalarin is not NalarPesan.** The ban covers NalarPesan (the WhatsApp channel
+    product) only.
+- **Hermes is the engine; Agentic BOS is the product** (D-68, D-70). The Hermes
+  WhatsApp channel is the **sanctioned** path, not something to avoid.
+  - Read `docs/HERMES_NODE_CONTRACT.md` before touching any Hermes integration. It
+    records verified facts, and it is explicit about what is **not** yet verified.
+  - **Correction on record:** an earlier version of this file claimed the local
+    Hermes "has no WhatsApp send endpoint". That was wrong. **hermes-webui** has
+    none, but the **Hermes agent** ships both a Baileys channel and a
+    `whatsapp_cloud` channel. Root cause: `grep_search` does not reach outside the
+    workspace and returns "no matches" with no warning. Never conclude "X does not
+    exist" about another repo from a grep alone — open the files.
+  - What is genuinely missing in Hermes today: an HTTP endpoint to **send** a
+    message, to **pair a WA session / fetch a QR**, and to **approve user
+    pairing**. `api_server` is an OpenAI-compatible *chat* API (`/v1/chat/completions`,
+    `/v1/runs`, `/health`, key `API_SERVER_KEY`, port 8642, per-profile prefix
+    `/p/<profile>/`) — it carries no messaging primitives.
   - Tenant WhatsApp delivery goes through `App\Services\HermesNodeClient`, which
     is fail-closed. With no node registered it **refuses to send** — that is
     correct behaviour, not a bug to "fix" by calling some other service.
-  - The Hermes running on the development PC is the Hermes **agent** (WebUI on
-    port `9119` plus its chat gateway). It has **no WhatsApp send endpoint**; the
-    route list was checked. Do not infer otherwise from the word "gateway".
-  - The node request shape currently in the code is an **assumption**, recorded in
-    `docs/HERMES_NODE_CONTRACT.md`. Aligning it needs a decision from the Bos, not
-    a guess.
+  - One tenant = one Hermes **profile** = one soul + one WA session + one approved
+    user list + one gateway. `profiles/<name>/` is a fully isolated home.
+  - Three layers must not be conflated: *device pairing* (which WA account the bot
+    runs as; QR; impossible over chat), *user pairing* (who may talk to the bot;
+    owned by Hermes per D-70), and *authorization* (what they may do; ours, via
+    `AuthenticateTenantBot` + `EnforceBotToolScoping` + `WhatsAppSenderIdentity`).
+  - Integration direction: **Hermes is the client, Agentic BOS is the tool
+    provider.** `routes/api.php` already exposes MasterBot and TenantBot. No
+    inbound webhook is needed for normal tenant-bot operation.
+- **White-label is mandatory on customer-facing surfaces** (D-68), including the
+  bot's answer to "who are you". Internal dev profiles are exempt. Skills live in
+  Hermes but must not hold business rules and must reach data only through the
+  TenantBot API (D-69); customer-facing profiles must not have terminal/file/git
+  tools, or every authorization guard we have becomes advisory.
 - Do **not** confuse the two types named `HermesNodeClient`.
   `App\Contracts\HermesNodeClient` is the **platform** sender (subscription
   dunning, D-23/D-49): not company-scoped, and its default implementation only
