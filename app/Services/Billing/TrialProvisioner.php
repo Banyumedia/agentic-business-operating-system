@@ -60,7 +60,7 @@ class TrialProvisioner
                 'emergency_token_quota' => $plan->emergency_token_quota,
                 'emergency_balance' => $plan->emergency_token_quota,
                 'max_wa_groups' => $plan->max_wa_groups,
-                        'max_users' => $plan->max_users ?? 1,
+                'max_users' => $plan->max_users ?? 1,
             ]);
         });
     }

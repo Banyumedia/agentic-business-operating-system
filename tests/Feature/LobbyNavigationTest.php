@@ -6,7 +6,6 @@ use Tests\TestCase;
 
 class LobbyNavigationTest extends TestCase
 {
-
     protected function setUp(): void
     {
         parent::setUp();
