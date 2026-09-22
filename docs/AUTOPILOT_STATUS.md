@@ -911,10 +911,47 @@ Verifikasi awal T-21b dilakukan sebelum Fase 8/9, jadi `customer_invoices`,
 assertions, 0 gagal**; `vendor/bin/pint --test` **PASS 516 berkas**;
 `migrate:fresh --seed --force` OK; `npm run build` PASS.
 
-**Yang tetap terbuka dan hanya Bos yang bisa membukanya:** kredensial Hermes
-produksi (`HUMAN:SECRET`), remote git untuk push, dan pengiriman tagihan langsung
-ke nomor pelanggan (menyentuh persetujuan pihak ketiga serta reputasi nomor WA
-tenant — keputusan bisnis, bukan task).
+**Klien node Hermes nyata: `DONE`, commit `90a42e9`.** `App\Services\HermesNodeClient`
+sebelumnya **selalu melempar** "not configured for actual delivery in this
+environment" — jadi T-49, T-51, dan efek workflow `notify_owner_wa` tidak punya
+implementasi pengiriman sama sekali, hanya mock.
+
+- Rantai fail-closed: company ada → profil `primary` yang **melayani company itu
+  lewat pivot** (bukan sekadar satu pemilik) → profil berstatus siap → node
+  `active` → rahasia node diselesaikan dari **referensi** lewat config (basis data
+  tetap bebas kredensial; galat menyebut nama referensi, tidak pernah nilainya) →
+  respons harus 2xx **dan** mengonfirmasi terkirim.
+- Pemeriksaan badan respons itu yang mencegah pengingat tercatat "terkirim"
+  padahal node gagal, lalu tidak pernah dicoba ulang.
+- `bos:hermes-ping` memeriksa node tanpa mengirim pesan apa pun. **Diverifikasi
+  terhadap Hermes lokal di `127.0.0.1:9119` — menjawab HTTP 200.**
+- 11 test baru dipalsukan pada lapisan HTTP (`Http::fake`), bukan dengan
+  memalsukan kelasnya sendiri, karena justru kelas itulah yang diuji.
+
+**Dua temuan baru yang dicatat, bukan ditebak:**
+
+1. Ada **dua tipe bernama `HermesNodeClient`**: `App\Contracts` (tidak ter-scope,
+   untuk dunning platform D-23, implementasinya fake yang hanya menulis log) dan
+   `App\Services` (ter-scope company, yang nyata). Memakai yang pertama untuk
+   pesan tenant adalah persis kesalahan yang dilarang D-63 — nomor dikirimi pesan
+   tanpa memeriksa profil company mana pun, dan fake-nya mengembalikan `true`
+   tanpa mengirim apa pun. Keduanya kini saling merujuk di docblock; penyeragaman
+   nama layak jadi task sendiri karena menyentuh jalur billing.
+2. Status profil Hermes dipakai dengan **tiga kata untuk keadaan siap yang sama**:
+   `paired` (`CleanupExpiredTrials`), `connected` (factory), `active`. Tidak ada
+   yang memvalidasinya. Daftar status siap dibuat permisif dan hanya `unpaired`
+   yang ditolak — menebak satu kata yang "benar" justru bisa mematikan pengiriman
+   yang sah.
+
+**Yang tetap terbuka dan hanya Bos yang bisa membukanya:** remote git untuk push,
+pengiriman tagihan langsung ke nomor pelanggan (menyentuh persetujuan pihak ketiga
+serta reputasi nomor WA tenant — keputusan bisnis, bukan task), dan **node
+WhatsApp sungguhan**. Yang berjalan di PC ini adalah Hermes **agent** (WebUI pada
+`9119` plus gateway chat-nya); ia tidak punya endpoint kirim WhatsApp — sudah
+diperiksa pada daftar rute `hermes-webui`. Kanal WA (NalarPesan) tidak berjalan di
+mesin ini, jadi belum ada satu pesan pun yang benar-benar terkirim. Begitu kontrak
+endpoint node diketahui, `HERMES_SEND_PATH` dan satu baris di `hermes_nodes` sudah
+cukup — tanpa perubahan kode.
 
 ## READY Berikutnya
 Fase 8 (T-41..T-47) dan Fase 9 (T-48..T-58) selesai penuh; Fase 6b/katalog D-56
