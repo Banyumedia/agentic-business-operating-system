@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\MasterBot;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\Lead;
 use App\Models\SupportTicket;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -82,6 +83,61 @@ class MasterBotController extends Controller
         return response()->json([
             'balance' => $membership->current_token_balance,
             'status' => $membership->status,
+        ]);
+    }
+
+    /**
+     * Mencatat prospek yang japri bot CS platform (D-76).
+     *
+     * Berbeda dari `createTicket`: **tidak** memanggil `resolveCompany()`, jadi
+     * pemanggil yang belum punya company - yaitu semua calon pelanggan - tetap
+     * dicatat. Itu inti keberadaan jalur ini; melonggarkan `createTicket` sendiri
+     * akan membuka jalur tiket tenant untuk pemanggil tanpa company, yang bukan
+     * yang diinginkan.
+     *
+     * Nomor dinormalkan lewat `User::normalizeWaNumber()` - sumber tunggal yang
+     * sama dengan consumer WA lain (BS-03), supaya `08...` dan `628...` menjadi satu
+     * prospek, bukan dua. Nomor jadi kunci: pesan berikutnya dari orang yang sama
+     * memperbarui kartunya, bukan menumpuk baris.
+     *
+     * Tidak ada eksekusi di sini. Prospek yang minta tindakan (dibuatkan akun,
+     * dijadwalkan demo) dicatat pesannya; tindakannya masuk antrean sebagai tugas
+     * manusia, bukan dijalankan bot (D-76).
+     */
+    public function captureLead(Request $request)
+    {
+        $payload = $request->validate([
+            'wa_number' => 'required|string',
+            'message' => 'required|string',
+            'name' => 'nullable|string|max:191',
+            'source' => 'nullable|string|max:32',
+        ]);
+
+        $normalized = User::normalizeWaNumber($payload['wa_number']);
+
+        if ($normalized === '') {
+            return response()->json(['error' => 'Nomor WhatsApp tidak dapat dibaca.'], 422);
+        }
+
+        // Data disimpan minimal (D-76). `updateOrCreate` pada nomor: satu prospek
+        // satu kartu, pesan terakhir menang. `name`/`source` hanya ditimpa bila
+        // dikirim, supaya nilai yang sudah ada tidak terhapus oleh pesan lanjutan
+        // yang tak menyebutkannya.
+        $attributes = ['last_message' => $payload['message']];
+
+        if (! empty($payload['name'])) {
+            $attributes['name'] = $payload['name'];
+        }
+
+        if (! empty($payload['source'])) {
+            $attributes['source'] = $payload['source'];
+        }
+
+        $lead = Lead::updateOrCreate(['wa_number' => $normalized], $attributes);
+
+        return response()->json([
+            'status' => 'success',
+            'lead_id' => $lead->id,
         ]);
     }
 

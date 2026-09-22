@@ -13,6 +13,9 @@ Route::middleware([AuthenticateMasterBot::class])->group(function () {
     Route::post('/bot/master/tickets', [MasterBotController::class, 'createTicket']);
     Route::get('/bot/master/balance', [MasterBotController::class, 'checkBalance']);
     Route::post('/bot/master/topup', [MasterBotController::class, 'createTopupInvoice']);
+    // D-76: bot CS mencatat prospek yang belum punya company. Sengaja di grup yang
+    // sama (kunci bot dijaga) tetapi TIDAK lewat resolveCompany - lihat captureLead.
+    Route::post('/bot/master/leads', [MasterBotController::class, 'captureLead']);
 });
 
 use App\Http\Controllers\Api\TenantBot\AiContextController;
