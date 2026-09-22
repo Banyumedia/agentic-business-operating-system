@@ -76,6 +76,24 @@ class PaymentWebhookController extends Controller
                     'paid_at' => now(),
                 ]);
 
+                // BS-01: jalur gateway harus menyejajarkan `InvoiceConfirmationService`
+                // (jalur manual). Invoice subscription terikat ke membership placeholder
+                // berstatus `pending`; tanpa langkah ini pelanggan yang bayar lewat
+                // Midtrans sudah membayar tetapi layanannya tidak menyala - dan tidak ada
+                // galat yang memberi tahu siapa pun. Topup sengaja **tidak** menyentuh
+                // masa langganan: ia hanya menambah saldo lewat ledger di bawah.
+                if ($lockedInvoice->type === 'subscription') {
+                    // Hanya masa dan status yang disetel di sini. Saldo token **tidak**
+                    // ikut di-reset seperti di jalur manual, karena jalur gateway
+                    // mengkredit lewat ledger tepat di bawah - menyetel keduanya akan
+                    // menggandakan kuota bulan pertama.
+                    $membership->update([
+                        'status' => 'active',
+                        'starts_at' => now(),
+                        'expires_at' => now()->addMonth(),
+                    ]);
+                }
+
                 $this->tokenLedgerService->recordTransaction(
                     membership: $membership,
                     direction: 'credit',

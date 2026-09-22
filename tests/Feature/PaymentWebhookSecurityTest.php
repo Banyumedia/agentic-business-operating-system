@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\MembershipPlan;
 use App\Services\Payment\MidtransSignatureVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
@@ -295,6 +296,156 @@ class PaymentWebhookSecurityTest extends TestCase
         // Balance must NOT change
         $membership->refresh();
         $this->assertEquals(0, $membership->current_token_balance);
+    }
+
+    /**
+     * BS-01: settlement invoice subscription harus **mengaktifkan** membership,
+     * bukan hanya menandai invoice `paid` + kredit token.
+     *
+     * Cacat yang ditutup: `InvoiceCreationService` membuat membership placeholder
+     * berstatus `pending` saat invoice subscription dibuat, dan `InvoiceConfirmationService`
+     * (jalur manual) mengaktifkannya. Jalur **gateway** (webhook Midtrans) melewatkan
+     * langkah itu, jadi pelanggan yang bayar lewat Midtrans sudah membayar tetapi
+     * membership-nya tetap `pending` - layanan tidak menyala, dan tidak ada galat yang
+     * memberi tahu siapa pun.
+     */
+    public function test_settlement_of_a_subscription_invoice_activates_the_membership(): void
+    {
+        $plan = MembershipPlan::factory()->create(['monthly_token_quota' => 1000]);
+        $company = Company::factory()->create();
+        $membership = CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            // Placeholder yang dibuat saat invoice subscription diterbitkan (enum: trial).
+            'status' => 'trial',
+            'current_token_balance' => 0,
+        ]);
+        $invoice = Invoice::factory()->create([
+            'company_id' => $company->id,
+            'company_membership_id' => $membership->id,
+            'type' => 'subscription',
+            'order_id' => 'ORDER-SUB',
+            'payment_status' => 'pending',
+            'token_amount_granted' => 1000,
+        ]);
+
+        $this->settle('ORDER-SUB');
+
+        $membership->refresh();
+        // Inti temuan: tanpa perbaikan ini status tetap `pending`.
+        $this->assertSame('active', $membership->status);
+        $this->assertNotNull($membership->starts_at);
+        $this->assertNotNull($membership->expires_at);
+    }
+
+    public function test_settlement_of_a_topup_invoice_only_credits_and_leaves_membership_alone(): void
+    {
+        // Topup bukan langganan: ia menambah saldo token pada membership yang sudah
+        // aktif, dan **tidak boleh** memperpanjang masa langganan. Menyamakannya dengan
+        // subscription akan memberi perpanjangan gratis setiap kali orang mengisi token.
+        $plan = MembershipPlan::factory()->create(['monthly_token_quota' => 1000]);
+        $company = Company::factory()->create();
+        $expiresAt = now()->addDays(3)->startOfSecond();
+        $membership = CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'active',
+            'starts_at' => now()->subDays(27),
+            'expires_at' => $expiresAt,
+            'current_token_balance' => 200,
+        ]);
+        Invoice::factory()->create([
+            'company_id' => $company->id,
+            'company_membership_id' => $membership->id,
+            'type' => 'topup',
+            'order_id' => 'ORDER-TOPUP',
+            'payment_status' => 'pending',
+            'token_amount_granted' => 5000,
+        ]);
+
+        $this->settle('ORDER-TOPUP');
+
+        $membership->refresh();
+        $this->assertSame('active', $membership->status);
+        $this->assertSame(5200, (int) $membership->current_token_balance, 'Topup menambah saldo, bukan menggantinya.');
+        // Masa langganan tidak bergeser: topup tidak memperpanjang.
+        $this->assertEquals($expiresAt->toDateTimeString(), $membership->expires_at->toDateTimeString());
+    }
+
+    public function test_negative_settling_twice_activates_and_credits_only_once(): void
+    {
+        // Idempotensi harus tetap berlaku **setelah** aktivasi ditambahkan: aktivasi
+        // yang berjalan dua kali akan menggeser `starts_at`/`expires_at` maju dan
+        // memberi bulan gratis pada setiap retry webhook.
+        $plan = MembershipPlan::factory()->create(['monthly_token_quota' => 1000]);
+        $company = Company::factory()->create();
+        $membership = CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'trial',
+            'current_token_balance' => 0,
+        ]);
+        Invoice::factory()->create([
+            'company_id' => $company->id,
+            'company_membership_id' => $membership->id,
+            'type' => 'subscription',
+            'order_id' => 'ORDER-SUB-2X',
+            'payment_status' => 'pending',
+            'token_amount_granted' => 1000,
+        ]);
+
+        $this->settle('ORDER-SUB-2X');
+        $membership->refresh();
+        $pertama = $membership->expires_at;
+        $this->assertSame(1000, (int) $membership->current_token_balance);
+
+        $this->settle('ORDER-SUB-2X')->assertJson(['status' => 'success', 'message' => 'Already paid']);
+
+        $membership->refresh();
+        $this->assertSame(1000, (int) $membership->current_token_balance, 'Kredit tidak boleh berlipat.');
+        $this->assertEquals($pertama->toDateTimeString(), $membership->expires_at->toDateTimeString(), 'Masa langganan tidak boleh maju dua kali.');
+    }
+
+    public function test_negative_a_cancelled_membership_is_reactivated_by_settlement_not_left_dead(): void
+    {
+        // Temuan bug scout: membership placeholder bisa berakhir `cancelled` (mis. invoice
+        // pending dibatalkan lalu dibayar lewat gateway yang datang terlambat). Jalur
+        // gateway harus menyejajarkan jalur manual: settlement yang sah mengaktifkan,
+        // bukan meninggalkan pelanggan yang sudah membayar dalam keadaan mati.
+        $plan = MembershipPlan::factory()->create(['monthly_token_quota' => 1000]);
+        $company = Company::factory()->create();
+        $membership = CompanyMembership::factory()->create([
+            'company_id' => $company->id,
+            'plan_id' => $plan->id,
+            'status' => 'cancelled',
+            'current_token_balance' => 0,
+        ]);
+        Invoice::factory()->create([
+            'company_id' => $company->id,
+            'company_membership_id' => $membership->id,
+            'type' => 'subscription',
+            'order_id' => 'ORDER-REVIVE',
+            'payment_status' => 'pending',
+            'token_amount_granted' => 1000,
+        ]);
+
+        $this->settle('ORDER-REVIVE');
+
+        $this->assertSame('active', $membership->fresh()->status);
+    }
+
+    private function settle(string $orderId, string $status = 'settlement'): TestResponse
+    {
+        $signature = hash('sha512', $orderId.'200'.'100000'.$this->serverKey);
+
+        return $this->postJson('/api/webhooks/payment/midtrans', [
+            'order_id' => $orderId,
+            'status_code' => '200',
+            'gross_amount' => '100000',
+            'signature_key' => $signature,
+            'transaction_status' => $status,
+            'fraud_status' => 'accept',
+        ]);
     }
 
     /**
