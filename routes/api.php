@@ -17,6 +17,7 @@ Route::middleware([AuthenticateMasterBot::class])->group(function () {
 
 use App\Http\Controllers\Api\TenantBot\AiContextController;
 use App\Http\Controllers\Api\TenantBot\CapabilitiesController;
+use App\Http\Controllers\Api\TenantBot\DocumentStandardController;
 use App\Http\Controllers\Api\TenantBot\TenantBotController;
 use App\Http\Middleware\AuthenticateTenantBot;
 use App\Http\Middleware\EnforceBotToolScoping;
@@ -25,6 +26,10 @@ Route::middleware([AuthenticateTenantBot::class, EnforceBotToolScoping::class])-
     Route::get('/bot/tenant/context', [AiContextController::class, 'show'])->name('api.bot.tenant.context.show');
     Route::put('/bot/tenant/context/opt-in', [AiContextController::class, 'update'])->name('api.bot.tenant.context.opt-in');
     Route::get('/bot/tenant/capabilities', [CapabilitiesController::class, 'index'])->name('api.bot.tenant.capabilities');
+    // Baca-saja: standar dokumen per tenant supaya satu skill bisa melayani
+    // banyak tenant (T-65, D-69). Tidak ada pasangan tulisnya di sini secara
+    // sengaja — menyetel standar adalah keputusan owner di web.
+    Route::get('/bot/tenant/document-standards', [DocumentStandardController::class, 'show'])->name('api.bot.tenant.document-standards');
     Route::put('/bot/tenant/settings', [TenantBotController::class, 'updateSettings'])->name('api.bot.tenant.settings');
     Route::post('/bot/tenant/contacts', [TenantBotController::class, 'createContact'])->name('api.bot.tenant.contacts');
     Route::post('/bot/tenant/deals', [TenantBotController::class, 'createDeal'])->name('api.bot.tenant.deals');

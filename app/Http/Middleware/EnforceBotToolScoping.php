@@ -21,6 +21,7 @@ class EnforceBotToolScoping
         'api.bot.tenant.context.show' => 'read_context',
         'api.bot.tenant.context.opt-in' => 'update_settings',
         'api.bot.tenant.capabilities' => 'read_context',
+        'api.bot.tenant.document-standards' => 'read_context',
         'api.bot.tenant.settings' => 'update_settings',
         'api.bot.tenant.contacts' => 'create_transaction',
         'api.bot.tenant.deals' => 'create_transaction',
