@@ -41,8 +41,13 @@ vendor/bin/pint --test
 npm run build
 ```
 
-Angka yang diklaim writer: **1.197 passed / 5.675 assertions**, Pint **PASS 536
-berkas**, build PASS. Kalau berbeda, itu temuan.
+Angka yang diklaim writer pada commit terakhir (`4f49670`): **1.226 passed /
+5.771 assertions**, Pint **PASS 551 berkas**, build PASS. Kalau berbeda, itu
+temuan.
+
+Ada satu migration baru (`2026_09_23_120000_add_control_plane_to_hermes_nodes`).
+`php artisan migrate --force` sudah dijalankan writer di basis data dev — jangan
+jalankan `migrate:fresh` (lihat aturan 4).
 
 Setelah menjalankan test, `storage/app/json/1/workflow_log.json` akan berubah
 (fixture JSON ditulis oleh test). Itu normal. Jangan di-commit, dan **jangan**
@@ -66,6 +71,8 @@ Dari yang tertua ke terbaru (`git log --oneline 90a42e9~1..HEAD`):
 | `428321e` | T-81 `hermes_profiles.api_url` + status profil dari bridge |
 | `a9747d9` | T-69 sisa: lajur **platform** yang benar-benar mengirim |
 | `cf97bed`, `d25a6c8` | runbook klien pertama |
+| `75a2cd7` | T-82 klien control plane Hermes + daftar-putih path |
+| `4f49670` | T-86 penjaga batas control plane + runbook rotasi rahasia |
 
 Berkas paling padat risikonya:
 
@@ -167,7 +174,57 @@ jatuhkan**, dengan bukti berupa `berkas:baris` atau output perintah.
 18. T-70 pendaftaran node dari UI: periksa otorisasi, validasi, dan apa yang
     terjadi bila node tidak terjangkau saat tombol kesehatan ditekan.
 
-### E. Kualitas test, bukan hanya warna hijau
+### E. Control plane Hermes (`75a2cd7`, `4f49670`) — paling berisiko di antrean ini
+
+Alasan ia paling berisiko: port dashboard Hermes yang sama menyajikan
+`/api/fs/*`, `/api/files/*`, `/api/tools/terminal/*`, `/api/git/*`, dan
+`/api/profiles/{name}/open-terminal`. Token control plane karena itu **setara
+eksekusi kode** di host Hermes. Kalau daftar-putihnya bisa dilewati, seluruh
+otorisasi bot (`EnforceBotToolScoping`, D-69) menjadi hiasan.
+
+Berkas: `app/Services/Hermes/ControlPlanePaths.php`,
+`app/Services/Hermes/HermesControlPlaneClient.php`,
+`app/Console/Commands/HermesControlPing.php`,
+`tests/Architecture/ControlPlaneBoundaryTest.php`,
+`tests/Feature/Hermes/ControlPlanePathCoverageTest.php`,
+`tests/Feature/Hermes/ControlPlaneClientTest.php`. Laporan writer:
+`docs/worker-reports/T-82_CONTROL_PLANE.md`.
+
+23. "Daftar-putih tidak bisa dilewati." Serang dari banyak arah, bukan satu:
+    apakah ada cara memanggil path yang tidak ada di daftar? Apakah nilai parameter
+    bisa menyetir path akhir keluar dari yang sudah lolos pemeriksaan? Apakah
+    pemeriksaan benar-benar terjadi **sebelum** permintaan HTTP dalam **semua**
+    cabang, termasuk cabang galat? Apakah ada jalan masuk lain ke klien selain
+    metode yang Anda lihat dipakai?
+24. "Tidak ada berkas lain yang boleh menyebut rute dashboard, dan permukaan tenant
+    tidak bisa menyentuh klien." Kedua penjaga ini berbasis pemindaian teks. Cari
+    cara yang benar secara teknis tetapi lolos pemindaian, lalu nilai apakah itu
+    celah nyata atau teoretis.
+25. "Setiap path di daftar-putih dipatok URL akhirnya dan tempat nama profil
+    mendarat." Periksa satu per satu terhadap **sumber Hermes**, bukan terhadap
+    laporan writer: `%LOCALAPPDATA%\hermes\hermes-agent\hermes_cli\web_server.py`
+    dan `hermes_cli/web_routers/*.py`. Ingat `grep_search` tidak menjangkau ke sana.
+    Pertanyaan yang paling perlu dijawab: **untuk setiap endpoint, apakah profil
+    dibaca dari query atau dari body?** Salah tempat tidak menimbulkan galat — Hermes
+    memakai profil yang sedang aktif, dan tenant yang salah dikonfigurasi tanpa jejak.
+    Kalau Anda menemukan satu saja yang salah tempat, itu **BLOCKER**.
+26. "Rahasia dan `qr_payload` tidak pernah masuk log." `qr_payload` adalah
+    kredensial sesi WhatsApp — pemegangnya bisa memasang perangkat sebagai nomor
+    itu. Lacak setiap jalur: log kegagalan, log pengecualian, pesan pengecualian
+    yang naik ke layar, output perintah, dan snapshot Livewire.
+27. "Kode status dipetakan ke pengecualian yang berbeda-beda." Periksa apakah ada
+    kode status atau keadaan yang jatuh ke cabang default dan kehilangan artinya,
+    dan apakah pemetaannya cocok dengan **perilaku Hermes yang sebenarnya**.
+28. Writer menyatakan `/api/health` dan `/api/status` **tidak butuh autentikasi**
+    pada instalasi ini, sedangkan sisanya 401. Verifikasi sendiri. Kalau benar,
+    nilai apakah ada konsekuensi yang belum dicatat.
+29. Rahasia control plane dipetakan dari `config/hermes.php` → `control_secrets`.
+    Periksa apakah ada jalan nilainya tersimpan ke basis data, tercetak, atau
+    ter-cache ke berkas.
+30. Runbook rotasi lima langkah di `docs/RUNBOOK_RUNTIME_SERVICE.md`: cari langkah
+    yang bila diikuti apa adanya menyebabkan jeda layanan atau kehilangan akses.
+
+### F. Kualitas test, bukan hanya warna hijau
 
 19. Proyek ini sudah dua kali kena pola yang sama (T-57, T-58): **test hijau di
     atas nilai fabrikasi** — menulis atribut ke model yang belum tersimpan, atau
@@ -199,6 +256,14 @@ buruk** dari yang dinyatakan, atau bila pernyataannya sendiri salah.
   Agentic BOS; untuk klien pertama hanya nomor owner yang jalan.
 - Kosakata status masih permisif di sisi baca (`paired`, `connected`, `active`).
 - Belum ada satu putaran manual dari HP pada tenant nyata.
+- Seluruh **aksi tulis** control plane (buat profil, tulis SOUL, approve pairing,
+  mulai onboarding) belum pernah dijalankan terhadap node sungguhan: semuanya
+  menjawab 401 sampai **H-05** mendarat di repo Hermes. Yang terbukti hidup hanya
+  `/api/health` dan `/api/status`.
+- HTTP 410 dan 429 dari control plane belum pernah dilihat dari node sungguhan;
+  pemetaannya hanya terbukti terhadap `Http::fake()`.
+- Klien control plane belum dipakai fitur apa pun (T-83/T-84 yang akan memakainya),
+  jadi belum ada bukti pemakaian di luar test.
 
 ---
 

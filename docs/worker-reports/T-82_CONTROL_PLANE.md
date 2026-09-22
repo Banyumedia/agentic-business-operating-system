@@ -138,3 +138,74 @@ hanya terhadap `Http::fake()`.
   **H-05** mendarat. Yang terbukti adalah bentuk permintaannya dan seluruh rantai
   penolakannya.
 - Klien ini belum dipakai fitur apa pun. T-83/T-84 yang akan memakainya.
+
+---
+
+# T-86 — Penjaga batas control plane + runbook rotasi
+
+Dikerjakan langsung setelah T-82 karena daftar-putih tanpa penjaga hanyalah
+kesepakatan lisan.
+
+## Empat penjaga (`tests/Architecture/ControlPlaneBoundaryTest.php`)
+
+| Penjaga | Menutup |
+|---|---|
+| (a) hanya dua berkas boleh menyebut rute dashboard | memanggil dashboard dari kelas lain |
+| (b) permukaan tenant tidak boleh menyentuh klien | memanggil klien yang benar dari permukaan yang salah |
+| (c) setiap path daftar-putih punya test yang memakainya | menumpuk izin yang bentuknya belum pernah diperiksa |
+| (d) daftar terlarang dipatok sebagai literal | menambah/menghapus larangan tanpa terlihat di review |
+
+## Penjaga (a) langsung menemukan dua pelanggaran pada kode saya sendiri
+
+`bos:hermes-control-ping` menuliskan template pathnya sendiri, dan satu komentar
+di `HermesNodeManager` memuat literal path terlarang. Perbaikannya **bukan**
+melonggarkan penjaga:
+
+- Klien mendapat metode bernama (`health()`, `status()`, `systemStats()`) sehingga
+  pemanggil tidak pernah menulis path. Ditambahkan **saat dipakai**, bukan 19
+  sekaligus — metode yang tidak dipakai siapa pun adalah izin yang menumpuk.
+- Komentar ditulis ulang tanpa literal, maknanya tetap.
+
+Ini contoh penjaga yang membayar dirinya sendiri di hari pertama.
+
+## Penjaga (c) menemukan 7 izin menumpuk
+
+Dari 19 path di daftar-putih, **7 tidak pernah dipakai test mana pun**:
+`PATCH`/`DELETE /api/profiles/{name}`, `PUT /api/profiles/{name}/model`,
+`POST /api/pairing/revoke`, dan tiga endpoint sesi onboarding WhatsApp.
+
+Ditutup `tests/Feature/Hermes/ControlPlanePathCoverageTest.php`: 19 path, masing-masing
+dipatok URL akhirnya **dan** tempat nama profil mendarat. Sengaja literal dan
+berulang, bukan satu loop atas `ControlPlanePaths::ALLOWED` — loop akan otomatis
+"meliputi" path apa pun yang kelak ditambahkan, sehingga izin baru masuk tanpa ada
+yang pernah memeriksanya. Ditambah satu asersi jumlah (19) supaya daftar dan testnya
+harus berubah di commit yang sama.
+
+## Satu penjaga dihapus, bukan ditambah
+
+Versi lemah dari penjaga "satu pintu" yang saya tulis di `ControlPlaneClientTest`
+dibuang: ia memakai glob berlapis yang melewatkan direktori lebih dalam, sementara
+versi di berkas arsitektur memindai `app/`, `routes/`, `config/` secara rekursif.
+Dua penjaga untuk satu aturan pasti menyimpang, dan yang lemah akan dipercaya.
+
+## Runbook (`docs/RUNBOOK_RUNTIME_SERVICE.md`)
+
+Tabel pembeda bridge vs control plane (kolom, rahasia, autentikasi, port,
+wewenang), cara memasang rahasia, dan **rotasi lima langkah tanpa jeda**: tambahkan
+referensi baru dulu, pasang token berdampingan di Hermes, pindahkan kolom, buktikan
+dengan ping, baru cabut yang lama. Rollback-nya satu kolom dan tidak menyentuh
+Hermes sama sekali.
+
+Ditambah empat kandidat rute yang paling mungkin berpindah setelah Hermes
+diperbarui. Yang paling berbahaya dinyatakan eksplisit: pergeseran **tempat**
+parameter `profile` (query vs body) **tidak menimbulkan galat apa pun** — Hermes
+hanya mengabaikannya dan memakai profil yang sedang aktif, jadi tenant yang salah
+dikonfigurasi tanpa meninggalkan jejak. Runbook juga menyatakan larangan yang
+mudah dilanggar saat panik: bila test `ControlPlane*` merah setelah pembaruan,
+**jangan** melonggarkan daftar-putih supaya hijau.
+
+## Gate
+
+- `DATA_SOURCE=json php artisan test` → **1.226 passed / 5.771 assertions, 0 gagal**
+- `vendor/bin/pint --test` → **PASS 551 berkas**
+- `bos:hermes-control-ping --node=2` terhadap node hidup → `OK ... version 0.19.1`
