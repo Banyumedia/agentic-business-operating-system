@@ -105,6 +105,13 @@ tidak lagi bersinggungan file.
 Selalu serial: MP-00, seluruh merge ke `main`, dan lajur mana pun yang ternyata
 butuh migration.
 
+## 3b. Ketergantungan ke Fase 12 (D-74)
+
+MP-03 (struk POS) dan MP-08 (penawaran) menyentuh angka pajak yang sampai ke
+pelanggan tenant. Keduanya menunggu **TX-02** (onboarding menanyakan `tax_mode`
++ `price_includes_tax`, lalu dikunci). Mencetak struk sebelum konfigurasi fiskal
+benar berarti mencetak harga salah di kertas yang dipegang pelanggan.
+
 ## 4. Urutan yang disarankan
 
 MP-00 → MP-02 (paling berbahaya: uang dan stok salah lebih buruk daripada layar
