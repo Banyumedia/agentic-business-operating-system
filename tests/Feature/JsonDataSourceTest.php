@@ -290,12 +290,15 @@ class JsonDataSourceTest extends TestCase
         $repository->save(['id' => 1]);
     }
 
-    public function test_committed_demo_inventory_has_48_schema_valid_files(): void
+    public function test_committed_demo_inventory_has_60_schema_valid_files(): void
     {
         // Dibatasi pada tiga company demo Fase 2 asli (T-F9b): setiap company
-        // punya satu file per schema (16 x 3 = 48). `laundry-bersih` (T-F15)
-        // sengaja hanya mengisi entity yang relevan untuk kapabilitasnya,
-        // bukan seluruh 16 schema, jadi diverifikasi terpisah di bawah.
+        // punya satu file per schema yang relevan (20 x 3 = 60). Empat file
+        // terakhir per company adalah entitas akuntansi dan payroll yang
+        // dinyalakan D-64; sebelum ada fixture-nya layar Bagan Akun, Jurnal,
+        // Rincian Jurnal, dan Payroll tampak rusak padahal hanya kosong.
+        // `laundry-bersih` (T-F15) sengaja hanya mengisi entity yang relevan
+        // untuk kapabilitasnya, jadi diverifikasi terpisah di bawah.
         $schemaNames = array_map(
             static fn (string $path): string => str_replace('.schema.json', '', basename($path)),
             glob(database_path('schemas/*.schema.json')) ?: [],
@@ -306,7 +309,7 @@ class JsonDataSourceTest extends TestCase
         ));
         $validator = app(SchemaValidator::class);
 
-        $this->assertCount(48, $files);
+        $this->assertCount(60, $files);
 
         foreach ($files as $file) {
             $rows = json_decode((string) file_get_contents($file), true, flags: JSON_THROW_ON_ERROR);
@@ -349,7 +352,7 @@ class JsonDataSourceTest extends TestCase
             $ids[$entity] = array_column($rows, 'id');
         }
 
-        $external = ['users', 'business_identities', 'accounting_journals', 'company_memberships', 'pos_shifts'];
+        $external = ['users', 'business_identities', 'company_memberships', 'pos_shifts'];
         foreach ($files as $file) {
             $entity = pathinfo($file, PATHINFO_FILENAME);
             $rows = json_decode((string) file_get_contents($file), true, flags: JSON_THROW_ON_ERROR);
@@ -400,8 +403,10 @@ class JsonDataSourceTest extends TestCase
 
     public function test_committed_demo_fixtures_keep_referential_integrity(): void
     {
-        // Entitas yang belum punya fixture pada Fase 2 (menyusul di Fase 3).
-        $external = ['users', 'business_identities', 'accounting_journals', 'company_memberships', 'pos_shifts'];
+        // Entitas yang memang tidak punya fixture: tabel platform di luar folder
+        // company. `accounting_journals` dulu ada di daftar ini dan sekarang
+        // dikeluarkan - fixture-nya sudah ada, jadi referensinya wajib diperiksa.
+        $external = ['users', 'business_identities', 'company_memberships', 'pos_shifts'];
 
         foreach (['bengkel-arka', 'klinik-sehat', 'salon-ayu'] as $company) {
             $ids = [];

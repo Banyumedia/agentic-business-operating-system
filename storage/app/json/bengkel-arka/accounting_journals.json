@@ -1,0 +1,47 @@
+[
+    {
+        "id": 1,
+        "journal_number": "JV-202609-0001",
+        "transaction_date": "2026-09-05",
+        "reference": "SETORAN-09",
+        "description": "Setoran modal awal periode",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "journal_number": "JV-202609-0002",
+        "transaction_date": "2026-09-10",
+        "reference": "SEWA-09",
+        "description": "Beban sewa tempat September",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "journal_number": "JV-202609-0003",
+        "transaction_date": "2026-09-15",
+        "reference": "OMZET-09",
+        "description": "Pengakuan pendapatan pertengahan bulan",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "journal_number": "JV-202609-0004",
+        "transaction_date": "2026-09-20",
+        "reference": "UTIL-09",
+        "description": "Beban listrik dan air September",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 5,
+        "journal_number": "JV-202609-0005",
+        "transaction_date": "2026-09-25",
+        "reference": "GAJI-08",
+        "description": "Pembebanan gaji periode Agustus",
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
+]

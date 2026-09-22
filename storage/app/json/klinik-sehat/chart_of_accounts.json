@@ -1,0 +1,110 @@
+[
+    {
+        "id": 1,
+        "account_code": "1-1000",
+        "name": "Kas",
+        "type": "asset",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 2,
+        "account_code": "1-1100",
+        "name": "Bank",
+        "type": "asset",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 3,
+        "account_code": "1-1200",
+        "name": "Piutang Usaha",
+        "type": "asset",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 4,
+        "account_code": "1-1300",
+        "name": "Persediaan",
+        "type": "asset",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 5,
+        "account_code": "2-1000",
+        "name": "Utang Usaha",
+        "type": "liability",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 6,
+        "account_code": "2-1100",
+        "name": "Utang Gaji",
+        "type": "liability",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 7,
+        "account_code": "3-1000",
+        "name": "Modal Pemilik",
+        "type": "equity",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 8,
+        "account_code": "4-1000",
+        "name": "Pendapatan Usaha",
+        "type": "revenue",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 9,
+        "account_code": "5-1000",
+        "name": "Beban Gaji",
+        "type": "expense",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 10,
+        "account_code": "5-1100",
+        "name": "Beban Sewa",
+        "type": "expense",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 11,
+        "account_code": "5-1200",
+        "name": "Beban Utilitas",
+        "type": "expense",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    },
+    {
+        "id": 12,
+        "account_code": "5-1300",
+        "name": "Harga Pokok",
+        "type": "expense",
+        "is_active": true,
+        "created_at": "2026-09-10T07:00:00+07:00",
+        "updated_at": "2026-09-17T07:00:00+07:00"
+    }
+]
