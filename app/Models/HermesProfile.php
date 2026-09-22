@@ -44,6 +44,41 @@ class HermesProfile extends Model
         return $this->hasMany(HermesConversationContext::class);
     }
 
+    /**
+     * Hash token bot yang disimpan di `webhook_secret_reference`.
+     *
+     * Kolom itu dulu menyimpan **token apa adanya**, dan `AuthenticateTenantBot`
+     * mencocokkannya verbatim. Artinya satu baris basis data yang bocor - backup,
+     * dump debugging, akses baca ke replika - sudah cukup untuk menyamar sebagai bot
+     * tenant. Tidak ada yang perlu dipecahkan lebih dulu.
+     *
+     * **Kenapa SHA-256 telanjang, bukan bcrypt/argon.** Token dicari **berdasarkan
+     * nilainya** (satu query), bukan diverifikasi terhadap baris yang sudah
+     * diketahui, jadi hash bersalt menuntut pemindaian seluruh tabel. Yang membuat
+     * SHA-256 memadai di sini adalah entropi tokennya sendiri: 40 karakter acak,
+     * bukan kata sandi buatan manusia. Salt dan work factor ada untuk melawan
+     * rendahnya entropi kata sandi; di sini keduanya tidak menambah apa pun.
+     */
+    public static function hashBotToken(string $token): string
+    {
+        return hash('sha256', $token);
+    }
+
+    /**
+     * Mencari profil dari token bot mentah.
+     *
+     * Satu-satunya tempat pencocokan token terjadi, supaya tidak ada pemanggil yang
+     * lupa menghash dan diam-diam kembali membandingkan plaintext.
+     */
+    public static function findByBotToken(string $token): ?self
+    {
+        if (trim($token) === '') {
+            return null;
+        }
+
+        return static::query()->where('webhook_secret_reference', static::hashBotToken($token))->first();
+    }
+
     protected static function booted(): void
     {
         static::saving(function (HermesProfile $profile) {

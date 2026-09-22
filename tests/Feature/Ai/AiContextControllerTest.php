@@ -38,7 +38,7 @@ class AiContextControllerTest extends TestCase
     {
         $profile = HermesProfile::factory()->create([
             'owner_user_id' => $owner->id,
-            'webhook_secret_reference' => 'test-token',
+            'webhook_secret_reference' => HermesProfile::hashBotToken('test-token'),
         ]);
 
         $profile->companies()->attach($company->id);
@@ -200,7 +200,7 @@ class AiContextControllerTest extends TestCase
         // opt-in data sensitif perusahaan ini (D-50f lapis kedua).
         $profile = HermesProfile::factory()->create([
             'owner_user_id' => $notOwner->id,
-            'webhook_secret_reference' => 'test-token',
+            'webhook_secret_reference' => HermesProfile::hashBotToken('test-token'),
         ]);
         $profile->companies()->attach($company->id);
         $notOwner->update(['wa_number' => '9998887776']);

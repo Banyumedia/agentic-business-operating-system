@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\CompanyMembership;
+use App\Models\HermesNode;
 use App\Models\HermesProfile;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -37,12 +38,29 @@ class CleanupExpiredTrials extends Command
                     if ($owner) {
                         $hasActive = $owner->companies()->where('id', '!=', $company->id)->exists();
                         if (! $hasActive) {
+                            // Node lama dicatat sebelum pencabutan, karena setelah
+                            // `node_id => null` tidak ada lagi jejak ke mana profil ini
+                            // pernah menempel.
+                            $formerNodeIds = HermesProfile::where('owner_user_id', $owner->id)
+                                ->whereNotNull('node_id')
+                                ->pluck('node_id')
+                                ->unique();
+
                             // Cabut API key Hermes jika owner tidak punya company aktif lain
                             HermesProfile::where('owner_user_id', $owner->id)->update([
                                 'status' => 'unpaired',
                                 'node_id' => null,
                                 'webhook_secret_reference' => 'revoked_'.uniqid(),
                             ]);
+
+                            // Profil yang dicabut membebaskan kapasitas node lamanya.
+                            // Tanpa penyelarasan ini `active_profiles` hanya bisa naik,
+                            // dan penjaga kapasitas di `bos:hermes-profile` akan menolak
+                            // profil yang sah pada node yang sebenarnya lowong.
+                            HermesNode::whereIn('id', $formerNodeIds)
+                                ->get()
+                                ->each
+                                ->syncActiveProfiles();
                         }
                     }
                 }

@@ -34,9 +34,19 @@ class HermesProvisionProfile extends Command
         {--node= : ID hermes_nodes tempat profil ditempatkan}
         {--type=primary : primary atau addon}
         {--label= : Label yang tampil di panel super admin}
-        {--api-url= : Alamat bridge WhatsApp milik profil ini; kosong berarti memakai alamat node}';
+        {--api-url= : Alamat bridge WhatsApp milik profil ini; kosong berarti memakai alamat node}
+        {--reissue : Terbitkan ulang token bot untuk profil yang sudah ada; token lama langsung berhenti berlaku}';
 
     protected $description = 'Membuat profil Hermes untuk tenant atau untuk platform';
+
+    /**
+     * Token bot dalam bentuk mentah, hanya selama perintah berjalan.
+     *
+     * Null berarti tidak ada token baru yang diterbitkan pada jalankan ini - profil
+     * sudah ada dan `--reissue` tidak diminta. Dibedakan supaya perintah tidak pernah
+     * mencetak nilai yang tidak bisa dipakai.
+     */
+    private ?string $issuedToken = null;
 
     public function handle(): int
     {
@@ -60,7 +70,16 @@ class HermesProvisionProfile extends Command
 
         // `max_capacity` ada supaya satu node tidak kelebihan profil. Mengabaikannya
         // membuat kolom itu sekadar dekorasi.
-        if ((int) $node->active_profiles >= (int) $node->max_capacity) {
+        //
+        // Yang dibandingkan adalah jumlah profil yang **nyata** menempel, bukan kolom
+        // `active_profiles`. Kolom itu tidak punya jalan turun (pencabutan profil di
+        // `CleanupExpiredTrials` hanya menulis `node_id => null`), jadi mempercayainya
+        // berarti node yang lowong lambat laun menolak profil yang sah. Selarasnya
+        // dilakukan lebih dulu supaya pesan galat menyebut angka yang benar dan panel
+        // admin tidak terus menampilkan angka basi.
+        $node->syncActiveProfiles();
+
+        if ($node->isAtCapacity()) {
             $this->error("Node {$node->name} sudah penuh ({$node->active_profiles}/{$node->max_capacity}).");
 
             return self::FAILURE;
@@ -79,11 +98,21 @@ class HermesProvisionProfile extends Command
         $this->info('Profil siap: #'.$profile->id.' ('.$profile->type.')');
         $this->line('  instance_id      : '.$profile->instance_id);
         $this->line('  bridge           : '.($profile->api_url ?: $node->api_url.' (dari node)'));
-        // Token hanya ditampilkan di sini karena inilah satu-satunya saat operator
-        // membutuhkannya: ia harus dipasang di sisi Hermes. Tidak ditulis ke log.
-        $this->line('  secret reference : '.$profile->webhook_secret_reference);
-        $this->newLine();
-        $this->line('Pasang token itu di sisi Hermes sebagai kredensial pemanggil TenantBot API.');
+
+        // Token hanya pernah ada di sini. Basis data menyimpan **hash**-nya (QA-08),
+        // jadi kalau hilang ia tidak bisa ditampilkan ulang - hanya diterbitkan ulang.
+        if ($this->issuedToken !== null) {
+            $this->line('  token bot        : '.$this->issuedToken);
+            $this->newLine();
+            $this->line('Pasang token itu di sisi Hermes sebagai kredensial pemanggil TenantBot API.');
+            $this->line('Catat sekarang: yang tersimpan di basis data hanya hash-nya, jadi token ini tidak bisa ditampilkan lagi.');
+        } else {
+            // Menampilkan sesuatu yang tampak seperti token padahal bukan akan membuat
+            // operator memasang nilai yang tidak akan pernah bekerja.
+            $this->newLine();
+            $this->line('Profil ini sudah ada dan tokennya tidak dapat ditampilkan lagi - yang tersimpan hanya hash.');
+            $this->line('Jalankan ulang dengan --reissue bila token lamanya hilang; token lama langsung berhenti berlaku.');
+        }
 
         return self::SUCCESS;
     }
@@ -112,15 +141,21 @@ class HermesProvisionProfile extends Command
                     'api_url' => $this->bridgeAddress(),
                     'label' => $this->option('label') ?: 'Asisten '.$company->name,
                     'instance_id' => $this->instanceId('tenant', $owner->id),
-                    'webhook_secret_reference' => $this->secretReference(),
+                    'webhook_secret_reference' => $this->issueToken(),
                     'status' => 'unpaired',
                     'is_platform_provided' => false,
                 ]
             );
 
-            if ($profile->wasRecentlyCreated) {
-                $node->increment('active_profiles');
-            }
+            // `firstOrCreate` mengevaluasi seluruh larik atribut walau barisnya sudah
+            // ada, jadi `issueToken()` tetap terpanggil. Kalau tidak dibatalkan di
+            // sini, perintah akan mencetak token yang tidak pernah tersimpan.
+            $this->settleToken($profile);
+
+            // Penghitung diselaraskan dari kenyataan, bukan dinaikkan. Jalankan kedua
+            // tidak membuat profil baru, jadi hitungannya juga tidak berubah - tanpa
+            // perlu menebak dari `wasRecentlyCreated`.
+            $node->syncActiveProfiles();
 
             // `syncWithoutDetaching` supaya perintah bisa dijalankan dua kali tanpa
             // menumpuk baris pivot - dan tanpa mencabut company lain yang sudah
@@ -155,21 +190,38 @@ class HermesProvisionProfile extends Command
         }
 
         return DB::transaction(function () use ($owner, $node, $type): HermesProfile {
-            $profile = HermesProfile::create([
-                'owner_user_id' => $owner->id,
-                'node_id' => $node->id,
-                'api_url' => $this->bridgeAddress(),
-                'type' => $type,
-                'label' => $this->option('label') ?: 'Bot Platform',
-                'instance_id' => $this->instanceId('platform', $owner->id),
-                'webhook_secret_reference' => $this->secretReference(),
-                'status' => 'unpaired',
-                // Tanpa penanda ini, `addon` akan ditolak karena tidak punya
-                // `billing_addon_id` (T-68), dan lajur tenant bisa memakainya.
-                'is_platform_provided' => true,
-            ]);
+            // `firstOrCreate` dengan pola yang sama seperti jalur tenant. Sebelumnya
+            // jalur ini memakai `create()` tanpa syarat, dan karena satu-satunya kolom
+            // unik (`instance_id`) diacak per jalankan, tidak ada kendala basis data
+            // yang menahan duplikat. Dua profil platform berbahaya secara halus:
+            // `PlatformHermesNodeClient::senderProfile()` memilih dengan
+            // `orderBy('id')->first()`, jadi yang kedua diam-diam tidak terpakai
+            // sementara ia memegang nomor yang mewakili perusahaan.
+            //
+            // Kunci pencarian adalah owner + tipe + penanda platform: itulah yang
+            // sebenarnya mengidentifikasi satu profil platform. Tipe ikut jadi kunci
+            // supaya `--type=primary` dan `--type=addon` tidak saling menimpa.
+            $profile = HermesProfile::query()->firstOrCreate(
+                [
+                    'owner_user_id' => $owner->id,
+                    'type' => $type,
+                    // Tanpa penanda ini, `addon` akan ditolak karena tidak punya
+                    // `billing_addon_id` (T-68), dan lajur tenant bisa memakainya.
+                    'is_platform_provided' => true,
+                ],
+                [
+                    'node_id' => $node->id,
+                    'api_url' => $this->bridgeAddress(),
+                    'label' => $this->option('label') ?: 'Bot Platform',
+                    'instance_id' => $this->instanceId('platform', $owner->id),
+                    'webhook_secret_reference' => $this->issueToken(),
+                    'status' => 'unpaired',
+                ]
+            );
 
-            $node->increment('active_profiles');
+            $this->settleToken($profile);
+
+            $node->syncActiveProfiles();
 
             return $profile;
         });
@@ -193,13 +245,55 @@ class HermesProvisionProfile extends Command
     }
 
     /**
-     * Token yang dipakai bot untuk memanggil TenantBot API
-     * (`AuthenticateTenantBot` mencocokkannya apa adanya). Dua profil dengan token
-     * sama berarti bot yang satu bisa menyamar sebagai yang lain, jadi ia dibuat
-     * acak dan panjang - bukan diturunkan dari id atau nama.
+     * Menerbitkan token bot baru, menyimpan **hash**-nya, dan mengingat plaintextnya
+     * hanya selama perintah ini berjalan.
+     *
+     * Token dipakai bot untuk memanggil TenantBot API. Dua profil dengan token sama
+     * berarti bot yang satu bisa menyamar sebagai yang lain, jadi ia acak dan panjang
+     * - bukan diturunkan dari id atau nama. Yang masuk basis data adalah hash-nya
+     * (QA-08): kolom yang menyimpan token apa adanya menjadikan setiap salinan basis
+     * data sebagai salinan kredensial.
      */
-    private function secretReference(): string
+    private function issueToken(): string
     {
-        return 'sec_'.Str::random(40);
+        $this->issuedToken = 'sec_'.Str::random(40);
+
+        return HermesProfile::hashBotToken($this->issuedToken);
+    }
+
+    /**
+     * Menerbitkan ulang token untuk profil yang sudah ada.
+     *
+     * Ada karena menyimpan hash punya satu konsekuensi yang tidak bisa dihindari:
+     * token yang hilang tidak bisa ditampilkan lagi. Tanpa jalan ini, operator yang
+     * kehilangan token hanya punya pilihan menghapus profil - dan itu memutus peta
+     * company↔profil (D-37) beserta seluruh riwayatnya.
+     */
+    private function reissueToken(HermesProfile $profile): void
+    {
+        $profile->forceFill(['webhook_secret_reference' => $this->issueToken()])->save();
+    }
+
+    /**
+     * Menentukan token mana yang sah untuk ditampilkan setelah `firstOrCreate`.
+     *
+     * Tiga keadaan yang harus dibedakan, karena masing-masing punya jawaban berbeda
+     * bagi operator: profil baru (token baru tersimpan, tampilkan), profil sudah ada
+     * dengan `--reissue` (terbitkan ulang, tampilkan yang baru), dan profil sudah ada
+     * tanpa `--reissue` (tidak ada yang bisa ditampilkan - katakan apa adanya).
+     */
+    private function settleToken(HermesProfile $profile): void
+    {
+        if ($profile->wasRecentlyCreated) {
+            return;
+        }
+
+        if ($this->option('reissue')) {
+            $this->reissueToken($profile);
+
+            return;
+        }
+
+        $this->issuedToken = null;
     }
 }

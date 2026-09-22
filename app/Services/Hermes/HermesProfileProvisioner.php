@@ -21,7 +21,11 @@ class HermesProfileProvisioner
             [
                 'label' => 'Bot Operasional Internal',
                 'instance_id' => 'inst_primary_'.$owner->id.'_'.bin2hex(random_bytes(4)),
-                'webhook_secret_reference' => 'sec_'.bin2hex(random_bytes(16)),
+                // Hash, bukan token (QA-08). Konsekuensinya: jalur ini tidak
+                // mengembalikan token yang bisa dipakai - pemakainya harus menerbitkan
+                // lewat `bos:hermes-profile --reissue`. Itu disengaja; kelas ini
+                // memang tidak punya cara mengembalikan plaintext ke pemanggilnya.
+                'webhook_secret_reference' => HermesProfile::hashBotToken('sec_'.bin2hex(random_bytes(16))),
                 'status' => 'unpaired',
             ]
         );
@@ -38,7 +42,7 @@ class HermesProfileProvisioner
             'billing_addon_id' => $billingAddonId,
             'label' => $label,
             'instance_id' => 'inst_addon_'.$owner->id.'_'.bin2hex(random_bytes(4)),
-            'webhook_secret_reference' => 'sec_'.bin2hex(random_bytes(16)),
+            'webhook_secret_reference' => HermesProfile::hashBotToken('sec_'.bin2hex(random_bytes(16))),
             'status' => 'unpaired',
         ]);
     }

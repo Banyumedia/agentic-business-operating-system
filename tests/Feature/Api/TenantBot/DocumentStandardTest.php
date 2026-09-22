@@ -143,7 +143,10 @@ class DocumentStandardTest extends TestCase
             'owner_user_id' => $owner->id,
             'type' => 'primary',
             'status' => 'paired',
-            'webhook_secret_reference' => $secret,
+            // Yang tersimpan adalah hash token (QA-08); bearer yang dikirim tetap
+            // plaintext. Test yang menyimpan plaintext akan gagal autentikasi, dan
+            // itu memang jaminan yang kita inginkan.
+            'webhook_secret_reference' => HermesProfile::hashBotToken($secret),
         ]);
         $profile->companies()->attach($company->id, ['is_default' => true, 'created_at' => now()]);
 

@@ -96,6 +96,56 @@ class ProvisionProfileCommandTest extends TestCase
         $this->assertSame(0, $profile->companies()->count());
     }
 
+    public function test_running_the_platform_path_twice_does_not_create_a_second_profile(): void
+    {
+        // QA-01: jalur tenant sudah idempoten, jalur platform tidak. Profil platform
+        // membawa nomor yang mewakili perusahaan, dan `PlatformHermesNodeClient`
+        // memilih pengirim dengan `orderBy('id')->first()` - jadi profil kedua tidak
+        // dipakai sama sekali, hanya menggantung dan membingungkan operasi.
+        // `instance_id` acak per jalankan, jadi tidak ada kendala basis data yang
+        // menahan duplikat ini.
+        $admin = User::factory()->create(['is_platform_admin' => true]);
+        $node = $this->node();
+
+        $options = [
+            '--platform' => true,
+            '--owner' => $admin->id,
+            '--node' => $node->id,
+            '--type' => 'addon',
+            '--label' => 'Bot CS Platform',
+        ];
+
+        $this->artisan('bos:hermes-profile', $options)->assertSuccessful();
+        $this->artisan('bos:hermes-profile', $options)->assertSuccessful();
+
+        $this->assertSame(1, HermesProfile::query()->count());
+        $this->assertSame(1, (int) $node->fresh()->active_profiles);
+    }
+
+    public function test_running_the_platform_path_twice_with_a_primary_type_also_stays_at_one(): void
+    {
+        // Tipe `primary` punya penjaga lain (hook `saving` di `HermesProfile`
+        // melarang dua primary untuk satu owner), tetapi penjaga itu melempar
+        // pengecualian - artinya jalankan kedua akan **gagal** alih-alih diam-diam
+        // menemukan profil yang sudah ada. Idempoten berarti jalankan kedua sukses
+        // dan tidak menambah apa pun.
+        $admin = User::factory()->create(['is_platform_admin' => true]);
+        $node = $this->node();
+
+        $options = [
+            '--platform' => true,
+            '--owner' => $admin->id,
+            '--node' => $node->id,
+            '--type' => 'primary',
+        ];
+
+        $this->artisan('bos:hermes-profile', $options)->assertSuccessful();
+        $this->artisan('bos:hermes-profile', $options)->assertSuccessful();
+
+        $this->assertSame(1, HermesProfile::query()->count());
+        $this->assertSame(1, (int) $node->fresh()->active_profiles);
+    }
+
     public function test_negative_a_platform_profile_owner_must_be_a_platform_admin(): void
     {
         // Profil platform membawa nomor yang mewakili kita. Menautkannya ke user
@@ -137,9 +187,11 @@ class ProvisionProfileCommandTest extends TestCase
     public function test_negative_a_node_at_capacity_is_refused(): void
     {
         // `max_capacity` ada supaya satu node tidak kelebihan profil. Mengabaikannya
-        // membuat kolom itu dekorasi.
+        // membuat kolom itu dekorasi. Node di sini **benar-benar** penuh: satu profil
+        // nyata menempel padanya, bukan hanya kolom penghitung yang bilang begitu.
         $node = $this->node();
-        $node->update(['max_capacity' => 1, 'active_profiles' => 1]);
+        $this->provisionTenant($node);
+        $node->update(['max_capacity' => 1]);
 
         $owner = User::factory()->create();
         $company = Company::factory()->create(['owner_user_id' => $owner->id]);
@@ -147,7 +199,22 @@ class ProvisionProfileCommandTest extends TestCase
         $this->artisan('bos:hermes-profile', ['--company' => $company->id, '--node' => $node->id])
             ->assertFailed();
 
-        $this->assertSame(0, HermesProfile::query()->count());
+        $this->assertSame(1, HermesProfile::query()->count());
+    }
+
+    public function test_negative_a_stale_counter_must_not_make_an_empty_node_look_full(): void
+    {
+        // QA-02: `active_profiles` hanya pernah dinaikkan, tidak pernah diturunkan,
+        // jadi ia menggelembung ke atas seiring waktu. Kalau penjaga kapasitas
+        // mempercayai kolom itu, node yang lowong menolak profil yang sah - dan
+        // kegagalannya muncul jauh dari penyebabnya. Kebenarannya adalah jumlah
+        // profil yang benar-benar menempel pada node, bukan kolomnya.
+        $node = $this->node();
+        $node->update(['max_capacity' => 100, 'active_profiles' => 100]);
+
+        $this->provisionTenant($node);
+
+        $this->assertSame(1, (int) $node->fresh()->active_profiles);
     }
 
     public function test_the_node_profile_counter_follows_the_profiles_it_holds(): void

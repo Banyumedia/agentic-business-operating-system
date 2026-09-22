@@ -49,7 +49,7 @@ class EnforceBotToolScopingTest extends TestCase
             'owner_user_id' => $this->owner->id,
             'type' => 'primary',
             'instance_id' => 'inst_p_1',
-            'webhook_secret_reference' => 'token_primary_secret',
+            'webhook_secret_reference' => HermesProfile::hashBotToken('token_primary_secret'),
             'status' => 'connected',
         ]);
         $this->primaryProfile->companies()->attach($this->company->id);
@@ -60,7 +60,7 @@ class EnforceBotToolScopingTest extends TestCase
             'type' => 'addon',
             'billing_addon_id' => 999,
             'instance_id' => 'inst_a_1',
-            'webhook_secret_reference' => 'token_addon_secret',
+            'webhook_secret_reference' => HermesProfile::hashBotToken('token_addon_secret'),
             'status' => 'connected',
         ]);
         $this->addonProfile->companies()->attach($this->company->id);

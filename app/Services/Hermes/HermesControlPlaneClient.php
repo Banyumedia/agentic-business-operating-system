@@ -113,10 +113,19 @@ class HermesControlPlaneClient
             $payload['profile'] = $profile;
         }
 
+        $timeout = (int) config('hermes.control.timeout', 10);
+
         try {
+            // `withoutRedirecting()` berlaku untuk **semua** method di bawah: tanpa ini
+            // control plane cukup menjawab `302` untuk membuat kita mengulang permintaan
+            // ke host yang ia tunjuk, lengkap dengan header `Authorization` dan badan
+            // permintaan (isi SOUL, keputusan pairing). `isLoopback()` tidak melihat
+            // tujuan sesudah redirect, jadi ia hanya menjaga hop pertama.
             $request = Http::acceptJson()
                 ->withHeaders($headers)
-                ->timeout((int) config('hermes.control.timeout', 10));
+                ->timeout($timeout)
+                ->connectTimeout($timeout)
+                ->withoutRedirecting();
 
             $response = match ($method) {
                 'GET' => $request->get($url, $query),
@@ -130,6 +139,18 @@ class HermesControlPlaneClient
                 "Control plane node {$node->name} tidak dapat dihubungi: ".$exception->getMessage(),
                 0,
                 $exception,
+            );
+        }
+
+        if ($response->redirect()) {
+            // 3xx bukan `failed()`, jadi tanpa cabang ini badan redirect yang kosong
+            // akan dikembalikan sebagai `['raw' => '']` dan pemanggil menganggap
+            // panggilannya berhasil. Redirect di sini berarti alamat control plane
+            // salah atau sedang dibajak; keduanya harus terdengar.
+            $this->logFailure($node, $method, $template, $response->status(), 'redirect tidak diikuti');
+
+            throw new ControlPlaneUnavailable(
+                "Control plane node {$node->name} menjawab redirect, HTTP {$response->status()} ({$method} {$template}). Redirect tidak diikuti."
             );
         }
 

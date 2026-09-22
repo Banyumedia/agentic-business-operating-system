@@ -41,7 +41,7 @@ class TenantBotControllerTest extends TestCase
         ]);
 
         $profile = HermesProfile::factory()->create([
-            'webhook_secret_reference' => 'secret-token',
+            'webhook_secret_reference' => HermesProfile::hashBotToken('secret-token'),
         ]);
         $profile->companies()->attach($company->id);
 
@@ -73,7 +73,7 @@ class TenantBotControllerTest extends TestCase
         ]);
 
         $profile = HermesProfile::factory()->create([
-            'webhook_secret_reference' => 'secret-token',
+            'webhook_secret_reference' => HermesProfile::hashBotToken('secret-token'),
         ]);
         $profile->companies()->attach($company->id);
 
@@ -104,7 +104,7 @@ class TenantBotControllerTest extends TestCase
         ]);
 
         $profile = HermesProfile::factory()->create([
-            'webhook_secret_reference' => 'secret-token',
+            'webhook_secret_reference' => HermesProfile::hashBotToken('secret-token'),
         ]);
         $profile->companies()->attach($company->id);
 
@@ -143,7 +143,7 @@ class TenantBotControllerTest extends TestCase
         ]);
 
         $profile = HermesProfile::factory()->create([
-            'webhook_secret_reference' => 'secret-token',
+            'webhook_secret_reference' => HermesProfile::hashBotToken('secret-token'),
         ]);
         $profile->companies()->attach($companyA->id);
 
@@ -179,7 +179,7 @@ class TenantBotControllerTest extends TestCase
         ]);
 
         $profile = HermesProfile::factory()->create([
-            'webhook_secret_reference' => 'secret-token',
+            'webhook_secret_reference' => HermesProfile::hashBotToken('secret-token'),
         ]);
         $profile->companies()->attach($company->id);
 

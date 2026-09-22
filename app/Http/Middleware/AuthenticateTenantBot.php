@@ -23,7 +23,11 @@ class AuthenticateTenantBot
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $profile = HermesProfile::where('webhook_secret_reference', $token)->first();
+        // Yang tersimpan adalah **hash** token, bukan tokennya (QA-08). Plaintext
+        // sengaja tidak diterima sebagai cadangan: menerima keduanya berarti tidak
+        // mengamankan apa pun, dan baris lama yang masih plaintext memang harus
+        // berhenti bekerja sampai tokennya diterbitkan ulang.
+        $profile = HermesProfile::findByBotToken($token);
         if (! $profile) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

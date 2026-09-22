@@ -18,6 +18,12 @@ use Throwable;
  *    sehat/tidak diambil dari field `status`, bukan dari kode HTTP.
  * 2. `/send` bisa menjawab 200 tanpa mengirim apa pun, jadi badan respons wajib
  *    menyatakan sukses.
+ * 3. Redirect **tidak** diikuti. `isLoopback()` hanya memvalidasi host yang
+ *    terkonfigurasi, sedangkan Guzzle secara bawaan mengulang permintaan ke host
+ *    yang ditunjuk `Location` - badan permintaan ikut serta. Karena badan itu memuat
+ *    nomor tujuan dan isi pesan, bridge yang disusupi atau salah konfigurasi cukup
+ *    menjawab `302` untuk mendapatkannya. Pemeriksaan loopback tanpa ini hanya
+ *    menjaga hop pertama.
  *
  * Kelas ini ada karena aturan "tanpa autentikasi hanya sah untuk loopback" tidak
  * boleh hidup di dua tempat. Ada dua pemanggil dengan kebijakan berbeda - lajur
@@ -53,11 +59,15 @@ class BridgeGateway
         $url = $this->endpoint($apiUrl, (string) config('hermes.delivery.send_path', '/send'));
         $headers = $this->authHeaders($secretReference, $apiUrl);
 
+        $timeout = (int) config('hermes.delivery.timeout', 10);
+
         try {
             $response = Http::asJson()
                 ->acceptJson()
                 ->withHeaders($headers)
-                ->timeout((int) config('hermes.delivery.timeout', 10))
+                ->timeout($timeout)
+                ->connectTimeout($timeout)
+                ->withoutRedirecting()
                 ->post($url, [
                     // Bridge menerima JID WhatsApp, bukan nomor telanjang.
                     'chatId' => $recipient.'@s.whatsapp.net',
@@ -65,6 +75,13 @@ class BridgeGateway
                 ]);
         } catch (Throwable $exception) {
             throw new RuntimeException('Node Hermes tidak dapat dihubungi: '.$exception->getMessage(), 0, $exception);
+        }
+
+        if ($response->redirect()) {
+            // Redirect diperiksa **sebelum** `failed()`, karena 3xx bukan `failed()`:
+            // tanpa cabang ini pengiriman yang tidak pernah terjadi akan lolos ke
+            // pemeriksaan badan dan dilaporkan dengan galat yang salah.
+            throw new RuntimeException('Node Hermes menjawab redirect (HTTP '.$response->status().'); pengiriman dibatalkan.');
         }
 
         if ($response->failed()) {
@@ -95,13 +112,28 @@ class BridgeGateway
             return ['ok' => false, 'status' => null, 'detail' => $exception->getMessage()];
         }
 
+        $timeout = (int) config('hermes.delivery.timeout', 10);
+
         try {
             $response = Http::acceptJson()
                 ->withHeaders($headers)
-                ->timeout((int) config('hermes.delivery.timeout', 10))
+                ->timeout($timeout)
+                ->connectTimeout($timeout)
+                ->withoutRedirecting()
                 ->get($url);
         } catch (Throwable $exception) {
             return ['ok' => false, 'status' => null, 'detail' => $exception->getMessage()];
+        }
+
+        if ($response->redirect()) {
+            // Dilaporkan terpisah dari "HTTP n": bridge yang mengarahkan ke host lain
+            // adalah salah konfigurasi yang perlu dibaca operator apa adanya, bukan
+            // sekadar node tidak sehat.
+            return [
+                'ok' => false,
+                'status' => $response->status(),
+                'detail' => 'Node menjawab redirect (HTTP '.$response->status().'); alamat bridge tidak diikuti.',
+            ];
         }
 
         if (! $response->successful()) {

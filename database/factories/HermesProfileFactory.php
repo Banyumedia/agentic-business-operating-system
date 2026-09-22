@@ -31,7 +31,11 @@ class HermesProfileFactory extends Factory
             'label' => 'Primary Bot',
             'instance_id' => Str::uuid()->toString(),
             'webhook_secret_reference' => 'secret/hermes/webhook-'.Str::random(8),
-            'status' => 'connected',
+            // Produksi hanya pernah menulis `paired`/`unpaired`. Factory yang
+            // mem-default `connected` membuat seluruh suite bergantung pada kosakata
+            // yang tidak ada yang menulisnya, sehingga drift kosakata tersembunyi di
+            // balik test yang hijau. Kosakata factory harus sama dengan produksi.
+            'status' => 'paired',
         ];
     }
 }

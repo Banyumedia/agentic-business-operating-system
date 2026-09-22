@@ -17,7 +17,7 @@ use Tests\TestCase;
  * Empat penjaga, masing-masing menutup cara berbeda untuk melewati daftar-putih:
  *
  * (a) memanggil dashboard dari kelas lain;
- * (b) memanggil klien yang benar tetapi dari permukaan yang salah;
+ * (b) memanggil klien yang benar dari berkas yang tidak berhak;
  * (c) menumpuk izin di daftar-putih yang tidak pernah dipakai siapa pun;
  * (d) menambah path ke daftar terlarang - atau menghapusnya - tanpa terlihat di review.
  */
@@ -55,16 +55,31 @@ class ControlPlaneBoundaryTest extends TestCase
         $this->assertSame([], $violations);
     }
 
-    public function test_tenant_facing_code_cannot_reach_the_control_plane(): void
+    public function test_only_whitelisted_files_may_reach_the_control_plane(): void
     {
         // Akses control plane adalah super-admin-only (D-72 butir 3). Menegakkannya
         // lewat pemeriksaan peran di dalam layar berarti mengandalkan seseorang
         // mengingatnya di layar berikutnya; di sini ia ditegakkan oleh struktur.
+        //
+        // **Kenapa daftar-putih, bukan daftar-hitam permukaan tenant.** Versi
+        // sebelumnya mendaftar tempat-tempat yang dipakai tenant lalu melarang
+        // keduanya di sana. Daftar semacam itu harus **menebak seluruh permukaan
+        // tenant**, dan tebakannya ketinggalan begitu ada direktori baru: komponen
+        // Livewire di akar `app/Livewire/` (Dashboard, Sidebar, CommandPalette,
+        // Lobby), lalu `app/Services/`, `app/Jobs/`, `app/Models/` semuanya lolos.
+        // Karena klien punya metode bernama (`health()`, `status()`,
+        // `systemStats()`), satu komponen akar cukup memanggil
+        // `app(HermesControlPlaneClient::class)->status(...)` tanpa menulis satu pun
+        // path dashboard - sehingga lolos penjaga (a) juga.
+        //
+        // Dibalik, aturannya gagal aman: berkas baru **otomatis dilarang** sampai
+        // seseorang sengaja menambahkannya ke daftar di bawah, dan penambahan itu
+        // muncul di diff sebagai keputusan.
         $forbidden = ['HermesControlPlaneClient', 'ControlPlanePaths'];
         $violations = [];
 
         foreach ($this->sourceFiles(['app']) as $relative => $source) {
-            if (! $this->isTenantFacing($relative)) {
+            if ($this->mayReachControlPlane($relative)) {
                 continue;
             }
 
@@ -117,19 +132,17 @@ class ControlPlaneBoundaryTest extends TestCase
     }
 
     /**
-     * Permukaan yang dipakai tenant: layar modul, pengaturan, dan controller non-admin.
+     * Satu-satunya tempat di `app/` yang boleh menyebut klien control plane.
+     *
+     * Sengaja sempit: perintah ping operator, layar admin (super-admin-only), dan
+     * lajur Hermes itu sendiri. Menambah baris di sini adalah cara **satu-satunya**
+     * memberi akses, jadi tiap penambahan terlihat dan bisa ditanyakan di review.
      */
-    private function isTenantFacing(string $relative): bool
+    private function mayReachControlPlane(string $relative): bool
     {
-        if (str_starts_with($relative, 'app/Livewire/Screens/')
-            || str_starts_with($relative, 'app/Livewire/Settings')
-            || str_starts_with($relative, 'app/Livewire/Public/')
-            || str_starts_with($relative, 'app/Livewire/Widgets/')) {
-            return true;
-        }
-
-        return str_starts_with($relative, 'app/Http/Controllers/')
-            && ! str_starts_with($relative, 'app/Http/Controllers/Admin/');
+        return $relative === 'app/Console/Commands/HermesControlPing.php'
+            || str_starts_with($relative, 'app/Livewire/Admin/')
+            || str_starts_with($relative, 'app/Services/Hermes/');
     }
 
     /**
