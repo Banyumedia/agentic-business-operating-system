@@ -136,6 +136,14 @@ return [
     'control_secrets' => array_filter([
         'control_lokal' => env('HERMES_CONTROL_LOKAL_SECRET'),
         'control_01' => env('HERMES_CONTROL_01_SECRET'),
+        // H-05 (D-75): plugin `dashboard_auth/agenticbos` di repo Hermes,
+        // diaktifkan 2026-09-23. Menutup 8 dari 10 path daftar-putih tanpa
+        // parameter (dua sisanya, `/api/health` dan `/api/status`, memang
+        // sudah publik di Hermes - lihat `ControlPlaneClientTest` dan README
+        // plugin di sisi Hermes untuk kenapa keduanya sengaja tidak
+        // didaftarkan sebagai token route). 7 path berparameter (mis.
+        // `profileSoul()`) belum tertutup - dicatat sebagai H-05b.
+        'agenticbos' => env('HERMES_CONTROL_AGENTICBOS_SECRET'),
     ]),
 
     /*
