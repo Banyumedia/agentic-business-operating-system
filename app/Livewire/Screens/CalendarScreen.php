@@ -5,12 +5,15 @@ namespace App\Livewire\Screens;
 use App\Contracts\CompanyContext;
 use App\Contracts\CompanySettingsStore;
 use App\Contracts\EntityRepository;
+use App\Contracts\PresetSource;
+use App\Services\Booking\BookingService;
 use App\Services\DynamicMenuRegistry;
 use App\Services\Schema\EntitySchema;
 use App\Services\Schema\SchemaPresenter;
 use DateTimeImmutable;
 use DateTimeZone;
 use Illuminate\Contracts\View\View;
+use InvalidArgumentException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Throwable;
@@ -23,10 +26,23 @@ use Throwable;
  *
  * Waktu selalu ditampilkan pada offset yang tercatat di data, bukan timezone
  * server - pelajaran dari defect widget yang menggeser jam operasional 7 jam.
+ *
+ * Pembuatan booking dari klik slot (MP-07) dual-path seperti `CashierScreen`
+ * (MP-02): jalur JSON tetap menulis lewat `EntityRepository::save()`, yang
+ * SUDAH menegakkan `no_overlap` schema (`bookings.schema.json`) secara
+ * generik di `JsonEntityRepository::assertNoOverlap()` - tidak perlu servis
+ * tambahan di jalur ini. Jalur Eloquent melewati `BookingService::create()`
+ * supaya aturan tabrakan jadwal (`assertNoOverlap()`) hanya hidup di satu
+ * tempat dan tidak ditulis ulang di layar (larangan eksplisit acceptance).
+ * Hanya berlaku untuk entitas `bookings` sendiri - layar ini melayani entitas
+ * lain juga (mis. `resources`), dan entitas selain `bookings` tidak menulis
+ * apa pun dari sini.
  */
 class CalendarScreen extends Component
 {
     private const VIEWS = ['day', 'week'];
+
+    private const BOOKABLE_ENTITY = 'bookings';
 
     #[Locked]
     public string $module;
@@ -41,12 +57,156 @@ class CalendarScreen extends Component
 
     public string $anchor = '';
 
+    public bool $creating = false;
+
+    /** @var array<string, mixed> */
+    public array $form = [];
+
+    public ?string $notice = null;
+
+    public ?string $failure = null;
+
     public function mount(string $module, ?string $submodule = null): void
     {
         $this->module = $module;
         $this->submodule = $submodule;
         $this->company = app(CompanyContext::class)->current();
         $this->anchor = $this->businessToday();
+    }
+
+    /** Membuka form pembuatan booking dari klik slot; tidak menulis apa pun. */
+    public function requestCreate(string $date): void
+    {
+        $this->resetFeedback();
+
+        if ($this->definition()['entity'] !== self::BOOKABLE_ENTITY) {
+            return;
+        }
+
+        $this->creating = true;
+        $this->form = [
+            'resource_id' => null,
+            'starts_at' => $date.'T09:00',
+            'ends_at' => $date.'T10:00',
+        ];
+    }
+
+    public function cancelCreate(): void
+    {
+        $this->creating = false;
+        $this->form = [];
+        $this->resetFeedback();
+    }
+
+    public function create(): void
+    {
+        $this->resetFeedback();
+
+        if ($this->definition()['entity'] !== self::BOOKABLE_ENTITY) {
+            $this->failure = 'Pembuatan janji hanya tersedia untuk kalender booking.';
+
+            return;
+        }
+
+        $resourceId = $this->form['resource_id'] ?? null;
+        if ($resourceId === null || $resourceId === '') {
+            $this->failure = 'Pilih sumber daya untuk janji ini.';
+
+            return;
+        }
+
+        $startsAt = (string) ($this->form['starts_at'] ?? '');
+        $endsAt = (string) ($this->form['ends_at'] ?? '');
+        $start = $this->parseInBusinessTimezone($startsAt);
+        $end = $this->parseInBusinessTimezone($endsAt);
+
+        if ($start === null || $end === null) {
+            $this->failure = 'Waktu mulai dan selesai wajib diisi dengan benar.';
+
+            return;
+        }
+
+        if ($end <= $start) {
+            $this->failure = 'Waktu selesai harus setelah waktu mulai.';
+
+            return;
+        }
+
+        if ($start < new DateTimeImmutable(now()->setTimezone($this->businessTimezone())->toIso8601String())) {
+            $this->failure = 'Tidak dapat membuat janji pada waktu yang sudah lewat.';
+
+            return;
+        }
+
+        if (app(EntityRepository::class)->for($this->company(), 'resources')->find((int) $resourceId) === null) {
+            $this->failure = 'Sumber daya tidak ditemukan pada usaha ini.';
+
+            return;
+        }
+
+        try {
+            if (config('datasource.driver') === 'eloquent') {
+                // Format `Y-m-d H:i:s` (spasi), BUKAN ISO `T` - `dateTime`
+                // Eloquent/SQLite menyimpan dengan spasi, dan
+                // `BookingService::assertNoOverlap()` membandingkan sebagai
+                // string leksikal lewat query builder. Format campuran (`T`
+                // dikirim, spasi tersimpan) membuat perbandingan leksikal
+                // salah tanpa exception apa pun - cacat nyata yang ketahuan
+                // lewat test tabrakan jadwal jalur Eloquent, bukan diasumsikan.
+                app(BookingService::class)->create([
+                    'company_id' => (int) $this->company(),
+                    'resource_id' => (int) $resourceId,
+                    'starts_at' => $start->format('Y-m-d H:i:s'),
+                    'ends_at' => $end->format('Y-m-d H:i:s'),
+                    'stage' => $this->initialStage(),
+                ]);
+            } else {
+                // Jalur JSON menyimpan apa adanya dan membandingkan lewat
+                // `strtotime()` di `JsonEntityRepository::assertNoOverlap()`,
+                // yang menerima kedua format - ISO tetap dipakai di sini
+                // supaya konsisten dengan `starts_at`/`ends_at` schema
+                // (`format: date-time`).
+                $record = [
+                    'resource_id' => (int) $resourceId,
+                    'starts_at' => $start->format('Y-m-d\TH:i:s'),
+                    'ends_at' => $end->format('Y-m-d\TH:i:s'),
+                ];
+
+                $stage = $this->initialStage();
+                if ($stage !== null) {
+                    $record['stage'] = $stage;
+                }
+
+                $this->repository()->save($record);
+            }
+        } catch (InvalidArgumentException $exception) {
+            $this->failure = $exception->getMessage();
+
+            return;
+        }
+
+        $this->creating = false;
+        $this->form = [];
+        $this->notice = 'Janji tersimpan dan langsung tampil di kalender.';
+    }
+
+    /** Tahap awal dari alur kerja preset bila entitas ini memilikinya. */
+    private function initialStage(): ?string
+    {
+        try {
+            $preset = app(PresetSource::class)->find(app(CompanyContext::class)->preset());
+            $stages = $preset['workflows'][self::BOOKABLE_ENTITY]['stages'] ?? null;
+
+            return is_array($stages) ? ($stages[0]['code'] ?? null) : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function resetFeedback(): void
+    {
+        $this->notice = null;
+        $this->failure = null;
     }
 
     public function setView(string $view): void
@@ -143,13 +303,35 @@ class CalendarScreen extends Component
             usort($days[$key]['slots'], static fn (array $left, array $right): int => $left['sort'] <=> $right['sort']);
         }
 
+        $isBookable = $definition['entity'] === self::BOOKABLE_ENTITY;
+
         return view('livewire.screens.calendar', [
             'label' => $definition['label'],
             'term' => $definition['term'] ?? $definition['label'],
             'entity' => $definition['entity'],
             'days' => array_values($days),
             'rangeLabel' => $from->format('d M Y').($from->format('Y-m-d') === $to->format('Y-m-d') ? '' : ' - '.$to->format('d M Y')),
+            'isBookable' => $isBookable,
+            'resourceOptions' => $isBookable ? $this->resourceOptions() : [],
         ]);
+    }
+
+    /** @return array<int, string> */
+    private function resourceOptions(): array
+    {
+        $options = [];
+
+        foreach (app(EntityRepository::class)->for($this->company(), 'resources')->all() as $resource) {
+            $id = (int) ($resource['id'] ?? 0);
+            if ($id === 0) {
+                continue;
+            }
+
+            $name = $resource['name'] ?? null;
+            $options[$id] = is_string($name) && trim($name) !== '' ? $name : '#'.$id;
+        }
+
+        return $options;
     }
 
     /** @return array{0: DateTimeImmutable, 1: DateTimeImmutable} */
@@ -181,6 +363,24 @@ class CalendarScreen extends Component
 
         try {
             return new DateTimeImmutable($value);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Input `datetime-local` tidak membawa offset - dibaca sebagai jam usaha
+     * (bukan UTC/jam server) supaya perbandingan "sudah lewat" konsisten
+     * dengan `businessToday()`/`businessTimezone()` yang dipakai render().
+     */
+    private function parseInBusinessTimezone(string $value): ?DateTimeImmutable
+    {
+        if ($value === '') {
+            return null;
+        }
+
+        try {
+            return new DateTimeImmutable($value, $this->businessTimezone());
         } catch (Throwable) {
             return null;
         }

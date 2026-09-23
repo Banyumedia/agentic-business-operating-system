@@ -52,6 +52,18 @@
         </div>
     </header>
 
+    @if ($notice !== null)
+        <p role="status" class="rounded-[var(--erp-radius-md)] border border-[var(--erp-success)] bg-[var(--erp-success-soft)] px-4 py-3 text-sm text-[var(--erp-text-primary)]">
+            {{ $notice }}
+        </p>
+    @endif
+
+    @if ($failure !== null)
+        <p role="alert" class="rounded-[var(--erp-radius-md)] border border-[var(--erp-danger)] bg-[var(--erp-danger-soft)] px-4 py-3 text-sm text-[var(--erp-text-primary)]">
+            {{ $failure }}
+        </p>
+    @endif
+
     <ol role="list" class="grid gap-3 transition-opacity duration-200 {{ count($days) > 1 ? 'lg:grid-cols-7' : '' }}" wire:loading.class="opacity-50 pointer-events-none" wire:target="setView, shift, today">
         @foreach ($days as $day)
             <li class="flex flex-col rounded-[var(--erp-radius-lg)] border bg-[var(--erp-bg-secondary)] {{ $day['is_today'] ? 'border-[var(--erp-accent)]' : 'border-[var(--erp-border)]' }}">
@@ -59,6 +71,13 @@
                     <span class="text-sm font-semibold text-[var(--erp-text-primary)]">{{ $day['label'] }}</span>
                     <span class="font-[family-name:var(--erp-font-mono)] tabular-nums text-xs text-[var(--erp-text-muted)]">{{ count($day['slots']) }}</span>
                 </h2>
+
+                @if ($isBookable)
+                    <button type="button" wire:click="requestCreate('{{ $day['date'] }}')"
+                        class="mx-2 mt-2 inline-flex min-h-9 items-center justify-center rounded-[var(--erp-radius-sm)] border border-dashed border-[var(--erp-border-strong)] text-xs font-semibold text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                        + Tambah janji
+                    </button>
+                @endif
 
                 <div class="flex flex-1 flex-col gap-2 p-2">
                     @forelse ($day['slots'] as $slot)
@@ -89,4 +108,60 @@
             </li>
         @endforeach
     </ol>
+
+    @if ($creating)
+        <div class="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_srgb,var(--erp-text-primary)_60%,transparent)] p-4 sm:items-center">
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="calendar-create-title"
+                x-data="{ opener: document.activeElement }"
+                x-trap.inert.noscroll="true"
+                x-init="$nextTick(() => $refs.resource?.focus())"
+                x-on:keydown.escape.window="const target = opener; $wire.cancelCreate().then(() => target?.focus())"
+                class="w-full max-w-md rounded-[var(--erp-radius-lg)] border border-[var(--erp-border-strong)] bg-[var(--erp-bg-elevated)] p-6 shadow-[var(--erp-card-shadow)] focus:outline-none"
+                tabindex="-1"
+            >
+                <h2 id="calendar-create-title" class="text-lg font-semibold text-[var(--erp-text-primary)]">Tambah janji</h2>
+
+                <form wire:submit="create" class="mt-4 space-y-4">
+                    <div class="space-y-1.5">
+                        <label for="calendar-resource" class="block text-sm font-medium text-[var(--erp-text-primary)]">Sumber daya</label>
+                        <select id="calendar-resource" x-ref="resource" wire:model="form.resource_id" required
+                            class="min-h-11 w-full rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-inset)] px-3 py-2 text-sm text-[var(--erp-text-primary)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                            <option value="">Pilih sumber daya</option>
+                            @foreach ($resourceOptions as $id => $name)
+                                <option value="{{ $id }}">{{ $name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="space-y-1.5">
+                            <label for="calendar-starts-at" class="block text-sm font-medium text-[var(--erp-text-primary)]">Mulai</label>
+                            <input id="calendar-starts-at" type="datetime-local" wire:model="form.starts_at" required
+                                class="min-h-11 w-full rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-inset)] px-3 py-2 text-sm text-[var(--erp-text-primary)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]" />
+                        </div>
+                        <div class="space-y-1.5">
+                            <label for="calendar-ends-at" class="block text-sm font-medium text-[var(--erp-text-primary)]">Selesai</label>
+                            <input id="calendar-ends-at" type="datetime-local" wire:model="form.ends_at" required
+                                class="min-h-11 w-full rounded-[var(--erp-radius-md)] border border-[var(--erp-border)] bg-[var(--erp-bg-inset)] px-3 py-2 text-sm text-[var(--erp-text-primary)] focus:border-[var(--erp-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]" />
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap justify-end gap-3 border-t border-[var(--erp-border)] pt-4">
+                        <button type="button" x-on:click="const target = opener; $wire.cancelCreate().then(() => target?.focus())"
+                            class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] border border-[var(--erp-border-strong)] px-4 text-sm font-semibold text-[var(--erp-text-secondary)] hover:bg-[var(--erp-bg-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]">
+                            Batal
+                        </button>
+                        <button type="submit" wire:loading.attr="disabled"
+                            class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-md)] bg-[var(--erp-accent)] px-4 text-sm font-semibold text-[var(--erp-text-inverse)] hover:bg-[var(--erp-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60">
+                            <span wire:loading.remove>Simpan</span>
+                            <span wire:loading>Menyimpan…</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
 </div>
