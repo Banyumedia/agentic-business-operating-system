@@ -234,6 +234,13 @@ class DynamicMenuRegistry
                 'items' => [
                     $this->item(null, ['term' => 'contacts', 'prefix' => 'Daftar '], '/app/contacts', 'list', 'contacts'),
                     $this->item('deals', ['term' => 'deals', 'prefix' => 'Pipeline '], '/app/contacts/deals', 'pipeline', 'deals', ['deals'], [], true, 'deals'),
+                    // MP-00: seam untuk MP-01 (pola layar `detail`). `navigation:
+                    // false` karena DetailScreen belum ada - screenComponent()
+                    // jatuh ke kartu kontrak sampai MP-01 mendarat. Segmen ini
+                    // BUKAN rute per-record (registry tidak punya konsep segmen
+                    // berparameter ID); bentuk URL detail sungguhan adalah
+                    // keputusan MP-01, bukan ditebak di sini.
+                    $this->item('detail', ['term' => 'contacts', 'prefix' => 'Detail '], '/app/contacts/detail', 'detail', 'contacts', [], [], false),
                 ],
             ],
             'projects' => [
@@ -252,6 +259,8 @@ class DynamicMenuRegistry
                     // karena seluruh angkanya dibaca dari sana.
                     $this->item('margin', 'Laba-Rugi', '/app/projects/margin', 'margin', 'projects', ['projects', 'finance.cashbook']),
                     $this->item('retention', 'Retensi', '/app/projects/retention', 'list', 'project_milestones', ['construction.retention']),
+                    // MP-00: seam untuk MP-01, sama seperti contacts di atas.
+                    $this->item('detail', ['term' => 'projects', 'prefix' => 'Detail '], '/app/projects/detail', 'detail', 'projects', [], [], false),
                 ],
             ],
             'quotations' => [
@@ -283,6 +292,11 @@ class DynamicMenuRegistry
                     $this->item('movements', 'Mutasi Stok', '/app/inventory/movements', 'list', 'item_batches'),
                     $this->item('batches', 'Batch & Kedaluwarsa', '/app/inventory/batches', 'list', 'item_batches', ['inventory.batch_expiry']),
                     $this->item('bom', 'Bill of Materials', '/app/inventory/bom', 'list', 'items', ['inventory.bom']),
+                    // MP-00: seam untuk MP-10 (penyesuaian stok fisik lewat
+                    // StockService). `navigation: false` - layar aksinya belum
+                    // ada, screenComponent() jatuh ke kartu kontrak sampai itu
+                    // mendarat.
+                    $this->item('adjustment', 'Penyesuaian Stok', '/app/inventory/adjustment', 'list', 'item_batches', [], [], false),
                 ],
             ],
             'pos' => [
@@ -295,6 +309,9 @@ class DynamicMenuRegistry
                     $this->item('history', 'Riwayat Transaksi', '/app/pos/history', 'list', 'orders'),
                     $this->item('tables', ['term' => 'orders', 'prefix' => 'Meja & '], '/app/pos/tables', 'board', 'orders', ['pos.tables']),
                     $this->item('prescriptions', 'Resep', '/app/pos/prescriptions', 'list', 'orders', ['pharmacy.prescription']),
+                    // MP-00: seam untuk MP-01 (detail order), sama seperti
+                    // contacts/projects di atas.
+                    $this->item('detail', ['term' => 'orders', 'prefix' => 'Detail '], '/app/pos/detail', 'detail', 'orders', [], [], false),
                 ],
             ],
             'accounting' => [
