@@ -7,6 +7,7 @@ use App\Contracts\EntityRepository;
 use App\Contracts\PresetSource;
 use App\Services\BusinessIdentityStore;
 use App\Services\DynamicMenuRegistry;
+use App\Services\OrderService;
 use App\Services\Schema\EntitySchema;
 use App\Services\Schema\SchemaPresenter;
 use App\Services\TaxRateService;
@@ -15,6 +16,7 @@ use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -195,10 +197,6 @@ class CashierScreen extends Component
 
     private function checkout(): void
     {
-        $entity = $this->definition()['entity'];
-        $orders = app(EntityRepository::class)->for($this->company(), $entity);
-        $identity = app(BusinessIdentityStore::class)->read($this->company());
-
         if (! in_array($this->paymentMethod, ['cash', 'transfer', 'qris'], true)) {
             $this->failure = 'Metode pembayaran tidak valid.';
 
@@ -207,51 +205,12 @@ class CashierScreen extends Component
 
         try {
             $lines = $this->authoritativeLines();
-            $totals = $this->totals($lines);
+            $orderNo = $this->orderNumber();
 
-            $order = [
-                'business_identity_id' => $identity['id'],
-                'order_no' => now()->format('ymd').'-'.mb_strtoupper(substr(str_replace('-', '', $this->checkoutToken), 0, 8)),
-                'subtotal' => $totals['subtotal'],
-                'discount_amount' => 0,
-                'dpp' => $totals['dpp'],
-                'tax_amount' => $totals['tax'],
-                'grand_total' => $totals['grand_total'],
-                'payment_method' => $this->paymentMethod,
-                'paid_at' => now()->toIso8601String(),
-                'source' => 'pos',
-                'external_ref' => $this->checkoutToken,
-            ];
-
-            $stage = $this->initialStage($entity);
-            if ($stage !== null) {
-                $order['stage'] = $stage;
-            }
-
-            $children = array_map(static function (array $line): array {
-                unset($line['_source_active']);
-
-                return $line;
-            }, $lines);
-
-            $result = $orders->saveAggregate(
-                $order,
-                'order_lines',
-                'order_id',
-                $children,
-                'external_ref',
-                array_map(static fn (array $line): array => [
-                    'entity' => 'items',
-                    'id' => $line['item_id'],
-                    'expected' => [
-                        'name' => $line['description'],
-                        'price' => $line['unit_price'],
-                        'is_active' => $line['_source_active'],
-                    ],
-                ], $lines),
-            );
-            $saved = $result['parent'];
-        } catch (InvalidArgumentException $exception) {
+            $orderNo = config('datasource.driver') === 'eloquent'
+                ? $this->checkoutViaOrderService($lines, $orderNo)
+                : $this->checkoutViaAggregate($lines, $orderNo);
+        } catch (InvalidArgumentException|RuntimeException $exception) {
             $this->failure = $exception->getMessage();
 
             return;
@@ -259,8 +218,107 @@ class CashierScreen extends Component
 
         $this->cart = [];
         $this->checkoutToken = (string) Str::uuid();
-        $this->notice = 'Transaksi '.$saved['order_no'].' tersimpan.';
+        $this->notice = 'Transaksi '.$orderNo.' tersimpan.';
         $this->cancelAction();
+    }
+
+    private function orderNumber(): string
+    {
+        return now()->format('ymd').'-'.mb_strtoupper(substr(str_replace('-', '', $this->checkoutToken), 0, 8));
+    }
+
+    /**
+     * Jalur JSON (D-42): tetap `saveAggregate()` seperti sebelumnya, tidak
+     * diubah sama sekali. `StockService`/`JournalService` murni Eloquent
+     * (menulis model langsung dalam satu transaksi database) - tidak ada
+     * jalur JSON yang setara untuk `stock_movements`/`accounting_journals`
+     * (keduanya tidak punya schema JSON, keduanya tabel SQL saja). Menutup
+     * batas ini sepenuhnya butuh menulis ulang kedua servis untuk
+     * `EntityRepository`, di luar file target task ini (`CashierScreen`,
+     * `OrderService`, `StockService`) - dicatat eksplisit sebagai batas
+     * (MP-02), bukan diselundupkan sebagai "sudah beres".
+     *
+     * @param  list<array<string, mixed>>  $lines
+     */
+    private function checkoutViaAggregate(array $lines, string $orderNo): string
+    {
+        $entity = $this->definition()['entity'];
+        $orders = app(EntityRepository::class)->for($this->company(), $entity);
+        $identity = app(BusinessIdentityStore::class)->read($this->company());
+        $totals = $this->totals($lines);
+
+        $order = [
+            'business_identity_id' => $identity['id'],
+            'order_no' => $orderNo,
+            'subtotal' => $totals['subtotal'],
+            'discount_amount' => 0,
+            'dpp' => $totals['dpp'],
+            'tax_amount' => $totals['tax'],
+            'grand_total' => $totals['grand_total'],
+            'payment_method' => $this->paymentMethod,
+            'paid_at' => now()->toIso8601String(),
+            'source' => 'pos',
+            'external_ref' => $this->checkoutToken,
+        ];
+
+        $stage = $this->initialStage($entity);
+        if ($stage !== null) {
+            $order['stage'] = $stage;
+        }
+
+        $children = array_map(static function (array $line): array {
+            unset($line['_source_active']);
+
+            return $line;
+        }, $lines);
+
+        $result = $orders->saveAggregate(
+            $order,
+            'order_lines',
+            'order_id',
+            $children,
+            'external_ref',
+            array_map(static fn (array $line): array => [
+                'entity' => 'items',
+                'id' => $line['item_id'],
+                'expected' => [
+                    'name' => $line['description'],
+                    'price' => $line['unit_price'],
+                    'is_active' => $line['_source_active'],
+                ],
+            ], $lines),
+        );
+
+        return (string) $result['parent']['order_no'];
+    }
+
+    /**
+     * Jalur Eloquent (MP-02): checkout melewati `OrderService` (order+lines),
+     * `StockService` (stok berkurang, `stock_movements` tercatat), dan
+     * `JournalService` (jurnal terposting bila `finance.accounting` aktif) -
+     * bukan menulis agregat sendiri seperti sebelumnya. Seluruh orkestrasi
+     * (transaksi database, idempotensi, urutan panggilan servis) hidup di
+     * `OrderService::checkoutPos()`, BUKAN di sini - `CashierScreen` tidak
+     * boleh memuat literal akses basis data maupun logika domain langsung
+     * (dijaga `test_cashier_sources_have_no_industry_branch_or_direct_database_access`).
+     *
+     * @param  list<array<string, mixed>>  $lines
+     */
+    private function checkoutViaOrderService(array $lines, string $orderNo): string
+    {
+        $identity = app(BusinessIdentityStore::class)->read($this->company());
+
+        $order = app(OrderService::class)->checkoutPos([
+            'company_id' => $this->company(),
+            'business_identity_id' => $identity['id'],
+            'order_no' => $orderNo,
+            'external_ref' => $this->checkoutToken,
+            'stage' => $this->initialStage($this->definition()['entity']),
+            'payment_method' => $this->paymentMethod,
+            'lines' => $lines,
+        ]);
+
+        return $order->order_no;
     }
 
     /**
@@ -324,12 +382,18 @@ class CashierScreen extends Component
             }
 
             $price = $item['price'] ?? null;
-            if (! is_int($price) && ! is_float($price)) {
+            // MP-02: jalur Eloquent mengembalikan kolom `decimal:2` sebagai
+            // STRING numerik ("75000.00"), bukan int/float - perilaku
+            // `toArray()` bawaan Laravel untuk cast decimal, bukan cacat
+            // data. Jalur JSON selalu mengirim int/float asli. `is_numeric()`
+            // menerima keduanya sekaligus menolak nilai yang benar-benar
+            // rusak (string bukan angka, array, null).
+            if (! is_int($price) && ! is_float($price) && ! (is_string($price) && is_numeric($price))) {
                 throw new InvalidArgumentException('Harga barang atau layanan tidak valid.');
             }
 
             $qty = $this->normalizedQuantity($qty);
-            $price = $this->normalizedMoney($price);
+            $price = $this->normalizedMoney(is_string($price) ? (float) $price : $price);
             $lines[] = [
                 'item_id' => $itemId,
                 'description' => (string) ($item['name'] ?? ('#'.$itemId)),

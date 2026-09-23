@@ -120,6 +120,61 @@ class StockServiceTest extends TestCase
         $this->stockService->deductStock($item, 10, 'sale');
     }
 
+    public function test_negative_untracked_item_fails_closed_on_insufficient_stock(): void
+    {
+        // MP-02: item TANPA track_batches sebelumnya bisa jatuh negatif tanpa
+        // satu galat pun - tidak ada lantai stok sama sekali.
+        $item = Item::create([
+            'company_id' => $this->companyA->id,
+            'name' => 'Sabun Cuci',
+            'track_batches' => false,
+        ]);
+
+        $this->stockService->addStock($item, 5, 'purchase');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Insufficient stock');
+
+        $this->stockService->deductStock($item, 10, 'sale');
+    }
+
+    public function test_negative_untracked_item_rejection_leaves_no_partial_movement(): void
+    {
+        $item = Item::create([
+            'company_id' => $this->companyA->id,
+            'name' => 'Sabun Cuci',
+            'track_batches' => false,
+        ]);
+
+        $this->stockService->addStock($item, 5, 'purchase');
+
+        try {
+            $this->stockService->deductStock($item, 10, 'sale');
+            $this->fail('Deduksi harus ditolak sebelum menulis movement apa pun.');
+        } catch (RuntimeException) {
+            // diharapkan
+        }
+
+        $this->assertEquals(0, StockMovement::where('item_id', $item->id)->where('direction', 'out')->count());
+        $this->assertEquals(5, StockMovement::where('item_id', $item->id)->where('direction', 'in')->sum('qty'));
+    }
+
+    public function test_untracked_item_with_sufficient_stock_deducts_normally(): void
+    {
+        // Kebalikan dari test negatif di atas: stok cukup HARUS tetap berhasil,
+        // supaya pemeriksaan lantai stok tidak diam-diam menolak semua orang.
+        $item = Item::create([
+            'company_id' => $this->companyA->id,
+            'name' => 'Sabun Cuci',
+            'track_batches' => false,
+        ]);
+
+        $this->stockService->addStock($item, 10, 'purchase');
+        $this->stockService->deductStock($item, 4, 'sale');
+
+        $this->assertEquals(4, StockMovement::where('item_id', $item->id)->where('direction', 'out')->sum('qty'));
+    }
+
     public function test_bom_produce_consumes_components_and_adds_product()
     {
         $product = Item::create([

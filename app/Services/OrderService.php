@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
+use App\Models\ChartOfAccount;
+use App\Models\Item;
 use App\Models\Order;
 use App\Models\OrderLine;
 use App\Services\Accounting\JournalService;
 use App\Services\Workflow\WorkflowEngine;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use RuntimeException;
 use Throwable;
 
 class OrderService
@@ -15,7 +18,9 @@ class OrderService
     public function __construct(
         private readonly TaxRateService $taxRateService,
         private readonly JournalService $journalService,
-        private readonly WorkflowEngine $workflowEngine
+        private readonly WorkflowEngine $workflowEngine,
+        private readonly StockService $stockService,
+        private readonly FeatureResolver $features,
     ) {}
 
     public function createOrder(array $data): Order
@@ -150,5 +155,107 @@ class OrderService
         }
 
         return 'open';
+    }
+
+    /**
+     * Checkout kasir lengkap (MP-02): order+lines, stok berkurang lewat
+     * `StockService` (`stock_movements` tercatat), jurnal terposting lewat
+     * `JournalService` bila `finance.accounting` aktif - satu transaksi,
+     * semua-atau-tidak-sama-sekali.
+     *
+     * Idempotensi mengikuti `createOrder()`: replay `external_ref` yang sama
+     * mengembalikan order yang sama TANPA mengulang stok/jurnal
+     * (`Order::wasRecentlyCreated` membedakan "baru dibuat" dari "replay") -
+     * klik dua kali tidak boleh mengurangi stok dua kali maupun memposting
+     * jurnal dua kali untuk transaksi yang sama.
+     *
+     * @param  array{company_id: int|string, business_identity_id: int, order_no: string, external_ref: string, stage: string|null, payment_method: string, lines: list<array<string, mixed>>}  $data
+     */
+    public function checkoutPos(array $data): Order
+    {
+        return DB::transaction(function () use ($data): Order {
+            $order = $this->createOrder([
+                'company_id' => $data['company_id'],
+                'business_identity_id' => $data['business_identity_id'],
+                'order_no' => $data['order_no'],
+                'source' => 'pos',
+                'external_ref' => $data['external_ref'],
+                'stage' => $data['stage'],
+                'lines' => array_map(static fn (array $line): array => [
+                    'item_id' => $line['item_id'],
+                    'description' => $line['description'],
+                    'qty' => $line['qty'],
+                    'unit_price' => $line['unit_price'],
+                    'discount_amount' => $line['discount_amount'] ?? 0,
+                ], $data['lines']),
+            ]);
+
+            if (! $order->wasRecentlyCreated) {
+                return $order;
+            }
+
+            $order->forceFill([
+                'payment_method' => $data['payment_method'],
+                'paid_at' => now(),
+            ])->save();
+
+            foreach ($data['lines'] as $line) {
+                $item = Item::query()
+                    ->where('company_id', $data['company_id'])
+                    ->find($line['item_id']);
+
+                if ($item === null) {
+                    throw new InvalidArgumentException('Barang atau layanan tidak lagi tersedia.');
+                }
+
+                $this->stockService->deductStock($item, (float) $line['qty'], 'pos_sale', $order);
+            }
+
+            $this->postPosSalesJournal($order);
+
+            return $order;
+        });
+    }
+
+    private function postPosSalesJournal(Order $order): void
+    {
+        if (! $this->features->enabled('finance.accounting')) {
+            return;
+        }
+
+        $amount = (float) $order->grand_total;
+        if ($amount <= 0) {
+            return;
+        }
+
+        $accounts = ChartOfAccount::query()
+            ->where('company_id', $order->company_id)
+            ->whereIn('account_code', ['1000', '4000'])
+            ->pluck('id', 'account_code');
+
+        if (! isset($accounts['1000'], $accounts['4000'])) {
+            throw new RuntimeException('Akun kas atau pendapatan belum dikonfigurasi. Hubungi owner untuk menyiapkan Bagan Akun.');
+        }
+
+        $this->journalService->post([
+            'company_id' => (int) $order->company_id,
+            'journal_number' => 'POS-'.$order->id.'-'.now()->format('YmdHis'),
+            'transaction_date' => now()->toDateString(),
+            'reference' => $order->order_no,
+            'description' => 'Auto journal dari penjualan kasir',
+        ], [
+            [
+                'account_id' => (int) $accounts['1000'],
+                'debit' => $amount,
+                'credit' => 0,
+                'description' => 'Kas dari penjualan '.$order->order_no,
+            ],
+            [
+                'account_id' => (int) $accounts['4000'],
+                'debit' => 0,
+                'credit' => $amount,
+                'description' => 'Pendapatan penjualan '.$order->order_no,
+            ],
+        ]);
     }
 }

@@ -57,6 +57,15 @@ class StockService
 
     /**
      * Deduct stock from an item, using FEFO for tracked batches.
+     *
+     * MP-02: item TANPA `track_batches` sebelumnya tidak punya lantai stok
+     * sama sekali - `recordDeduction()` menulis `stock_movements` tanpa
+     * pernah memeriksa apakah stoknya cukup, jadi qty bisa jatuh negatif
+     * tanpa satu galat pun. Item yang dilacak batch sudah aman lewat
+     * `deductFeFo()` (menjumlah `qty_on_hand` dengan `lockForUpdate`); item
+     * biasa kini diberi pemeriksaan yang setara: saldo dihitung dari
+     * `stock_movements` (in - out) dengan kunci baris yang sama, ditolak
+     * SEBELUM movement ditulis bila tidak cukup.
      */
     public function deductStock(Item $item, float $qty, string $reason, ?Model $reference = null): void
     {
@@ -68,9 +77,25 @@ class StockService
             if ($item->track_batches) {
                 $this->deductFeFo($item, $qty, $reason, $reference);
             } else {
+                $this->assertSufficientUntrackedStock($item, $qty);
                 $this->recordDeduction($item, null, $qty, $reason, $reference);
             }
         });
+    }
+
+    /**
+     * @throws RuntimeException bila saldo (in - out) kurang dari $qty.
+     */
+    private function assertSufficientUntrackedStock(Item $item, float $qty): void
+    {
+        $available = (float) StockMovement::where('item_id', $item->id)
+            ->lockForUpdate()
+            ->selectRaw("COALESCE(SUM(CASE WHEN direction = 'in' THEN qty ELSE -qty END), 0) as balance")
+            ->value('balance');
+
+        if ($available < $qty) {
+            throw new RuntimeException("Insufficient stock for item [{$item->id}]. Required: {$qty}, Available: {$available}");
+        }
     }
 
     /**

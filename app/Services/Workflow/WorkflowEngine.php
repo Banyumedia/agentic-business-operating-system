@@ -25,7 +25,16 @@ class WorkflowEngine
     public const EFFECT_CAPABILITIES = [
         'approval.request' => 'approval_flow',
         'bookings.late_fee.compute' => 'bookings.deposit',
-        'journal.post' => 'finance.cashbook',
+        // MP-02: sebelumnya 'finance.cashbook' - tidak konsisten dengan
+        // gerbang jurnal/COA lain (`DynamicMenuRegistry` menggerbang
+        // `coa`/`journals`/`journal-lines` di 'finance.accounting'). Efek ini
+        // memposting jurnal double-entry lewat `JournalService`, jadi
+        // kapabilitasnya harus sama dengan yang menggerbang jurnal di tempat
+        // lain. Tidak ada preset yang menyalakan salah satu tanpa yang lain
+        // hari ini (diverifikasi: seluruh 40 preset menyalakan keduanya
+        // sekaligus atau tidak sama sekali), jadi ini bukan perbaikan regresi
+        // yang terlihat - murni konsistensi sebelum keduanya bisa dipisah.
+        'journal.post' => 'finance.accounting',
     ];
 
     /** @var array<string, WorkflowEffect> */
