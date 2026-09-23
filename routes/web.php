@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminImpersonationController;
 use App\Http\Controllers\App\GroupReportController;
 use App\Http\Controllers\App\InvoiceDocumentController;
 use App\Http\Controllers\App\ModuleController;
+use App\Http\Controllers\App\OrderDocumentController;
 use App\Http\Middleware\EnsureCompanyAccess;
 use App\Http\Middleware\EnsureCompanyContext;
 use App\Http\Middleware\EnsureFeatureEnabled;
@@ -95,6 +96,13 @@ Route::middleware(['auth', SetCurrentCompany::class, EnsureCompanyAccess::class]
         Route::get('/app/invoices/{invoice}/print', [InvoiceDocumentController::class, 'show'])
             ->whereNumber('invoice')
             ->name('app.invoice.print');
+
+        // Struk POS siap cetak (MP-03). Pola yang sama dengan cetak tagihan
+        // di atas - tiga segmen tidak cocok dengan wildcard modul, jadi
+        // literal dan didaftarkan lebih dulu.
+        Route::get('/app/pos/{order}/print', [OrderDocumentController::class, 'show'])
+            ->whereNumber('order')
+            ->name('app.order.print');
 
         // Layar detail generik (MP-01). Tiga segmen ({module}/detail/{id}) juga
         // tidak cocok dengan `{module}/{submodule?}`, jadi harus didaftarkan
