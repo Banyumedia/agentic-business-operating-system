@@ -158,6 +158,24 @@ class StockService
         }
     }
 
+    /**
+     * Saldo saat ini (MP-10): batch dijumlah dari `item_batches.qty_on_hand`,
+     * item biasa dijumlah dari `stock_movements` (in - out) - sama dengan
+     * pengecekan `assertSufficientUntrackedStock()`, dipisah jadi metode
+     * publik supaya layar bisa menampilkan saldo sebelum/sesudah tanpa
+     * mengulang query yang sama secara berbeda.
+     */
+    public function currentBalance(Item $item): float
+    {
+        if ($item->track_batches) {
+            return (float) ItemBatch::where('item_id', $item->id)->sum('qty_on_hand');
+        }
+
+        return (float) StockMovement::where('item_id', $item->id)
+            ->selectRaw("COALESCE(SUM(CASE WHEN direction = 'in' THEN qty ELSE -qty END), 0) as balance")
+            ->value('balance');
+    }
+
     private function recordDeduction(Item $item, ?int $batchId, float $qty, string $reason, ?Model $reference): void
     {
         StockMovement::create([

@@ -292,11 +292,11 @@ class DynamicMenuRegistry
                     $this->item('movements', 'Mutasi Stok', '/app/inventory/movements', 'list', 'item_batches'),
                     $this->item('batches', 'Batch & Kedaluwarsa', '/app/inventory/batches', 'list', 'item_batches', ['inventory.batch_expiry']),
                     $this->item('bom', 'Bill of Materials', '/app/inventory/bom', 'list', 'items', ['inventory.bom']),
-                    // MP-00: seam untuk MP-10 (penyesuaian stok fisik lewat
-                    // StockService). `navigation: false` - layar aksinya belum
-                    // ada, screenComponent() jatuh ke kartu kontrak sampai itu
-                    // mendarat.
-                    $this->item('adjustment', 'Penyesuaian Stok', '/app/inventory/adjustment', 'list', 'item_batches', [], [], false),
+                    // MP-10: penyesuaian stok fisik lewat StockService. Pola
+                    // `stock-adjustment`, BUKAN `list` generik - list generik
+                    // akan mengizinkan menimpa `qty_on_hand` langsung tanpa
+                    // menulis `stock_movements`, persis yang dilarang task ini.
+                    $this->item('adjustment', 'Penyesuaian Stok', '/app/inventory/adjustment', 'stock-adjustment', 'items', [], [], false),
                 ],
             ],
             'pos' => [
