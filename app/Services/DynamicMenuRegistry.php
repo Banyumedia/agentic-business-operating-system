@@ -258,7 +258,11 @@ class DynamicMenuRegistry
                     // Laba-rugi basis kas per proyek (D-62). Butuh buku kas
                     // karena seluruh angkanya dibaca dari sana.
                     $this->item('margin', 'Laba-Rugi', '/app/projects/margin', 'margin', 'projects', ['projects', 'finance.cashbook']),
-                    $this->item('retention', 'Retensi', '/app/projects/retention', 'list', 'project_milestones', ['construction.retention']),
+                    // MP-09: pencairan retensi lewat RetentionService. Pola
+                    // `retention`, BUKAN `list` generik - list generik hanya
+                    // bisa membaca/menulis `project_milestones` mentah, tidak
+                    // ada jalan mencairkan retensi lewat RetentionService.
+                    $this->item('retention', 'Retensi', '/app/projects/retention', 'retention', 'project_milestones', ['construction.retention']),
                     // MP-00: seam untuk MP-01, sama seperti contacts di atas.
                     $this->item('detail', ['term' => 'projects', 'prefix' => 'Detail '], '/app/projects/detail', 'detail', 'projects', [], [], false),
                 ],
