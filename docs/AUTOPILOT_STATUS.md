@@ -1659,3 +1659,65 @@ migration `create_leads_table` DONE.
 gelombang 6 (ditunda), H-05 (repo lain, keputusan sudah dijawab tapi
 eksekusinya manual), `HUMAN:SECRET` nomor CS, dan Q-14 (menunggu data kapasitas
 nyata).
+
+### Visi "bot yang ingat dan bertumbuh" → T-107 + Q-16 (2026-09-22, sesi Kiro)
+
+Bos menyatakan inti produknya: WhatsApp yang ingat terus, bertumbuh, semakin dipakai
+semakin mengenal usahanya — dan tenant merasakan hal yang sama. Sekalian bertanya
+apakah perlu memasang plugin memori dan Obsidian untuk klien. Pembacaan instalasi
+Hermes memberi jawaban yang cukup tegas untuk dijadikan task.
+
+**Fakta yang diverifikasi di host ini:**
+
+- Ingatan Hermes ada **per profil** — setiap `profiles/<nama>/` memuat `memories/`,
+  `sessions/`, `state.db`, `SOUL.md`, `skills/`, `.env`, `config.yaml` sendiri. Jadi
+  isolasi per tenant memang terpenuhi secara struktur. (34 profil hidup di host ini.)
+- Bentuk ingatannya **berkas markdown**: `memories/MEMORY.md` + `USER.md`.
+- Dan ia **beranggaran, bukan bertumbuh**: `memory_char_limit: 2200` (±800 token),
+  `user_char_limit: 1375`, `memory_enabled: true`, `user_profile_enabled: true`,
+  ditambah `mem_trim` serta curator aktif (`interval_hours: 168`,
+  `stale_after_days: 30`, `archive_after_days: 90`). Artinya "semakin mengenal"
+  secara bawaan berwujud **ringkasan yang ditulis ulang**, bukan akumulasi.
+- Ingatan panjang tersedia sebagai plugin — `hindsight`, `mem0`, `supermemory`,
+  `honcho`, `byterover`, `holographic`, `openviking`, `retaindb` — tetapi **belum ada
+  yang dikonfigurasi** (`provider: ''`).
+- `skills.external_dirs: []` masih kosong, jadi mekanisme D-69 (skill produk di luar
+  jangkauan curator) memang belum dipakai.
+
+**Kesimpulan yang dicatat: Hermes ingat *caranya*, kita ingat *faktanya*.** Fakta
+bisnis tidak boleh bersandar pada ingatan yang dibatasi karakter, dipangkas berkala,
+tidak terlihat di web, tidak bisa diaudit, dan hilang saat profil dibangun ulang.
+Karena itu **T-107** `READY`: entitas `business_notes` (catatan + SOP) yang dibaca
+bot lewat pencarian berbatas dan hanya bisa **ditambah** bot — menimpa tulisan
+manusia tetap owner-only lewat web. Kosakata tool diperluas `read_knowledge` +
+`write_knowledge`, profil `addon`/CS **tidak** mendapat keduanya, kuota + batas
+panjang ditegakkan sebelum tulis, catatan sensitif tunduk `AiDataSharingPolicy` dan
+tidak pernah dijawab pada japri staf. Serial karena menyentuh migration.
+
+**Dua jawaban atas pertanyaan Bos, dicatat supaya tidak ditanyakan ulang:**
+
+- **Obsidian tidak dipasang untuk klien.** Obsidian membaca folder markdown lokal;
+  memasangnya per tenant berarti ada berkas di host dan bot butuh tool berkas —
+  tepat yang dilarang D-69. Yang diadopsi bentuknya, bukan aplikasinya: markdown
+  tertaut, ditambah ekspor `.md` ber-front-matter sehingga tenant pemakai Obsidian
+  bisa membuka vault-nya sendiri.
+- **Memory provider belum diadopsi**, dicatat sebagai **Q-16** dengan tiga
+  konsekuensi yang harus Bos timbang: kedaulatan data (mayoritas provider adalah
+  layanan eksternal → percakapan pelanggan tenant keluar dari server kita,
+  menyentuh D-71), perubahan dependensi + biaya per pemakaian (`HUMAN:COST`), dan
+  batas bahwa provider ingatan tidak boleh menjadi alasan menyimpan fakta bisnis di
+  luar DB kita. Rekomendasi bila kelak "ya": self-hosted, per profil, hanya untuk
+  konteks percakapan.
+
+**Temuan keamanan yang muncul tidak sengaja saat membaca config Hermes:**
+`config.yaml` memuat **API key provider dalam bentuk plaintext** pada kunci
+`delegation.api_key`, dan nilainya sempat tercetak di keluaran terminal sesi ini.
+**Disarankan dirotasi.** Ini juga bukti konkret untuk catatan risiko Fase 10 yang
+sudah ada: aplikasi web tidak boleh diberi akses ke home Hermes, dan itu bukan
+kekhawatiran teoretis.
+
+Perubahan sesi ini dokumen saja (`00-DECISIONS.md`, `EXECUTION_PLAN.md`, berkas ini);
+tidak ada kode aplikasi tersentuh, jadi gate test/pint/build tidak dijalankan.
+**Writer lain sedang aktif** pada `app/Livewire/Settings.php`,
+`app/Models/BusinessIdentity.php`, `app/Services/BusinessIdentityStore.php`, dan test
+fiskalnya — berkas itu tidak disentuh dan tidak ikut di-commit.
