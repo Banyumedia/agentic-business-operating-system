@@ -46,6 +46,7 @@ class BusinessIdentityStore
                 'tax_mode' => $identity->tax_mode,
                 'tax_rate' => $identity->tax_rate !== null ? (float) $identity->tax_rate : null,
                 'price_includes_tax' => (bool) $identity->price_includes_tax,
+                'fiscal_locked_at' => $identity->fiscal_locked_at?->toIso8601String(),
             ];
         }
 
