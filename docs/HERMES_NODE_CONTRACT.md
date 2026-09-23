@@ -488,6 +488,24 @@ Supaya tidak ada yang mengira dokumen ini lebih lengkap dari kenyataannya:
 - Apakah `POST /api/messaging/platforms/{id}/test` benar-benar mengirim pesan
   uji atau hanya memeriksa konfigurasi — belum dibaca, jangan diandalkan
   sebagai jalur kirim.
+- **Portabilitas antar mesin: jalurnya jelas, hasilnya belum dibuktikan.**
+  `hermes backup` mem-zip **seluruh `~/.hermes/`** dan `hermes import` menimpanya di
+  mesin baru; `hermes profile export/import` melayani satu profil. Yang dikecualikan
+  memang wajar — `hermes-agent`, `node_modules`, venv plugin/MCP, `__pycache__`,
+  `.cache`, `backups`, plus `checkpoints` yang kodenya sendiri sebut
+  session-hash-keyed sehingga **tidak port** ke mesin lain. Yang **belum dibuktikan**:
+  (a) apakah sesi Baileys di `platforms/whatsapp/session/` tetap hidup setelah pindah
+  mesin, atau tenant terpaksa scan QR ulang; (b) apakah `auth.json` (OAuth penyedia
+  per profil) masih sah di mesin berbeda. Keduanya wajib diuji dengan **profil
+  internal** sebelum ada tenant di host kedua (T-106 butir g). Satu aturan yang sudah
+  pasti dan tidak perlu diuji: **jangan pernah** dua instance hidup dengan creds
+  WhatsApp yang sama — WhatsApp menganggapnya konflik dan dapat memutus sesi.
+- **Data memory provider hidup di luar HERMES_HOME.** Hindsight mode
+  `local_embedded` menaruh datanya di `~/.hindsight/` (jejaknya
+  `~/.hindsight/profiles/<profil>.log`), jadi ingatan bertumbuh **tidak ikut**
+  `hermes backup`. Bila Q-16 dijawab "ya", ini alasan tambahan memilih
+  `local_external`: ingatannya hidup sebagai layanan tersendiri sehingga pindah
+  server bukan peristiwa.
 - ~~**Managed scope di Windows belum diuji.**~~ **DIUJI (T-88, §7.4a):** resolve di
   Windows, menang per-leaf, dan **fail-open** saat berkasnya rusak (mengembalikan
   `{}` sambil berteriak di log). Kesimpulan: "kita kendalikan" lewat managed scope

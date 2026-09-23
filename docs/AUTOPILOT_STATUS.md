@@ -1764,3 +1764,39 @@ menyempit menjadi mode mana dan siapa menanggung tokennya.
 
 Dokumen saja; tidak ada kode aplikasi tersentuh, gate test/pint/build tidak
 dijalankan.
+
+### Pindah server: apa yang kebawa dan apa yang tidak (2026-09-22)
+
+Bos bertanya apakah installasi Hermes terbawa semua saat pindah server. Jawabannya
+sebagian besar ya, lewat jalur resmi — tetapi lubangnya bukan di jalur itu, jadi
+dicatat di T-106 butir (g) dan §8 kontrak.
+
+- **Jalurnya ada:** `hermes backup` mem-zip **seluruh `~/.hermes/`**, `hermes import`
+  menimpanya di mesin baru; `hermes profile export/import` untuk satu profil.
+  Profil ikut lengkap: `SOUL.md`, `config.yaml`, `.env`, `memories/`, `sessions/`,
+  `state.db`, `skills/`, `pairing/`, `auth.json`, `platforms/whatsapp/session/`.
+- **Dikecualikan dan itu benar:** kode `hermes-agent`, `node_modules`, venv
+  plugin/MCP, `__pycache__`, `.cache`, `backups`, dan `checkpoints` — kodenya
+  menyatakan checkpoint session-hash-keyed sehingga **tidak port** ke mesin lain.
+- **Di luar HERMES_HOME sehingga tidak tersentuh backup:** supervisi proses, port
+  bridge, proxy/firewall, runtime Node untuk bridge, `skills.external_dirs`, dan
+  **data Hindsight `local_embedded` yang hidup di `~/.hindsight/`** — alasan tambahan
+  memilih `local_external` bila Q-16 dijawab "ya".
+- **Urutan wajib:** drain → matikan **total** di host lama → pindahkan → nyalakan di
+  host baru. Dua instance hidup dengan creds WhatsApp sama dianggap konflik oleh
+  WhatsApp dan dapat memutus sesi, artinya **tenant scan QR ulang** — kerusakan yang
+  terlihat pelanggan.
+- **Sisi kita yang wajib ikut berubah** dan paling mudah terlupa:
+  `hermes_nodes.api_url` + `control_url`, `hermes_profiles.api_url` (bridge host:port
+  per profil), dan keberadaan **nilai** rahasia di env host baru — basis data hanya
+  menyimpan namanya. `bos:hermes-profile-status` akan menandai profil `unpaired`
+  begitu bridge lama tak terjangkau, jadi perpindahan yang urutannya salah tampak
+  seperti gangguan.
+- **Belum diverifikasi, wajib diuji dengan profil internal sebelum ada tenant di host
+  kedua:** apakah sesi Baileys tetap hidup setelah pindah mesin, dan apakah
+  `auth.json` masih sah di mesin berbeda.
+- **Lingkup:** backup/restore adalah tugas **operator**, bukan fitur aplikasi.
+  `/api/ops/*` tetap di daftar terlarang D-72 — unduhan backup lewat aplikasi web
+  berarti menarik seluruh kredensial keluar.
+
+Dokumen saja; tidak ada kode aplikasi tersentuh, gate tidak dijalankan.
