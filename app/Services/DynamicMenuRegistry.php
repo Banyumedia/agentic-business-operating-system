@@ -253,7 +253,12 @@ class DynamicMenuRegistry
                     // Penerbitan tagihan dari termin dilakukan di layar tagihan
                     // (D-62), jadi di sini cukup pola `list`.
                     $this->item('billing', 'Termin & Opname', '/app/projects/billing', 'list', 'project_milestones', ['projects.progress_billing']),
-                    $this->item('quotations', 'Penawaran', '/app/projects/quotations', 'list', 'quotations', ['quotations'], [], false),
+                    // MP-08: builder penawaran berbaris + konversi ke proyek
+                    // lewat QuotationBuilderScreen. Pola `quotation`, BUKAN
+                    // `list` generik - list generik tidak punya jalan menyusun
+                    // baris (RAB) maupun mengonversi penawaran jadi proyek.
+                    // `navigation: true` (bawaan) sekarang layarnya nyata ada.
+                    $this->item('quotations', 'Penawaran', '/app/projects/quotations', 'quotation', 'quotations', ['quotations']),
                     $this->item('timesheet', 'Timesheet', '/app/projects/timesheet', 'list', 'timesheet_entries', ['timesheet']),
                     // Laba-rugi basis kas per proyek (D-62). Butuh buku kas
                     // karena seluruh angkanya dibaca dari sana.
