@@ -1721,3 +1721,46 @@ tidak ada kode aplikasi tersentuh, jadi gate test/pint/build tidak dijalankan.
 **Writer lain sedang aktif** pada `app/Livewire/Settings.php`,
 `app/Models/BusinessIdentity.php`, `app/Services/BusinessIdentityStore.php`, dan test
 fiskalnya — berkas itu tidak disentuh dan tidak ikut di-commit.
+
+### Arahan "ingatan per profil, terisolasi, bertumbuh" → T-108 (2026-09-22)
+
+Bos menetapkan sasaran: setiap profil punya ingatan sendiri, terisolasi, dan
+ingatannya bertumbuh. Ketiga bagiannya punya status berbeda, dan pembedaan itu yang
+menyelamatkan kita dari mengira pekerjaan sudah selesai:
+
+- **Ingatan sendiri per profil: sudah benar.** `profiles/<nama>/memories/` memuat
+  `MEMORY.md` + `USER.md` milik profil itu, berdampingan dengan `sessions/` dan
+  `state.db` sendiri.
+- **Terisolasi: benar untuk markdown, TIDAK otomatis untuk penyedia.** `bank_id`
+  bawaan Hindsight adalah `hermes` — satu bank bersama. Menyalakan memori apa adanya
+  pada host multi-profil berarti seluruh tenant menulis ke bank yang sama, dan
+  gejalanya muncul sebagai ingatan usaha lain yang bocor ke jawaban. Wajib
+  `bank_id_template: hermes-{profile}`, ditegakkan saat provisioning.
+- **Bertumbuh: belum.** Bawaan beranggaran (`memory_char_limit: 2200`,
+  `user_char_limit: 1375`) plus `mem_trim` dan curator, jadi ia ringkasan yang
+  ditulis ulang, bukan akumulasi.
+
+**Dua kewajiban yang lahir dari kata "bertumbuh", dan paling mudah terlewat:**
+
+1. **Hak hapus data (D-50/T-27d).** Begitu ingatan menyimpan data pribadi di luar
+   basis data kita, "hapus data satu pelanggan" berhenti lengkap — janji kita ke
+   subjek data menjadi tidak benar. T-108 mewajibkan jalur pemusnahan pada bank
+   profil, tertaut ke alur T-27d. Bila penyedia tidak punya pemusnahan per subjek,
+   jalur itu **tidak boleh dinyalakan**, dan alasannya dicatat.
+2. **Ikut ekspor usaha (T-55).** Ingatan yang tidak bisa dibawa pindah adalah bentuk
+   halus penguncian, yang justru D-71 wajibkan kita nyatakan terbuka.
+
+Ditambah dua hal yang sudah tercatat di Q-16: biaya token ekstraksi per sesi per
+tenant (hook `on_session_end`) wajib masuk ledger D-60 sebelum dinyalakan untuk tenant
+berbayar, dan memori **tidak pernah** menjadi otoritas angka — penegakannya struktural
+lewat T-107 plus aturan bahwa setiap angka berasal dari panggilan TenantBot API, bukan
+larangan di prompt (yang memutuskan apa yang diingat adalah model, lewat
+`hindsight_retain` dan hook sesi).
+
+**T-108 `BLOCKED`** pada Q-16 (mode/penyedia) + `HUMAN:COST`. Yang bisa disiapkan
+lebih dulu tanpa menunggu: penegakan isolasi `bank_id` di provisioning, jalur hapus,
+dan jalur ekspor. Q-16 diperbarui: sasarannya sudah ditetapkan Bos, pertanyaannya
+menyempit menjadi mode mana dan siapa menanggung tokennya.
+
+Dokumen saja; tidak ada kode aplikasi tersentuh, gate test/pint/build tidak
+dijalankan.
