@@ -176,6 +176,11 @@ return [
                 'generate_report',
                 'update_settings',
                 'destructive_action',
+                // T-107: basis pengetahuan usaha. Bot internal boleh membaca
+                // DAN menambah (tidak pernah menimpa - ditegakkan
+                // BusinessNoteWriter, bukan di sini).
+                'read_knowledge',
+                'write_knowledge',
             ],
             'disallowed_tools' => [
                 'terminal',
@@ -209,6 +214,11 @@ return [
                 'update_settings',
                 'destructive_action',
                 'view_accounting',
+                // T-107(d): catatan internal bukan bahan jawaban ke orang
+                // asing. FAQ publik (bila kelak dibangun) adalah keputusan
+                // terpisah, bukan jalur ini.
+                'read_knowledge',
+                'write_knowledge',
             ],
             'temperature' => 0.1, // deterministik & kaku
             'guardrails' => [

@@ -26,6 +26,8 @@ class EnforceBotToolScoping
         'api.bot.tenant.contacts' => 'create_transaction',
         'api.bot.tenant.deals' => 'create_transaction',
         'api.bot.tenant.destructive-action' => 'destructive_action',
+        'api.bot.tenant.knowledge.search' => 'read_knowledge',
+        'api.bot.tenant.knowledge.write' => 'write_knowledge',
     ];
 
     public function handle(Request $request, Closure $next): Response

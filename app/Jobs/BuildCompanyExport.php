@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\BusinessNote;
 use App\Models\Company;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
@@ -69,6 +70,13 @@ class BuildCompanyExport implements ShouldQueue
             'entities' => $manifest,
         ]);
 
+        // T-107(g): tenant pemakai Obsidian bisa membuka vault-nya sendiri.
+        // Ini TIDAK menggantikan business_notes.csv (yang sudah ikut lewat
+        // katalog schema di atas, nol kode khusus) - ini format tambahan,
+        // satu berkas .md per catatan, untuk tenant yang mau membaca arsipnya
+        // sebagai catatan biasa, bukan tabel.
+        $this->writeBusinessNotesAsMarkdown($company, $exportDir);
+
         $this->archive($exportDir);
     }
 
@@ -106,6 +114,46 @@ class BuildCompanyExport implements ShouldQueue
         return $entities;
     }
 
+    /**
+     * Satu berkas `.md` per catatan basis pengetahuan, dengan front-matter
+     * YAML (judul, penulis, tanggal). Ditulis ke subfolder terpisah supaya
+     * tidak bertabrakan nama dengan `.csv`/`.json` lain di root arsip.
+     */
+    private function writeBusinessNotesAsMarkdown(Company $company, string $exportDir): void
+    {
+        if (! Schema::hasTable('business_notes')) {
+            return;
+        }
+
+        $notes = BusinessNote::where('company_id', $company->id)->get();
+        if ($notes->isEmpty()) {
+            return;
+        }
+
+        $notesDir = $exportDir.'/business_notes';
+        if (! is_dir($notesDir)) {
+            mkdir($notesDir, 0755, true);
+        }
+
+        foreach ($notes as $note) {
+            $slug = Str::slug($note->title) ?: 'catatan-'.$note->id;
+            $frontMatter = sprintf(
+                "---\nid: %d\ntitle: %s\nauthor_type: %s\nsensitive: %s\ncreated_at: %s\nupdated_at: %s\n---\n\n",
+                $note->id,
+                json_encode($note->title),
+                $note->author_type,
+                $note->sensitive ? 'true' : 'false',
+                $note->created_at?->toIso8601String() ?? '',
+                $note->updated_at?->toIso8601String() ?? '',
+            );
+
+            file_put_contents(
+                $notesDir.'/'.$note->id.'-'.$slug.'.md',
+                $frontMatter.$note->content,
+            );
+        }
+    }
+
     private function archive(string $exportDir): void
     {
         $zipPath = $exportDir.'/export.zip';
@@ -119,6 +167,13 @@ class BuildCompanyExport implements ShouldQueue
             if (basename($file) !== 'export.zip') {
                 $zip->addFile($file, basename($file));
             }
+        }
+
+        // Subfolder markdown per catatan (T-107g) - glob root saja tidak
+        // menjangkaunya, jadi dijalankan terpisah dengan path relatif
+        // business_notes/{berkas}.
+        foreach (glob($exportDir.'/business_notes/*.md') ?: [] as $file) {
+            $zip->addFile($file, 'business_notes/'.basename($file));
         }
 
         $zip->close();

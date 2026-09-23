@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\BuildCompanyExport;
+use App\Models\BusinessNote;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\CustomerInvoice;
@@ -101,6 +102,49 @@ class CompanyExportCompletenessTest extends TestCase
         $manifest = json_decode($this->archiveContent('manifest.json'), true);
         $this->assertSame(1, $manifest['entities']['customer_invoices']);
         $this->assertSame(1, $manifest['entities']['customer_invoice_lines']);
+    }
+
+    public function test_business_notes_are_included_without_editing_this_job(): void
+    {
+        // T-107(g): entitas baru harus ikut terekspor karena diturunkan dari
+        // katalog schema (T-55), bukan karena job ini disunting untuknya.
+        BusinessNote::create([
+            'company_id' => $this->company->id,
+            'title' => 'SOP Terekspor',
+            'content' => 'Isi SOP yang harus ikut dalam arsip portabilitas data.',
+            'author_type' => 'user',
+            'created_by_user_id' => $this->owner->id,
+        ]);
+
+        $this->runExport();
+
+        $notes = $this->archiveContent('business_notes.csv');
+        $this->assertStringContainsString('SOP Terekspor', $notes);
+
+        $manifest = json_decode($this->archiveContent('manifest.json'), true);
+        $this->assertSame(1, $manifest['entities']['business_notes']);
+    }
+
+    public function test_business_notes_also_export_as_one_markdown_file_per_note_with_front_matter(): void
+    {
+        $note = BusinessNote::create([
+            'company_id' => $this->company->id,
+            'title' => 'SOP Cucian Ekspres',
+            'content' => 'Langkah pertama, cek label perawatan pada pakaian.',
+            'author_type' => 'user',
+            'created_by_user_id' => $this->owner->id,
+        ]);
+
+        $this->runExport();
+
+        $names = $this->archiveEntries();
+        $expectedName = 'business_notes/'.$note->id.'-sop-cucian-ekspres.md';
+        $this->assertContains($expectedName, $names);
+
+        $markdown = $this->archiveContent($expectedName);
+        $this->assertStringContainsString('---', $markdown);
+        $this->assertStringContainsString('author_type: user', $markdown);
+        $this->assertStringContainsString('Langkah pertama, cek label perawatan', $markdown);
     }
 
     public function test_negative_archive_contains_no_row_from_another_company(): void

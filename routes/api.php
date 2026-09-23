@@ -21,6 +21,7 @@ Route::middleware([AuthenticateMasterBot::class])->group(function () {
 use App\Http\Controllers\Api\TenantBot\AiContextController;
 use App\Http\Controllers\Api\TenantBot\CapabilitiesController;
 use App\Http\Controllers\Api\TenantBot\DocumentStandardController;
+use App\Http\Controllers\Api\TenantBot\KnowledgeController;
 use App\Http\Controllers\Api\TenantBot\TenantBotController;
 use App\Http\Middleware\AuthenticateTenantBot;
 use App\Http\Middleware\EnforceBotToolScoping;
@@ -37,4 +38,9 @@ Route::middleware([AuthenticateTenantBot::class, EnforceBotToolScoping::class])-
     Route::post('/bot/tenant/contacts', [TenantBotController::class, 'createContact'])->name('api.bot.tenant.contacts');
     Route::post('/bot/tenant/deals', [TenantBotController::class, 'createDeal'])->name('api.bot.tenant.deals');
     Route::post('/bot/tenant/destructive-action', [TenantBotController::class, 'destructiveAction'])->name('api.bot.tenant.destructive-action');
+    // T-107: basis pengetahuan usaha. Pencarian berbatas snippet (bukan dump),
+    // penulisan HANYA menambah - bot tidak bisa menimpa catatan tulisan
+    // manusia lewat rute ini (lihat BusinessNoteWriter).
+    Route::get('/bot/tenant/knowledge', [KnowledgeController::class, 'search'])->name('api.bot.tenant.knowledge.search');
+    Route::post('/bot/tenant/knowledge', [KnowledgeController::class, 'write'])->name('api.bot.tenant.knowledge.write');
 });

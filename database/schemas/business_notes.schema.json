@@ -1,0 +1,67 @@
+{
+  "$schema": "agentic-bos/entity-schema/v1",
+  "entity": "business_notes",
+  "version": 1,
+  "company_scope": "folder",
+  "required": [
+    "id",
+    "title",
+    "content",
+    "author_type"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "unsigned": true
+    },
+    "title": {
+      "type": "string",
+      "length": 191
+    },
+    "content": {
+      "type": "string"
+    },
+    "author_type": {
+      "type": "string",
+      "length": 8,
+      "enum": [
+        "bot",
+        "user"
+      ]
+    },
+    "created_by_user_id": {
+      "type": "integer",
+      "nullable": true,
+      "unsigned": true
+    },
+    "sensitive": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "attributes": {},
+  "indexes": [
+    {
+      "fields": [
+        "title"
+      ],
+      "company_scoped": true
+    }
+  ],
+  "unique": [],
+  "references": {
+    "created_by_user_id": {
+      "entity": "users",
+      "on_delete": "set_null"
+    }
+  }
+}

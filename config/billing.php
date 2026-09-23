@@ -104,6 +104,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Basis Pengetahuan Usaha (T-107)
+    |--------------------------------------------------------------------------
+    | Batas ditegakkan SEBELUM tulis (fail-closed), bukan pemangkasan diam-diam
+    | setelah tersimpan. Tanpa batas ini bot yang salah loop bisa menulis tanpa
+    | henti ke basis data kita - itu biaya kita, bukan biaya tenant.
+    |
+    */
+    'business_notes' => [
+        'max_notes_per_company' => (int) env('BUSINESS_NOTES_MAX_PER_COMPANY', 500),
+        'max_content_length' => (int) env('BUSINESS_NOTES_MAX_CONTENT_LENGTH', 8000),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Manual Payment Configuration (PAY-1)
     |--------------------------------------------------------------------------
     | Pembayaran manual (transfer bank + static QRIS)
