@@ -15,6 +15,7 @@ use App\Services\HermesNodeClient;
 use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Tests\TestCase;
 
@@ -195,6 +196,12 @@ class OrderServiceTest extends TestCase
         $this->app->instance(FeatureResolver::class, $features);
 
         Config::set('datasource.driver', 'eloquent');
+        // TX-ISO: WorkflowEngine tetap menulis audit JSON di mode Eloquent;
+        // tanpa fake ini, payOrder() di bawah menulis ke storage/app/json
+        // NYATA dan mencemari fixture demo company lain (residu terbukti:
+        // storage/app/json/1/workflow_log.json bertambah entri preset
+        // bengkel + journal.post setiap full suite dijalankan).
+        Storage::fake('company-json');
         WorkflowDefinition::create([
             'company_id' => $company->id,
             'entity' => 'orders',

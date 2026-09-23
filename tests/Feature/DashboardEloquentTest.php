@@ -19,6 +19,7 @@ use Database\Seeders\BusinessPresetSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class DashboardEloquentTest extends TestCase
@@ -30,6 +31,13 @@ class DashboardEloquentTest extends TestCase
         parent::setUp();
         config(['datasource.driver' => 'eloquent']);
         (new DataSourceServiceProvider($this->app))->register();
+
+        // TX-ISO: WorkflowEngine tetap menulis audit JSON (workflow_log.json)
+        // di mode Eloquent (D-72-style: tidak ada consumer JSON di mode ini,
+        // tapi menghapusnya bukan scope task ini). Tanpa fake, transisi yang
+        // dipicu test ini (test_workflow_transitions...) menulis ke
+        // storage/app/json NYATA dan mencemari fixture demo company lain.
+        Storage::fake('company-json');
 
         $this->seed(BusinessPresetSeeder::class);
     }

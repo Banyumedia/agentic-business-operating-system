@@ -17,6 +17,7 @@ use App\Services\Workflow\Effects\BookingsLateFeeCompute;
 use App\Services\Workflow\WorkflowEngine;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class BookingWorkflowEffectsTest extends TestCase
@@ -32,6 +33,11 @@ class BookingWorkflowEffectsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // TX-ISO: WorkflowEngine tetap menulis audit JSON di mode Eloquent;
+        // tanpa fake ini, transisi booking di bawah menulis ke
+        // storage/app/json NYATA dan mencemari fixture demo company lain.
+        Storage::fake('company-json');
 
         $this->company = Company::factory()->create(['business_preset' => 'clinic']);
 

@@ -12,6 +12,7 @@ use App\Models\TimesheetEntry;
 use App\Models\User;
 use App\Services\Workflow\WorkflowEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProjectWorkflowTest extends TestCase
@@ -29,6 +30,11 @@ class ProjectWorkflowTest extends TestCase
         parent::setUp();
 
         config(['datasource.driver' => 'eloquent']); // Use Eloquent for tests to mock easily
+
+        // TX-ISO: WorkflowEngine tetap menulis audit JSON di mode Eloquent;
+        // tanpa fake ini, transisi proyek di bawah menulis ke
+        // storage/app/json NYATA dan mencemari fixture demo company lain.
+        Storage::fake('company-json');
 
         $this->companyA = Company::factory()->create([
             'name' => 'Agency A',

@@ -11,6 +11,7 @@ use App\Services\Eloquent\EloquentCompanyContext;
 use App\Services\Eloquent\EloquentCompanySettingsStore;
 use App\Services\Workflow\WorkflowEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class LaundryPresetDatabaseTest extends TestCase
@@ -23,6 +24,14 @@ class LaundryPresetDatabaseTest extends TestCase
         config(['datasource.driver' => 'eloquent']);
         $this->app->scoped(CompanyContext::class, EloquentCompanyContext::class);
         $this->app->scoped(CompanySettingsStore::class, EloquentCompanySettingsStore::class);
+
+        // TX-ISO: WorkflowEngine tetap menulis audit JSON di mode Eloquent;
+        // tanpa fake ini, transisi order di bawah menulis ke
+        // storage/app/json NYATA dan mencemari fixture demo company lain
+        // (residu terbukti: storage/app/json/1/workflow_log.json berubah
+        // setelah full suite, preset laundry, record_id 1).
+        Storage::fake('company-json');
+
         $this->artisan('db:seed', ['--class' => 'BusinessPresetSeeder']);
     }
 
