@@ -115,6 +115,48 @@ class ContractScreenTest extends TestCase
         $this->assertSame(round($grandTotal - $dpp, 2), $tax);
     }
 
+    public function test_negative_non_taxable_company_never_sees_tax_vocabulary_in_the_totals_panel(): void
+    {
+        // D-44/TX-04: non-PKP tidak boleh melihat "Dasar pengenaan" maupun
+        // "Pajak" sama sekali - bukan ditampilkan bernilai nol, karena nol
+        // masih memberi kosakata pajak yang tidak berlaku untuk usaha ini.
+        $this->useCompany('bengkel-arka', 'bengkel', ['tax_mode' => 'non_taxable']);
+
+        Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->call('create')
+            ->set('form.number', 'INV-NONTAX')
+            ->set('form.title', 'Non-PKP')
+            ->set('lines.0.description', 'Jasa')
+            ->set('lines.0.quantity', 1)
+            ->set('lines.0.unit_price', 1000000)
+            ->assertDontSee('Dasar pengenaan')
+            ->assertDontSee('Pajak')
+            ->assertSee('Subtotal')
+            ->assertSee('Total');
+    }
+
+    public function test_taxable_company_sees_tax_vocabulary_in_the_totals_panel(): void
+    {
+        // Kebalikan dari test di atas: PKP HARUS melihat kosakata pajak,
+        // supaya penyembunyian di atas tidak diam-diam menghilangkannya untuk
+        // semua orang.
+        $this->useCompany('bengkel-arka', 'bengkel', [
+            'tax_mode' => 'taxable',
+            'tax_rate' => 11,
+            'price_includes_tax' => false,
+        ]);
+
+        Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])
+            ->call('create')
+            ->set('form.number', 'INV-TAX')
+            ->set('form.title', 'PKP')
+            ->set('lines.0.description', 'Jasa')
+            ->set('lines.0.quantity', 1)
+            ->set('lines.0.unit_price', 1000000)
+            ->assertSee('Dasar pengenaan')
+            ->assertSee('Pajak');
+    }
+
     public function test_numbering_runs_per_company(): void
     {
         $first = Livewire::test(ContractScreen::class, ['module' => 'accounting', 'submodule' => 'invoices'])

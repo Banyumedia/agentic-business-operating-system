@@ -60,19 +60,24 @@
             </table>
         </section>
 
+        {{-- D-44/TX-04: Dasar Pengenaan dan Pajak hanya untuk usaha PKP - tidak
+             dirender sama sekali untuk non-PKP, bukan ditampilkan bernilai
+             nol. --}}
         <section class="ml-auto max-w-xs space-y-1 text-sm">
             <div class="flex justify-between gap-6">
                 <span class="text-[var(--erp-text-secondary)]">Subtotal</span>
                 <span class="font-[family-name:var(--erp-font-mono)] tabular-nums">{{ number_format((float) ($invoice['subtotal'] ?? 0), 2, ',', '.') }}</span>
             </div>
-            <div class="flex justify-between gap-6">
-                <span class="text-[var(--erp-text-secondary)]">Dasar pengenaan</span>
-                <span class="font-[family-name:var(--erp-font-mono)] tabular-nums">{{ number_format((float) ($invoice['dpp'] ?? 0), 2, ',', '.') }}</span>
-            </div>
-            <div class="flex justify-between gap-6">
-                <span class="text-[var(--erp-text-secondary)]">Pajak</span>
-                <span class="font-[family-name:var(--erp-font-mono)] tabular-nums">{{ number_format((float) ($invoice['tax'] ?? 0), 2, ',', '.') }}</span>
-            </div>
+            @if ($taxable)
+                <div class="flex justify-between gap-6">
+                    <span class="text-[var(--erp-text-secondary)]">Dasar pengenaan</span>
+                    <span class="font-[family-name:var(--erp-font-mono)] tabular-nums">{{ number_format((float) ($invoice['dpp'] ?? 0), 2, ',', '.') }}</span>
+                </div>
+                <div class="flex justify-between gap-6">
+                    <span class="text-[var(--erp-text-secondary)]">Pajak</span>
+                    <span class="font-[family-name:var(--erp-font-mono)] tabular-nums">{{ number_format((float) ($invoice['tax'] ?? 0), 2, ',', '.') }}</span>
+                </div>
+            @endif
             <div class="flex justify-between gap-6 border-t border-[var(--erp-border)] pt-1 font-bold">
                 <span>Total</span>
                 <span class="font-[family-name:var(--erp-font-mono)] tabular-nums">{{ number_format((float) ($invoice['grand_total'] ?? 0), 2, ',', '.') }}</span>

@@ -177,19 +177,24 @@
                     </button>
                 </fieldset>
 
+                {{-- D-44/TX-04: baris Dasar Pengenaan dan Pajak hanya untuk
+                     usaha PKP - tidak dirender sama sekali untuk non-PKP,
+                     bukan ditampilkan bernilai nol. --}}
                 <dl class="grid gap-2 rounded-[var(--erp-radius-md)] bg-[var(--erp-bg-base)] p-4 sm:max-w-sm sm:justify-self-end">
                     <div class="flex items-baseline justify-between gap-6">
                         <dt class="text-sm text-[var(--erp-text-secondary)]">Subtotal</dt>
                         <dd class="font-[family-name:var(--erp-font-mono)] tabular-nums text-sm text-[var(--erp-text-primary)]">{{ number_format($totals['subtotal'], 2, ',', '.') }}</dd>
                     </div>
-                    <div class="flex items-baseline justify-between gap-6">
-                        <dt class="text-sm text-[var(--erp-text-secondary)]">Dasar pengenaan</dt>
-                        <dd class="font-[family-name:var(--erp-font-mono)] tabular-nums text-sm text-[var(--erp-text-primary)]">{{ number_format($totals['dpp'], 2, ',', '.') }}</dd>
-                    </div>
-                    <div class="flex items-baseline justify-between gap-6">
-                        <dt class="text-sm text-[var(--erp-text-secondary)]">Pajak</dt>
-                        <dd class="font-[family-name:var(--erp-font-mono)] tabular-nums text-sm text-[var(--erp-text-primary)]">{{ number_format($totals['tax'], 2, ',', '.') }}</dd>
-                    </div>
+                    @if ($taxable)
+                        <div class="flex items-baseline justify-between gap-6">
+                            <dt class="text-sm text-[var(--erp-text-secondary)]">Dasar pengenaan</dt>
+                            <dd class="font-[family-name:var(--erp-font-mono)] tabular-nums text-sm text-[var(--erp-text-primary)]">{{ number_format($totals['dpp'], 2, ',', '.') }}</dd>
+                        </div>
+                        <div class="flex items-baseline justify-between gap-6">
+                            <dt class="text-sm text-[var(--erp-text-secondary)]">Pajak</dt>
+                            <dd class="font-[family-name:var(--erp-font-mono)] tabular-nums text-sm text-[var(--erp-text-primary)]">{{ number_format($totals['tax'], 2, ',', '.') }}</dd>
+                        </div>
+                    @endif
                     <div class="flex items-baseline justify-between gap-6 border-t border-[var(--erp-border)] pt-2">
                         <dt class="text-sm font-semibold text-[var(--erp-text-primary)]">Total</dt>
                         <dd class="font-[family-name:var(--erp-font-mono)] tabular-nums text-base font-bold text-[var(--erp-text-primary)]">{{ number_format($totals['grand_total'], 2, ',', '.') }}</dd>

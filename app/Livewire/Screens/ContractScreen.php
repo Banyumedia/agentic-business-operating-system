@@ -598,10 +598,16 @@ class ContractScreen extends Component
         // Tanpa ini piutang tertua justru paling mudah terlewat.
         usort($rows, static fn (array $left, array $right): int => $right['overdue_days'] <=> $left['overdue_days']);
 
+        // D-44/TX-04: kosakata pajak (DPP/PPN) hanya boleh muncul untuk usaha
+        // PKP. Non-PKP tidak dirender sama sekali - bukan ditampilkan bernilai
+        // nol - karena nol masih memberi kosakata pajak yang tidak berlaku.
+        $taxable = app(BusinessIdentityStore::class)->taxProfile($this->company())->taxable;
+
         return view('livewire.screens.contract', [
             'label' => $definition['label'],
             'term' => $definition['term'] ?? $definition['label'],
             'rows' => $rows,
+            'taxable' => $taxable,
             'outstanding' => round($outstanding, 2),
             'overdueTotal' => round(array_sum(array_map(
                 static fn (array $row): float => $row['is_overdue'] ? $row['outstanding'] : 0.0,

@@ -55,6 +55,10 @@ class InvoiceDocumentController extends Controller
 
         return view('app.invoice-document', [
             'identity' => app(BusinessIdentityStore::class)->read($company),
+            // D-44/TX-04: kosakata pajak hanya untuk usaha PKP - dokumen cetak
+            // yang dipegang pelanggan tidak boleh menyebut DPP/PPN untuk
+            // non-PKP, bukan sekadar menampilkannya bernilai nol.
+            'taxable' => app(BusinessIdentityStore::class)->taxProfile($company)->taxable,
             'contact' => $this->contactOf($company, $record['contact_id'] ?? null),
             'invoice' => $record,
             'lines' => $lines,

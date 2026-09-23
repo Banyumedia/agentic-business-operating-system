@@ -67,6 +67,48 @@ class InvoiceDocumentTest extends TestCase
             ->assertSee('500.000,00');
     }
 
+    public function test_negative_non_taxable_document_never_shows_tax_vocabulary(): void
+    {
+        // D-44/TX-04: dokumen cetak yang dipegang pelanggan non-PKP tidak
+        // boleh menyebut "Dasar pengenaan" maupun "Pajak" sama sekali - bukan
+        // ditampilkan bernilai nol.
+        $id = $this->invoice('bengkel-arka', 'INV-DOC-NONTAX', 'issued');
+        $this->line('bengkel-arka', $id, 'Jasa perbaikan', 1, 500000);
+
+        $this->get("/app/invoices/{$id}/print?company=bengkel-arka")
+            ->assertOk()
+            ->assertDontSee('Dasar pengenaan')
+            ->assertDontSee('Pajak')
+            ->assertSee('Subtotal');
+    }
+
+    public function test_taxable_document_shows_tax_vocabulary(): void
+    {
+        // Kebalikan dari test di atas: usaha PKP HARUS tetap melihat kosakata
+        // pajak di dokumen cetak, supaya penyembunyian non-PKP tidak diam-diam
+        // menghilangkannya untuk semua orang.
+        Storage::disk('company-json')->put(
+            'json/bengkel-arka/business_identity.json',
+            json_encode([
+                'id' => 1,
+                'name' => 'Usaha Uji',
+                'preset' => 'bengkel',
+                'tax_mode' => 'taxable',
+                'tax_rate' => 11,
+                'price_includes_tax' => false,
+                'address' => 'Jalan Uji 1',
+            ], JSON_THROW_ON_ERROR),
+        );
+
+        $id = $this->invoice('bengkel-arka', 'INV-DOC-TAX', 'issued');
+        $this->line('bengkel-arka', $id, 'Jasa perbaikan', 1, 500000);
+
+        $this->get("/app/invoices/{$id}/print?company=bengkel-arka")
+            ->assertOk()
+            ->assertSee('Dasar pengenaan')
+            ->assertSee('Pajak');
+    }
+
     public function test_negative_draft_cannot_be_printed_as_an_official_document(): void
     {
         $id = $this->invoice('bengkel-arka', 'INV-DOC-DRAFT', 'draft');
