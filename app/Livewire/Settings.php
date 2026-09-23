@@ -295,7 +295,11 @@ class Settings extends Component
      * profil bisnis di luar cakupan task ini. Dibungkus try/catch agar
      * kegagalan baca data tidak merusak seluruh halaman Pengaturan.
      *
-     * @return array{name: string, preset: string, taxable: bool}|null
+     * `locked` menandai bahwa pilihan pajak sudah dikunci (D-74) supaya tab
+     * dapat menyatakan ini keputusan yang disengaja, bukan fitur yang lupa
+     * dibuat. `priceIncludesTax` hanya bermakna bila taxable (D-44).
+     *
+     * @return array{name: string, preset: string, taxable: bool, priceIncludesTax: bool, locked: bool}|null
      */
     private function businessSummary(): ?array
     {
@@ -308,6 +312,8 @@ class Settings extends Component
                 'name' => (string) ($identity['name'] ?? $this->companySlug),
                 'preset' => (string) ($identity['preset'] ?? $this->selectedPreset),
                 'taxable' => $taxProfile->taxable,
+                'priceIncludesTax' => $taxProfile->taxable && $taxProfile->priceIncludesTax,
+                'locked' => ($identity['fiscal_locked_at'] ?? null) !== null,
             ];
         } catch (Throwable) {
             return null;

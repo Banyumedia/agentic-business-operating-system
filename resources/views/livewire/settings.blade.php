@@ -72,9 +72,26 @@
                         <div class="sm:col-span-2">
                             <dt class="text-sm text-[var(--erp-text-secondary)]">Status PPN</dt>
                             @if ($businessSummary['taxable'])
-                                <dd class="mt-1 font-semibold text-[var(--erp-text-primary)]">PKP (memungut PPN)</dd>
+                                <dd class="mt-1 font-semibold text-[var(--erp-text-primary)]">
+                                    PKP (memungut PPN) &mdash; harga {{ $businessSummary['priceIncludesTax'] ? 'sudah termasuk PPN' : 'belum termasuk PPN' }}
+                                </dd>
                             @else
                                 <dd class="mt-1 font-semibold text-[var(--erp-text-primary)]">Non-PKP (tidak memungut PPN)</dd>
+                            @endif
+
+                            @if ($businessSummary['locked'])
+                                {{--
+                                    D-74: pilihan pajak dikunci saat pendaftaran
+                                    karena menyangkut pembukuan berjalan. Ini
+                                    keputusan yang disengaja, bukan fitur yang
+                                    lupa dibuat — dinyatakan eksplisit di sini.
+                                --}}
+                                <p class="mt-2 flex items-start gap-2 text-xs text-[var(--erp-text-secondary)]">
+                                    <svg class="mt-0.5 size-4 shrink-0 text-[var(--erp-text-muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                    </svg>
+                                    <span>Terkunci sejak pendaftaran. Mode pajak menyangkut pembukuan berjalan, jadi tidak dapat diubah dari sini. Untuk perubahan yang sah (mis. usaha Anda menjadi PKP), hubungi dukungan.</span>
+                                </p>
                             @endif
                         </div>
                     </dl>
