@@ -63,6 +63,26 @@ class JsonWorkflowLog
         }
     }
 
+    /**
+     * Linimasa satu record untuk layar detail (MP-01). Baca-saja, murni
+     * penyaringan atas `read()` yang sudah ada - tidak menambah jalur tulis
+     * apa pun.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function entriesFor(string $company, string $entity, string|int $id): array
+    {
+        $this->assertCompanyScope($company);
+
+        $path = Storage::disk('company-json')->path("json/{$company}/workflow_log.json");
+
+        return array_values(array_filter(
+            $this->read($path),
+            static fn (array $entry): bool => ($entry['entity'] ?? null) === $entity
+                && (string) ($entry['record_id'] ?? '') === (string) $id,
+        ));
+    }
+
     /** @return list<array<string, mixed>> */
     private function read(string $path): array
     {

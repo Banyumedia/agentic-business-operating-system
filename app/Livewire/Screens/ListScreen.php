@@ -269,6 +269,11 @@ class ListScreen extends Component
             'sort' => $sort,
             'direction' => $direction,
             'pendingDeletion' => $pending,
+            // MP-01: baris menautkan ke layar detail HANYA untuk modul yang
+            // sudah punya seam `detail` (MP-00 mendaftarkannya untuk
+            // contacts/projects/pos). Modul lain tidak mendapat tautan sama
+            // sekali - bukan tautan mati, memang tidak ditawarkan.
+            'hasDetailScreen' => app(DynamicMenuRegistry::class)->hasPath($this->module, 'detail'),
         ]);
     }
 

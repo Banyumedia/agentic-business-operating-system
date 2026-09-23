@@ -96,6 +96,16 @@ Route::middleware(['auth', SetCurrentCompany::class, EnsureCompanyAccess::class]
             ->whereNumber('invoice')
             ->name('app.invoice.print');
 
+        // Layar detail generik (MP-01). Tiga segmen ({module}/detail/{id}) juga
+        // tidak cocok dengan `{module}/{submodule?}`, jadi harus didaftarkan
+        // sebelum wildcard - pola yang sama dengan invoice print di atas.
+        // Gerbang kapabilitas modul tetap ditegakkan di ModuleController lewat
+        // registry yang sama (segmen `detail` sudah diseam MP-00), bukan
+        // pemeriksaan baru.
+        Route::get('/app/{module}/detail/{id}', [ModuleController::class, 'showDetail'])
+            ->whereNumber('id')
+            ->name('app.module.detail');
+
         Route::get('/app/{module}/{submodule?}', [ModuleController::class, 'show'])
             ->middleware(EnsureFeatureEnabled::class)
             ->name('app.module');

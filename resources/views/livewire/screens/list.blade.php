@@ -91,6 +91,7 @@
                 :caption="$label"
                 :empty-message="$search === '' ? 'Belum ada '.$term.' yang tercatat.' : 'Tidak ada '.$term.' yang cocok dengan pencarian.'"
                 :row-actions="[
+                    ...($hasDetailScreen ? [['label' => 'Detail', 'url' => fn (array $row) => route('app.module.detail', ['module' => $module, 'id' => $row['id']])]] : []),
                     ['label' => 'Ubah', 'method' => 'edit'],
                     ['label' => 'Hapus', 'method' => 'confirmDelete', 'variant' => 'danger'],
                 ]"

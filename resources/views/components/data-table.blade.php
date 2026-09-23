@@ -97,15 +97,25 @@
                                 <td class="px-3 py-2 text-right">
                                     <div class="inline-flex gap-1">
                                         @foreach ($rowActions as $action)
-                                            <button
-                                                type="button"
-                                                wire:click="{{ $action['method'] }}({{ $row['id'] }})"
-                                                wire:loading.attr="disabled"
-                                                title="{{ $action['label'] }}"
-                                                class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60 {{ ($action['variant'] ?? null) === 'danger' ? 'text-[var(--erp-danger)] hover:bg-[var(--erp-danger-soft)]' : 'text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)]' }}"
-                                            >
-                                                {{ $action['label'] }}<span class="sr-only"> {{ $caption }} baris {{ $row['id'] }}</span>
-                                            </button>
+                                            @if (isset($action['url']))
+                                                <a
+                                                    href="{{ $action['url']($row) }}"
+                                                    title="{{ $action['label'] }}"
+                                                    class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                                                >
+                                                    {{ $action['label'] }}<span class="sr-only"> {{ $caption }} baris {{ $row['id'] }}</span>
+                                                </a>
+                                            @else
+                                                <button
+                                                    type="button"
+                                                    wire:click="{{ $action['method'] }}({{ $row['id'] }})"
+                                                    wire:loading.attr="disabled"
+                                                    title="{{ $action['label'] }}"
+                                                    class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60 {{ ($action['variant'] ?? null) === 'danger' ? 'text-[var(--erp-danger)] hover:bg-[var(--erp-danger-soft)]' : 'text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)]' }}"
+                                                >
+                                                    {{ $action['label'] }}<span class="sr-only"> {{ $caption }} baris {{ $row['id'] }}</span>
+                                                </button>
+                                            @endif
                                         @endforeach
                                     </div>
                                 </td>
@@ -163,15 +173,25 @@
                     @if ($rowActions !== [])
                         <div class="mt-3 flex flex-wrap gap-2 border-t border-[var(--erp-border)] pt-3">
                             @foreach ($rowActions as $action)
-                                <button
-                                    type="button"
-                                    wire:click="{{ $action['method'] }}({{ $row['id'] }})"
-                                    wire:loading.attr="disabled"
-                                    title="{{ $action['label'] }}"
-                                    class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60 {{ ($action['variant'] ?? null) === 'danger' ? 'text-[var(--erp-danger)] hover:bg-[var(--erp-danger-soft)]' : 'text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)]' }}"
-                                >
-                                    {{ $action['label'] }}<span class="sr-only"> {{ $caption }} baris {{ $row['id'] }}</span>
-                                </button>
+                                @if (isset($action['url']))
+                                    <a
+                                        href="{{ $action['url']($row) }}"
+                                        title="{{ $action['label'] }}"
+                                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)]"
+                                    >
+                                        {{ $action['label'] }}<span class="sr-only"> {{ $caption }} baris {{ $row['id'] }}</span>
+                                    </a>
+                                @else
+                                    <button
+                                        type="button"
+                                        wire:click="{{ $action['method'] }}({{ $row['id'] }})"
+                                        wire:loading.attr="disabled"
+                                        title="{{ $action['label'] }}"
+                                        class="inline-flex min-h-11 items-center rounded-[var(--erp-radius-sm)] px-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--erp-focus)] disabled:cursor-wait disabled:opacity-60 {{ ($action['variant'] ?? null) === 'danger' ? 'text-[var(--erp-danger)] hover:bg-[var(--erp-danger-soft)]' : 'text-[var(--erp-text-link)] hover:bg-[var(--erp-bg-active)]' }}"
+                                    >
+                                        {{ $action['label'] }}<span class="sr-only"> {{ $caption }} baris {{ $row['id'] }}</span>
+                                    </button>
+                                @endif
                             @endforeach
                         </div>
                     @endif
