@@ -1,5 +1,44 @@
 module.exports = {
   apps: [
+    // ASISTENBISNIS.NALAR.ARMY / ASISTENBOS.NALAR.ARMY — port Node.js
+    // (Express 5 + React 19 + Prisma) di repo terpisah.
+    //
+    // KENAPA BLOK INI ADA DI SINI, bukan hanya di ecosystem repo Node.
+    // Layanan `PM2-AgenticBOS` (NSSM, LocalSystem, StartMode Auto) menjalankan
+    // `pm2-runtime start D:\PROJECTS\agentic-bos\ecosystem.production.config.cjs` —
+    // yaitu **berkas ini**. Ecosystem di repo Node juga mendefinisikan
+    // `agentic-bos-node`, tetapi berkas itu **tidak pernah dibaca** oleh layanan.
+    // Akibatnya app Node tidak pernah dikelola siapa pun: ia dijalankan tangan, dan
+    // hilang begitu sesi yang memulainya ditutup atau mesin reboot. Caddyfile bahkan
+    // menulis komentar "PM2 agentic-bos-node", jadi selisihnya antara niat dan
+    // kenyataan sudah lama ada dan tidak terlihat.
+    //
+    // `pm2-runtime` berjalan di depan (tanpa daemon terpisah), sehingga daftar app
+    // diambil dari berkas ini **saat layanan start**. Artinya `pm2 save` tidak
+    // relevan — yang menerapkan perubahan adalah **restart layanan**.
+    //
+    // `cwd` wajib menunjuk repo Node: `load-env.ts` memuat `.env` relatif terhadap
+    // cwd proses, dan di sanalah token lajur bot (BOS_BOT_TOKEN_*) berada.
+    // `env` di bawah sengaja minimal; sisanya datang dari `.env` repo itu, dan
+    // nilai yang sudah ada di environment menang atas berkas.
+    {
+      name: 'agentic-bos-node',
+      script: 'server.ts',
+      cwd: 'D:/PROJECTS/business-operating-system-node-js',
+      interpreter: 'node',
+      node_args: '--import tsx',
+      env: {
+        NODE_ENV: 'production',
+        PORT: '3025',
+      },
+      autorestart: true,
+      max_restarts: 10,
+      restart_delay: 3000,
+      max_memory_restart: '512M',
+      out_file: 'D:/PROJECTS/business-operating-system-node-js/storage/logs/pm2-node-out.log',
+      error_file: 'D:/PROJECTS/business-operating-system-node-js/storage/logs/pm2-node-error.log',
+      time: true,
+    },
     {
       name: 'agentic-bos-production',
       script: 'D:/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe',

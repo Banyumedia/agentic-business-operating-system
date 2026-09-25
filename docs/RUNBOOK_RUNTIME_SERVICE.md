@@ -151,3 +151,101 @@ Bila salah satu test `ControlPlane*` merah setelah pembaruan Hermes: **jangan**
 melonggarkan daftar-putih supaya hijau. Perbaiki templatenya di
 `ControlPlanePaths`, lalu jalankan `bos:hermes-control-ping` terhadap node
 sungguhan.
+
+## App Node (`agentic-bos-node`) masuk ke layanan terkelola
+
+**Masalah yang ditutup.** App Node (Express 5 + React, port 3025, dilayani Caddy di
+`asistenbisnis.nalar.army` / `asistenbos.nalar.army`) **tidak pernah dikelola PM2**,
+walau `Caddyfile` menulis komentar "PM2 agentic-bos-node" dan repo Node punya
+`ecosystem.production.config.cjs` yang mendefinisikannya. Penyebabnya terverifikasi
+dari registry layanan:
+
+```
+Layanan   : PM2-AgenticBOS  (NSSM, StartMode Auto, akun LocalSystem, Running)
+Perintah  : pm2-runtime start D:\PROJECTS\agentic-bos\ecosystem.production.config.cjs
+PM2_HOME  : C:\Users\User\.pm2
+```
+
+Layanan itu membaca ecosystem **repo Laravel**, yang sebelumnya hanya mendefinisikan
+`agentic-bos-production`, `agentic-bos-queue`, dan `agentic-bos-scheduler`. Definisi
+`agentic-bos-node` hanya ada di ecosystem **repo Node** — berkas yang tidak pernah
+dibaca siapa pun. Jadi app itu selalu dijalankan tangan (`tsx server.ts`), dan hilang
+begitu sesi yang memulainya ditutup atau mesin reboot.
+
+**Yang sudah dikerjakan (tanpa menyentuh layanan):** blok `agentic-bos-node`
+ditambahkan ke `D:\PROJECTS\agentic-bos\ecosystem.production.config.cjs`, dengan
+`cwd` menunjuk repo Node — wajib, karena `load-env.ts` memuat `.env` relatif terhadap
+cwd proses dan di sanalah `BOS_BOT_TOKEN_*` berada. Berkasnya diverifikasi tetap
+valid: `require()` berhasil dan melaporkan empat app.
+
+**Kenapa `pm2 save` tidak relevan di sini.** Layanan memakai `pm2-runtime`, yang
+berjalan di depan tanpa daemon terpisah, sehingga daftar app diambil dari ecosystem
+**saat layanan start**. Yang menerapkan perubahan adalah **restart layanan**, bukan
+`pm2 save`/`resurrect`.
+
+### Prosedur aktivasi (butuh sesi Administrator)
+
+Sesi non-admin **tidak bisa** melakukannya: daemon PM2 dimiliki LocalSystem, sehingga
+`pm2 list` dari sesi biasa gagal dengan `connect EPERM \\.\pipe\rpc.sock`. Itu bukan
+kerusakan, itu batas hak akses.
+
+**Blast radius — baca dulu.** Restart `PM2-AgenticBOS` me-restart **seluruh** app di
+ecosystem itu: web Laravel `8010`, queue worker, scheduler, dan app Node `3025`.
+Pekerjaan queue yang sedang jalan akan terputus. Lakukan saat sepi, dan periksa dulu
+tidak ada koneksi aktif:
+
+```powershell
+Get-NetTCPConnection -LocalPort 3025,8010 -State Established -ErrorAction SilentlyContinue
+```
+
+Langkah, di PowerShell **Run as Administrator**:
+
+```powershell
+# 1. Matikan proses Node yang dijalankan tangan, kalau masih ada.
+#    Kalau dibiarkan, PM2 gagal mengikat 3025 dan app baru akan crash-restart.
+Get-NetTCPConnection -LocalPort 3025 -State Listen -ErrorAction SilentlyContinue |
+  ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
+
+# 2. Restart layanan supaya ecosystem dibaca ulang.
+Restart-Service PM2-AgenticBOS
+
+# 3. Tunggu sebentar, lalu pastikan keempat app online.
+Start-Sleep -Seconds 12
+pm2 jlist | ConvertFrom-Json | Select-Object name, pm2_env, pid |
+  ForEach-Object { "$($_.name) -> $($_.pm2_env.status)" }
+```
+
+### Verifikasi setelah aktivasi
+
+```powershell
+# App Node hidup di loopback (NP-07 mengikat 127.0.0.1 secara bawaan; Caddy di host
+# yang sama menembak 127.0.0.1:3025, jadi ini benar dan bukan regresi).
+Invoke-WebRequest http://127.0.0.1:3025/api/health -UseBasicParsing | Select-Object StatusCode
+
+# Jalur publik lewat Caddy.
+Invoke-WebRequest http://127.0.0.1/api/health -Headers @{ Host = 'asistenbisnis.nalar.army' } -UseBasicParsing |
+  Select-Object StatusCode
+
+# Web Laravel tidak ikut rusak.
+Invoke-WebRequest http://127.0.0.1:8010 -UseBasicParsing | Select-Object StatusCode
+```
+
+Periksa juga log start app Node — ia **wajib** memuat `.env`, kalau tidak lajur bot
+menolak semua permintaan dan penyimpanan saldo menolak start (NP-08):
+
+```powershell
+Get-Content D:\PROJECTS\business-operating-system-node-js\storage\logs\pm2-node-out.log -Tail 20
+```
+
+Yang dicari: `[env] .env dimuat, N kunci diisi: …` (nama kunci saja — nilainya memang
+tidak pernah dicatat) dan `[Agentic BOS] Server running on http://127.0.0.1:3025`.
+
+### Kalau gagal
+
+- **App Node `errored`/`restarting` terus.** Lihat `pm2-node-error.log`. Dua penyebab
+  paling mungkin: port 3025 masih dipegang proses tangan (langkah 1 dilewati), atau
+  `.env` tidak terbaca sehingga `TOKEN_LEDGER_DRIVER` kosong dan NP-08 menolak start
+  di `NODE_ENV=production` — itu fail-closed yang benar, perbaikannya menyetel env,
+  bukan melonggarkan penjaganya.
+- **Balikan:** hapus kembali blok `agentic-bos-node` dari ecosystem ini dan restart
+  layanan; app Node kembali ke keadaan dijalankan tangan seperti sebelumnya.
